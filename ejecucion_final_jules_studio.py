@@ -73,7 +73,7 @@ def ejecucion_final_jules_studio() -> None:
         os.path.join(ROOT, "src"),
     ]
     add_args = ["git", "add", *[p for p in paths if os.path.exists(p)]]
-    if len(add_args) <= 1:
+    if len(add_args) <= 2:
         print("❌ No hay archivos rastreables para git add.")
         sys.exit(1)
     _run(add_args)

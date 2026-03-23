@@ -14,7 +14,10 @@ class AgenteBunkerPR2266:
     def purgar_friccion(self):
         """Limpia el entorno para evitar errores de compilación."""
         print("🧹 Eliminando rastro de módulos corruptos...")
-        subprocess.run("rm -rf node_modules package-lock.json dist", shell=True)
+        subprocess.run(
+            ["rm", "-rf", "node_modules", "package-lock.json", "dist"],
+            check=False,
+        )
         print("✅ Entorno limpio.")
 
     def obtener_contexto_leads(self):

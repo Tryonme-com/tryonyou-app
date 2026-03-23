@@ -55,7 +55,7 @@ def check_status() -> None:
             os.path.join(ROOT, "src"),
         ]
         add_args = ["git", "add", *[p for p in paths if os.path.exists(p)]]
-        if len(add_args) <= 1:
+        if len(add_args) <= 2:
             print("❌ Nada que añadir con git add acotado.")
             sys.exit(1)
         _run(add_args)

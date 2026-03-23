@@ -91,12 +91,38 @@ def ejecutar_y_subir_todo_safe() -> int:
         return 1
     print("✅ git add:", len(exist), "rutas")
 
-    r = _run(["git", "commit", "-m", msg], cwd=ROOT)
-    if r.returncode not in (0, 1):
-        print("❌ git commit falló:", r.stderr)
-        return 1
-    if r.returncode == 1 and "nothing to commit" not in (r.stdout + r.stderr).lower():
-        print("⚠️  git commit:", r.stderr or r.stdout)
+    # Mejor que parsear stderr: ¿hay diff índice vs HEAD?
+    has_head = _run(["git", "rev-parse", "-q", "--verify", "HEAD"], cwd=ROOT).returncode == 0
+    if has_head:
+        staged = _run(["git", "diff", "--cached", "--quiet"], cwd=ROOT)
+        if staged.returncode == 0:
+            print(
+                "ℹ️  Nada nuevo que commitear en el bundle (índice = HEAD). "
+                "Se intenta push por si hay commits locales sin subir."
+            )
+        else:
+            r = _run(["git", "commit", "-m", msg], cwd=ROOT)
+            if r.returncode != 0:
+                out = ((r.stdout or "") + (r.stderr or "")).lower()
+                benign = any(
+                    s in out
+                    for s in (
+                        "nothing to commit",
+                        "nothing added to commit",
+                        "no changes added to commit",
+                        "working tree clean",
+                    )
+                )
+                if benign:
+                    print("ℹ️  git commit sin efecto (mensaje benigno). Siguiente: push.")
+                else:
+                    print("❌ git commit:", r.stderr or r.stdout)
+                    return 1
+    else:
+        r = _run(["git", "commit", "-m", msg], cwd=ROOT)
+        if r.returncode != 0:
+            print("❌ git commit (sin HEAD previo):", r.stderr or r.stdout)
+            return 1
 
     cmd = ["git", "push", "origin", "main"]
     if _on("E50_FORCE_PUSH"):
