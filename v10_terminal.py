@@ -4,6 +4,11 @@ import shutil
 import pandas as pd
 import requests
 
+V10_OMEGA_BANNER = (
+    "V10_OMEGA: Consolidación Blindada PR#2266 — Patente PCT/EP2025/067317"
+)
+
+
 class AgenteBunkerPR2266:
     def __init__(self):
         self.repo = "LVT-ENG/TRYONME-TRYONYOU-ABVETOS--INTELLIGENCE--SYSTEM"
@@ -50,6 +55,31 @@ class AgenteBunkerPR2266:
         nicolas = df[df["Contacto"].astype(str).str.contains("Nicolas T.", na=False)]
         return nicolas["Empresa"].values[0] if not nicolas.empty else "Galeries Lafayette"
 
+    def validar_stripe(self):
+        """Comprueba la API de Stripe con la clave secreta (sin shell, sin loguear la clave)."""
+        key = (
+            os.getenv("STRIPE_SECRET_KEY", "").strip()
+            or os.getenv("E50_STRIPE_SECRET_KEY", "").strip()
+            or os.getenv("INJECT_STRIPE_SECRET_KEY", "").strip()
+        )
+        if not key:
+            print("⚠️ Stripe: sin clave en entorno; no se llama a api.stripe.com.")
+            return False
+        try:
+            r = requests.get(
+                "https://api.stripe.com/v1/balance",
+                auth=(key, ""),
+                timeout=20,
+            )
+        except requests.RequestException as e:
+            print(f"⚠️ Stripe: error de red — {e}")
+            return False
+        if r.status_code == 200:
+            print("✅ Conexión Stripe validada: 200 OK")
+            return True
+        print(f"⚠️ Stripe: HTTP {r.status_code} — {r.text[:120]}")
+        return False
+
     def sellar_pr(self):
         """El agente comenta con autoridad y ejecuta el merge."""
         if not self.token:
@@ -62,10 +92,18 @@ class AgenteBunkerPR2266:
         }
 
         empresa_clave = self.obtener_contexto_leads()
+        stripe_ok = self.validar_stripe()
+        stripe_line = (
+            "Conexión Stripe: **validada (200 OK)**.\n"
+            if stripe_ok
+            else "Conexión Stripe: *no verificada en esta ejecución* (falta clave o error API).\n"
+        )
 
         cuerpo_comentario = (
-            f"🦚 **Agente @Pau: Validación de Sesión PR #2266**\n\n"
+            f"🦚 **{V10_OMEGA_BANNER}**\n\n"
+            f"**Agente @Pau:** Validación de sesión PR #{self.pr_number}.\n\n"
             f"Sello de Patente: **{self.patente}** verificado.\n"
+            f"{stripe_line}"
             f"Impacto Retail: Alineado con los requisitos de **{empresa_clave}**.\n"
             f"Estado Técnico: Error de imagen purgado. Build @Divineo listo.\n\n"
             f"**Veredicto:** Acierto total. Fusionando en el búnker. @lo+erestu"
