@@ -10,6 +10,9 @@ import json
 import os
 import subprocess
 import sys
+
+from google_studio import studio_link_fields
+
 ROOT = os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 
 
@@ -45,6 +48,7 @@ def ejecucion_final_jules_studio() -> None:
         "memory_source": "NotebookLM",
         "platform": "Google AI Studio",
         "status": "FINAL_BUILD",
+        **studio_link_fields(),
     }
     studio_path = os.path.join(ROOT, "STUDIO_CONFIG.json")
     with open(studio_path, "w", encoding="utf-8") as f:

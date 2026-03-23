@@ -11,6 +11,8 @@ import os
 import subprocess
 import sys
 
+from google_studio import studio_link_fields
+
 ROOT = os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 
 
@@ -45,6 +47,7 @@ def actualizar_bunker_estudio() -> None:
         "team": "50_AGENTS",
         "status": "CONNECTED",
         "radar": "ACTIVE",
+        **studio_link_fields(),
     }
     sync_path = os.path.join(ROOT, "STUDIO_SYNC.json")
     with open(sync_path, "w", encoding="utf-8") as f:
