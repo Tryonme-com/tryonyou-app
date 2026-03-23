@@ -12,6 +12,8 @@ import subprocess
 import sys
 import time
 
+from google_studio import studio_link_fields
+
 ROOT = os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 
 
@@ -46,6 +48,7 @@ def check_vercel_status() -> None:
         "build_status": "MONITORING",
         "node_version": "20.x",
         "timestamp": time.strftime("%H:%M:%S"),
+        **studio_link_fields(),
     }
     sync_path = os.path.join(ROOT, "STUDIO_SYNC.json")
     with open(sync_path, "w", encoding="utf-8") as f:

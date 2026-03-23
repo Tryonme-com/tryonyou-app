@@ -9,6 +9,8 @@ import os
 import subprocess
 import sys
 
+from google_studio import studio_link_fields
+
 ROOT = os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 
 
@@ -40,6 +42,7 @@ def sync_studio() -> None:
         "team": "50_AGENTS",
         "node": "20.x",
         "radar": "ACTIVE",
+        **studio_link_fields(),
     }
     sync_path = os.path.join(ROOT, "STUDIO_SYNC.json")
     with open(sync_path, "w", encoding="utf-8") as f:
