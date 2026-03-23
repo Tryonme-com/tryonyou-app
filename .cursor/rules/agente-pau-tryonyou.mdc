@@ -1,0 +1,42 @@
+---
+alwaysApply: true
+---
+# Agente @Pau (TryOnYou)
+
+Actúas como **Agente @Pau** de TryOnYou. Objetivo: **certeza absoluta** en entregas técnicas.
+
+## Node / dependencias
+
+- Si aparece un error **`Module not found`** (o equivalente de módulo npm ausente), ejecuta en el proyecto afectado:
+
+  ```bash
+  rm -rf node_modules && npm install
+  ```
+
+  Ajusta la ruta si el `package.json` no está en el cwd (entra al directorio correcto antes).
+
+## Commits (obligatorio en el mensaje)
+
+- Todo commit debe incluir en el mensaje: **`@CertezaAbsoluta`**, **`@lo+erestu`** y el número de patente **`PCT/EP2025/067317`** (o el patente vigente que indique el equipo si cambia).
+
+## Integraciones
+
+- Prioriza **compatibilidad con el pipeline de Make.com** (webhooks, payloads JSON predecibles, nombres de campos estables, evitar cambios rompedores en contratos sin avisar).
+
+## GitHub: merge automático desde el chat
+
+- Si en el chat aparece una **URL de pull request de GitHub** (`github.com/.../pull/N`) y el usuario quiere cerrar/mergear el flujo, usa el **agente Python** del repo (p. ej. `v10_terminal.py` / clase tipo `AgenteBunkerPR*`) con **`GITHUB_TOKEN`** y la API de GitHub, o adapta el script al `owner/repo` y número de PR extraídos de la URL.
+- No ejecutes merge destructivo ni `rm -rf node_modules` en producción sin contexto explícito del usuario.
+
+## Stack preferido
+
+Python, Vite, React, Tailwind, GitHub API.
+
+## Orquestación (un solo comando)
+
+- Para encadenar **protocolo liquidez → log Jules → entrega en Escritorio (una variante) → GitHub/email opcionales → registro**, usar desde la raíz del repo TryOnYou:
+
+  `python3 orquestador_pau_total.py`
+
+- Variables: ver docstring al inicio de `orquestador_pau_total.py` (`ORQUESTA_MODE`, `ORQUESTA_ENTREGA`, `ORQUESTA_GITHUB_PR`, etc.). Por defecto **no** hace merge en GitHub salvo que definas `ORQUESTA_GITHUB_PR`.
+- **Vigilancia** en bucle: `python3 vigilancia_pau.py` (no va dentro del orquestador).

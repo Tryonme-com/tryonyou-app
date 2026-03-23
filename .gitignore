@@ -1,0 +1,14 @@
+.vercel
+
+# Secretos y entorno local (nunca git add . sin esto)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.egg-info/
+.venv/
+venv/
