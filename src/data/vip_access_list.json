@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "warning": "Solo datos de UI/demo visibles en el cliente. No usar estos slugs como tokens de autenticación; validar en backend.",
+    "version": 1
+  },
+  "invitations": {
+    "LVMH": "VIP_ACCESS_LVMH_2026",
+    "Kering": "VIP_ACCESS_KERING_2026",
+    "Balmain": "VIP_ACCESS_BALMAIN_2026",
+    "Chanel": "VIP_ACCESS_CHANEL_2026",
+    "Dior": "VIP_ACCESS_DIOR_2026",
+    "Hermès": "VIP_ACCESS_HERMES_2026",
+    "Lafayette": "VIP_ACCESS_LAFAYETTE_2026",
+    "Printemps": "VIP_ACCESS_PRINTEMPS_2026",
+    "Farfetch": "VIP_ACCESS_FARFETCH_2026",
+    "Zalando": "VIP_ACCESS_ZALANDO_2026",
+    "Le Bon Marché": "VIP_ACCESS_LE_BON_MARCHE_2026",
+    "Vivienne": "VIP_ACCESS_VIVIENNE_2026"
+  }
+}

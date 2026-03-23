@@ -1,0 +1,18 @@
+{
+  "_note": "Manifeste descriptif local. Vérifier brevet et montants avant usage officiel.",
+  "project": "TryOnYou France",
+  "architect": "Rubén Espinar Rodríguez",
+  "patent_id": "PCT/EP2025/067317",
+  "tech_stack": {
+    "orchestrator": "P.A.U. V10 Omega",
+    "ai_engine": "Gemini 2.0 Flash (Studio Config 0.1 Temp)",
+    "payment": "ABVET Biometric Gateway",
+    "hosting": "Vercel / Deep Tech Edge"
+  },
+  "business_logic": {
+    "maintenance_fee": "100 EUR",
+    "license_enterprise": "141,986 EUR",
+    "target": "Station F / LVMH / Bpifrance"
+  },
+  "consolidated_at": "2026-03-23T01:18:41Z"
+}
