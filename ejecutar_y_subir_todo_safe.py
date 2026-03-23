@@ -83,7 +83,10 @@ def ejecutar_y_subir_todo_safe() -> int:
         _run(["git", "config", "core.autocrlf", "false"], cwd=ROOT)
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%MZ")
-    msg = f"DEPLOY OMEGA: {ts} - TryOnYou France Live"
+    msg = (
+        os.environ.get("E50_COMMIT_MSG", "").strip()
+        or f"DEPLOY OMEGA: {ts} - TryOnYou France Live"
+    )
 
     r = _run(["git", "add", *exist], cwd=ROOT)
     if r.returncode != 0:
