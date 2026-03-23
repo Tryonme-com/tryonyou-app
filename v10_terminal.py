@@ -1,7 +1,8 @@
 import os
-import requests
-import subprocess
+import shutil
+
 import pandas as pd
+import requests
 
 class AgenteBunkerPR2266:
     def __init__(self):
@@ -14,10 +15,17 @@ class AgenteBunkerPR2266:
     def purgar_friccion(self):
         """Limpia el entorno para evitar errores de compilación."""
         print("🧹 Eliminando rastro de módulos corruptos...")
-        subprocess.run(
-            ["rm", "-rf", "node_modules", "package-lock.json", "dist"],
-            check=False,
-        )
+        root = os.getcwd()
+        for name in ("node_modules", "dist"):
+            path = os.path.join(root, name)
+            if os.path.isdir(path):
+                shutil.rmtree(path, ignore_errors=True)
+        lockfile = os.path.join(root, "package-lock.json")
+        if os.path.isfile(lockfile):
+            try:
+                os.remove(lockfile)
+            except OSError:
+                pass
         print("✅ Entorno limpio.")
 
     def obtener_contexto_leads(self):
