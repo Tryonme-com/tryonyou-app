@@ -14,5 +14,11 @@
     "license_enterprise": "141,986 EUR",
     "target": "Station F / LVMH / Bpifrance"
   },
-  "consolidated_at": "2026-03-23T01:18:41Z"
+  "consolidated_at": "2026-03-23T01:18:41Z",
+  "mirror_sanctuary_v10": {
+    "consolidacion_json": "src/data/mirror_sanctuary_v10_consolidacion.json",
+    "generar": "python3 protocolo_soberania_total.py",
+    "stripe_env_html": ["STRIPE_LINK_SOVEREIGNTY_4_5M", "STRIPE_LINK_SOVEREIGNTY_98K"],
+    "stripe_env_vite": ["VITE_STRIPE_LINK_SOVEREIGNTY_4_5M", "VITE_STRIPE_LINK_SOVEREIGNTY_98K"]
+  }
 }
