@@ -101,7 +101,7 @@
         width="12"
         loading="lazy"
         decoding="async"
-        onerror="var s=this.closest('.divineo-seal'); if(s) s.classList.add('is-fallback');"
+        onerror="var c=(typeof this.closest==='function')?this.closest('.divineo-seal'):null;if(c&amp;&amp;c.classList)c.classList.add('is-fallback');"
       />
       <div class="divineo-seal-fallback" title="Sceau Divineo" aria-hidden="true"></div>
     </div>

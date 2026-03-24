@@ -1,3 +1,5 @@
 pandas>=2.0
 stripe>=7.0
 pillow>=10.0
+# Opcional: unificar_v10.py (Gemini)
+google-generativeai>=0.8.0

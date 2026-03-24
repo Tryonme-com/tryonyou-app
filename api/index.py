@@ -42,9 +42,6 @@ def _html_index_body() -> bytes | None:
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
         link_45, link_98 = _stripe_links()
         response = {
             "status": "DIVINEO_ACTIVE",
@@ -55,7 +52,12 @@ class handler(BaseHTTPRequestHandler):
             "stripe_link_sovereignty_4_5m_eur": link_45 if link_45 != "#" else "",
             "stripe_link_sovereignty_98k_eur": link_98 if link_98 != "#" else "",
         }
-        self.wfile.write(json.dumps(response).encode())
+        body = json.dumps(response).encode()
+        self.send_response(200)
+        self.send_header("Content-type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_GET(self):
         path = urlparse(self.path).path
@@ -64,13 +66,16 @@ class handler(BaseHTTPRequestHandler):
             logo = os.path.normpath(os.path.join(root, "logo_pavo_real.png"))
             if not logo.startswith(os.path.normpath(root + os.sep)):
                 self.send_response(403)
+                self.send_header("Content-Length", "0")
                 self.end_headers()
                 return
             if not os.path.isfile(logo):
+                msg = b"logo_pavo_real.png not found"
                 self.send_response(404)
                 self.send_header("Content-type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(msg)))
                 self.end_headers()
-                self.wfile.write(b"logo_pavo_real.png not found")
+                self.wfile.write(msg)
                 return
             with open(logo, "rb") as f:
                 data = f.read()
@@ -86,10 +91,13 @@ class handler(BaseHTTPRequestHandler):
         if html_body is not None:
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(html_body)))
             self.end_headers()
             self.wfile.write(html_body)
             return
+        plain = "Búnker 75005 Operativo. tryonyou-app V10.4 Online.".encode()
         self.send_response(200)
         self.send_header("Content-type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(plain)))
         self.end_headers()
-        self.wfile.write("Búnker 75005 Operativo. tryonyou-app V10.4 Online.".encode())
+        self.wfile.write(plain)
