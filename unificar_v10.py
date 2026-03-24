@@ -52,10 +52,12 @@ def _free_port_5173() -> None:
             stderr=subprocess.DEVNULL,
         )
     elif os.name == "nt":
-        # PowerShell: mejor esfuerzo
+        ps = (
+            "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue "
+            "| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+        )
         subprocess.run(
-            'for /f "tokens=5" %a in (\'netstat -ano ^| findstr :5173\') do taskkill /F /PID %a 2>nul',
-            shell=True,
+            ["powershell", "-NoProfile", "-Command", ps],
             stderr=subprocess.DEVNULL,
         )
     print("✅ Listo (o el puerto ya estaba libre).")
@@ -63,7 +65,7 @@ def _free_port_5173() -> None:
 
 def _pau_gemini_probe() -> None:
     key = _gemini_key()
-    if not key or key.startswith("TU_"):
+    if not key:
         print("ℹ️  Sin GEMINI_API_KEY / GOOGLE_API_KEY / VITE_GOOGLE_API_KEY: se omite la prueba PAU.")
         return
     try:
