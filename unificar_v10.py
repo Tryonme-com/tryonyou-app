@@ -7,8 +7,10 @@ Clave Gemini / AI Studio solo por entorno (nunca en el código):
   pip install google-generativeai
   cd mirror_ui && npm install
   python3 unificar_v10.py
+  python3 -c "from unificar_v10 import arranque_unidad_produccion; arranque_unidad_produccion()"
 
 Opcional: E50_PROJECT_ROOT (raíz del repo; por defecto carpeta del script).
+Nunca incrustes la clave en el código; usa GEMINI_API_KEY / GOOGLE_API_KEY / VITE_GOOGLE_API_KEY.
 """
 
 from __future__ import annotations
@@ -77,10 +79,12 @@ def _pau_gemini_probe() -> None:
             generation_config={"temperature": 0.1, "max_output_tokens": 512},
         )
         r = model.generate_content(
-            "V10 status: responde en una frase si el espejo digital está listo para retail (LVT-FRA)."
+            "PAU Le Paon: confirma en una frase la certidumbre operativa V10 para retail "
+            "(Galeries Lafayette / LVT-FRA). Tono refinado, sincero."
         )
         text = (r.text or "").strip().replace("\n", " ")
-        print(f"✨ PAU (Gemini): {text[:200]}{'…' if len(text) > 200 else ''}")
+        preview = text[:50] + ("…" if len(text) > 50 else "")
+        print(f"✨ PAU Le Paon: {preview}")
     except ImportError:
         print("⚠️  Instala: pip install google-generativeai")
     except Exception as e:
@@ -127,6 +131,12 @@ def ejecutar_secuencia_maestra() -> int:
             proc.kill()
         print("\n🛑 Detenido.")
         return 0
+
+
+def arranque_unidad_produccion() -> int:
+    """Alias del snippet «arranque unidad producción» — misma secuencia que ejecutar_secuencia_maestra."""
+    print(f"⚖️ Validando patente {PATENT}…")
+    return ejecutar_secuencia_maestra()
 
 
 if __name__ == "__main__":
