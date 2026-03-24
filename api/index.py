@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+from urllib.parse import urlparse
 
 
 def _project_root() -> str:
@@ -57,6 +58,30 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(response).encode())
 
     def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/logo_pavo_real.png":
+            root = _project_root()
+            logo = os.path.normpath(os.path.join(root, "logo_pavo_real.png"))
+            if not logo.startswith(os.path.normpath(root + os.sep)):
+                self.send_response(403)
+                self.end_headers()
+                return
+            if not os.path.isfile(logo):
+                self.send_response(404)
+                self.send_header("Content-type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"logo_pavo_real.png not found")
+                return
+            with open(logo, "rb") as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header("Content-type", "image/png")
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         html_body = _html_index_body()
         if html_body is not None:
             self.send_response(200)

@@ -7,11 +7,55 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" crossorigin="anonymous"/>
   <title>TRYONME × DIVINEO — VIP</title>
+  <style>
+    /* Protocolo de Soberanía — mirror_v10_final / PCT/EP2025/067317 */
+    html, body { background: #000; margin: 0; }
+    .protocolo-soberania {
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .protocolo-soberania .ty-brand,
+    .protocolo-soberania h1,
+    .protocolo-soberania h2,
+    .protocolo-soberania h3 {
+      font-family: "Playfair Display", Georgia, serif;
+    }
+    .divineo-seal {
+      position: fixed;
+      bottom: 15px;
+      left: 15px;
+      z-index: 50;
+      width: 12px;
+      height: 12px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .divineo-seal img {
+      width: 12px;
+      height: auto;
+      max-height: 20px;
+      display: block;
+      object-fit: contain;
+    }
+    .divineo-seal-fallback {
+      display: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 32%, #f5e6c8 0%, #D4AF37 50%, #5c4a12 100%);
+      box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    .divineo-seal.is-fallback .divineo-seal-fallback { display: block; }
+    .divineo-seal.is-fallback img { display: none !important; }
+  </style>
 </head>
-<body style="margin:0;background:#000;">
-  <section style="background:#000;color:#fff;font-family:'Playfair Display',serif;min-height:100vh;overflow-x:hidden;">
+<body>
+  <section class="protocolo-soberania">
     <nav style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a1a1a;">
-      <span style="letter-spacing:5px;color:#D4AF37;font-weight:bold;">TRYONME × DIVINEO</span>
+      <span class="ty-brand" style="letter-spacing:5px;color:#D4AF37;font-weight:bold;">TRYONME × DIVINEO</span>
       <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;">Accès VIP #E4002B</div>
     </nav>
     <p style="margin:0;padding:10px 20px;text-align:right;font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #1a1a1a;">
@@ -50,8 +94,16 @@
       </div>
     </div>
 
-    <div style="position:fixed;bottom:15px;left:15px;opacity:0.4;">
-      <img src="logo_pavo_real.png" width="12" style="width:12px;height:auto;display:block;" alt="Sceau Divineo" loading="lazy" decoding="async"/>
+    <div class="divineo-seal" id="divineo-seal">
+      <img
+        src="/logo_pavo_real.png"
+        alt="Sceau Divineo"
+        width="12"
+        loading="lazy"
+        decoding="async"
+        onerror="var s=this.closest('.divineo-seal'); if(s) s.classList.add('is-fallback');"
+      />
+      <div class="divineo-seal-fallback" title="Sceau Divineo" aria-hidden="true"></div>
     </div>
   </section>
 </body>
