@@ -46,9 +46,3 @@ Quien quiera usar el mismo enfoque en el mercado que cubre el derecho debería *
 **Mensaje claro:** TryOnYou reduce fricción y devoluciones en retail de lujo con un probador virtual serio, con modelo de ingresos alineado al volumen del partner y con IP defendible.
 
 Para material visual confidencial, usa el script `protocolo_blindaje_pau_safe.py` antes de enviar PDFs o capturas.
-
----
-
-## Anexo: memoria Divineo (repo)
-
-En el código, el archivo `src/data/divineo_notas.json` reúne manifiesto, promesa de producto, piloto retail, IP, ABVET/dashboard, gobernanza (CONSOLIDA 70) y notas de origen — para que nada de valor se pierda al iterar la web o el pitch.
