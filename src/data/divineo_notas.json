@@ -1,0 +1,78 @@
+{
+  "_meta": {
+    "titulo": "Divineo — notas consolidadas (no perder)",
+    "actualizado": "2026-03-23",
+    "fuentes": [
+      "Conversación / manifiesto Pau",
+      "RESUMEN_INVERSORES_UN_MINUTO.md",
+      "src/data/genesis_manifest.json",
+      "omega_consolidator_safe.py (gobernanza)"
+    ]
+  },
+  "dominios_y_enlaces": {
+    "sitio": "https://tryonyou.org/",
+    "dashboard_alertas": "https://abvetos.com/"
+  },
+  "producto_y_promesa": {
+    "probador_virtual": "Cliente usa el móvil y ve caída, ajuste y aspecto en su cuerpo (gemelo digital).",
+    "cifra_comunicada_en_web": "98,5% certeza en copy público — auditar antes de inversor formal.",
+    "friccion": "Nadie quiere 510 pruebas físicas; todos quieren su verdad biométrica.",
+    "piloto_retail": "Referencia Lafayette (lujo): alto retorno online por dudas de talla; objetivo menos devoluciones.",
+    "tienda_ideal": "Sin montañas de ropa; sin probadores humillantes para mayores; chasquido al Levi's favorito (@levisfan).",
+    "publico": "Hombres que odian probadores y día de compras; abuelas sin repetir traje de boda por huir del probador y la cola.",
+    "alcance_mensaje": "Hasta en China lo saben: hallar la prenda perfecta es un lujazo. Divineo non stop, menos miedos y dudas."
+  },
+  "imagen_divineo": {
+    "escena": "La nona perfecta: conjunto amarillo Levi's, Loewe al hombro, beso a la abuela por cariño — no por mandato.",
+    "contraste_biografico": "De freír croquetas / lo cotidiano a lujo y extrema exigencia; o te quieren o no — sin gris medio.",
+    "origen_familiar": "Madre cosía, padre vendía con tíos, cajas de zapatos en el suelo; el proyecto soy Pau."
+  },
+  "etica_y_calle": {
+    "solidaridad": "Ver gente durmiendo en la calle no es normal; misma lucidez que rechazar cinco letras para todos los cuerpos.",
+    "incongruencias": "Las que el tiempo y la conformidad vuelven invisibles.",
+    "eco": "Menos idas y venidas, más acierto; compras certificadas con fuerte ahorro logístico (hasta ~60% en copy)."
+  },
+  "manifiesto": {
+    "corazon_cabeza": "Hecho con corazón, no solo cabeza; puente al día que toca.",
+    "humana_divina": "Contaminar menos, modelazos propios; más humana, más divina.",
+    "cierre": "El fin del llorar va a llegar.",
+    "vision": "El poder de verlo; el visionario.",
+    "acrónimo_DIVINEO": "Letras D.I.V.I.N.E.O como filosofía por letra (ver index.html y este JSON sección letras)."
+  },
+  "letras_DIVINEO": {
+    "D": "Ver calle y cuerpo sin normalizar lo indecente.",
+    "I": "Lo que el tiempo y la conformidad llaman sentido común.",
+    "V": "Antes del ticket: en tu gemelo, en ti.",
+    "I2": "Cinco letras no son tu piel.",
+    "N": "Ni talla cartón para todos ni excusas cuando pesa.",
+    "E": "Menos huella, mismos modelazos.",
+    "O": "Origen que se ve: casa, tíos, cajas — el beso que no es pose."
+  },
+  "ip_y_legal": {
+    "patente": "PCT/EP2025/067317",
+    "mensaje_inversor": "IP defendible; quien use el enfoque en mercado cubierto debería licenciar o acordar, no copiar a espaldas.",
+    "cifras": "Solo compartir números con inversores si van respaldados por contrato, panel o extracto.",
+    "blindaje_visual": "Antes de enviar PDFs o capturas confidenciales: script protocolo_blindaje_pau_safe.py (ver repo)."
+  },
+  "negocio_genesis": {
+    "proyecto": "TryOnYou France",
+    "arquitecto_registrado_en_genesis": "Rubén Espinar Rodríguez",
+    "payment_gateway_nota": "ABVET Biometric Gateway",
+    "targets_mencionados": ["Station F", "LVMH", "Bpifrance"],
+    "cifras_genesis_ejemplo": {
+      "maintenance_fee_eur": "100",
+      "license_enterprise_eur": "141986"
+    }
+  },
+  "gobernanza_tecnica": {
+    "CONSOLIDA_70": "Cierra decisiones técnicas y de entrega en repo; con Jules (log/criterio) y mesas de listings (soberanía, inversión).",
+    "script": "python3 omega_consolidator_safe.py"
+  },
+  "seguridad_y_confianza": {
+    "contexto_abvet": "Alerta / biometría ante robo con huella dormida — integrado en visión de producto (dashboard abvetos.com)."
+  },
+  "marca_y_sello": {
+    "lo_erestu": "lo + eres tú — guiño francés (le plus c'est toi / c'est toi); onda, no manual de idioma.",
+    "tryonme_divineo": "TRYONME × DIVINEO; museo y comunidad anti-talla estándar."
+  }
+}
