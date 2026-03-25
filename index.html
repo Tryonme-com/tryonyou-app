@@ -5,113 +5,639 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5"/>
   <meta name="description" content="TryOnYou — Pilote Officiel Galeries Lafayette. Précision biométrique 0.08mm. Brevet PCT/EP2025/067317."/>
   <meta name="theme-color" content="#000000"/>
+  <meta property="og:title" content="TryOnYou × Galeries Lafayette — Pilote Officiel"/>
+  <meta property="og:description" content="Arrêtez le faux-fit. Brûlez les tailles. Précision biométrique 98.5%."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous"/>
   <title>TryOnYou × Galeries Lafayette — Pilote Officiel</title>
   <style>
-    /* TryOnYou × Galeries Lafayette — Pilote Officiel / PCT/EP2025/067317 */
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { background: #000; margin: 0; }
-    .protocolo-soberania {
+    /* === BASE === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
       background: #000;
       color: #fff;
-      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
       overflow-x: hidden;
-      font-family: 'Inter', Georgia, "Times New Roman", serif;
+      min-height: 100vh;
     }
-    .protocolo-soberania .ty-brand,
-    .protocolo-soberania h1,
-    .protocolo-soberania h2,
-    .protocolo-soberania h3 {
-      font-family: "Playfair Display", Georgia, serif;
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+    .gold { color: #D4AF37; }
+
+    /* === NAV === */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(0,0,0,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1a1a1a;
+      padding: 0 24px; height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .divineo-seal {
-      position: fixed;
-      bottom: 15px;
-      left: 15px;
-      z-index: 50;
-      width: 12px;
-      height: 12px;
-      opacity: 0.4;
+    .nav-brand { font-family: 'Playfair Display',serif; font-size: 1rem; letter-spacing: 5px; color: #D4AF37; font-weight: 700; text-transform: uppercase; }
+    .nav-badge { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: #555; background: #0a0a0a; border: 1px solid #222; padding: 4px 10px; }
+
+    /* === PATENT STRIP === */
+    .patent-strip {
+      background: #050505; border-bottom: 1px solid #111;
+      padding: 7px 24px; display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap;
+    }
+    .patent-strip span { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: #333; }
+    .patent-strip a { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: #D4AF37; text-decoration: none; }
+
+    /* === HERO === */
+    .hero {
+      min-height: 88vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 80px 24px 60px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.07) 0%, transparent 65%);
       pointer-events: none;
     }
-    .divineo-seal img {
-      width: 12px;
-      height: auto;
-      max-height: 20px;
-      display: block;
-      object-fit: contain;
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid rgba(212,175,55,0.5); padding: 6px 16px;
+      font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37;
+      margin-bottom: 40px;
     }
-    .divineo-seal-fallback {
-      display: none;
-      width: 12px;
-      height: 12px;
+    .hero-badge::before {
+      content: ''; width: 6px; height: 6px; background: #D4AF37; border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+    .hero h1 {
+      font-family: 'Playfair Display',serif;
+      font-size: clamp(2.2rem, 8vw, 5.5rem);
+      font-weight: 700; text-transform: uppercase;
+      letter-spacing: clamp(4px, 1.5vw, 14px);
+      line-height: 1.05; margin-bottom: 32px;
+    }
+    .hero p {
+      max-width: 660px; font-size: clamp(1rem, 2.5vw, 1.2rem);
+      font-style: italic; color: #bbb; line-height: 1.85;
+      font-family: 'Playfair Display',serif; margin-bottom: 48px;
+    }
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .btn-gold {
+      display: inline-block; background: #D4AF37; color: #000;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+      padding: 16px 36px; text-decoration: none; border: none; cursor: pointer;
+      transition: background .2s, transform .2s; font-family: 'Inter',sans-serif;
+    }
+    .btn-gold:hover { background: #c9a430; transform: translateY(-1px); }
+    .btn-outline {
+      display: inline-block; background: transparent; color: #D4AF37;
+      font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase;
+      padding: 15px 36px; text-decoration: none; border: 1px solid #D4AF37; cursor: pointer;
+      transition: background .2s; font-family: 'Inter',sans-serif;
+    }
+    .btn-outline:hover { background: rgba(212,175,55,.08); }
+
+    /* === STATS === */
+    .stats-bar { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid #111; border-bottom: 1px solid #111; }
+    .stat-item { padding: 28px 20px; text-align: center; border-right: 1px solid #111; }
+    .stat-item:last-child { border-right: none; }
+    .stat-number { font-family: 'Playfair Display',serif; font-size: clamp(1.6rem,4vw,2.6rem); color: #D4AF37; font-weight: 700; display: block; margin-bottom: 6px; }
+    .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: #555; }
+
+    /* === SECTION === */
+    .section { padding: 72px 24px; max-width: 1200px; margin: 0 auto; }
+    .section-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 4px; color: #D4AF37; margin-bottom: 14px; display: block; }
+    .section-title { font-family: 'Playfair Display',serif; font-size: clamp(1.6rem,4vw,2.8rem); font-weight: 700; line-height: 1.2; margin-bottom: 20px; }
+    .section-body { font-size: 1rem; color: #777; line-height: 1.85; max-width: 580px; }
+
+    /* === TECH GRID === */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 1px; background: #111; border: 1px solid #111; margin-top: 44px; }
+    .tech-card { background: #000; padding: 32px 26px; transition: background .2s; }
+    .tech-card:hover { background: #060606; }
+    .tech-card-icon { width: 38px; height: 38px; border: 1px solid #1e1e1e; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; font-size: 1.1rem; }
+    .tech-card h3 { font-family: 'Playfair Display',serif; font-size: .9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+    .tech-card p { font-size: .82rem; color: #555; line-height: 1.7; }
+
+    /* === MODULES === */
+    .modules-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 20px; margin-top: 44px; }
+    .module-card { border: 1px solid #1a1a1a; padding: 32px 26px; transition: border-color .2s; }
+    .module-card:hover { border-color: #2a2a2a; }
+    .module-card.featured { border-color: #D4AF37; }
+    .module-num { font-size: .6rem; letter-spacing: 3px; color: #333; text-transform: uppercase; margin-bottom: 18px; display: block; }
+    .module-card h3 { font-family: 'Playfair Display',serif; font-size: 1.1rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; }
+    .module-card p { font-size: .83rem; color: #555; line-height: 1.7; }
+
+    /* === COLLECTION GRID === */
+    .collection-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 1px; background: #111; margin-top: 44px; }
+    .collection-card {
+      background: #000; padding: 0; overflow: hidden; cursor: pointer;
+      transition: transform .25s; position: relative;
+    }
+    .collection-card:hover { transform: scale(1.02); z-index: 2; }
+    .collection-card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; filter: grayscale(20%); transition: filter .3s; }
+    .collection-card:hover img { filter: grayscale(0%); }
+    .collection-card-info { padding: 16px; background: #000; }
+    .collection-card-brand { font-size: .55rem; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; margin-bottom: 4px; }
+    .collection-card-name { font-family: 'Playfair Display',serif; font-size: .9rem; margin-bottom: 6px; }
+    .collection-card-price { font-size: .75rem; color: #666; }
+    .collection-card-tag { position: absolute; top: 12px; right: 12px; background: #D4AF37; color: #000; font-size: .5rem; letter-spacing: 2px; padding: 3px 8px; font-weight: 600; }
+    .collection-card-precision { position: absolute; bottom: 80px; left: 0; right: 0; background: rgba(0,0,0,.85); padding: 8px 16px; font-size: .65rem; letter-spacing: 2px; color: #D4AF37; text-align: center; opacity: 0; transition: opacity .3s; }
+    .collection-card:hover .collection-card-precision { opacity: 1; }
+
+    /* === PATENT SECTION === */
+    .patent-section { background: #050505; border-top: 1px solid #111; padding: 52px 24px; text-align: center; }
+    .patent-ref { font-family: 'Playfair Display',serif; font-size: clamp(.9rem,2.5vw,1.3rem); color: #D4AF37; letter-spacing: 3px; margin-bottom: 10px; }
+    .patent-claims { font-size: .65rem; letter-spacing: 3px; text-transform: uppercase; color: #333; }
+
+    /* === FOOTER === */
+    .footer { border-top: 1px solid #111; padding: 28px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+    .footer-brand { font-family: 'Playfair Display',serif; font-size: .8rem; letter-spacing: 3px; color: #2a2a2a; text-transform: uppercase; }
+    .footer-copy { font-size: .6rem; color: #2a2a2a; letter-spacing: 1px; }
+
+    /* =============================================
+       PAU BUBBLE — Personal Shopper IA
+    ============================================= */
+    #pau-bubble {
+      position: fixed;
+      bottom: 20px; left: 20px;
+      z-index: 200;
+      cursor: pointer;
+      user-select: none;
+    }
+    .pau-ring {
+      width: 72px; height: 72px;
       border-radius: 50%;
-      background: radial-gradient(circle at 32% 32%, #f5e6c8 0%, #D4AF37 50%, #5c4a12 100%);
-      box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+      border: 2px solid #D4AF37;
+      box-shadow: 0 0 0 0 rgba(212,175,55,.5);
+      animation: pau-pulse 3s infinite;
+      overflow: hidden;
+      position: relative;
+      background: #0a0a0a;
+      transition: transform .2s, box-shadow .2s;
     }
-    .divineo-seal.is-fallback .divineo-seal-fallback { display: block; }
-    .divineo-seal.is-fallback img { display: none !important; }
+    #pau-bubble:hover .pau-ring {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(212,175,55,.4), 0 0 0 4px rgba(212,175,55,.15);
+    }
+    @keyframes pau-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(212,175,55,.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(212,175,55,0); }
+      100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+    }
+    .pau-ring video {
+      width: 100%; height: 100%;
+      object-fit: cover; border-radius: 50%;
+      display: block; pointer-events: none;
+    }
+    .pau-label {
+      position: absolute; bottom: -22px; left: 50%;
+      transform: translateX(-50%);
+      font-size: .5rem; letter-spacing: 2px; text-transform: uppercase;
+      color: #D4AF37; white-space: nowrap;
+      opacity: .7;
+    }
+    /* Snap ripple effect */
+    .pau-snap-ripple {
+      position: fixed; border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,175,55,.35) 0%, transparent 70%);
+      pointer-events: none; z-index: 199;
+      animation: snap-expand .6s ease-out forwards;
+      display: none;
+    }
+    @keyframes snap-expand {
+      from { width: 80px; height: 80px; opacity: 1; transform: translate(-50%,-50%) scale(1); }
+      to   { width: 400px; height: 400px; opacity: 0; transform: translate(-50%,-50%) scale(1); }
+    }
+
+    /* =============================================
+       PAU OVERLAY — Personal Shopper Panel
+    ============================================= */
+    #pau-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.92);
+      backdrop-filter: blur(16px);
+      display: none; flex-direction: column;
+      opacity: 0; transition: opacity .35s;
+    }
+    #pau-overlay.open { display: flex; }
+    #pau-overlay.visible { opacity: 1; }
+
+    .pau-overlay-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 28px; border-bottom: 1px solid #1a1a1a;
+      flex-shrink: 0;
+    }
+    .pau-overlay-title { display: flex; align-items: center; gap: 14px; }
+    .pau-overlay-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 1px solid #D4AF37; overflow: hidden; background: #0a0a0a; flex-shrink: 0;
+    }
+    .pau-overlay-avatar video { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .pau-overlay-name { font-family: 'Playfair Display',serif; font-size: 1rem; letter-spacing: 2px; }
+    .pau-overlay-role { font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: #555; margin-top: 2px; }
+    .pau-close {
+      width: 36px; height: 36px; border: 1px solid #222; background: transparent;
+      color: #555; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: color .2s, border-color .2s;
+    }
+    .pau-close:hover { color: #D4AF37; border-color: #D4AF37; }
+
+    /* Pau speech bubble */
+    .pau-speech {
+      margin: 20px 28px 0;
+      background: #0a0a0a; border: 1px solid #1a1a1a;
+      padding: 16px 20px; border-radius: 2px;
+      font-family: 'Playfair Display',serif; font-style: italic;
+      font-size: .95rem; color: #aaa; line-height: 1.7;
+      position: relative; flex-shrink: 0;
+    }
+    .pau-speech::before {
+      content: '"'; font-size: 2rem; color: #D4AF37; position: absolute; top: 6px; left: 14px; line-height: 1;
+    }
+    .pau-speech-text { padding-left: 18px; }
+
+    /* Scan bar */
+    .pau-scan-bar {
+      margin: 16px 28px 0; flex-shrink: 0;
+      background: #050505; border: 1px solid #111; padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .pau-scan-line {
+      flex: 1; height: 2px; background: #111; position: relative; overflow: hidden;
+    }
+    .pau-scan-line::after {
+      content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+      animation: scan-move 2s linear infinite;
+    }
+    @keyframes scan-move { to { left: 200%; } }
+    .pau-scan-label { font-size: .55rem; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; white-space: nowrap; }
+
+    /* Collection inside overlay */
+    .pau-collection {
+      flex: 1; overflow-y: auto; padding: 20px 28px 100px;
+    }
+    .pau-collection-title { font-size: .6rem; letter-spacing: 4px; text-transform: uppercase; color: #333; margin-bottom: 16px; }
+    .pau-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 12px; }
+    .pau-card {
+      background: #080808; border: 1px solid #1a1a1a; overflow: hidden;
+      cursor: pointer; transition: border-color .2s, transform .2s;
+    }
+    .pau-card:hover { border-color: #D4AF37; transform: translateY(-2px); }
+    .pau-card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+    .pau-card-body { padding: 12px; }
+    .pau-card-brand { font-size: .5rem; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; margin-bottom: 3px; }
+    .pau-card-name { font-family: 'Playfair Display',serif; font-size: .82rem; margin-bottom: 4px; line-height: 1.3; }
+    .pau-card-price { font-size: .7rem; color: #555; }
+    .pau-card-precision { font-size: .55rem; color: #D4AF37; letter-spacing: 1px; margin-top: 4px; }
+
+    /* Pau CTA bar */
+    .pau-cta-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, #000 60%, transparent);
+      padding: 24px 28px 20px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 640px) {
+      .stats-bar { grid-template-columns: 1fr; }
+      .stat-item { border-right: none; border-bottom: 1px solid #111; }
+      .stat-item:last-child { border-bottom: none; }
+      .hero { padding: 56px 20px 40px; min-height: 75vh; }
+      .hero-cta { flex-direction: column; align-items: center; }
+      .btn-gold, .btn-outline { width: 100%; max-width: 300px; text-align: center; }
+      .section { padding: 52px 20px; }
+      .pau-collection { padding: 16px 16px 100px; }
+      .pau-overlay-header { padding: 16px 18px; }
+      .pau-speech { margin: 14px 18px 0; }
+      .pau-scan-bar { margin: 12px 18px 0; }
+      .pau-cta-bar { padding: 20px 18px 16px; }
+    }
   </style>
 </head>
 <body>
-  <section class="protocolo-soberania">
-    <nav style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a1a1a;">
-      <span class="ty-brand" style="letter-spacing:5px;color:#D4AF37;font-weight:bold;">TryOnYou</span>
-      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;background:#0a0a0a;border:1px solid #222;padding:4px 10px;">Pilote Officiel Lafayette</div>
-    </nav>
-    <p style="margin:0;padding:8px 20px;text-align:right;font-size:0.6rem;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #111;background:#050505;">
-      <span style="color:#333;">PCT/EP2025/067317 · 22 Revendications</span>
-      <span style="color:#222;margin:0 10px;">|</span>
-      <a href="https://tryonyou.org" target="_blank" rel="noopener" style="color:#D4AF37;text-decoration:none;">Découvrir la Technologie</a>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <span class="nav-brand">TryOnYou</span>
+    <span class="nav-badge">Pilote Officiel Lafayette</span>
+  </nav>
+
+  <!-- PATENT STRIP -->
+  <div class="patent-strip">
+    <span>PCT/EP2025/067317 · 22 Revendications</span>
+    <span style="color:#1a1a1a">|</span>
+    <a href="https://tryonyou.org" target="_blank" rel="noopener">Découvrir la Technologie</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">Pilote Officiel Galeries Lafayette</div>
+    <h1 class="serif">
+      Arrêtez le Faux-Fit.<br>
+      <span class="gold">Brûlez les Tailles.</span>
+    </h1>
+    <p>
+      "Personne ne veut essayer 500 pantalons.<br>
+      Tout le monde veut savoir lequel est le sien."<br>
+      Bienvenue dans l'ère de la Certitude Biométrique.
     </p>
-
-    <div style="text-align:center;padding:clamp(60px,10vw,100px) 20px;">
-      <h1 style="font-size:clamp(2rem,7vw,4.5rem);text-transform:uppercase;letter-spacing:clamp(4px,1.5vw,12px);margin-bottom:30px;line-height:1.05;">
-        ARRÊTEZ LE FAUX-FIT.<br>
-        <span style="color:#D4AF37;">BRÛLEZ LES TAILLES.</span>
-      </h1>
-      <p style="max-width:680px;margin:0 auto 40px;font-size:clamp(1rem,2.5vw,1.3rem);font-style:italic;color:#bbb;line-height:1.8;">
-        "Personne ne veut essayer 500 pantalons.<br>
-        Tout le monde veut savoir lequel est le sien."<br>
-        Bienvenue dans l'ère de la Certitude Biométrique.
-      </p>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
-        <a href="https://tryonyou.org" target="_blank" rel="noopener" style="display:inline-block;background:#D4AF37;color:#000;font-size:0.75rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;padding:16px 36px;text-decoration:none;">Essayer Maintenant</a>
-        <a href="https://tryonyou.org" target="_blank" rel="noopener" style="display:inline-block;background:transparent;color:#D4AF37;font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;padding:15px 36px;text-decoration:none;border:1px solid #D4AF37;">La Technologie →</a>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:#111;border-top:1px solid #111;border-bottom:1px solid #111;margin-top:60px;">
-      <div style="background:#000;padding:36px 28px;">
-        <div style="font-size:2rem;margin-bottom:20px;" aria-hidden="true">👤</div>
-        <h3 style="letter-spacing:3px;font-family:'Playfair Display',Georgia,serif;font-size:1rem;text-transform:uppercase;margin-bottom:12px;">TRYONME</h3>
-        <p style="color:#666;font-size:0.875rem;line-height:1.7;">Votre avatar, vos vêtements, votre achat. Sans tailles, sans complexes. Précision biométrique pure.</p>
-      </div>
-      <div style="background:#000;padding:36px 28px;">
-        <div style="font-size:2rem;margin-bottom:20px;" aria-hidden="true">🏛️</div>
-        <h3 style="letter-spacing:3px;font-family:'Playfair Display',Georgia,serif;font-size:1rem;text-transform:uppercase;margin-bottom:12px;">COLLECTION LAFAYETTE</h3>
-        <p style="color:#666;font-size:0.875rem;line-height:1.7;">Accès exclusif à 510 pièces sélectionnées. La communauté des créateurs qui ont dit NON à la taille standard.</p>
-      </div>
-      <div style="background:#000;padding:36px 28px;">
-        <div style="font-size:2rem;margin-bottom:20px;" aria-hidden="true">🍃</div>
-        <h3 style="letter-spacing:3px;font-family:'Playfair Display',Georgia,serif;font-size:1rem;text-transform:uppercase;margin-bottom:12px;">ÉCORESPONSABLE</h3>
-        <p style="color:#666;font-size:0.875rem;line-height:1.7;">Chaque achat certifié économise 60% de logistique. Intelligent, nécessaire, durable.</p>
-      </div>
-    </div>
-
-    <div class="divineo-seal" id="divineo-seal">
-      <img
-        src="/logo_pavo_real.png"
-        alt="TryOnYou"
-        width="12"
-        loading="lazy"
-        decoding="async"
-        onerror="var c=this.closest('.divineo-seal');if(c)c.classList.add('is-fallback');"
-      />
-      <div class="divineo-seal-fallback" title="TryOnYou" aria-hidden="true"></div>
+    <div class="hero-cta">
+      <button class="btn-gold" onclick="openPau()">Parler à PAU →</button>
+      <a href="https://tryonyou.org" target="_blank" rel="noopener" class="btn-outline">La Technologie</a>
     </div>
   </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-number">30–40%</span>
+      <span class="stat-label">Taux de Retour Actuel</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number gold">98.5%</span>
+      <span class="stat-label">Précision Biométrique</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">0.08mm</span>
+      <span class="stat-label">Lignage de Précision</span>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <div class="section">
+    <span class="section-label">Le Problème</span>
+    <h2 class="section-title serif">Le Purgatoire du Retail</h2>
+    <p class="section-body">30% de retours. Files interminables. Incertitude au vestiaire. Ce n'est pas votre faute — c'est un système cassé. TryOnYou est la réponse que le retail de luxe attendait.</p>
+    <div style="border-left:2px solid #D4AF37;padding:14px 22px;margin:28px 0;background:#050505;">
+      <p style="font-family:'Playfair Display',serif;font-style:italic;color:#888;font-size:1rem;line-height:1.7;">"Je suis encore là. Deux heures perdues dans la file des retours..."</p>
+    </div>
+  </div>
+
+  <!-- TECH -->
+  <div style="background:#030303;border-top:1px solid #0d0d0d;border-bottom:1px solid #0d0d0d;">
+    <div class="section">
+      <span class="section-label">La Solution</span>
+      <h2 class="section-title serif">La Technologie de la Certitude</h2>
+      <p class="section-body">Brevet PCT/EP2025/067317 — 22 revendications protégées.</p>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-card-icon">◈</div><h3>Précision 0.08mm</h3><p>Votre corps compris dans sa totalité. Invisible, absolu.</p></div>
+        <div class="tech-card"><div class="tech-card-icon">⬡</div><h3>Physique Textile</h3><p>Simulation de drapé et d'élasticité en temps réel. Soie vs. Coton.</p></div>
+        <div class="tech-card"><div class="tech-card-icon">◎</div><h3>Intelligence PAU</h3><p>Votre personal shopper IA. 510 vêtements analysés en millisecondes.</p></div>
+        <div class="tech-card"><div class="tech-card-icon">✦</div><h3>Zéro Retours</h3><p>Vous achetez uniquement ce qui vous va. Certitude absolue.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULES -->
+  <div class="section">
+    <span class="section-label">L'Expérience Pro Max</span>
+    <h2 class="section-title serif">Trois Piliers. Zéro Compromis.</h2>
+    <div class="modules-grid">
+      <div class="module-card featured">
+        <span class="module-num">01 — Best Fit Engine</span>
+        <h3 class="serif">Correspondance Intelligente</h3>
+        <p>Correspondance avec l'élasticité du tissu, le drapé et la tolérance du patron.</p>
+      </div>
+      <div class="module-card">
+        <span class="module-num">02 — Live AR Layer</span>
+        <h3 class="serif">Couche Numérique Vivante</h3>
+        <p>Le vêtement projeté comme une couche numérique sur votre corps réel.</p>
+      </div>
+      <div class="module-card">
+        <span class="module-num">03 — Cinematic Fit</span>
+        <h3 class="serif">Drapé Dynamique</h3>
+        <p>Le vêtement suit votre corps en mouvement. Les vêtements vous suivent.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLECTION PREVIEW -->
+  <div style="background:#030303;border-top:1px solid #0d0d0d;border-bottom:1px solid #0d0d0d;">
+    <div class="section">
+      <span class="section-label">Collection Lafayette × TryOnYou</span>
+      <h2 class="section-title serif">510 Pièces. Précision Absolue.</h2>
+      <p class="section-body">Chaque pièce analysée biométriquement. Cliquez pour essayer avec PAU.</p>
+      <div class="collection-grid" id="collection-grid">
+        <!-- Populated by JS -->
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <button class="btn-gold" onclick="openPau()">Essayer avec PAU — Personal Shopper IA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATENT -->
+  <div class="patent-section">
+    <p class="patent-ref">Brevet PCT/EP2025/067317</p>
+    <p class="patent-claims">22 Revendications Protégées · Système d'Intelligence Mode · SIREN 943 610 196</p>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span class="footer-brand">TryOnYou × Galeries Lafayette</span>
+    <span class="footer-copy">© 2026 TryOnYou · Paris · Brevet PCT/EP2025/067317</span>
+  </footer>
+
+  <!-- =============================================
+       PAU BUBBLE — Personal Shopper IA
+  ============================================= -->
+  <div id="pau-bubble" onclick="openPau()" title="PAU — Personal Shopper IA">
+    <div class="pau-ring">
+      <video id="pau-bubble-video" autoplay muted loop playsinline preload="auto">
+        <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663209345443/bSxUkzdfrBRtBugp.mp4" type="video/mp4"/>
+        <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663209345443/mejACWNdNJsANMpA.mp4" type="video/mp4"/>
+        <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663209345443/sicsDfnOXBBWiQvR.mp4" type="video/mp4"/>
+      </video>
+    </div>
+    <span class="pau-label">PAU IA</span>
+  </div>
+
+  <!-- Snap ripple -->
+  <div id="pau-snap-ripple" class="pau-snap-ripple"></div>
+
+  <!-- =============================================
+       PAU OVERLAY — Personal Shopper Panel
+  ============================================= -->
+  <div id="pau-overlay">
+    <div class="pau-overlay-header">
+      <div class="pau-overlay-title">
+        <div class="pau-overlay-avatar">
+          <video autoplay muted loop playsinline>
+            <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663209345443/sicsDfnOXBBWiQvR.mp4" type="video/mp4"/>
+          </video>
+        </div>
+        <div>
+          <div class="pau-overlay-name serif">PAU <span class="gold">®</span></div>
+          <div class="pau-overlay-role">Personal Shopper IA · V10 Omega</div>
+        </div>
+      </div>
+      <button class="pau-close" onclick="closePau()">✕</button>
+    </div>
+
+    <div class="pau-speech">
+      <p class="pau-speech-text" id="pau-speech-text">Le style ne s'impose pas — il se révèle. Laissez-moi vous montrer ce qui est déjà en vous.</p>
+    </div>
+
+    <div class="pau-scan-bar">
+      <div class="pau-scan-line"></div>
+      <span class="pau-scan-label">Analyse Biométrique Active · 0.08mm · PCT/EP2025/067317</span>
+      <div class="pau-scan-line"></div>
+    </div>
+
+    <div class="pau-collection">
+      <p class="pau-collection-title">Collection Lafayette — Sélection PAU pour vous</p>
+      <div class="pau-cards" id="pau-cards">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <div class="pau-cta-bar">
+      <button class="btn-gold" onclick="runScan()">Activer Jumeau Numérique</button>
+      <button class="btn-outline" onclick="closePau()">Fermer</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       COLLECTION DATA
+    ========================================== */
+    const COLLECTION = [
+      { id:"LAF-BAL-001", brand:"BALMAIN", name:"Blazer Structuré Noir", price:"2 890 €", precision:"98.4%", tag:"BESTSELLER",
+        img:"https://images.unsplash.com/photo-1594938298603-c8148c4b4057?w=400&q=80" },
+      { id:"LAF-YSL-047", brand:"SAINT LAURENT", name:"Robe Midi Ivoire", price:"3 450 €", precision:"97.9%", tag:"NOUVEAU",
+        img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80" },
+      { id:"LAF-CHO-023", brand:"CHLOÉ", name:"Manteau Oversize Camel", price:"4 200 €", precision:"98.1%", tag:"EXCLUSIF",
+        img:"https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&q=80" },
+      { id:"LAF-VAL-011", brand:"VALENTINO", name:"Blazer Croisé Rouge", price:"3 100 €", precision:"97.7%", tag:"ICONIQUE",
+        img:"https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80" },
+      { id:"LAF-GIV-008", brand:"GIVENCHY", name:"Robe Fourreau Noire", price:"2 650 €", precision:"98.6%", tag:"BESTSELLER",
+        img:"https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80" },
+      { id:"LAF-CEL-034", brand:"CELINE", name:"Trench Coat Beige", price:"3 800 €", precision:"97.5%", tag:"CLASSIQUE",
+        img:"https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80" },
+      { id:"LAF-ISS-019", brand:"ISSEY MIYAKE", name:"Robe Plissée Émeraude", price:"1 890 €", precision:"99.1%", tag:"PRÉCISION MAX",
+        img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80" },
+      { id:"LAF-MCQ-055", brand:"McQUEEN", name:"Veste Sculptée Ivoire", price:"4 600 €", precision:"98.3%", tag:"HAUTE COUTURE",
+        img:"https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80" }
+    ];
+
+    const PAU_PHRASES = [
+      "Le style ne s'impose pas — il se révèle. Laissez-moi vous montrer ce qui est déjà en vous.",
+      "Je ne viens pas vous vendre quelque chose. Je viens vous aider à vous retrouver.",
+      "Don't chase perfection. Style begins where you breathe.",
+      "Vous regardez mieux quand vous vous souvenez de qui vous êtes.",
+      "La mode n'est pas une règle — c'est un miroir.",
+      "J'ai analysé 510 pièces. Voici celles qui vous appartiennent déjà.",
+      "Vous avez choisi souverainement. Maintenant votre style parle pour vous."
+    ];
+
+    /* Render collection grid (homepage) */
+    function renderCollection() {
+      const grid = document.getElementById('collection-grid');
+      if (!grid) return;
+      grid.innerHTML = COLLECTION.map(item => `
+        <div class="collection-card" onclick="openPau()">
+          ${item.tag ? `<div class="collection-card-tag">${item.tag}</div>` : ''}
+          <div class="collection-card-precision">${item.precision} · Certitude Absolue</div>
+          <img src="${item.img}" alt="${item.brand} ${item.name}" loading="lazy"/>
+          <div class="collection-card-info">
+            <div class="collection-card-brand">${item.brand}</div>
+            <div class="collection-card-name serif">${item.name}</div>
+            <div class="collection-card-price">${item.price}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* Render PAU overlay cards */
+    function renderPauCards() {
+      const container = document.getElementById('pau-cards');
+      if (!container) return;
+      container.innerHTML = COLLECTION.map(item => `
+        <div class="pau-card" onclick="selectItem('${item.id}')">
+          <img src="${item.img}" alt="${item.brand}" loading="lazy"/>
+          <div class="pau-card-body">
+            <div class="pau-card-brand">${item.brand}</div>
+            <div class="pau-card-name serif">${item.name}</div>
+            <div class="pau-card-price">${item.price}</div>
+            <div class="pau-card-precision">◈ ${item.precision}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ==========================================
+       PAU OPEN / CLOSE
+    ========================================== */
+    function openPau() {
+      // Snap ripple from bubble position
+      const bubble = document.getElementById('pau-bubble');
+      const ripple = document.getElementById('pau-snap-ripple');
+      const rect = bubble.getBoundingClientRect();
+      ripple.style.left = (rect.left + rect.width/2) + 'px';
+      ripple.style.top  = (rect.top  + rect.height/2) + 'px';
+      ripple.style.display = 'block';
+      ripple.style.animation = 'none';
+      void ripple.offsetWidth; // reflow
+      ripple.style.animation = 'snap-expand .6s ease-out forwards';
+      setTimeout(() => { ripple.style.display = 'none'; }, 650);
+
+      // Random Pau phrase
+      const phraseEl = document.getElementById('pau-speech-text');
+      if (phraseEl) {
+        phraseEl.textContent = PAU_PHRASES[Math.floor(Math.random() * PAU_PHRASES.length)];
+      }
+
+      // Open overlay
+      const overlay = document.getElementById('pau-overlay');
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { overlay.classList.add('visible'); });
+      });
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePau() {
+      const overlay = document.getElementById('pau-overlay');
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+      }, 350);
+    }
+
+    /* ==========================================
+       SCAN / SELECT
+    ========================================== */
+    let scanRunning = false;
+    function runScan() {
+      if (scanRunning) return;
+      scanRunning = true;
+      const phraseEl = document.getElementById('pau-speech-text');
+      phraseEl.textContent = "[ PAU ] Scan biométrique en cours... 0.08mm...";
+      setTimeout(() => {
+        phraseEl.textContent = "[ PAU ] Analyse textile... drapé, élasticité, proportion...";
+      }, 900);
+      setTimeout(() => {
+        const pick = COLLECTION[Math.floor(Math.random() * COLLECTION.length)];
+        phraseEl.textContent = `✦ ${pick.brand} — "${pick.name}" · ${pick.precision} Certitude Absolue. C'est la vôtre.`;
+        scanRunning = false;
+      }, 2200);
+    }
+
+    function selectItem(id) {
+      const item = COLLECTION.find(c => c.id === id);
+      if (!item) return;
+      const phraseEl = document.getElementById('pau-speech-text');
+      phraseEl.textContent = `✦ ${item.brand} — "${item.name}" · ${item.precision} · ${item.price}. Vous avez choisi souverainement.`;
+    }
+
+    /* Close overlay on Escape */
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePau(); });
+
+    /* Init */
+    renderCollection();
+    renderPauCards();
+  </script>
 </body>
 </html>

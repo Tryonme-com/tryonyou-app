@@ -9,7 +9,6 @@ def _project_root() -> str:
 
 
 def _stripe_links() -> tuple[str, str]:
-    """Enlaces Payment Link (Vercel): define STRIPE_LINK_* o VITE_STRIPE_LINK_*."""
     a = (
         os.environ.get("STRIPE_LINK_SOVEREIGNTY_4_5M", "").strip()
         or os.environ.get("VITE_STRIPE_LINK_SOVEREIGNTY_4_5M", "").strip()
@@ -24,7 +23,6 @@ def _stripe_links() -> tuple[str, str]:
 
 
 def _html_index_body() -> bytes | None:
-    """Sirve index.html o plantilla V10; inyecta enlaces Stripe desde entorno."""
     root = _project_root()
     link_45, link_98 = _stripe_links()
     for rel in ("index.html", os.path.join("src", "templates", "mirror_v10_final.html")):
@@ -38,6 +36,33 @@ def _html_index_body() -> bytes | None:
             )
             return html.encode("utf-8")
     return None
+
+
+def _serve_file(handler, rel_path: str, content_type: str, cache: str = "public, max-age=86400"):
+    root = _project_root()
+    filepath = os.path.normpath(os.path.join(root, rel_path))
+    if not filepath.startswith(os.path.normpath(root + os.sep)):
+        handler.send_response(403)
+        handler.send_header("Content-Length", "0")
+        handler.end_headers()
+        return
+    if not os.path.isfile(filepath):
+        msg = f"{rel_path} not found".encode()
+        handler.send_response(404)
+        handler.send_header("Content-type", "text/plain; charset=utf-8")
+        handler.send_header("Content-Length", str(len(msg)))
+        handler.end_headers()
+        handler.wfile.write(msg)
+        return
+    with open(filepath, "rb") as f:
+        data = f.read()
+    handler.send_response(200)
+    handler.send_header("Content-type", content_type)
+    handler.send_header("Cache-Control", cache)
+    handler.send_header("Content-Length", str(len(data)))
+    handler.send_header("Accept-Ranges", "bytes")
+    handler.end_headers()
+    handler.wfile.write(data)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -61,32 +86,19 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+
+        # Static assets
+        if path == "/hero.mp4":
+            _serve_file(self, "hero.mp4", "video/mp4", "public, max-age=604800")
+            return
+        if path == "/lafayette_collection.json":
+            _serve_file(self, "src/data/lafayette_collection.json", "application/json; charset=utf-8", "public, max-age=3600")
+            return
         if path == "/logo_pavo_real.png":
-            root = _project_root()
-            logo = os.path.normpath(os.path.join(root, "logo_pavo_real.png"))
-            if not logo.startswith(os.path.normpath(root + os.sep)):
-                self.send_response(403)
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-                return
-            if not os.path.isfile(logo):
-                msg = b"logo_pavo_real.png not found"
-                self.send_response(404)
-                self.send_header("Content-type", "text/plain; charset=utf-8")
-                self.send_header("Content-Length", str(len(msg)))
-                self.end_headers()
-                self.wfile.write(msg)
-                return
-            with open(logo, "rb") as f:
-                data = f.read()
-            self.send_response(200)
-            self.send_header("Content-type", "image/png")
-            self.send_header("Cache-Control", "public, max-age=86400")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+            _serve_file(self, "logo_pavo_real.png", "image/png")
             return
 
+        # Main HTML
         html_body = _html_index_body()
         if html_body is not None:
             self.send_response(200)
@@ -95,6 +107,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(html_body)
             return
+
         plain = "Búnker 75005 Operativo. tryonyou-app V10.4 Online.".encode()
         self.send_response(200)
         self.send_header("Content-type", "text/plain; charset=utf-8")
