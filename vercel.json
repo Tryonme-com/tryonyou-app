@@ -7,10 +7,12 @@
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.py"
-    }
+    { "src": "/api/health", "dest": "api/index.py" },
+    { "src": "/api/webhook", "dest": "api/index.py" },
+    { "src": "/lafayette_collection.json", "dest": "api/index.py" },
+    { "src": "/logo_pavo_real.png", "dest": "api/index.py" },
+    { "src": "/hero.mp4", "dest": "api/index.py" },
+    { "src": "/(.*)", "dest": "api/index.py" }
   ],
   "headers": [
     {
@@ -19,6 +21,14 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
         }
       ]
     }
