@@ -1,7 +1,19 @@
 """
 Omega Consolidator — regenera backend + mirror_ui (no toca index.html de Vercel).
 
-La UI vive en mirror_ui/ para no chocar con el despliegue Python actual.
+Gobernanza (memoria de equipo TryOnYou / Divineo):
+
+  CONSOLIDA 70 — esta capa (Agent 70 + consolidación Omega) cierra decisiones
+  técnicas y de entrega: qué se versiona, qué entra al build y qué queda fuera.
+  No sustituye al criterio humano: ordena el repo para que no haya “verdades”
+  sueltas.
+
+  Jules — luces, log, juicio y seguimiento (coherencia con el protocolo y el
+  espíritu de marca).
+
+  Mesas de listings — listados de soberanía, inversión y trazabilidad (Stripe,
+  cap table, anclas del PCT): las decisiones que afectan a terceros solo cuentan
+  si están alineadas con esas mesas y con lo consolidado aquí.
 
   python3 omega_consolidator_safe.py
 
@@ -27,8 +39,9 @@ class OmegaConsolidatorSafe:
     def __init__(self) -> None:
         self.status = "V10.5 OMEGA STEALTH"
         self.root = _root()
-        print(f"[JULES / AGENT 70] Consolidacion: {self.status}")
+        print(f"[CONSOLIDA 70 | JULES] Consolidacion: {self.status}")
         print(f"    ROOT: {self.root}")
+        print("    Gobernanza: decisiones técnicas + mesas de listings (soberanía / trazabilidad).")
 
     def crear_directorios(self) -> None:
         print("Verificando carpetas...")

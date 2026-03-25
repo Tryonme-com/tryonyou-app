@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Supercommit máximo: add, commit con sellos TryOnYou, push.
 #
+# Mensaje opcional: $1 debe contener @CertezaAbsoluta, @lo+erestu y PCT/EP2025/067317
+# (si falta alguno, el script sale con error 1 antes de git add).
+#
 # Push solo si:
 #   1) En esta ejecución se hizo un commit nuevo, o
 #   2) No hubo nada que commitear pero la rama local tiene commits sin publicar
@@ -11,6 +14,19 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 MSG="${1:-Protocolo Soberanía: mirror V10 sello Divineo + fallback CSS @CertezaAbsoluta @lo+erestu PCT/EP2025/067317}"
+
+# Regla TryOnYou: todo commit debe llevar los tres sellos (mensaje custom o por defecto).
+_commit_stamps_ok() {
+  local m="$1"
+  [[ "$m" == *"@CertezaAbsoluta"* ]] || { echo "❌ Falta @CertezaAbsoluta en el mensaje de commit." >&2; return 1; }
+  [[ "$m" == *"@lo+erestu"* ]] || { echo "❌ Falta @lo+erestu en el mensaje de commit." >&2; return 1; }
+  [[ "$m" == *"PCT/EP2025/067317"* ]] || { echo "❌ Falta la patente PCT/EP2025/067317 en el mensaje de commit." >&2; return 1; }
+  return 0
+}
+if ! _commit_stamps_ok "$MSG"; then
+  echo "   Uso: $0 'Tu título @CertezaAbsoluta @lo+erestu PCT/EP2025/067317'" >&2
+  exit 1
+fi
 
 git add -A
 did_commit=0
