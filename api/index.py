@@ -1,6 +1,8 @@
 from http.server import BaseHTTPRequestHandler
+import argparse
 import json
 import os
+import sys
 from urllib.parse import urlparse
 
 
@@ -45,7 +47,7 @@ class handler(BaseHTTPRequestHandler):
         link_45, link_98 = _stripe_links()
         response = {
             "status": "DIVINEO_ACTIVE",
-            "jules_msg": "Bonjour, c'est Jules. Recibido. El arquitecto Rubén E. está validando su precisión. Hablamos en un 'snap'.",
+            "jules_msg": "Bonjour, c'est Jules. Recibido. El arquitecto Rubén Espinar Rodríguez está validando su precisión. Hablamos en un 'snap'.",
             "protocolo": "V10.4_Lafayette",
             "next_step": "A fuego!",
             "patente": "PCT/EP2025/067317",
@@ -101,3 +103,35 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(plain)))
         self.end_headers()
         self.wfile.write(plain)
+
+
+def _cli_main() -> int:
+    """CLI local (no afecta el handler Vercel)."""
+    parser = argparse.ArgumentParser(
+        description="TryOnYou API — acciones auxiliares desde terminal.",
+    )
+    parser.add_argument(
+        "--action",
+        default="",
+        help="send_bpifrance_emergency: genera borradores Bpifrance en operacion_rescate/",
+    )
+    args = parser.parse_args()
+    if not args.action:
+        print(
+            "Uso: python3 api/index.py --action send_bpifrance_emergency",
+            file=sys.stderr,
+        )
+        return 2
+    if args.action == "send_bpifrance_emergency":
+        root = _project_root()
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from solicitud_liquidez_bpifrance_v10 import main as bpifrance_main
+
+        return bpifrance_main()
+    print(f"Acción desconocida: {args.action!r}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli_main())

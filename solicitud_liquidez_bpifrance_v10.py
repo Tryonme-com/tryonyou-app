@@ -54,7 +54,7 @@ Objet : Demande urgente d'avance sur contrat - TRYONYOU (SIRET {SIRET})
 
 Madame, Monsieur,
 
-Je suis Rubén Sanz Buro, fondateur de TRYONYOU, startup DeepTech basée à Paris.
+Je suis Rubén Espinar Rodríguez, fondateur de TRYONYOU, startup DeepTech basée à Paris.
 Nous finalisons le déploiement de notre technologie V10 avec Galeries Lafayette /
 Le Bon Marché.
 
@@ -66,7 +66,7 @@ Ci-joints notre note d'innovation et les éléments de propriété intellectuell
 
 Dans l'attente de votre retour.
 
-Rubén Sanz Buro
+Rubén Espinar Rodríguez
 """.strip()
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / "Email_Bpifrance_Gestor.txt"
