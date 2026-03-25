@@ -31,6 +31,7 @@ Subcomandos:
   monitor           monitor_liquidacion_v10 (+ Telegram si MONITOR_SEND_TELEGRAM=1)
   reporte-matutino  reporte_diario_soberania_v10 → centinela Telegram
   bpifrance         solicitud_liquidez_bpifrance_v10
+  bpifrance-envio   preparar_envio_bpifrance_v10 (carpeta adjuntos)
   bpifrance-token   generar_secreto_bpifrance_v10
   rescate           operacion_rescate_soberania_v10
   sellar-lafayette  operacion_soberania_total_v10
@@ -74,6 +75,7 @@ def main() -> int:
     s.add_parser("monitor", help="monitor_liquidacion_v10")
     s.add_parser("reporte-matutino", help="reporte_diario_soberania_v10")
     s.add_parser("bpifrance", help="solicitud_liquidez_bpifrance_v10")
+    s.add_parser("bpifrance-envio", help="preparar_envio_bpifrance_v10")
     s.add_parser("bpifrance-token", help="generar_secreto_bpifrance_v10")
     s.add_parser("rescate", help="operacion_rescate_soberania_v10")
     s.add_parser("sellar-lafayette", help="operacion_soberania_total_v10")
@@ -132,6 +134,11 @@ def main() -> int:
         from solicitud_liquidez_bpifrance_v10 import main as m
 
         return m()
+    if args.cmd == "bpifrance-envio":
+        from preparar_envio_bpifrance_v10 import preparar_envio_final
+
+        preparar_envio_final()
+        return 0
     if args.cmd == "bpifrance-token":
         from generar_secreto_bpifrance_v10 import generar_secreto_bpifrance
 
