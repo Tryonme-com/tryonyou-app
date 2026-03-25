@@ -8,6 +8,8 @@ Variables: E50_PROJECT_ROOT (opcional), E50_SKIP_NPM=1 para solo pip.
 
 Sello TryOnYou : lo + eres tú + guiño en francés (p. ej. « le plus c’est toi » / « c’est toi ») — onda,
 no clase de idiomas.
+
+Manifiesto : hecho con el corazón, no solo con la cabeza — un puente al día que toca.
 """
 from __future__ import annotations
 

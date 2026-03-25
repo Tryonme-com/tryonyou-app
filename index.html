@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="es">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="description" content="tryonyou.org — TryOnMe × Divineo. Gemelo digital, talla real, menos logística. Hecho con corazón y cabeza."/>
+  <link rel="canonical" href="https://tryonyou.org/"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" crossorigin="anonymous"/>
-  <title>TRYONME × DIVINEO — VIP</title>
+  <title>tryonyou.org — TRYONME × DIVINEO</title>
   <style>
     /* Protocolo de Soberanía — index / PCT/EP2025/067317 */
     html, body { background: #000; margin: 0; }
@@ -50,15 +52,45 @@
     }
     .divineo-seal.is-fallback .divineo-seal-fallback { display: block; }
     .divineo-seal.is-fallback img { display: none !important; }
+    a.ty-domain {
+      display: inline-block;
+      font-family: "Playfair Display", Georgia, serif;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      text-decoration: none;
+      background: linear-gradient(105deg, #f8ecd4 0%, #D4AF37 42%, #a88620 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.55);
+      padding-bottom: 3px;
+      transition: opacity 0.2s ease, border-color 0.2s ease;
+    }
+    a.ty-domain:hover {
+      opacity: 0.92;
+      border-bottom-color: rgba(212, 175, 55, 0.9);
+    }
+    a.ty-domain:focus-visible {
+      outline: 1px solid #D4AF37;
+      outline-offset: 4px;
+    }
   </style>
 </head>
 <body>
   <section class="protocolo-soberania">
     <nav style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a1a1a;">
-      <span class="ty-brand" style="letter-spacing:5px;color:#D4AF37;font-weight:bold;">TRYONME × DIVINEO</span>
-      <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;">Accès VIP #E4002B</div>
+      <div>
+        <span class="ty-brand" style="letter-spacing:5px;color:#D4AF37;font-weight:bold;">TRYONME × DIVINEO</span>
+        <a href="https://tryonyou.org/" class="ty-domain" style="margin-top:10px;font-size:clamp(0.82rem,2.2vw,1rem);">tryonyou.org</a>
+      </div>
+      <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;text-align:right;">
+        Acceso VIP<br/><span style="opacity:0.85;">#E4002B</span>
+        <a href="https://abvetos.com/" style="display:block;margin-top:12px;font-size:0.68rem;letter-spacing:2px;color:#b9a06a;text-decoration:none;border-top:1px solid #252525;padding-top:10px;">Dashboard · abvetos.com</a>
+      </div>
     </nav>
-    <p style="margin:0;padding:10px 20px;text-align:right;font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #1a1a1a;">
+    <p style="margin:0;padding:10px 20px 4px;text-align:right;font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #1a1a1a;">
       <a href="{{STRIPE_LINK_4_5M}}" style="color:#D4AF37;text-decoration:none;">Soberanía 4,5M €</a>
       <span style="color:#333;margin:0 10px;">|</span>
       <a href="{{STRIPE_LINK_98K}}" style="color:#D4AF37;text-decoration:none;">Soberanía 98k €</a>
@@ -69,35 +101,105 @@
         ARRÊTEZ LE FAUX-FIT.<br>
         <span style="color:#D4AF37;">BRÛLEZ LES TAILLES.</span>
       </h1>
-      <p style="max-width:800px;margin:0 auto;font-size:1.4rem;font-style:italic;color:#ccc;line-height:1.8;">
-        "Nadie quiere probarse 510 pantalones. Todo el mundo quiere su verdad biométrica." <br>
-        Prueba la ropa en tu gemelo digital, cómprala con la certeza del 98.5%.
-        Bienvenido a la experiencia solidaria, inteligente y absoluta.
+      <p style="margin:32px auto 0;text-align:center;">
+        <a href="https://tryonyou.org/" class="ty-domain" style="font-size:clamp(1.05rem,3.2vw,1.65rem);letter-spacing:0.2em;">tryonyou.org</a>
       </p>
+      <p style="margin:28px auto 0;max-width:720px;font-size:0.85rem;letter-spacing:4px;text-transform:uppercase;color:#777;line-height:1.85;font-family:'Playfair Display',Georgia,serif;">
+        El poder de verlo.<br/>
+        <span style="color:#D4AF37;">El visionario.</span>
+      </p>
+      <div style="max-width:800px;margin:0 auto;padding-top:36px;padding-left:16px;padding-right:16px;">
+        <p style="font-size:1.25rem;font-style:italic;color:#ddd;line-height:1.8;margin:0;">
+          «Nadie quiere probarse 510 pantalones. Todo el mundo quiere su verdad biométrica.» Prueba la ropa en tu gemelo digital; cómprala con la certeza del 98,5&nbsp;%.
+        </p>
+      </div>
+    </div>
+
+    <div style="padding:40px 20px 36px;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a;background:#050505;">
+      <h2 class="ty-brand" style="text-align:center;margin:0;font-size:clamp(1.35rem,4vw,1.85rem);letter-spacing:clamp(6px,2.5vw,14px);color:#D4AF37;font-weight:700;line-height:1.2;">D.I.V.I.N.E.O</h2>
+      <p style="text-align:center;margin:18px auto 0;max-width:560px;font-size:0.95rem;font-style:italic;color:#c4b06a;line-height:1.65;font-family:'Playfair Display',Georgia,serif;">
+        Divineo es la nona perfecta: conjunto amarillo Levi’s, Loewe al hombro, y un beso a la abuela por cariño — no porque sea la que manda.
+      </p>
+      <div style="max-width:620px;margin:26px auto 0;border:1px solid rgba(212,175,55,0.4);padding:22px 22px 24px;background:#0a0a0a;">
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">D.</strong> Ver calle y cuerpo sin normalizar lo indecente.</p>
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">I.</strong> Lo que el tiempo y la conformidad llaman «sentido común».</p>
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">V.</strong> Antes del ticket: en tu gemelo, en ti.</p>
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">I.</strong> Cinco letras no son tu piel.</p>
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">N.</strong> Ni talla cartón para todos ni excusas cuando pesa.</p>
+        <p style="margin:0 0 10px;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">E.</strong> Menos huella, mismos modelazos.</p>
+        <p style="margin:0;font-size:0.88rem;line-height:1.65;color:#c8c8c8;"><strong style="color:#D4AF37;">O.</strong> Origen que se ve: casa, tíos, cajas — y el beso que no es pose.</p>
+      </div>
     </div>
 
     <div style="display:flex;gap:20px;padding:40px;padding-bottom:80px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;">
       <div style="flex:0 0 350px;background:#0a0a0a;border:1px solid #D4AF37;padding:40px;scroll-snap-align:center;">
         <div style="font-size:3rem;margin-bottom:20px;" aria-hidden="true">👤</div>
         <h3 style="letter-spacing:3px;">TRYONME</h3>
-        <p style="color:#999;">Tu avatar, tu ropa, tu compra. Sin números, sin complejos. Pura precisión biométrica.</p>
+        <p style="color:#999;margin:0 0 14px;">Tu avatar, tu ropa, tu compra. Precisión biométrica, sin complejos de talla.</p>
+        <p style="color:#888;margin:0 0 12px;font-size:0.88rem;line-height:1.65;">Entrarías en una tienda divina: sin montañas de ropa, sin probadores que humillen a nuestras mayores. En un chasquido, tu Levi’s favorito. <span style="color:#D4AF37;font-size:0.78rem;letter-spacing:1px;">@levisfan</span> — fan declarada.</p>
+        <p style="color:#777;margin:0 0 12px;font-size:0.85rem;line-height:1.6;">Hasta en China lo saben: encontrar tu prenda perfecta es un lujazo. <span style="color:#b9a06a;">Divineo</span> non stop, quitando miedos y dudas.</p>
+        <p style="color:#777;margin:0 0 10px;font-size:0.85rem;line-height:1.6;"><span style="color:#D4AF37;">Pau</span> vestirá a nuestros hombres que odian los probadores y el día de compras.</p>
+        <p style="color:#777;margin:0;font-size:0.85rem;line-height:1.6;">Las abuelas no tendrán que repetir siempre el mismo traje de boda por huir del temido probador y su cola de siempre.</p>
       </div>
       <div style="flex:0 0 350px;background:#0a0a0a;border:1px solid #1a1a1a;padding:40px;scroll-snap-align:center;">
         <div style="font-size:3rem;margin-bottom:20px;" aria-hidden="true">🏛️</div>
         <h3 style="letter-spacing:3px;">DIVINEO MUSEUM</h3>
-        <p style="color:#999;">Acceso exclusivo a eventos, locales y la comunidad de diseñadores que han dicho NO a la talla estándar.</p>
+        <p lang="es" style="color:#999;margin:0 0 10px;">Acceso exclusivo a eventos, locales y la comunidad de diseñadores que han dicho NO a la talla estándar.</p>
+        <p lang="fr" style="color:#666;font-size:0.82rem;line-height:1.55;margin:0 0 8px;">Accès aux événements, aux lieux et aux créateurs qui ont dit non à la taille standard — le luxe avec les pieds sur terre.</p>
+        <p lang="en" style="color:#666;font-size:0.82rem;line-height:1.55;margin:0;">Events, spaces, and designers who said no to standard sizing — exclusive, not snobby.</p>
       </div>
       <div style="flex:0 0 350px;background:#0a0a0a;border:1px solid #1a1a1a;padding:40px;scroll-snap-align:center;">
         <div style="font-size:3rem;margin-bottom:20px;" aria-hidden="true">🍃</div>
         <h3 style="letter-spacing:3px;">ÉCORESPONSABLE</h3>
-        <p style="color:#999;">Cada compra certificada ahorra un 60% de logística. Es inteligente, es necesario, es Divineo.</p>
+        <p lang="es" style="color:#999;margin:0 0 10px;">Contaminar menos, ponerte tus modelazos: menos idas y venidas, más acierto. Cada compra certificada ahorra un 60% de logística. Es inteligente, es necesario, es Divineo.</p>
+        <p lang="fr" style="color:#666;font-size:0.82rem;line-height:1.55;margin:0 0 8px;">Moins polluer, porter tes plus beaux looks : moins d’allers-retours, plus de justesse. Jusqu’à 60&nbsp;% de logistique en moins quand c’est certifié — utile, pas blabla écolo.</p>
+        <p lang="en" style="color:#666;font-size:0.82rem;line-height:1.55;margin:0;">Pollute less, wear your best looks—fewer round trips, more right-first-time. Up to 60% less logistics when certified — real, not greenwash.</p>
       </div>
+    </div>
+
+    <div style="margin:0;padding:0 24px 48px;max-width:760px;margin-left:auto;margin-right:auto;border-top:1px solid #1f1f1f;padding-top:40px;">
+      <p lang="es" style="margin:0 0 22px;text-align:center;font-size:0.9rem;line-height:1.85;color:#a5a5a5;">
+        Ser más solidario aunque veas a la gente durmiendo en la calle: <span style="color:#ccc;">no, sorry — no es normal.</span>
+        Igual que no es normal tener cinco letras para todos los tipos de cuerpo.
+        <span style="display:block;margin-top:14px;color:#888;font-size:0.88rem;">Incongruencias invisibles por el paso del tiempo y la conformidad.</span>
+      </p>
+      <p lang="fr" style="margin:0 0 22px;text-align:center;font-size:0.86rem;line-height:1.8;color:#949494;">
+        Rester solidaire même quand tu vois des gens dormir dans la rue : <span style="color:#c4c4c4;">non, désolé — ce n’est pas normal.</span>
+        Comme ce n’est pas normal d’avoir cinq lettres pour tous les corps.
+        <span style="display:block;margin-top:12px;color:#777;font-size:0.84rem;">Des incohérences invisibles avec le temps et la conformité.</span>
+      </p>
+      <p lang="en" style="margin:0;text-align:center;font-size:0.86rem;line-height:1.8;color:#949494;">
+        Stay human and stand together even when you see people sleeping on the street: <span style="color:#c4c4c4;">sorry, no — that’s not normal.</span>
+        Neither is five letters for every body.
+        <span style="display:block;margin-top:12px;color:#777;font-size:0.84rem;">Invisible mismatches from time and going along to get along.</span>
+      </p>
+    </div>
+
+    <div style="margin:0;padding:0 20px 48px;max-width:680px;margin-left:auto;margin-right:auto;text-align:center;">
+      <p lang="es" style="margin:0 0 18px;font-size:0.85rem;line-height:1.75;color:#888;">
+        Este proyecto está hecho con el corazón, no solo con la cabeza.<br/>
+        <span style="color:#aaa;">Un puente al día que toca.</span><br/>
+        <span style="color:#9a9a9a;">Contaminar menos, ponerte tus modelazos — ser más humana, más divina.</span><br/>
+        <span style="display:inline-block;margin-top:12px;color:#7a7a7a;font-style:italic;letter-spacing:0.02em;">El fin del llorar va a llegar.</span>
+      </p>
+      <p lang="fr" style="margin:0 0 18px;font-size:0.82rem;line-height:1.75;color:#858585;">
+        Ce projet est fait avec le cœur, pas seulement avec la tête.<br/>
+        <span style="color:#9a9a9a;">Un pont vers le jour qui compte.</span><br/>
+        <span style="color:#888;">Moins polluer, porter tes plus beaux looks — plus humaine, plus divine.</span><br/>
+        <span style="display:inline-block;margin-top:12px;color:#747474;font-style:italic;">La fin des larmes viendra.</span>
+      </p>
+      <p lang="en" style="margin:0;font-size:0.82rem;line-height:1.75;color:#858585;">
+        Built with heart, not just head.<br/>
+        <span style="color:#9a9a9a;">A bridge to the day we’re in.</span><br/>
+        <span style="color:#888;">Pollute less, wear your wins — more human, more divine.</span><br/>
+        <span style="display:inline-block;margin-top:12px;color:#747474;font-style:italic;">The end of the tears is on its way.</span>
+      </p>
     </div>
 
     <div class="divineo-seal" id="divineo-seal">
       <img
         src="/logo_pavo_real.png"
-        alt="Sceau Divineo"
+        alt="Sello Divineo — Sceau Divineo — Divineo seal"
         width="12"
         loading="lazy"
         decoding="async"
