@@ -15,6 +15,8 @@ OUT = ROOT / "operacion_rescate"
 SIRET = "94361019600017"
 PATENT = "PCT/EP2025/067317"
 MONTO_SOLICITADO_EUR = 10_000
+# Una sola fuente de verdad para cuerpo y firma del email (evita identidades divergentes).
+FOUNDER_LEGAL_NAME = "Rubén Espinar Rodríguez"
 
 
 def _fmt_eur(n: int) -> str:
@@ -54,7 +56,7 @@ Objet : Demande urgente d'avance sur contrat - TRYONYOU (SIRET {SIRET})
 
 Madame, Monsieur,
 
-Je suis Rubén Espinar Rodríguez, fondateur de TRYONYOU, startup DeepTech basée à Paris.
+Je suis {FOUNDER_LEGAL_NAME}, fondateur de TRYONYOU, startup DeepTech basée à Paris.
 Nous finalisons le déploiement de notre technologie V10 avec Galeries Lafayette /
 Le Bon Marché.
 
@@ -66,7 +68,7 @@ Ci-joints notre note d'innovation et les éléments de propriété intellectuell
 
 Dans l'attente de votre retour.
 
-Rubén Espinar Rodríguez
+{FOUNDER_LEGAL_NAME}
 """.strip()
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / "Email_Bpifrance_Gestor.txt"
