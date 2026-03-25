@@ -1,0 +1,86 @@
+/* Haussmann / zinc — alineado con operacion_soberania_total_v10 CONFIG_LUJO */
+:root {
+  --ty-oro: #c5a46d;
+  --ty-zinc: #141619;
+  --ty-void: #050505;
+  --ty-muted: #666;
+  --ty-border: #222;
+  --ty-ghost: #444;
+  --ty-scan: #66aaee;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #fff;
+  background: var(--ty-void);
+}
+
+/* Bruma dorada fija (no tapa interacción) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 100% 55% at 50% 0%,
+    rgba(197, 164, 109, 0.16),
+    transparent 58%
+  );
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+.ty-mirror-root {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+  color: #fff;
+}
+
+.ty-splash {
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ty-oro) 85%, transparent);
+  padding: 0.35rem 1rem;
+  border-bottom: 1px solid var(--ty-border);
+}
+
+@supports not (color: color-mix(in srgb, white 50%, black)) {
+  .ty-splash {
+    color: rgba(197, 164, 109, 0.75);
+  }
+}
+
+.ty-btn-magia {
+  border: 1px solid color-mix(in srgb, var(--ty-oro) 45%, transparent);
+  background: color-mix(in srgb, var(--ty-zinc) 88%, var(--ty-oro));
+  color: #fff;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.ty-btn-magia:hover {
+  border-color: var(--ty-oro);
+  box-shadow: 0 0 24px rgba(197, 164, 109, 0.2);
+}
+
+@supports not (color: color-mix(in srgb, white 50%, black)) {
+  .ty-btn-magia {
+    border-color: rgba(197, 164, 109, 0.45);
+    background: #1a1c1f;
+  }
+}
