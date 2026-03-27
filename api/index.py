@@ -39,23 +39,59 @@ def _stripe_configured() -> bool:
 
 def _html_index_body() -> bytes | None:
     """Load and inject Stripe links into the HTML template."""
-    root = _project_root()
-    link_45, link_98 = _stripe_links()
-    candidates = [
-        "index.html",
-        os.path.join("src", "templates", "mirror_v10_final.html"),
-    ]
-    for rel in candidates:
-        path = os.path.join(root, rel)
-        if os.path.isfile(path):
-            with open(path, encoding="utf-8") as f:
-                html = f.read()
-            html = (
-                html.replace("{{STRIPE_LINK_4_5M}}", link_45)
-                    .replace("{{STRIPE_LINK_98K}}", link_98)
-            )
-            return html.encode("utf-8")
-    return None
+    # HOTFIX: Sustitución del Prestige Panel por el cargador Mirror V10
+    html = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>GALERIES LAFAYETTE x BALMAIN</title>
+        <style>
+            body {
+                margin: 0;
+                background-color: #000;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                color: #fff;
+                font-family: serif;
+                text-align: center;
+            }
+            h1 {
+                color: #D4AF37;
+                font-size: 2.5rem;
+                letter-spacing: 0.2rem;
+                margin-bottom: 1rem;
+            }
+            p {
+                font-size: 1.2rem;
+                opacity: 0.8;
+            }
+            .loader {
+                margin-top: 2rem;
+                width: 50px;
+                height: 50px;
+                border: 3px solid rgba(212, 175, 55, 0.3);
+                border-radius: 50%;
+                border-top-color: #D4AF37;
+                animation: spin 1s ease-in-out infinite;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>GALERIES LAFAYETTE x BALMAIN</h1>
+        <p>Iniciando Escaneo Silueta V10...</p>
+        <div class="loader"></div>
+    </body>
+    </html>
+    """
+    return html.encode("utf-8")
 
 
 def _send_json(handler, status: int, payload: dict) -> None:
