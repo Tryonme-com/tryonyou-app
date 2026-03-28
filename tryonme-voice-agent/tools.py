@@ -4,13 +4,13 @@ from typing import Any, Callable
 
 
 def consultar_stock(producto: str) -> str:
-    p = (producto or "").strip() or "ese articulo"
+    p = (producto or "").strip() or "ese artículo"
     return f"Hay 5 unidades de {p} disponibles para probarse."
 
 
 def verificar_estado_pedido(id_pedido: str) -> str:
     oid = (id_pedido or "").strip() or "desconocido"
-    return f"El pedido {oid} esta en camino y llega manana."
+    return f"El pedido {oid} está en camino y llega mañana."
 
 
 def _stock_args(a: dict[str, Any]) -> str:

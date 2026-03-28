@@ -34,18 +34,36 @@ def run(
     streaming: bool = True,
     host: str = "0.0.0.0",
 ) -> None:
+    """Arranca Uvicorn con timeouts alineados a `jules_config` (objetivo &lt;500 ms en el handshake crítico)."""
+
     import uvicorn
+
+    import jules_config
 
     os.environ["TRYONME_VOICE_STREAMING"] = "1" if streaming else "0"
     if orchestrator is not None:
         import main as voice_main
 
         voice_main.app.state.voice_orchestrator = orchestrator
+
+    ping = float(
+        os.environ.get(
+            "JULES_WS_PING_INTERVAL",
+            str(jules_config.WEBSOCKET_PING_INTERVAL_SEC),
+        ),
+    )
+    ping_to = float(
+        os.environ.get(
+            "JULES_WS_PING_TIMEOUT",
+            str(jules_config.WEBSOCKET_CONNECT_TIMEOUT_SEC),
+        ),
+    )
+
     uvicorn.run(
         "main:app",
         host=host,
         port=port,
         reload=False,
-        ws_ping_interval=float(os.environ.get("JULES_WS_PING_INTERVAL", "20")),
-        ws_ping_timeout=float(os.environ.get("JULES_WS_PING_TIMEOUT", "20")),
+        ws_ping_interval=ping,
+        ws_ping_timeout=ping_to,
     )

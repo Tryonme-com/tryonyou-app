@@ -1,7 +1,14 @@
 """
 Orquestación Agent 70 — estados de conversación telefónica TryOnMe.
 
-Flujo lógico (no sustituye al LLM; refina tono y métricas de sesión).
+Estados explícitos (máquina ligera sobre la transcripción ASR de Twilio):
+
+  SALUDO            — inicio de llamada / turnos sin tema claro todavía
+  CONSULTA_STOCK    — intención de disponibilidad / probador / producto
+  GESTION_PEDIDO    — seguimiento de envío / pedido
+  CIERRE            — despedida o fin de interacción
+
+No sustituye al LLM (Gemini + tools); sirve para logging, ramas TwiML y gobernanza de sesión.
 """
 
 from __future__ import annotations

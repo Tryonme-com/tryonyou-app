@@ -1,63 +1,54 @@
-import React, { useState } from "react";
+import React from "react";
 
-const STEPS = [
-  { id: "audit", label: "Auditoría PCT / SIRET", done: true },
-  { id: "capital", label: "Bridge liquidez (Bpifrance / mesas)", done: false },
-  { id: "deploy", label: "Supercommit Max → producción", done: false },
-];
+const linkClass =
+  "inline-flex items-center gap-2 rounded-lg border border-[#D3B26A]/35 bg-black/40 px-4 py-3 text-sm text-[#D3B26A] hover:bg-[#D3B26A]/10 transition-colors";
 
 export function JulesSovereigntyFlow() {
-  const [open, setOpen] = useState(true);
-
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-[#D3B26A]/80 max-w-2xl">
-        Flujo de soberanía técnica: el arquitecto fija la verdad del repo; el artista
-        vive en la superficie pública. Sin bloqueos de entrega.
+    <div className="space-y-6">
+      <p className="text-sm text-zinc-400 max-w-3xl leading-relaxed">
+        Flujo de soberanía Jules V10: trazabilidad operativa, dashboards y hitos alineados
+        con el protocolo TryOnMe × Divineo. Sin bloqueos en la capa de entrega.
       </p>
-      <div className="flex flex-wrap gap-4 text-sm">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <a
           href="https://abvetos.com/"
-          target="_blank"
+          className={linkClass}
           rel="noreferrer"
-          className="px-4 py-2 rounded-lg border border-[#D3B26A]/40 bg-black/40 hover:bg-[#D3B26A]/10 transition-colors"
+          target="_blank"
         >
-          Dashboard — abvetos.com
+          <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+          Arquitecto — abvetos.com
         </a>
         <a
           href="https://liveitfashion.com/"
-          target="_blank"
+          className={linkClass}
           rel="noreferrer"
-          className="px-4 py-2 rounded-lg border border-[#D3B26A]/40 bg-black/40 hover:bg-[#D3B26A]/10 transition-colors"
+          target="_blank"
         >
+          <span className="h-2 w-2 rounded-full bg-amber-400" aria-hidden />
           Artista — LiveitFashion.com
         </a>
         <a
           href="https://tryonyou.org/"
-          target="_blank"
+          className={linkClass}
           rel="noreferrer"
-          className="px-4 py-2 rounded-lg border border-[#D3B26A]/40 bg-black/40 hover:bg-[#D3B26A]/10 transition-colors"
+          target="_blank"
         >
-          tryonyou.org
+          <span className="h-2 w-2 rounded-full bg-[#D3B26A]" aria-hidden />
+          tryonyou.org — frente público
         </a>
       </div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="text-xs uppercase tracking-widest text-[#D3B26A]/60 hover:text-[#D3B26A]"
-      >
-        {open ? "Ocultar hitos" : "Ver hitos operativos"}
-      </button>
-      {open && (
-        <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-300">
-          {STEPS.map((s) => (
-            <li key={s.id} className={s.done ? "text-emerald-400/90" : ""}>
-              <span className="mr-2">{s.done ? "✓" : "○"}</span>
-              {s.label}
-            </li>
-          ))}
-        </ol>
-      )}
+      <dl className="grid gap-3 text-xs text-zinc-500 sm:grid-cols-2 border-t border-[#D3B26A]/15 pt-4">
+        <div>
+          <dt className="font-medium text-zinc-400">Protocolo</dt>
+          <dd>V10.4 Lafayette · OMEGA</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-zinc-400">Patente (ref.)</dt>
+          <dd>PCT/EP2025/067317</dd>
+        </div>
+      </dl>
     </div>
   );
 }

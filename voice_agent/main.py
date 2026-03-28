@@ -1,20 +1,18 @@
 """
-Servidor TryOnMe — agente de voz (Twilio + Gemini).
+Agente de voz TryOnMe — FastAPI + Twilio + Gemini.
 
-Secretos solo por entorno (nunca pegues la clave en el código):
+Secretos solo por entorno (nunca en el código):
   GEMINI_API_KEY o GOOGLE_API_KEY
-  Opcional: GEMINI_MODEL (default gemini-1.5-flash)
-  Opcional: TWILIO_AUTH_TOKEN — si defines VERIFY_TWILIO=1, valida firma de webhooks
+  GEMINI_MODEL — opcional (default: gemini-1.5-flash)
+  VOICE_PUBLIC_URL — base pública del túnel, ej. https://abc.ngrok-free.app
+    (sin barra final; sirve para <Redirect> absoluto en Twilio)
 
-Desarrollo local:
-  cd voice_agent && pip install -r requirements.txt
-  GEMINI_API_KEY='...' python3 main.py
+  pip install -r backend/requirements.txt
+  cd repo && .venv/bin/uvicorn voice_agent.main:app --host 0.0.0.0 --port 8000
 
-Túnel público (Twilio necesita URL HTTPS):
-  ngrok http 8000
-  En Twilio «A call comes in»: https://TU-NGROK/voice
+Twilio: "A call comes in" → POST {VOICE_PUBLIC_URL}/voice
 
-Patente: PCT/EP2025/067317
+Referencia: PCT/EP2025/067317
 """
 
 from __future__ import annotations
@@ -23,16 +21,17 @@ import os
 import sys
 from typing import Any
 
-import google.generativeai as genai
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import Gather, VoiceResponse
 
-app = FastAPI(title="TryOnMe Voice Agent", docs_url="/docs" if os.environ.get("VOICE_AGENT_DOCS") else None)
+app = FastAPI(title="TryOnMe Voice Orchestrator", version="1.0.0")
 
-SYSTEM_PROMPT = """Eres el asistente de voz oficial de TryOnMe (TryOnYou / Divineo).
-Ayuda con pedidos, tallas, probador virtual y dudas del servicio.
-Respuestas muy cortas (1–2 frases) para que suenen naturales por teléfono.
-Tono amable, claro, en español de España salvo que el cliente hable distinto."""
+SYSTEM_PROMPT = """
+Eres el asistente de voz oficial de TryOnMe.
+Ayudas con pedidos y dudas de forma amable y clara.
+Respuestas MUY breves (1–3 frases): la llamada debe fluir sin pausas largas.
+No inventes enlaces ni promesas legales; si no sabes algo, ofrece derivar a soporte.
+""".strip()
 
 
 def _gemini_key() -> str:
@@ -42,71 +41,42 @@ def _gemini_key() -> str:
     )
 
 
-def _model_name() -> str:
-    return os.environ.get("GEMINI_MODEL", "gemini-1.5-flash").strip()
+def _gemini_model():
+    import google.generativeai as genai
+
+    key = _gemini_key()
+    if not key:
+        return None, "Falta GEMINI_API_KEY o GOOGLE_API_KEY en el entorno."
+    genai.configure(api_key=key)
+    name = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash").strip()
+    model = genai.GenerativeModel(name, system_instruction=SYSTEM_PROMPT)
+    return model, None
 
 
-_model: Any = None
+def _public_base() -> str:
+    raw = os.environ.get("VOICE_PUBLIC_URL", "").strip().rstrip("/")
+    return raw
 
 
-def _get_model() -> Any:
-    global _model
-    if _model is None:
-        key = _gemini_key()
-        if not key:
-            raise RuntimeError(
-                "Falta GEMINI_API_KEY o GOOGLE_API_KEY en el entorno.",
-            )
-        genai.configure(api_key=key)
-        _model = genai.GenerativeModel(
-            _model_name(),
-            system_instruction=SYSTEM_PROMPT,
-        )
-    return _model
+def _voice_path() -> str:
+    base = _public_base()
+    return f"{base}/voice" if base else "/voice"
 
 
-def _twiml_response(xml: str) -> Response:
-    return Response(content=xml, media_type="application/xml")
-
-
-def _maybe_verify_twilio(request: Request) -> None:
-    token = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
-    if not token or os.environ.get("VERIFY_TWILIO", "").strip().lower() not in (
-        "1",
-        "true",
-        "yes",
-    ):
-        return
-    from twilio.request_validator import RequestValidator
-
-    validator = RequestValidator(token)
-    signature = request.headers.get("X-Twilio-Signature", "") or ""
-    body = b""
-    # Twilio firma la URL completa y el cuerpo; RequestValidator requiere proxy correcto
-    url = str(request.url)
-    params: dict[str, str] = {}
-    # Para POST application/x-www-form-urlencoded, Starlette parsea form; la firma usa raw body a veces
-    # validator.validate con parámetros como dict vacío para GET; para POST usar form como flat dict
-    # Documentación Twilio: validate(url, post_params, signature)
-    form = {}
-    # Nota: ya consumir body aquí rompería request.form() en el handler — validación ligera solo si se duplica
-    # Simplificamos: sin parsear dos veces, omitimos verify en primera versión si el body hace falta raw
-    # La forma robusta usa request.body() antes de form — FastAPI: leer una vez
-    # Por pragmatismo: si VERIFY_TWILIO, el usuario debe pasar por proxy que preserve firma; aquí skip detallado
-    if not validator.validate(url, form, signature):
-        raise HTTPException(status_code=403, detail="Firma Twilio no válida")
+def _respond_path() -> str:
+    base = _public_base()
+    return f"{base}/respond" if base else "/respond"
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, Any]:
     ok = bool(_gemini_key())
-    return {"ok": True, "gemini_configured": ok}
+    return {"ok": True, "gemini_configured": ok, "voice_webhook": _voice_path()}
 
 
 @app.post("/voice")
 async def voice_endpoint(request: Request) -> Response:
-    """Webhook inicial: bienvenida y primera captura de voz hacia /respond."""
-    _maybe_verify_twilio(request)
+    """Webhook Twilio: bienvenida + gather de voz hacia /respond."""
     resp = VoiceResponse()
     resp.say(
         "Hola, bienvenido a TryOnMe. ¿En qué puedo ayudarte hoy?",
@@ -115,75 +85,50 @@ async def voice_endpoint(request: Request) -> Response:
     )
     gather = Gather(
         input="speech",
-        action="/respond",
+        action=_respond_path(),
         language="es-ES",
         speech_timeout="auto",
-        action_on_empty_result=True,
     )
     resp.append(gather)
-    resp.say(
-        "No he recibido tu voz. Te esperamos en tryonyou.org. Hasta pronto.",
-        voice="Polly.Conchita",
-        language="es-ES",
-    )
-    return _twiml_response(str(resp))
+    resp.say("No he recibido tu voz. Adiós.", voice="Polly.Conchita", language="es-ES")
+    return Response(content=str(resp), media_type="application/xml")
 
 
 @app.post("/respond")
 async def respond_endpoint(request: Request) -> Response:
-    """Transcripción de voz -> Gemini -> voz; bucle de escucha sin repetir saludo inicial."""
-    _maybe_verify_twilio(request)
     form_data = await request.form()
     user_input = (form_data.get("SpeechResult") or "").strip()
 
+    model, err = _gemini_model()
     resp = VoiceResponse()
-    if not user_input:
+    if err or model is None:
         resp.say(
-            "No te he oído bien. ¿Puedes repetirlo, por favor?",
+            "Lo siento, el servicio de voz no está configurado. Llama más tarde.",
             voice="Polly.Conchita",
             language="es-ES",
         )
-    else:
-        try:
-            m = _get_model()
-            user_msg = (
-                f"El cliente ha dicho (transcripción automática): {user_input}\n"
-                "Responde en español, 1 o 2 frases máximo."
-            )
-            r = m.generate_content(user_msg)
-            ai_text = (getattr(r, "text", None) or "").strip() or (
-                "Disculpa, ahora mismo no puedo responderte. Llama más tarde."
-            )
-        except Exception as e:
-            ai_text = "Ha habido un problema técnico. Intenta de nuevo en unos segundos."
-            print(f"[voice_agent] Gemini error: {e}", file=sys.stderr)
-        resp.say(ai_text, voice="Polly.Conchita", language="es-ES")
+        return Response(content=str(resp), media_type="application/xml")
 
-    gather = Gather(
-        input="speech",
-        action="/respond",
-        language="es-ES",
-        speech_timeout="auto",
-        action_on_empty_result=True,
-    )
-    resp.append(gather)
-    resp.say(
-        "Si necesitas algo más, sigue hablando o cuelga cuando quieras. Gracias por llamar a TryOnMe.",
-        voice="Polly.Conchita",
-        language="es-ES",
-    )
-    return _twiml_response(str(resp))
+    if not user_input:
+        user_input = "El usuario no dijo nada o no se entendió."
+
+    try:
+        r = model.generate_content(user_input)
+        ai_text = (r.text or "").strip() or "Perdona, no pude generar una respuesta."
+    except Exception as e:
+        ai_text = f"Ha ocurrido un error técnico. Por favor, inténtalo de nuevo. ({type(e).__name__})"
+        print(f"[voice_agent] Gemini error: {e}", file=sys.stderr)
+
+    # Evitar respuestas demasiado largas por teléfono
+    if len(ai_text) > 500:
+        ai_text = ai_text[:497] + "..."
+
+    resp.say(ai_text, voice="Polly.Conchita", language="es-ES")
+    resp.redirect(_voice_path())
+    return Response(content=str(resp), media_type="application/xml")
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    if not _gemini_key():
-        print(
-            "Error: exporta GEMINI_API_KEY o GOOGLE_API_KEY antes de arrancar.",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-    host = os.environ.get("VOICE_AGENT_HOST", "0.0.0.0")
-    port = int(os.environ.get("VOICE_AGENT_PORT", "8000"))
-    uvicorn.run("main:app", host=host, port=port, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
