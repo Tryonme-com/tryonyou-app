@@ -1,20 +1,22 @@
 """
-TryOnMe — agente de voz Luna (FastAPI + Twilio + Gemini + tools).
-
-Estructura:
-  prompts.py   — personalidad Luna
-  tools.py     — consultar_stock, verificar_estado_pedido (conectar a datos reales)
+TryOnMe — Luna (FastAPI + Twilio + Gemini + Agent 70 + Jules).
 
 Arranque:
-  cd tryonme-voice-agent && pip install -r requirements.txt
-  cp .env.example .env   # y pon GEMINI_API_KEY
-  python3 main.py
+  ./run.sh
+  # o: python3 main.py
 
-Twilio + ngrok:
-  ngrok http 8000
-  Webhook «A call comes in» → https://TU-NGROK/voice
-
-Variables: GEMINI_API_KEY (u GOOGLE_API_KEY), GEMINI_MODEL (opcional).
+Estándar Agent 70 + Jules:
+  from agent_70 import VoiceOrchestrator
+  from tools import TryOnMeTools
+  import prompts, jules
+  luna = VoiceOrchestrator(
+      name="Luna",
+      brand="TryOnMe",
+      llm="gemini-1.5-flash",
+      tools=TryOnMeTools.get_all(),
+      system_prompt=prompts.SYSTEM_PROMPT,
+  )
+  jules.run(luna, port=8000, streaming=True)
 
 Patente: PCT/EP2025/067317
 """
@@ -23,21 +25,27 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from twilio.twiml.voice_response import VoiceResponse
 
+import agent_logic
+import jules_config
 import prompts
 import tools as tools_mod
-from google import genai
-from google.genai import types
+from agent_70 import VoiceOrchestrator
 
 _ROOT = Path(__file__).resolve().parent
 load_dotenv(_ROOT / ".env")
 
-app = FastAPI(title="TryOnMe Voice — Luna")
+app = FastAPI(title="TryOnMe Voice — Luna / Agent 70")
+
+# Sesión por llamada Twilio (CallSid) -> estado orquestador
+_sessions: dict[str, agent_logic.AgentState] = {}
 
 
 def _gemini_key() -> str:
@@ -48,125 +56,46 @@ def _gemini_key() -> str:
 
 
 def _model_id() -> str:
-    return os.environ.get("GEMINI_MODEL", "gemini-2.0-flash").strip()
+    return os.environ.get("GEMINI_MODEL", "gemini-1.5-flash").strip()
 
 
-def _tool_declarations() -> list[dict]:
-    return [
-        {
-            "name": "consultar_stock",
-            "description": (
-                "Consulta cuántas unidades hay disponibles para probarse de un producto "
-                "en tienda / probador virtual."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "producto": {
-                        "type": "string",
-                        "description": "Nombre o referencia del producto",
-                    },
-                },
-                "required": ["producto"],
-            },
-        },
-        {
-            "name": "verificar_estado_pedido",
-            "description": "Consulta el estado de envío de un pedido del cliente.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "id_pedido": {
-                        "type": "string",
-                        "description": "Identificador del pedido",
-                    },
-                },
-                "required": ["id_pedido"],
-            },
-        },
-    ]
+def _get_orchestrator(request: Request) -> VoiceOrchestrator:
+    st = getattr(request.app.state, "voice_orchestrator", None)
+    if st is not None:
+        return st
+    orch = VoiceOrchestrator(
+        name="Luna",
+        brand="TryOnMe",
+        llm=_model_id(),
+        tools=tools_mod.TryOnMeTools.get_all(),
+        system_prompt=prompts.SYSTEM_PROMPT,
+    )
+    request.app.state.voice_orchestrator = orch
+    return orch
 
 
 def _twiml(xml: str) -> Response:
     return Response(content=xml, media_type="application/xml")
 
 
-def luna_reply(transcript: str) -> str:
-    """Un turno de conversación: Gemini + function calling + tools.py."""
-    key = _gemini_key()
-    if not key:
-        return "El servicio no está configurado. Llama más tarde."
-
-    client = genai.Client(api_key=key)
-    tool = types.Tool(function_declarations=_tool_declarations())
-    config = types.GenerateContentConfig(
-        tools=[tool],
-        system_instruction=prompts.SYSTEM_PROMPT,
-    )
-
-    contents: list[types.Content] = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part(
-                    text=(
-                        f"Transcripción del cliente (llamada de voz): {transcript}\n"
-                        "Si usas herramientas, incorpora el resultado en una respuesta final "
-                        "de una o dos frases muy cortas en español, adecuadas para leer en voz alta."
-                    ),
-                ),
-            ],
-        ),
-    ]
-
-    for _ in range(6):
-        response = client.models.generate_content(
-            model=_model_id(),
-            contents=contents,
-            config=config,
-        )
-        cands = getattr(response, "candidates", None) or []
-        if not cands:
-            return "No te he entendido bien. ¿Lo repites, por favor?"
-        parts = cands[0].content.parts or []
-
-        fcalls = [p.function_call for p in parts if getattr(p, "function_call", None)]
-        texts = [p.text for p in parts if getattr(p, "text", None)]
-
-        if not fcalls:
-            reply = "".join(texts).strip()
-            return reply or "¿Puedes repetirlo?"
-
-        contents.append(cands[0].content)
-
-        fr_parts: list[types.Part] = []
-        for fc in fcalls:
-            name = fc.name
-            raw_args = fc.args or {}
-            args = dict(raw_args) if hasattr(raw_args, "items") else {}
-            fn = tools_mod.TOOL_DISPATCH.get(name)
-            try:
-                out = fn(args) if fn else "Esa consulta no está disponible."
-            except Exception as e:
-                out = f"No se pudo completar la consulta: {e}"
-            fr_parts.append(
-                types.Part.from_function_response(
-                    name=name,
-                    response={"result": out},
-                ),
-            )
-        contents.append(types.Content(role="user", parts=fr_parts))
-
-    return "Demasiadas consultas seguidas. Prueba de nuevo en un instante."
+def luna_reply(request: Request, transcript: str) -> str:
+    """Un turno de IA (Gemini + function calling)."""
+    return _get_orchestrator(request).reply(transcript)
 
 
 @app.get("/health")
-async def health() -> dict:
-    return {"ok": True, "gemini_configured": bool(_gemini_key())}
+async def health() -> dict[str, Any]:
+    return {
+        "ok": True,
+        "gemini_configured": bool(_gemini_key()),
+        "model_default": _model_id(),
+        "jules_ws_budget_ms": jules_config.WEBSOCKET_LATENCY_BUDGET_MS,
+    }
 
 
 @app.post("/voice")
 async def voice_endpoint() -> Response:
+    """Webhook inicial Twilio (<Gather speech>)."""
     resp = VoiceResponse()
     resp.say(
         "Hola, soy Luna de TryOnMe. ¿En qué puedo ayudarte?",
@@ -191,8 +120,26 @@ async def voice_endpoint() -> Response:
 async def respond_endpoint(request: Request) -> Response:
     form = await request.form()
     transcript = (form.get("SpeechResult") or form.get("speechResult") or "").strip()
+    call_sid = (form.get("CallSid") or "local").strip()
+
+    prev = _sessions.get(call_sid, agent_logic.AgentState.SALUDO)
+    nxt = agent_logic.infer_next_state(transcript, prev)
+    _sessions[call_sid] = nxt
+    print(
+        f"[Agent70] CallSid={call_sid} state={agent_logic.label_for_logs(prev)}"
+        f" -> {agent_logic.label_for_logs(nxt)}",
+        file=sys.stderr,
+    )
 
     resp = VoiceResponse()
+    if nxt == agent_logic.AgentState.CIERRE and transcript:
+        resp.say(
+            "Gracias por llamar a TryOnMe. Hasta pronto.",
+            voice="Polly.Conchita",
+            language="es-ES",
+        )
+        return _twiml(str(resp))
+
     if not transcript:
         resp.say(
             "No te he oído bien. ¿Puedes repetirlo?",
@@ -201,7 +148,7 @@ async def respond_endpoint(request: Request) -> Response:
         )
     else:
         try:
-            text = luna_reply(transcript)
+            text = luna_reply(request, transcript)
         except Exception as e:
             print(f"[Luna] error: {e}", file=sys.stderr)
             text = "Ha ocurrido un problema técnico. Prueba en unos segundos."
@@ -219,6 +166,37 @@ async def respond_endpoint(request: Request) -> Response:
         language="es-ES",
     )
     return _twiml(str(resp))
+
+
+@app.websocket("/media-stream")
+async def media_stream_ws(websocket: WebSocket) -> None:
+    """
+    Jules: WebSocket para Twilio Media Streams (o pruebas).
+    El accept debe completarse dentro del presupuesto de latencia configurado.
+    """
+    t0 = time.perf_counter()
+    await websocket.accept()
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    if elapsed_ms > jules_config.WEBSOCKET_LATENCY_BUDGET_MS:
+        print(
+            f"[Jules] WS accept {elapsed_ms:.0f}ms "
+            f"(presupuesto {jules_config.WEBSOCKET_LATENCY_BUDGET_MS}ms)",
+            file=sys.stderr,
+        )
+    try:
+        await websocket.send_text('{"event":"connected","protocol":"Call"}')
+        while True:
+            msg = await websocket.receive_text()
+            raw = msg.encode("utf-8")
+            if len(raw) > jules_config.MAX_WS_MESSAGE_BYTES:
+                break
+            t_ack = time.perf_counter()
+            await websocket.send_json({"event": "mark", "mark": {"name": "jules_ack"}})
+            ack_ms = (time.perf_counter() - t_ack) * 1000
+            if ack_ms > jules_config.STREAM_ACK_TARGET_MS:
+                print(f"[Jules] ack lento: {ack_ms:.0f}ms", file=sys.stderr)
+    except WebSocketDisconnect:
+        pass
 
 
 if __name__ == "__main__":
