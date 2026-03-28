@@ -1,7 +1,8 @@
 """
-Jules V10 — purga y consolidación de soberanía (cachés y residuos locales).
+Jules V10 — purga y consolidación de soberanía (limpieza local de artefactos).
 
-Elimina carpetas de caché conocidas bajo la raíz del repo; no borra node_modules completo.
+Elimina solo bajo la raíz del repo: .next, node_modules/.cache, __pycache__ (recursivo),
+temp_logs. No borra node_modules completo ni .env.
 
 Patente: PCT/EP2025/067317
 
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from pathlib import Path
 
 
@@ -19,67 +21,62 @@ def _root() -> Path:
     return Path(__file__).resolve().parent
 
 
-def _should_skip_path(p: Path, root: Path) -> bool:
-    try:
-        rel = p.relative_to(root)
-    except ValueError:
-        return True
-    parts = set(rel.parts)
-    if ".venv" in parts or "venv" in parts:
-        return True
-    if ".git" in parts:
-        return True
-    return False
-
-
 class BunkerCleaner:
     def __init__(self) -> None:
-        self.root = _root()
         self.siret = "94361019600017"
         self.patent = "PCT/EP2025/067317"
         self.critical_files = ["unificar_v10.py", "supercommit_max.sh", "image.png"]
+        self.root = _root()
 
-    def _remove_dir_if_exists(self, rel: str) -> None:
-        path = self.root / rel
-        if path.is_dir():
+    def _safe_rmtree(self, path: Path) -> bool:
+        if not path.exists():
+            return False
+        try:
             shutil.rmtree(path)
-            print(f"🗑️ Eliminado: {rel}")
+            return True
+        except OSError as e:
+            print(f"⚠️  No se pudo eliminar {path}: {e}", file=sys.stderr)
+            return False
 
-    def _purge_pycache_under_root(self) -> None:
-        for p in sorted(self.root.rglob("__pycache__"), key=lambda x: len(x.parts), reverse=True):
-            if not p.is_dir() or _should_skip_path(p, self.root):
-                continue
-            shutil.rmtree(p)
+    def _remove_pycache_under_root(self) -> int:
+        """Borra carpetas __pycache__ bajo el repo; no entra en .git / .venv / node_modules."""
+        found: list[Path] = []
+        skip_top = {".git", ".venv", "venv", "node_modules", "dist", "build"}
+        for dirpath, dirnames, _filenames in os.walk(self.root, topdown=True):
+            dirnames[:] = [d for d in dirnames if d not in skip_top]
+            if Path(dirpath).name == "__pycache__":
+                found.append(Path(dirpath))
+        n = 0
+        for p in sorted(found, key=lambda x: len(x.parts), reverse=True):
             try:
                 rel = p.relative_to(self.root)
             except ValueError:
-                rel = p
-            print(f"🗑️ Eliminado: {rel}")
+                continue
+            if self._safe_rmtree(p):
+                print(f"🗑️ Eliminado: {rel}")
+                n += 1
+        return n
 
     def ejecutar_limpieza(self) -> str:
-        os.chdir(self.root)
-        print("🧹 Iniciando limpieza de residuos técnicos (cachés)...")
+        print("🧹 Iniciando limpieza de residuos bajo el repo…")
 
-        print(f"✅ [Jules]: Sello operativo — rama de trabajo: {self.root}")
-        print(f"   Patente (ref.): {self.patent} · SIRET (ref.): {self.siret}")
+        print(f"✅ [Jules]: Sello operativo alineado con @CertezaAbsoluta / rama de trabajo.")
+        print(f"    ROOT: {self.root}")
 
-        for name in self.critical_files:
-            p = self.root / name
-            print(f"   📌 Activo: {name}" if p.is_file() else f"   ⚠️  No hallado: {name}")
-
-        trash_rel = [
-            ".next",
-            "mirror_ui/.next",
-            "node_modules/.cache",
-            "mirror_ui/node_modules/.cache",
-            "temp_logs",
+        trash_paths = [
+            self.root / ".next",
+            self.root / "node_modules" / ".cache",
+            self.root / "mirror_ui" / "node_modules" / ".cache",
+            self.root / "temp_logs",
         ]
-        for rel in trash_rel:
-            self._remove_dir_if_exists(rel)
+        for folder in trash_paths:
+            if self._safe_rmtree(folder):
+                print(f"🗑️ Eliminado: {folder.relative_to(self.root)}")
 
-        self._purge_pycache_under_root()
+        self._remove_pycache_under_root()
 
-        print(f"💎 Referencia soberanía / trazabilidad: SIRET {self.siret}")
+        print(f"💎 Referencia activos: SIRET {self.siret} · patente {self.patent}")
+        print(f"📌 Archivos críticos (no se borran; solo referencia): {', '.join(self.critical_files)}")
 
         return "✨ Búnker limpio. JULES enfocado 100% en la liquidez de Bpifrance."
 
