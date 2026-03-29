@@ -25,6 +25,21 @@
   </nav>
   <main style="text-align:center; padding:40px;">
     <h1>ARRÊTEZ LE FAUX-FIT.</h1>
+    <div id="launch-timer" style="margin-top:20px; color:#D4AF37; font-family:'Inter', sans-serif; font-size:1.2rem; letter-spacing:3px;">
+        LANCEMENT OFFICIEL : MAI 2026 | <span id="days-count">--</span> JOURS RESTANTS
+    </div>
+    <script>
+        const targetDate = new Date('May 1, 2026 00:00:00').getTime();
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            document.getElementById('days-count').innerHTML = days;
+        }
+        setInterval(updateTimer, 1000);
+        updateTimer();
+    </script>
+    
     <div id="mirror-v10">
       <video id="webcam" autoplay playsinline style="width:100%;"></video>
       <img id="overlay-garment" src="assets/balmain_look.png">
