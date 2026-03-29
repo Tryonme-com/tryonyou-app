@@ -1,14 +1,7 @@
 {
-    "metadata": {
-        "founder": "Ruben Espinar Rodriguez",
-        "patent": "PCT/EP2025/067317",
-        "siret": "94361019600017",
-        "org": "Tryonme-com"
-    },
-    "features": [
-        "Mirror_Overlay_V10",
-        "Stripe_Secure_Link",
-        "VIP_QR_Reservation"
-    ],
-    "status": "PRODUCTION_READY"
+    "founder": "Ruben Espinar Rodriguez",
+    "patent": "PCT/EP2025/067317",
+    "siret": "94361019600017",
+    "project_id": "gen-lang-client-0091228222",
+    "branch": "magia-dorada-25e9d"
 }
