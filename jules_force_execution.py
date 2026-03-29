@@ -1,3 +1,16 @@
+"""
+Envío SMTP de prueba (Gmail) — protocolo Jules / notificación de demostración.
+
+Credenciales solo por entorno:
+  GMAIL_USER, GMAIL_APP_PASSWORD (contraseña de aplicación, no la cuenta normal).
+
+Destinatario: argumento CLI, o JULES_TEST_DEST.
+
+Patente: PCT/EP2025/067317
+"""
+from __future__ import annotations
+
+import argparse
 import os
 import ssl
 import sys
@@ -7,24 +20,25 @@ import smtplib
 
 
 class Jules_Force_Execution:
-    def __init__(self):
+    def __init__(self) -> None:
         self.patente = "PCT/EP2025/067317"
         self.v10_4 = "V10.4 Stealth Edition"
         self.tu_email = os.getenv("GMAIL_USER", "").strip()
         self.app_password = os.getenv("GMAIL_APP_PASSWORD", "").strip()
 
-    def disparar_prueba_real(self, destinatario: str) -> None:
+    def disparar_prueba_real(self, destinatario: str) -> int:
         if not self.tu_email or not self.app_password:
             print(
                 "❌ Define GMAIL_USER y GMAIL_APP_PASSWORD en el entorno "
-                "(contraseña de aplicación de Google, no la contraseña normal)."
+                "(contraseña de aplicación de Google, no la contraseña normal).",
+                file=sys.stderr,
             )
-            return
+            return 2
 
         destinatario = destinatario.strip()
         if not destinatario:
-            print("❌ Falta destinatario.")
-            return
+            print("❌ Falta destinatario.", file=sys.stderr)
+            return 2
 
         print(f"🔥 Jules: Iniciando Disparo Forzado a {destinatario}...")
 
@@ -58,18 +72,41 @@ class Jules_Force_Execution:
                 server.login(self.tu_email, self.app_password)
                 server.send_message(msg)
             print("✅ ¡BOOM! Email enviado con éxito. Revisa la bandeja del destinatario.")
+            return 0
         except Exception as e:
-            print(f"❌ Error en el Force-Mode: {e}")
-            print("💡 Jules: Activa la contraseña de aplicación en la cuenta de Google.")
+            print(f"❌ Error en el Force-Mode: {e}", file=sys.stderr)
+            print(
+                "💡 Jules: Activa la contraseña de aplicación en la cuenta de Google.",
+                file=sys.stderr,
+            )
+            return 1
 
 
-if __name__ == "__main__":
-    dest = (sys.argv[1] if len(sys.argv) > 1 else os.getenv("JULES_TEST_DEST", "")).strip()
-    if not dest:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description="Jules Force Execution — envío de correo de prueba vía Gmail SMTP.",
+    )
+    p.add_argument(
+        "destinatario",
+        nargs="?",
+        default=os.getenv("JULES_TEST_DEST", "").strip(),
+        help="Email destino (si falta, usa JULES_TEST_DEST)",
+    )
+    return p.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+    if not args.destinatario:
         print(
             "⚠️  Uso: JULES_TEST_DEST=correo@ejemplo.com python3 jules_force_execution.py\n"
             "   o: python3 jules_force_execution.py correo@ejemplo.com\n"
-            "   Credenciales: GMAIL_USER + GMAIL_APP_PASSWORD en el entorno."
+            "   Credenciales: GMAIL_USER + GMAIL_APP_PASSWORD en el entorno.",
+            file=sys.stderr,
         )
-    else:
-        Jules_Force_Execution().disparar_prueba_real(dest)
+        return 2
+    return Jules_Force_Execution().disparar_prueba_real(args.destinatario)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
