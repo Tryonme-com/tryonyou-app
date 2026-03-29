@@ -9,5 +9,15 @@
             "vip@tryonyou.app"
         ],
         "sovereignty_level": "TOTAL"
+    },
+    "deployment": {
+        "verified_domains": [
+            "abvetos.com",
+            "tryonme.com",
+            "tryonme.app",
+            "tryonme.org"
+        ],
+        "hosting": "Vercel Sovereign Cloud",
+        "status": "LIVE"
     }
 }
