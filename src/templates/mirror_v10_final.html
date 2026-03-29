@@ -861,6 +861,165 @@
       font-family: var(--font-body);
     }
 
+    /* ── MIRROR TRY-ON — Live AR Overlay ── */
+    #mirror-view {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: #000;
+      display: none;
+      flex-direction: column;
+    }
+
+    #mirror-view.is-active { display: flex; }
+
+    .mirror-viewport {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #mirror-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      background: #000;
+    }
+
+    #mirror-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform: scaleX(-1);
+    }
+
+    .mirror-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      z-index: 5;
+      gap: 16px;
+    }
+
+    .mirror-loading-dots { display: flex; gap: 8px; }
+
+    .mirror-loading-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: mirrorDot 1.4s infinite ease-in-out both;
+    }
+
+    .mirror-loading-dot:nth-child(1) { animation-delay: 0s; }
+    .mirror-loading-dot:nth-child(2) { animation-delay: 0.16s; }
+    .mirror-loading-dot:nth-child(3) { animation-delay: 0.32s; }
+
+    @keyframes mirrorDot {
+      0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    .mirror-loading-text {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--grey);
+    }
+
+    .mirror-hud-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+    }
+
+    .mirror-hud-label {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .mirror-hud-close {
+      width: 36px;
+      height: 36px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--white);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+      line-height: 1;
+    }
+
+    .mirror-hud-close:hover { border-color: var(--gold); color: var(--gold); }
+
+    .mirror-hud-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      z-index: 10;
+      padding: 32px 20px 24px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mirror-item-brand {
+      font-size: 0.55rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .mirror-item-name {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-align: center;
+    }
+
+    .mirror-precision-text {
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--grey);
+      margin-bottom: 10px;
+    }
+
+    .mirror-btn-exit {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.7);
+      padding: 9px 22px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .mirror-btn-exit:hover { border-color: var(--gold); color: var(--gold); }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       .nav { padding: 16px 20px; }
@@ -1073,7 +1232,7 @@
         <div class="modal-price" id="modal-price">—</div>
         <div style="font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--grey);">Prix boutique</div>
       </div>
-      <a href="#sovereignty" class="btn-sovereignty" id="modal-cta" onclick="closeModal()">Essayer maintenant</a>
+      <button class="btn-sovereignty" id="modal-cta">Essayer maintenant</button>
     </div>
   </div>
 
@@ -1122,7 +1281,10 @@
     }
 
     // ── Modal ──
+    var _currentModalItem = null;
+
     function openModal(item) {
+      _currentModalItem = item;
       document.getElementById('modal-title').textContent = item.name;
       document.getElementById('modal-brand').textContent = item.brand + ' — ' + item.category;
       document.getElementById('modal-precision').textContent = item.precision + '%';
@@ -1139,6 +1301,10 @@
     }
 
     document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-cta').addEventListener('click', function () {
+      closeModal();
+      openMirror(_currentModalItem);
+    });
     document.getElementById('modal-overlay').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
@@ -1190,6 +1356,202 @@
       validateStripeLinks();
       julesPing();
     });
+
+    // ── Mirror Try-On Engine ──
+    (function () {
+      var mirrorStream  = null;
+      var mirrorRAF     = null;
+      var mirrorItem    = null;
+      var garmentImg    = new Image();
+      var garmentReady  = false;
+
+      var viewEl    = null;
+      var videoEl   = null;
+      var canvasEl  = null;
+      var loadingEl = null;
+      var nameEl    = null;
+      var brandEl   = null;
+      var precEl    = null;
+
+      function init() {
+        viewEl    = document.getElementById('mirror-view');
+        videoEl   = document.getElementById('mirror-video');
+        canvasEl  = document.getElementById('mirror-canvas');
+        loadingEl = document.getElementById('mirror-loading');
+        nameEl    = document.getElementById('mirror-item-name');
+        brandEl   = document.getElementById('mirror-item-brand');
+        precEl    = document.getElementById('mirror-precision-text');
+
+        document.getElementById('mirror-hud-close').addEventListener('click', closeMirror);
+        document.getElementById('mirror-btn-exit').addEventListener('click', closeMirror);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && viewEl.classList.contains('is-active')) closeMirror();
+        });
+        window.addEventListener('resize', function () {
+          if (viewEl.classList.contains('is-active')) syncCanvasSize();
+        });
+      }
+
+      /* Sync canvas pixel dimensions to displayed video size */
+      function syncCanvasSize() {
+        var w = videoEl.clientWidth  || viewEl.clientWidth;
+        var h = videoEl.clientHeight || viewEl.clientHeight;
+        if (canvasEl.width !== w || canvasEl.height !== h) {
+          canvasEl.width  = w;
+          canvasEl.height = h;
+        }
+      }
+
+      /* Draw garment overlay on every animation frame */
+      function drawFrame() {
+        mirrorRAF = requestAnimationFrame(drawFrame);
+        syncCanvasSize();
+        var ctx = canvasEl.getContext('2d');
+        var cw  = canvasEl.width;
+        var ch  = canvasEl.height;
+        ctx.clearRect(0, 0, cw, ch);
+        if (!garmentReady || !garmentImg.naturalWidth) return;
+
+        /*
+         * Garment placement heuristic (no external pose library):
+         *   - Center horizontally
+         *   - Top aligned to ~22 % from top (approximate shoulder line)
+         *   - Width ~52 % of frame; height auto-scaled preserving aspect ratio
+         *   - Clamped so garment never exceeds 82 % of frame height
+         */
+        var gW = cw * 0.52;
+        var gH = gW * (garmentImg.naturalHeight / garmentImg.naturalWidth);
+        var gX = (cw - gW) / 2;
+        var gY = ch * 0.22;
+
+        if (gY + gH > ch * 0.82) {
+          gH = ch * 0.82 - gY;
+          gW = gH * (garmentImg.naturalWidth / garmentImg.naturalHeight);
+          gX = (cw - gW) / 2;
+        }
+
+        ctx.globalAlpha = 0.80;
+        ctx.drawImage(garmentImg, gX, gY, gW, gH);
+        ctx.globalAlpha = 1;
+      }
+
+      /* Static fallback rendered when no camera is available */
+      function drawFallback() {
+        mirrorRAF = requestAnimationFrame(drawFallback);
+        syncCanvasSize();
+        var ctx = canvasEl.getContext('2d');
+        var cw  = canvasEl.width;
+        var ch  = canvasEl.height;
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, cw, ch);
+
+        if (garmentReady && garmentImg.naturalWidth) {
+          var gW = cw * 0.52;
+          var gH = gW * (garmentImg.naturalHeight / garmentImg.naturalWidth);
+          var gX = (cw - gW) / 2;
+          var gY = ch * 0.22;
+          if (gY + gH > ch * 0.82) {
+            gH = ch * 0.82 - gY;
+            gW = gH * (garmentImg.naturalWidth / garmentImg.naturalHeight);
+            gX = (cw - gW) / 2;
+          }
+          ctx.globalAlpha = 0.9;
+          ctx.drawImage(garmentImg, gX, gY, gW, gH);
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = 'rgba(212,175,55,0.5)';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('DÉMO · CAMÉRA NON DISPONIBLE', cw / 2, ch - 28);
+      }
+
+      function openMirrorView(item) {
+        if (!viewEl) init();
+        mirrorItem   = item;
+        garmentReady = false;
+
+        brandEl.textContent = item.brand;
+        nameEl.textContent  = item.name;
+        precEl.textContent  = '\u25C8 ' + item.precision + '% \u00B7 Certifi\u00E9 Divineo V10';
+
+        viewEl.classList.add('is-active');
+        loadingEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        garmentImg = new Image();
+        garmentImg.crossOrigin = 'anonymous';
+        garmentImg.onload  = function () { garmentReady = true; };
+        garmentImg.onerror = function () { garmentReady = false; };
+        garmentImg.src = item.image;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          loadingEl.style.display = 'none';
+          syncCanvasSize();
+          drawFallback();
+          return;
+        }
+
+        navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        }).then(function (stream) {
+          mirrorStream = stream;
+          videoEl.srcObject = stream;
+          videoEl.onloadedmetadata = function () {
+            loadingEl.style.display = 'none';
+            syncCanvasSize();
+            drawFrame();
+          };
+        }).catch(function () {
+          loadingEl.style.display = 'none';
+          syncCanvasSize();
+          drawFallback();
+        });
+      }
+
+      function closeMirror() {
+        if (!viewEl) return;
+        viewEl.classList.remove('is-active');
+        document.body.style.overflow = '';
+        if (mirrorRAF)    { cancelAnimationFrame(mirrorRAF); mirrorRAF = null; }
+        if (mirrorStream) {
+          mirrorStream.getTracks().forEach(function (t) { t.stop(); });
+          mirrorStream = null;
+        }
+        videoEl.srcObject = null;
+        var ctx = canvasEl.getContext('2d');
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      }
+
+      document.addEventListener('DOMContentLoaded', init);
+      window.openMirror = openMirrorView;
+    }());
   </script>
+
+  <!-- MIRROR TRY-ON VIEW -->
+  <div id="mirror-view" role="dialog" aria-modal="true" aria-label="Miroir d'essayage virtuel">
+    <div class="mirror-viewport">
+      <div class="mirror-loading" id="mirror-loading">
+        <div class="mirror-loading-dots">
+          <div class="mirror-loading-dot"></div>
+          <div class="mirror-loading-dot"></div>
+          <div class="mirror-loading-dot"></div>
+        </div>
+        <div class="mirror-loading-text">Initialisation du miroir...</div>
+      </div>
+      <video id="mirror-video" autoplay muted playsinline></video>
+      <canvas id="mirror-canvas"></canvas>
+      <div class="mirror-hud-top">
+        <span class="mirror-hud-label">Essayage Virtuel · V10</span>
+        <button class="mirror-hud-close" id="mirror-hud-close" aria-label="Fermer le miroir">✕</button>
+      </div>
+      <div class="mirror-hud-bottom">
+        <div class="mirror-item-brand" id="mirror-item-brand">—</div>
+        <div class="mirror-item-name" id="mirror-item-name">—</div>
+        <div class="mirror-precision-text" id="mirror-precision-text">—</div>
+        <button class="mirror-btn-exit" id="mirror-btn-exit">Fermer le miroir</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
