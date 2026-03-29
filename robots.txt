@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 Allow: /index.html
 Allow: /success.html
-Disallow: /reservas/
-Disallow: /pilot_analytics.json
 Sitemap: https://tryonyou.app/sitemap.xml
+
+# Proteger el cerebro financiero y analíticas
+Disallow: /pilot_analytics.json
+Disallow: /reservas/
