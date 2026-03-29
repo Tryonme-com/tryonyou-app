@@ -5,5 +5,16 @@
         "brand": "Balmain",
         "verification_status": "PATENT_PROTECTED",
         "patent_ref": "PCT/EP2025/067317"
+    },
+    {
+        "event": "RESERVA_CONFIRMADA",
+        "brand": "SAC MUSEUM",
+        "item": "PI\u00c8CE D'ARCHIVE 1954",
+        "fit_score": "99.8%",
+        "efecto_paloma": "ACTIVADO",
+        "location": "Galeries Lafayette Haussmann, Paris",
+        "revenue_potential": "12.500 \u20ac",
+        "patent": "PCT/EP2025/067317",
+        "timestamp": "2026-03-29T21:18:37.496402"
     }
 ]
