@@ -6,8 +6,6 @@ Credenciales solo por entorno:
 
 Destinatario: argumento CLI, o JULES_TEST_DEST.
 
-En orquestador_pau_total.py la fase email usa ORQUESTA_EMAIL_TEST (mismas credenciales).
-
 Patente: PCT/EP2025/067317
 """
 from __future__ import annotations
@@ -21,16 +19,12 @@ from email.message import EmailMessage
 import smtplib
 
 
-def _env_str(key: str) -> str:
-    return os.getenv(key, "").strip().strip('"').strip("'")
-
-
-class JulesForceExecution:
+class Jules_Force_Execution:
     def __init__(self) -> None:
         self.patente = "PCT/EP2025/067317"
         self.v10_4 = "V10.4 Stealth Edition"
-        self.tu_email = _env_str("GMAIL_USER")
-        self.app_password = _env_str("GMAIL_APP_PASSWORD")
+        self.tu_email = os.getenv("GMAIL_USER", "").strip()
+        self.app_password = os.getenv("GMAIL_APP_PASSWORD", "").strip()
 
     def disparar_prueba_real(self, destinatario: str) -> int:
         if not self.tu_email or not self.app_password:
@@ -41,7 +35,7 @@ class JulesForceExecution:
             )
             return 2
 
-        destinatario = destinatario.strip().strip('"').strip("'")
+        destinatario = destinatario.strip()
         if not destinatario:
             print("❌ Falta destinatario.", file=sys.stderr)
             return 2
@@ -95,7 +89,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "destinatario",
         nargs="?",
-        default=_env_str("JULES_TEST_DEST"),
+        default=os.getenv("JULES_TEST_DEST", "").strip(),
         help="Email destino (si falta, usa JULES_TEST_DEST)",
     )
     return p.parse_args(argv)
@@ -111,11 +105,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    return JulesForceExecution().disparar_prueba_real(args.destinatario)
-
-
-# Alias histórico (orquestador / imports antiguos)
-Jules_Force_Execution = JulesForceExecution
+    return Jules_Force_Execution().disparar_prueba_real(args.destinatario)
 
 
 if __name__ == "__main__":
