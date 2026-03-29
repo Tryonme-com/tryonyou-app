@@ -2,6 +2,12 @@
     "founder": "Ruben Espinar Rodriguez",
     "patent": "PCT/EP2025/067317",
     "siret": "94361019600017",
-    "project_id": "gen-lang-client-0091228222",
-    "branch": "magia-dorada-25e9d"
+    "identity_system": {
+        "official_emails": [
+            "ruben@tryonyou.app",
+            "admin@tryonyou.app",
+            "vip@tryonyou.app"
+        ],
+        "sovereignty_level": "TOTAL"
+    }
 }
