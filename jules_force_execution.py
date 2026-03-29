@@ -123,8 +123,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "destinatario",
         nargs="?",
-        default=os.getenv("JULES_TEST_DEST", "").strip(),
+        default=_env_strip("JULES_TEST_DEST"),
         help="Email destino (si falta, usa JULES_TEST_DEST)",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="No envía; valida credenciales/destino y muestra resumen.",
     )
     return p.parse_args(argv)
 
@@ -135,11 +140,14 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "⚠️  Uso: JULES_TEST_DEST=correo@ejemplo.com python3 jules_force_execution.py\n"
             "   o: python3 jules_force_execution.py correo@ejemplo.com\n"
-            "   Credenciales: GMAIL_USER + GMAIL_APP_PASSWORD en el entorno.",
+            "   Credenciales: GMAIL_USER + GMAIL_APP_PASSWORD en el entorno.\n"
+            "   Opcional: python3 jules_force_execution.py --dry-run correo@ejemplo.com",
             file=sys.stderr,
         )
         return 2
-    return Jules_Force_Execution().disparar_prueba_real(args.destinatario)
+    return Jules_Force_Execution().disparar_prueba_real(
+        args.destinatario, dry_run=args.dry_run
+    )
 
 
 if __name__ == "__main__":
