@@ -87,5 +87,18 @@
             alert("Connexion sécurisée à " + type + ". Analyse de fit en cours.");
         }
     </script>
+    
+    <script>
+        const authorizedDomains = ['tryonme.app', 'localhost'];
+        const currentHost = window.location.hostname;
+        
+        if (!authorizedDomains.some(domain => currentHost.includes(domain))) {
+            console.log("⚠️ Acceso vía Satélite detectado. Validando integridad...");
+        }
+        
+        function showSovereignInfo() {
+            alert("Réseau TryOnMe : abvetos.com | tryonme.com | tryonme.org - Piloté par Rubén Espinar.");
+        }
+    </script>
     </body>
 </html>
