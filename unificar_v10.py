@@ -7,10 +7,10 @@ Clave Gemini / AI Studio solo por entorno (nunca en el código):
   pip install google-generativeai
   cd mirror_ui && npm install
   python3 unificar_v10.py
-  python3 -c "from unificar_v10 import arranque_unidad_produccion; arranque_unidad_produccion()"
+  python3 arranque_unidad_produccion.py   # alias
+  python3 activar_unidad_v10.py          # alias
 
 Opcional: E50_PROJECT_ROOT (raíz del repo; por defecto carpeta del script).
-Nunca incrustes la clave en el código; usa GEMINI_API_KEY / GOOGLE_API_KEY / VITE_GOOGLE_API_KEY.
 """
 
 from __future__ import annotations
@@ -79,12 +79,10 @@ def _pau_gemini_probe() -> None:
             generation_config={"temperature": 0.1, "max_output_tokens": 512},
         )
         r = model.generate_content(
-            "PAU Le Paon: confirma en una frase la certidumbre operativa V10 para retail "
-            "(Galeries Lafayette / LVT-FRA). Tono refinado, sincero."
+            "PAU Le Paon: confirma en una frase breve que el búnker está listo para el 'Snap' en París (V10, LVT-FRA)."
         )
         text = (r.text or "").strip().replace("\n", " ")
-        preview = text[:50] + ("…" if len(text) > 50 else "")
-        print(f"✨ PAU Le Paon: {preview}")
+        print(f"✨ PAU (Gemini): {text[:200]}{'…' if len(text) > 200 else ''}")
     except ImportError:
         print("⚠️  Instala: pip install google-generativeai")
     except Exception as e:
@@ -94,7 +92,7 @@ def _pau_gemini_probe() -> None:
 def ejecutar_secuencia_maestra() -> int:
     root = _root()
     ui = _mirror_ui(root)
-    print(f"\n⚡ [{datetime.now().strftime('%H:%M:%S')}] PROTOCOLO AUTÓNOMO V10")
+    print(f"\n⚡ [{datetime.now().strftime('%H:%M:%S')}] DESPEGUE V10 — protocolo autónomo")
     print("-" * 50)
 
     if not (ui / "package.json").is_file():
@@ -118,9 +116,9 @@ def ejecutar_secuencia_maestra() -> int:
         return 1
 
     time.sleep(2.5)
-    print(f"🌐 Abriendo {VITE_URL} …")
+    print(f"🌐 Espejo digital: {VITE_URL}")
     webbrowser.open(VITE_URL)
-    print("⌛ Vite en marcha. Ctrl+C en esta terminal para detener.\n")
+    print("⌛ Vite en marcha (Ctrl+C para detener).\n")
     try:
         return 0 if proc.wait() == 0 else proc.returncode or 1
     except KeyboardInterrupt:
@@ -134,8 +132,12 @@ def ejecutar_secuencia_maestra() -> int:
 
 
 def arranque_unidad_produccion() -> int:
-    """Alias del snippet «arranque unidad producción» — misma secuencia que ejecutar_secuencia_maestra."""
-    print(f"⚖️ Validando patente {PATENT}…")
+    """Mismo flujo que `ejecutar_secuencia_maestra` (nombre alineado con el protocolo búnker)."""
+    return ejecutar_secuencia_maestra()
+
+
+def activar_unidad_v10() -> int:
+    """Alias de despegue V10 / espejo (misma implementación segura que `ejecutar_secuencia_maestra`)."""
     return ejecutar_secuencia_maestra()
 
 

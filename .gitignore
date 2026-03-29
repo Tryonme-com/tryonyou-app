@@ -16,3 +16,8 @@ venv/
 
 .DS_Store
 .env*.local
+
+# Borradores generados (operacion_rescate_soberania_v10.py)
+operacion_rescate/
+leads_francia/
+Bpifrance_Envio_Urgente/

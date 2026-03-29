@@ -50,6 +50,8 @@ class MirrorSanctuaryV10:
         self.root = _project_root()
         self.precision = 98.4
         self.brand = "Balmain"
+        # CONSOLIDA 70 cierra build/entrega; Jules (log/criterio); Team50 activos.
+        # Mesas de listings (soberanía, inversión) alineadas con omega_consolidator_safe.
         self.active_agents = ["Jules", "Agent70", "Team50"]
 
     def check_visual_assets(self) -> dict[str, object]:
