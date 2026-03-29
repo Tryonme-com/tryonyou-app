@@ -1,42 +1,29 @@
 [
     {
-        "id": "bal_001",
-        "brand": "BALMAIN",
-        "name": "ROBE OR V10",
-        "technical_specs": {"shoulder_max": 48, "waist_max": 35},
-        "price_eur": 4500,
-        "img": "assets/balmain_gold.png"
+        "id": "as_001",
+        "brand": "ARMARIO SOLIDARIO",
+        "name": "VESTE SOLIDAIRE V10",
+        "technical_specs": {"shoulder_max": 46, "waist_max": 34},
+        "price_eur": 0,
+        "type": "DONATION",
+        "img": "assets/solidario_veste.png"
     },
     {
-        "id": "cha_001",
-        "brand": "CHANEL",
-        "name": "TAILLEUR TWEED ICONIQUE",
-        "technical_specs": {"shoulder_max": 44, "waist_max": 32},
-        "price_eur": 6200,
-        "img": "assets/chanel_tweed.png"
+        "id": "ai_102",
+        "brand": "ARMARIO INTELIGENTE",
+        "name": "ENSEMBLE CONNECTÉ OMEGA",
+        "technical_specs": {"shoulder_max": 48, "waist_max": 36},
+        "price_eur": 850,
+        "type": "SMART_RENTAL",
+        "img": "assets/smart_ensemble.png"
     },
     {
-        "id": "dio_001",
-        "brand": "DIOR",
-        "name": "VESTE BAR V10",
-        "technical_specs": {"shoulder_max": 46, "waist_max": 30},
-        "price_eur": 4100,
-        "img": "assets/dior_bar.png"
-    },
-    {
-        "id": "ysl_001",
-        "brand": "SAINT LAURENT",
-        "name": "LE SMOKING NOIR",
-        "technical_specs": {"shoulder_max": 50, "waist_max": 34},
-        "price_eur": 3900,
-        "img": "assets/ysl_smoking.png"
-    },
-    {
-        "id": "jac_001",
-        "brand": "JACQUEMUS",
-        "name": "LA ROBE AMARU",
+        "id": "sac_m_001",
+        "brand": "SAC MUSEUM",
+        "name": "PIÈCE D'ARCHIVE 1954",
         "technical_specs": {"shoulder_max": 42, "waist_max": 28},
-        "price_eur": 1200,
-        "img": "assets/jacquemus_amaru.png"
+        "price_eur": 12500,
+        "type": "MUSEUM_PIECE",
+        "img": "assets/sac_museum_archive.png"
     }
 ]
