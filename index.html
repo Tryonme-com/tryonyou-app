@@ -27,16 +27,16 @@
     }
     .divineo-seal {
       position: fixed;
-      bottom: 15px;
-      left: 15px;
+      bottom: 20px;
+      left: 20px;
       z-index: 50;
-      width: 12px;
-      height: 12px;
-      opacity: 0.4;
+      width: 14px;
+      height: 14px;
+      opacity: 0.35;
       pointer-events: none;
     }
     .divineo-seal img {
-      width: 12px;
+      width: 14px;
       height: auto;
       max-height: 20px;
       display: block;
@@ -44,8 +44,8 @@
     }
     .divineo-seal-fallback {
       display: none;
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: radial-gradient(circle at 32% 32%, #f5e6c8 0%, #D4AF37 50%, #5c4a12 100%);
       box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -92,9 +92,9 @@
       </div>
     </nav>
     <p style="margin:0;padding:10px 20px 4px;text-align:right;font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #1a1a1a;">
-      <a href="{{STRIPE_LINK_4_5M}}" style="color:#D4AF37;text-decoration:none;">Soberanía 4,5M €</a>
+      <a href="{{STRIPE_LINK_4_5M}}" id="link-4-5m" style="color:#D4AF37;text-decoration:none;">Soberanía 4,5M €</a>
       <span style="color:#333;margin:0 10px;">|</span>
-      <a href="{{STRIPE_LINK_98K}}" style="color:#D4AF37;text-decoration:none;">Soberanía 98k €</a>
+      <a href="{{STRIPE_LINK_98K}}" id="link-98k" style="color:#D4AF37;text-decoration:none;">Soberanía 98k €</a>
     </p>
 
     <div style="text-align:center;padding:100px 20px;">
@@ -201,7 +201,7 @@
       <img
         src="/logo_pavo_real.png"
         alt="Sello Divineo — Sceau Divineo — Divineo seal"
-        width="12"
+        width="14"
         loading="lazy"
         decoding="async"
         onerror="var c=(typeof this.closest==='function')?this.closest('.divineo-seal'):null;if(c&amp;&amp;c.classList)c.classList.add('is-fallback');"
@@ -209,5 +209,34 @@
       <div class="divineo-seal-fallback" title="Sceau Divineo" aria-hidden="true"></div>
     </div>
   </section>
+  <script>
+    /* ── Stripe link validation (Pau Snap) ── */
+    function validateStripeLinks() {
+      ['link-4-5m', 'link-98k'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && (el.getAttribute('href') === '#' || el.getAttribute('href') === '' || !el.getAttribute('href'))) {
+          el.style.opacity = '0.4';
+          el.style.pointerEvents = 'none';
+          el.title = 'Enlace de pago pendiente de configuración';
+        }
+      });
+    }
+
+    /* ── Jules POST ping ── */
+    async function julesPing() {
+      try {
+        var res = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (res.ok) {
+          var data = await res.json();
+          console.log('[Jules]', data.jules_msg || 'Online');
+        }
+      } catch (e) { console.warn('[Jules] ping failed:', e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      validateStripeLinks();
+      julesPing();
+    });
+  </script>
 </body>
 </html>
