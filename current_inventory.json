@@ -1,0 +1,14 @@
+[
+    {
+        "id": "bal_001",
+        "name": "Vestido Balmain Gold",
+        "type": "Overlay",
+        "stock": 5
+    },
+    {
+        "id": "bal_002",
+        "name": "Chaqueta Estructurada",
+        "type": "Overlay",
+        "stock": 3
+    }
+]
