@@ -9,9 +9,18 @@ from pathlib import Path
 
 import requests
 
-VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+# Lily (Gemela Perfecta) — default Protocolo Soberanía V10 Omega
+VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnNLTejx")
 OUTPUT_FILENAME = os.environ.get("ELEVENLABS_OUTPUT", "drama_ponis_lafayette.mp3")
 MODEL_ID = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+
+# Protocolo de Soberanía V10 — defaults oficiales (ElevenLabs voice_settings)
+V10_VOICE_SETTINGS = {
+    "stability": 0.85,
+    "similarity_boost": 0.9,
+    "style": 0.1,
+    "use_speaker_boost": True,
+}
 
 DRAMA_DEFAULT = (
     "En las Galeries Lafayette, el espejo no miente. "
@@ -21,16 +30,26 @@ DRAMA_DEFAULT = (
 URL = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
 
+def _text_from_argv_or_default() -> str:
+    """Si hay argv[1]: lee el fichero si existe; si no, usa el literal (texto en línea)."""
+    if len(sys.argv) < 2:
+        return DRAMA_DEFAULT.strip()
+    arg = sys.argv[1].strip()
+    if not arg:
+        return ""
+    p = Path(arg)
+    if p.is_file():
+        return p.read_text(encoding="utf-8").strip()
+    return arg
+
+
 def main() -> int:
     api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not api_key:
         print("Falta ELEVENLABS_API_KEY en el entorno.", file=sys.stderr)
         return 1
 
-    if len(sys.argv) >= 2:
-        text = Path(sys.argv[1]).read_text(encoding="utf-8").strip()
-    else:
-        text = DRAMA_DEFAULT.strip()
+    text = _text_from_argv_or_default()
 
     if not text:
         print("El texto esta vacio.", file=sys.stderr)
@@ -44,12 +63,7 @@ def main() -> int:
     payload = {
         "text": text,
         "model_id": MODEL_ID,
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75,
-            "style": 0.35,
-            "use_speaker_boost": True,
-        },
+        "voice_settings": V10_VOICE_SETTINGS,
     }
 
     resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=120)
