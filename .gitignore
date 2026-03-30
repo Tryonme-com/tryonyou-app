@@ -5,9 +5,6 @@
 .env.*
 !.env.example
 
-# Node (mirror_ui)
-mirror_ui/node_modules/
-
 # Python
 __pycache__/
 *.py[cod]
