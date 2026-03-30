@@ -17,6 +17,10 @@ venv/
 .DS_Store
 .env*.local
 
+# Carpeta anidada accidental (no versionar)
+tryonyou-app/
+test_write_tool.txt
+
 # Borradores generados (operacion_rescate_soberania_v10.py)
 operacion_rescate/
 leads_francia/

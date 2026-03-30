@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
         <meta name="author" content="Rubén Espinar Rodríguez">
-        <meta name="description" content="TryOnYou: Le miroir numérique du futur. Brevet PCT/EP2025/067317.">
-        
+        <meta id="meta-desc" name="description" content="TryOnYou: The digital mirror of the future. Patent PCT/EP2025/067317.">
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>tryonyou.org — TRYONME × DIVINEO</title>
@@ -13,9 +13,90 @@
     #mirror-v10 { position: relative; width: 100%; max-width: 800px; margin: 40px auto; border: 1px solid #1a1a1a; background: #050505; }
     #overlay-garment { position: absolute; top: 0; left: 0; width: 100%; display: none; z-index: 10; }
     .btn-soberano { display: inline-block; padding: 12px 24px; border: 1px solid #D4AF37; color: #D4AF37; text-decoration: none; text-transform: uppercase; font-size: 0.7rem; background: none; cursor: pointer; }
+    #ty-vpn-note { max-width: 520px; margin: 24px auto 0; font-size: 0.65rem; color: #555; line-height: 1.4; font-family: system-ui, sans-serif; }
   </style>
 </head>
 <body>
+    <script>
+        window.__tyI18n = {
+            en: {
+                metaDesc: 'TryOnYou: The digital mirror of the future. Patent PCT/EP2025/067317.',
+                hero: 'STOP THE FAKE FIT.',
+                timerPrefix: 'OFFICIAL LAUNCH: MAY 2026 | ',
+                timerSuffix: ' DAYS LEFT',
+                btnSnap: 'ACTIVATE V10 SNAP',
+                btnSovereign: 'Sovereignty 4.5M €',
+                btnShare: 'SHARE MY VIP LOOK',
+                alertCatalog: function (b) { return 'Access to the ' + b + ' catalogue optimized for your silhouette.'; },
+                alertCollab: function (t) { return 'Secure connection to ' + t + '. Fit analysis in progress.'; },
+                alertShare: 'Your Balmain V10 silhouette is ready. The secure share link was sent to RUBENSANZBUROBOT.',
+                vpnNote: 'Language follows approximate location (IP). A VPN changes the exit country and may switch the language.',
+            },
+            es: {
+                metaDesc: 'TryOnYou: el espejo digital del futuro. Patente PCT/EP2025/067317.',
+                hero: 'PARA EL FAKE-FIT.',
+                timerPrefix: 'LANZAMIENTO OFICIAL: MAYO 2026 | ',
+                timerSuffix: ' DÍAS RESTANTES',
+                btnSnap: 'ACTIVAR CHASQUIDO V10',
+                btnSovereign: 'Soberanía 4,5M €',
+                btnShare: 'COMPARTIR MI LOOK VIP',
+                alertCatalog: function (b) { return 'Acceso al catálogo ' + b + ' optimizado para tu silueta.'; },
+                alertCollab: function (t) { return 'Conexión segura a ' + t + '. Análisis de fit en curso.'; },
+                alertShare: 'Tu silueta Balmain V10 está lista. El enlace seguro se envió a RUBENSANZBUROBOT.',
+                vpnNote: 'El idioma sigue la ubicación aproximada (IP). Una VPN cambia el país de salida y puede cambiar el idioma.',
+            },
+            zh: {
+                metaDesc: 'TryOnYou：面向未来的数字镜像。专利 PCT/EP2025/067317。',
+                hero: '告别虚假合身。',
+                timerPrefix: '正式发布：2026年5月 | ',
+                timerSuffix: ' 天剩余',
+                btnSnap: '启动 V10 快照',
+                btnSovereign: '主权 450 万欧元',
+                btnShare: '分享我的 VIP 造型',
+                alertCatalog: function (b) { return '已为你的身形优化 ' + b + ' 目录访问。'; },
+                alertCollab: function (t) { return '安全连接至 ' + t + '。合身分析进行中。'; },
+                alertShare: '你的 Balmain V10 轮廓已就绪。安全分享链接已发送至 RUBENSANZBUROBOT。',
+                vpnNote: '语言按大致位置（IP）显示。VPN 会改变出口国家，从而可能切换语言。',
+            },
+        };
+        window.__tyLang = 'en';
+        function tyT() {
+            var pack = window.__tyI18n[window.__tyLang];
+            return pack || window.__tyI18n.en;
+        }
+        function countryToLang(code) {
+            if (code === 'ES') return 'es';
+            if (code === 'CN') return 'zh';
+            return 'en';
+        }
+        function applyTyLocale(lang) {
+            window.__tyLang = lang in window.__tyI18n ? lang : 'en';
+            var s = tyT();
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+            var md = document.getElementById('meta-desc');
+            if (md) md.setAttribute('content', s.metaDesc);
+            var h = document.getElementById('hero-title');
+            if (h) h.textContent = s.hero;
+            var tp = document.getElementById('timer-prefix');
+            var ts = document.getElementById('timer-suffix');
+            if (tp) tp.textContent = s.timerPrefix;
+            if (ts) ts.textContent = s.timerSuffix;
+            var bs = document.getElementById('btn-snap');
+            if (bs) bs.textContent = s.btnSnap;
+            var sov = document.getElementById('btn-sovereign');
+            if (sov) sov.textContent = s.btnSovereign;
+            var sh = document.getElementById('btn-share-vip');
+            if (sh) sh.textContent = s.btnShare;
+            var vn = document.getElementById('ty-vpn-note');
+            if (vn) vn.textContent = s.vpnNote;
+            tySyncLangSwitchUI();
+        }
+        function filterBrand(brandName) {
+            console.log('Filtrando catálogo por: ' + brandName);
+            alert(tyT().alertCatalog(brandName));
+        }
+    </script>
+
     <div id="brand-nav" style="position: absolute; top: 100px; width: 100%; display: flex; justify-content: center; gap: 30px; z-index: 1002; background: rgba(0,0,0,0.5); padding: 10px 0;">
         <span onclick="filterBrand('BALMAIN')" style="color:#D4AF37; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">BALMAIN</span>
         <span onclick="filterBrand('CHANEL')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">CHANEL</span>
@@ -23,26 +104,31 @@
         <span onclick="filterBrand('SAINT LAURENT')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">YSL</span>
         <span onclick="filterBrand('JACQUEMUS')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">JACQUEMUS</span>
     </div>
-    <script>
-        function filterBrand(brandName) {
-            console.log("Filtrando catálogo por: " + brandName);
-            // Aquí Robert Engine filtra las 5 mejores prendas de esa marca específica
-            alert("Accès au catalogue " + brandName + " optimisé pour votre silhouette.");
-        }
-    </script>
-    
-  <nav style="padding:20px; display:flex; justify-content:space-between; border-bottom:1px solid #1a1a1a;">
+
+  <nav style="padding:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid #1a1a1a;">
     <div>
       <div class="ty-brand">TRYONME × DIVINEO</div>
       <div style="font-size: 0.6rem; color: #555;">PATENTE: PCT/EP2025/067317</div>
     </div>
-    <a href="https://buy.stripe.com/4gw5l0fGv12345" class="btn-soberano">Soberanía 4.5M €</a>
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div id="ty-lang-switch" class="ty-lang" title="Manual override (VPN / preference)">
+        <a href="#" data-ty-lang="en" onclick="tySetLang('en'); return false;">EN</a>
+        <span style="color:#333">·</span>
+        <a href="#" data-ty-lang="es" onclick="tySetLang('es'); return false;">ES</a>
+        <span style="color:#333">·</span>
+        <a href="#" data-ty-lang="zh" onclick="tySetLang('zh'); return false;">中文</a>
+        <span style="color:#333">·</span>
+        <a href="#" onclick="tySetLangAuto(); return false;" style="color:#444;">Auto</a>
+      </div>
+      <a href="https://buy.stripe.com/4gw5l0fGv12345" class="btn-soberano" id="btn-sovereign">Sovereignty 4.5M €</a>
+    </div>
   </nav>
   <main style="text-align:center; padding:40px;">
-    <h1>ARRÊTEZ LE FAUX-FIT.</h1>
+    <h1 id="hero-title">STOP THE FAKE FIT.</h1>
     <div id="launch-timer" style="margin-top:20px; color:#D4AF37; font-family:'Inter', sans-serif; font-size:1.2rem; letter-spacing:3px;">
-        LANCEMENT OFFICIEL : MAI 2026 | <span id="days-count">--</span> JOURS RESTANTS
+        <span id="timer-prefix">OFFICIAL LAUNCH: MAY 2026 | </span><span id="days-count">--</span><span id="timer-suffix"> DAYS LEFT</span>
     </div>
+    <p id="ty-vpn-note"></p>
     <script>
         const targetDate = new Date('May 1, 2026 00:00:00').getTime();
         function updateTimer() {
@@ -54,12 +140,12 @@
         setInterval(updateTimer, 1000);
         updateTimer();
     </script>
-    
+
     <div id="mirror-v10">
       <video id="webcam" autoplay playsinline style="width:100%;"></video>
       <img id="overlay-garment" src="assets/balmain_look.png">
     </div>
-    <button onclick="activateSnap()" class="btn-soberano">ACTIVAR CHASQUIDO V10</button>
+    <button onclick="activateSnap()" class="btn-soberano" id="btn-snap">ACTIVATE V10 SNAP</button>
   </main>
   <script>
     function activateSnap() {
@@ -83,43 +169,72 @@
     <script>
         function filterCollab(type) {
             console.log("Accediendo a: " + type);
-            // El Biometric Matcher filtra instantáneamente por estas categorías
-            alert("Connexion sécurisée à " + type + ". Analyse de fit en cours.");
+            alert(tyT().alertCollab(type));
         }
     </script>
-    
+
     <script>
         const authorizedDomains = ['tryonme.app', 'localhost'];
         const currentHost = window.location.hostname;
-        
+
         if (!authorizedDomains.some(domain => currentHost.includes(domain))) {
             console.log("⚠️ Acceso vía Satélite detectado. Validando integridad...");
         }
-        
+
         function showSovereignInfo() {
             alert("Réseau TryOnMe : abvetos.com | tryonme.com | tryonme.org - Piloté par Rubén Espinar.");
         }
+
+        function initTyGeoLocaleFetch() {
+            if (localStorage.getItem('ty_lang')) return;
+            var navLang = (navigator.language || '').toLowerCase();
+            function fallbackFromBrowser() {
+                if (navLang.startsWith('es')) applyTyLocale('es');
+                else if (navLang.startsWith('zh')) applyTyLocale('zh');
+            }
+            var ctrl = new AbortController();
+            var t = setTimeout(function () { ctrl.abort(); }, 4500);
+            fetch('https://ipapi.co/json/', { signal: ctrl.signal })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    clearTimeout(t);
+                    if (localStorage.getItem('ty_lang')) return;
+                    var cc = (data && data.country_code) ? String(data.country_code).toUpperCase() : '';
+                    applyTyLocale(countryToLang(cc));
+                })
+                .catch(function () {
+                    clearTimeout(t);
+                    if (!localStorage.getItem('ty_lang')) fallbackFromBrowser();
+                });
+        }
+        (function initTyGeoLocale() {
+            var saved = localStorage.getItem('ty_lang');
+            if (saved && window.__tyI18n[saved]) {
+                applyTyLocale(saved);
+                initTyGeoLocaleFetch();
+                return;
+            }
+            applyTyLocale('en');
+            initTyGeoLocaleFetch();
+        })();
     </script>
-    
+
     <div id="share-container" style="position: absolute; bottom: 150px; right: 20px; z-index: 1005;">
-        <button onclick="captureSilhouette()" style="background: rgba(212, 175, 55, 0.9); color: #000; border: none; padding: 12px 20px; font-weight: bold; cursor: pointer; font-family: sans-serif; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            PARTAGER MON LOOK VIP
+        <button id="btn-share-vip" onclick="captureSilhouette()" style="background: rgba(212, 175, 55, 0.9); color: #000; border: none; padding: 12px 20px; font-weight: bold; cursor: pointer; font-family: sans-serif; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            SHARE MY VIP LOOK
         </button>
     </div>
 
     <script>
         function captureSilhouette() {
             console.log("Generando imagen de silueta con patente PCT/EP2025/067317...");
-            // Lógica para exportar el canvas del Robert Engine
             const canvas = document.getElementById('output_canvas');
             if (canvas) {
                 const dataURL = canvas.toDataURL("image/png");
-                alert("Votre silhouette Balmain V10 est prête. Le lien de partage sécurisé a été envoyé a RUBENSANZBUROBOT.");
-                
-                // Enviar señal al bot del Fundador
-                fetch('/api/signal-share', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: "USER_SHARE_LOOK", brand: "BALMAIN" }) 
+                alert(tyT().alertShare);
+                fetch('/api/signal-share', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "USER_SHARE_LOOK", brand: "BALMAIN" })
                 });
             }
         }
