@@ -105,10 +105,12 @@ def main() -> int:
 
     results, all_ok = verify_domains()
 
+    n = len(hosts)
     lines = [
         "AGENTE70 — Mesa Redonda V10",
         "Señal para RUBENSANZBUROBOT (éxito operativo búnker París Guy Moquet).",
         "",
+        f"Protocolo V10: {n} dominio(s) en rastreo soberano (chequeo HTTPS Agente 70).",
         "Verificación HTTPS (proxy de disponibilidad; confirmar panel Vercel):",
     ]
     for host, ok, detail in results:
