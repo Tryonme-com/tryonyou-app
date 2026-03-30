@@ -1,141 +1,274 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="author" content="Rubén Espinar Rodríguez">
-  <title>tryonyou.app — TRYONME × DIVINEO | Santuario V10 · P.A.U.</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+        <meta name="author" content="Rubén Espinar Rodríguez">
+        <meta id="meta-desc" name="description" content="TryOnYou: The digital mirror of the future. Patent PCT/EP2025/067317.">
+
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TRYONME × DIVINEO — Mirror Sanctuary V10</title>
   <style>
-    body { margin: 0; background: #000; color: #D4AF37; font-family: "Playfair Display", Georgia, serif; overflow: hidden; }
-    #canvas-container { position: relative; width: 100vw; height: 100vh; }
-    #output_canvas { display: block; width: 100vw; height: 100vh; object-fit: cover; background: #000; }
-    #pau-bot {
-      position: fixed; bottom: 25px; left: 25px; width: 140px; height: 140px; z-index: 9999;
-      cursor: pointer; filter: drop-shadow(0 0 10px #D4AF37); transition: transform 0.3s ease;
-    }
-    #pau-bot:hover { transform: scale(1.1); }
-    #pau-bot video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-    #balmain-btn {
-      position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: min(180px, 40vw);
-      cursor: pointer; transition: transform 0.2s, filter 0.2s; z-index: 10;
-    }
-    #balmain-btn:active { transform: translateX(-50%) scale(0.94); filter: brightness(1.35); }
-    .legal {
-      position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; letter-spacing: 2px;
-      opacity: 0.55; color: #D4AF37; font-family: system-ui, sans-serif; pointer-events: none; z-index: 9998;
-    }
-    #ty-camera-msg {
-      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.85); color: #D4AF37; padding: 24px; text-align: center; z-index: 10000;
-      font-family: system-ui, sans-serif; font-size: 14px; max-width: 100%;
-    }
-    #ty-camera-msg.ty-hidden { display: none; }
+    body { background: #000; color: #fff; margin: 0; font-family: Georgia, serif; }
+    .ty-brand { font-family: serif; color: #D4AF37; letter-spacing: 5px; }
+    #mirror-v10 { position: relative; width: 100%; max-width: 800px; margin: 40px auto; border: 1px solid #1a1a1a; background: #050505; }
+    #overlay-garment { position: absolute; top: 0; left: 0; width: 100%; display: none; z-index: 10; }
+    .btn-soberano { display: inline-block; padding: 12px 24px; border: 1px solid #D4AF37; color: #D4AF37; text-decoration: none; text-transform: uppercase; font-size: 0.7rem; background: none; cursor: pointer; }
+    #ty-vpn-note { max-width: 520px; margin: 24px auto 0; font-size: 0.65rem; color: #555; line-height: 1.4; font-family: system-ui, sans-serif; }
+    /* Pau — launcher (vídeo: assets/pau_transparent.webm); no sustituye index completo: conserva i18n + snap_v10. */
+    #pau-container { position: fixed; bottom: 20px; left: 20px; z-index: 10000; width: 150px; height: 150px; cursor: pointer; pointer-events: auto; transition: transform 0.3s ease; }
+    #pau-container:hover { transform: scale(1.08); }
+    #pau-video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: transparent; }
+    .ty-footer-legal { position: fixed; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: 1px; color: rgba(212, 175, 55, 0.55); font-family: system-ui, sans-serif; z-index: 9998; pointer-events: none; padding: 0 8px; line-height: 1.35; }
   </style>
 </head>
 <body>
-  <div id="ty-camera-msg" role="status">Autorisation caméra requise (HTTPS). P.A.U. V10 · @CertezaAbsoluta</div>
-
-  <div id="canvas-container">
-    <video id="input_video" style="display:none;" playsinline></video>
-    <canvas id="output_canvas" width="1280" height="720"></canvas>
-    <img id="balmain-btn" src="assets/balmain_look.png" alt="BALMAIN SNAP" onclick="snapEffect()">
-  </div>
-
-  <div id="pau-bot" role="button" tabindex="0" title="P.A.U. — pavo real · esquina inf. izquierda">
-    <video id="pau-v" autoplay loop muted playsinline>
-      <source src="assets/pau_transparent.webm" type="video/webm">
-    </video>
-  </div>
-
-  <div class="legal" aria-label="Mentions légales">
-    SIRET&nbsp;94361019600017 | PATENTE&nbsp;PCT/EP2025/067317 | PARIS — Búnker Guy Moquet V10
-  </div>
-
-  <script>
-    function snapEffect() {
-      var canvas = document.getElementById("output_canvas");
-      canvas.style.filter = "brightness(3) contrast(2)";
-      setTimeout(function () {
-        canvas.style.filter = "none";
-        console.log("P.A.U.: Snap V10 · tryonyou.app LIVE");
-      }, 150);
-    }
-    function pauSpeak() {
-      alert("P.A.U.: Bienvenue au sanctuaire tryonyou.app. Le chasquido ouvre le jumeau numérique d'or.");
-    }
-    (function bindPau() {
-      var el = document.getElementById("pau-bot");
-      if (!el) return;
-      el.addEventListener("click", pauSpeak);
-      el.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pauSpeak(); }
-      });
-    })();
-
-    var videoElement = document.getElementById("input_video");
-    var canvasElement = document.getElementById("output_canvas");
-    var canvasCtx = canvasElement.getContext("2d");
-    var cameraMsg = document.getElementById("ty-camera-msg");
-
-    function fitCanvas() {
-      var w = Math.max(1, Math.floor(window.innerWidth));
-      var h = Math.max(1, Math.floor(window.innerHeight));
-      canvasElement.width = w;
-      canvasElement.height = h;
-    }
-
-    function onResults(results) {
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      if (results && results.image) {
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      }
-      canvasCtx.restore();
-    }
-
-    if (typeof Pose === "undefined" || typeof Camera === "undefined") {
-      cameraMsg.textContent = "MediaPipe non chargé (CDN).";
-    } else {
-      var pose = new Pose({
-        locateFile: function (file) {
-          return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/" + file;
-        },
-      });
-      pose.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-      pose.onResults(onResults);
-      window.addEventListener("resize", fitCanvas);
-      fitCanvas();
-      var camera = new Camera(videoElement, {
-        onFrame: function () {
-          pose.send({ image: videoElement });
-        },
-        width: 1280,
-        height: 720,
-      });
-      videoElement.addEventListener("playing", function () {
-        cameraMsg.classList.add("ty-hidden");
-      }, { once: true });
-      (async function startCam() {
-        try {
-          if (typeof pose.initialize === "function") await pose.initialize();
-          camera.start();
-        } catch (err) {
-          console.warn(err);
-          cameraMsg.textContent = "Caméra indisponible (HTTPS / permissions).";
+    <script>
+        window.__tyI18n = {
+            en: {
+                metaDesc: 'TryOnYou: The digital mirror of the future. Patent PCT/EP2025/067317.',
+                hero: 'STOP THE FAKE FIT.',
+                timerPrefix: 'OFFICIAL LAUNCH: MAY 2026 | ',
+                timerSuffix: ' DAYS LEFT',
+                btnSnap: 'ACTIVATE V10 SNAP',
+                btnSovereign: 'Sovereignty 4.5M €',
+                btnShare: 'SHARE MY VIP LOOK',
+                alertCatalog: function (b) { return 'Access to the ' + b + ' catalogue optimized for your silhouette.'; },
+                alertCollab: function (t) { return 'Secure connection to ' + t + '. Fit analysis in progress.'; },
+                alertShare: 'Your Balmain V10 silhouette is ready. The secure share link was sent to RUBENSANZBUROBOT.',
+                vpnNote: 'Language follows approximate location (IP). A VPN changes the exit country and may switch the language.',
+            },
+            es: {
+                metaDesc: 'TryOnYou: el espejo digital del futuro. Patente PCT/EP2025/067317.',
+                hero: 'PARA EL FAKE-FIT.',
+                timerPrefix: 'LANZAMIENTO OFICIAL: MAYO 2026 | ',
+                timerSuffix: ' DÍAS RESTANTES',
+                btnSnap: 'ACTIVAR CHASQUIDO V10',
+                btnSovereign: 'Soberanía 4,5M €',
+                btnShare: 'COMPARTIR MI LOOK VIP',
+                alertCatalog: function (b) { return 'Acceso al catálogo ' + b + ' optimizado para tu silueta.'; },
+                alertCollab: function (t) { return 'Conexión segura a ' + t + '. Análisis de fit en curso.'; },
+                alertShare: 'Tu silueta Balmain V10 está lista. El enlace seguro se envió a RUBENSANZBUROBOT.',
+                vpnNote: 'El idioma sigue la ubicación aproximada (IP). Una VPN cambia el país de salida y puede cambiar el idioma.',
+            },
+            zh: {
+                metaDesc: 'TryOnYou：面向未来的数字镜像。专利 PCT/EP2025/067317。',
+                hero: '告别虚假合身。',
+                timerPrefix: '正式发布：2026年5月 | ',
+                timerSuffix: ' 天剩余',
+                btnSnap: '启动 V10 快照',
+                btnSovereign: '主权 450 万欧元',
+                btnShare: '分享我的 VIP 造型',
+                alertCatalog: function (b) { return '已为你的身形优化 ' + b + ' 目录访问。'; },
+                alertCollab: function (t) { return '安全连接至 ' + t + '。合身分析进行中。'; },
+                alertShare: '你的 Balmain V10 轮廓已就绪。安全分享链接已发送至 RUBENSANZBUROBOT。',
+                vpnNote: '语言按大致位置（IP）显示。VPN 会改变出口国家，从而可能切换语言。',
+            },
+        };
+        window.__tyLang = 'en';
+        function tyT() {
+            var pack = window.__tyI18n[window.__tyLang];
+            return pack || window.__tyI18n.en;
         }
-      })();
+        function countryToLang(code) {
+            if (code === 'ES') return 'es';
+            if (code === 'CN') return 'zh';
+            return 'en';
+        }
+        function applyTyLocale(lang) {
+            window.__tyLang = lang in window.__tyI18n ? lang : 'en';
+            var s = tyT();
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+            var md = document.getElementById('meta-desc');
+            if (md) md.setAttribute('content', s.metaDesc);
+            var h = document.getElementById('hero-title');
+            if (h) h.textContent = s.hero;
+            var tp = document.getElementById('timer-prefix');
+            var ts = document.getElementById('timer-suffix');
+            if (tp) tp.textContent = s.timerPrefix;
+            if (ts) ts.textContent = s.timerSuffix;
+            var bs = document.getElementById('btn-snap');
+            if (bs) bs.textContent = s.btnSnap;
+            var sov = document.getElementById('btn-sovereign');
+            if (sov) sov.textContent = s.btnSovereign;
+            var sh = document.getElementById('btn-share-vip');
+            if (sh) sh.textContent = s.btnShare;
+            var vn = document.getElementById('ty-vpn-note');
+            if (vn) vn.textContent = s.vpnNote;
+            tySyncLangSwitchUI();
+        }
+        function filterBrand(brandName) {
+            console.log('Filtrando catálogo por: ' + brandName);
+            alert(tyT().alertCatalog(brandName));
+        }
+    </script>
+
+    <div id="brand-nav" style="position: absolute; top: 100px; width: 100%; display: flex; justify-content: center; gap: 30px; z-index: 1002; background: rgba(0,0,0,0.5); padding: 10px 0;">
+        <span onclick="filterBrand('BALMAIN')" style="color:#D4AF37; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">BALMAIN</span>
+        <span onclick="filterBrand('CHANEL')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">CHANEL</span>
+        <span onclick="filterBrand('DIOR')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">DIOR</span>
+        <span onclick="filterBrand('SAINT LAURENT')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">YSL</span>
+        <span onclick="filterBrand('JACQUEMUS')" style="color:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:2px;">JACQUEMUS</span>
+    </div>
+
+  <nav style="padding:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid #1a1a1a;">
+    <div>
+      <div class="ty-brand">TRYONME × DIVINEO</div>
+      <div style="font-size: 0.6rem; color: #555;">PATENTE: PCT/EP2025/067317</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div id="ty-lang-switch" class="ty-lang" title="Manual override (VPN / preference)">
+        <a href="#" data-ty-lang="en" onclick="tySetLang('en'); return false;">EN</a>
+        <span style="color:#333">·</span>
+        <a href="#" data-ty-lang="es" onclick="tySetLang('es'); return false;">ES</a>
+        <span style="color:#333">·</span>
+        <a href="#" data-ty-lang="zh" onclick="tySetLang('zh'); return false;">中文</a>
+        <span style="color:#333">·</span>
+        <a href="#" onclick="tySetLangAuto(); return false;" style="color:#444;">Auto</a>
+      </div>
+      <a href="https://buy.stripe.com/4gw5l0fGv12345" class="btn-soberano" id="btn-sovereign">Sovereignty 4.5M €</a>
+      <a href="/mirror_sanctuary_v10.html" style="color:#666;font-size:0.65rem;text-decoration:none;font-family:system-ui,sans-serif;border-bottom:1px solid #333;" title="Plein écran MediaPipe + P.A.U. (ne remplace pas cette page)">Sanctuary V10</a>
+    </div>
+  </nav>
+  <main style="text-align:center; padding:40px;">
+    <h1 id="hero-title">STOP THE FAKE FIT.</h1>
+    <div id="launch-timer" style="margin-top:20px; color:#D4AF37; font-family:'Inter', sans-serif; font-size:1.2rem; letter-spacing:3px;">
+        <span id="timer-prefix">OFFICIAL LAUNCH: MAY 2026 | </span><span id="days-count">--</span><span id="timer-suffix"> DAYS LEFT</span>
+    </div>
+    <p id="ty-vpn-note"></p>
+    <script>
+        const targetDate = new Date('May 1, 2026 00:00:00').getTime();
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            document.getElementById('days-count').innerHTML = days;
+        }
+        setInterval(updateTimer, 1000);
+        updateTimer();
+    </script>
+
+    <div id="mirror-v10">
+      <video id="webcam" autoplay playsinline style="width:100%;"></video>
+      <img id="overlay-garment" src="assets/balmain_look.png">
+    </div>
+    <button onclick="activateSnap()" class="btn-soberano" id="btn-snap">ACTIVATE V10 SNAP</button>
+  </main>
+  <script>
+    function activateSnap() {
+      document.getElementById('overlay-garment').style.display = 'block';
+      console.log("CONFIRMADO: Rubén Espinar - V10 Activa.");
     }
   </script>
-</body>
+
+        <script>
+            function processSovereignPayment(amount) {
+                console.log("Iniciando cobro seguro para Rubén Espinar...");
+                window.location.href = "https://checkout.tryonyou.app/pay?founder=ruben&siret=94361019600017";
+            }
+        </script>
+        <script src="snap_v10.js"></script>
+    <div id="collab-nav" style="position: absolute; bottom: 100px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 1003;">
+        <button onclick="filterCollab('ARMARIO SOLIDARIO')" style="background:#1a1a1a; color:#fff; border:1px solid #fff; padding:5px 15px; cursor:pointer; font-size:0.6rem;">ARMARIO SOLIDARIO</button>
+        <button onclick="filterCollab('ARMARIO INTELIGENTE')" style="background:#1a1a1a; color:#D4AF37; border:1px solid #D4AF37; padding:5px 15px; cursor:pointer; font-size:0.6rem;">ARMARIO INTELIGENTE</button>
+        <button onclick="filterCollab('SAC MUSEUM')" style="background:#D4AF37; color:#000; border:none; padding:5px 15px; cursor:pointer; font-size:0.6rem; font-weight:bold;">SAC MUSEUM</button>
+    </div>
+    <script>
+        function filterCollab(type) {
+            console.log("Accediendo a: " + type);
+            alert(tyT().alertCollab(type));
+        }
+    </script>
+
+    <script>
+        const authorizedDomains = ['tryonme.app', 'localhost'];
+        const currentHost = window.location.hostname;
+
+        if (!authorizedDomains.some(domain => currentHost.includes(domain))) {
+            console.log("⚠️ Acceso vía Satélite detectado. Validando integridad...");
+        }
+
+        function showSovereignInfo() {
+            alert("Réseau TryOnMe : abvetos.com | tryonme.com | tryonme.org - Piloté par Rubén Espinar.");
+        }
+
+        function initTyGeoLocaleFetch() {
+            if (localStorage.getItem('ty_lang')) return;
+            var navLang = (navigator.language || '').toLowerCase();
+            function fallbackFromBrowser() {
+                if (navLang.startsWith('es')) applyTyLocale('es');
+                else if (navLang.startsWith('zh')) applyTyLocale('zh');
+            }
+            var ctrl = new AbortController();
+            var t = setTimeout(function () { ctrl.abort(); }, 4500);
+            fetch('https://ipapi.co/json/', { signal: ctrl.signal })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    clearTimeout(t);
+                    if (localStorage.getItem('ty_lang')) return;
+                    var cc = (data && data.country_code) ? String(data.country_code).toUpperCase() : '';
+                    applyTyLocale(countryToLang(cc));
+                })
+                .catch(function () {
+                    clearTimeout(t);
+                    if (!localStorage.getItem('ty_lang')) fallbackFromBrowser();
+                });
+        }
+        (function initTyGeoLocale() {
+            var saved = localStorage.getItem('ty_lang');
+            if (saved && window.__tyI18n[saved]) {
+                applyTyLocale(saved);
+                initTyGeoLocaleFetch();
+                return;
+            }
+            applyTyLocale('en');
+            initTyGeoLocaleFetch();
+        })();
+    </script>
+
+    <div id="share-container" style="position: absolute; bottom: 150px; right: 20px; z-index: 1005;">
+        <button id="btn-share-vip" onclick="captureSilhouette()" style="background: rgba(212, 175, 55, 0.9); color: #000; border: none; padding: 12px 20px; font-weight: bold; cursor: pointer; font-family: sans-serif; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            SHARE MY VIP LOOK
+        </button>
+    </div>
+
+    <script>
+        function captureSilhouette() {
+            console.log("Generando imagen de silueta con patente PCT/EP2025/067317...");
+            const canvas = document.getElementById('output_canvas');
+            if (canvas) {
+                const dataURL = canvas.toDataURL("image/png");
+                alert(tyT().alertShare);
+                fetch('/api/signal-share', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "USER_SHARE_LOOK", brand: "BALMAIN" })
+                });
+            }
+        }
+    </script>
+
+    <!-- Pau (Agente @Pau): assets/pau_transparent.webm. No borrar este index por un HTML mínimo: perderías i18n y snap_v10.js. -->
+    <div id="pau-container" title="Agente Pau — Protocolo V10" role="button" tabindex="0">
+        <video id="pau-video" autoplay loop muted playsinline>
+            <source src="assets/pau_transparent.webm" type="video/webm">
+        </video>
+    </div>
+    <script>
+        (function () {
+            var el = document.getElementById('pau-container');
+            if (!el) return;
+            function onPauActivate() {
+                console.log("P.A.U.: el espejo está listo — Snap V10. Protocolo @CertezaAbsoluta.");
+                if (typeof activateSnap === 'function') activateSnap();
+            }
+            el.addEventListener('click', onPauActivate);
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPauActivate(); }
+            });
+        })();
+    </script>
+
+    <footer class="ty-footer-legal" aria-label="Mentions légales">
+        SIRET&nbsp;94361019600017 · Patente&nbsp;PCT/EP2025/067317 · ©&nbsp;2026 TRYONME × DIVINEO — Paris ref.
+    </footer>
+    </body>
 </html>
