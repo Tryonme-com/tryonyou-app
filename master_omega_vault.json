@@ -20,8 +20,62 @@
         "AUTH_SYNC": "Google-Auth 2.30.0 Verified"
     },
     "meta": {
-        "last_sync": "2026-03-30 16:05:47 UTC",
+        "last_sync": "2026-03-30 19:24:46 UTC",
         "status": "PRODUCTION_READY_MAYO_2026",
-        "version": "v2.30.0"
+        "version": "v2.30.0-OMEGA"
+    },
+    "loi_guy_moquet": {
+        "sello_definitivo_utc": "2026-03-30 19:24:46 UTC",
+        "archivos_paris17": [
+            "assets/real_estate/LOI_paris17_01_guy_moquet_commerce.md",
+            "assets/real_estate/LOI_paris17_02_guy_moquet_showroom.md",
+            "assets/real_estate/LOI_paris17_03_axe_saint_ouen_bureaux.md",
+            "assets/real_estate/LOI_paris17_04_guy_moquet_pop_up.md",
+            "assets/real_estate/LOI_paris17_05_plateau_mixed_use.md"
+        ],
+        "jules_estado": "SELLO_DEFINITIVO_V10",
+        "nota": "LOI indexadas; patente y SIRET en identidad del vault."
+    },
+    "cursor_omega_auto": {
+        "last_run_utc": "2026-03-30 19:24:46 UTC",
+        "release": "v2.30.0-OMEGA",
+        "bunker": "Guy Moquet, París (núcleo operativo)",
+        "mesa_redonda": [
+            "Listos",
+            "Gemini",
+            "Copilot",
+            "Manus",
+            "AGENTE70",
+            "Jules"
+        ],
+        "loi_paris17_md": [
+            "assets/real_estate/LOI_paris17_01_guy_moquet_commerce.md",
+            "assets/real_estate/LOI_paris17_02_guy_moquet_showroom.md",
+            "assets/real_estate/LOI_paris17_03_axe_saint_ouen_bureaux.md",
+            "assets/real_estate/LOI_paris17_04_guy_moquet_pop_up.md",
+            "assets/real_estate/LOI_paris17_05_plateau_mixed_use.md"
+        ],
+        "make_webhook_configurado": false,
+        "elevenlabs_configurada": false,
+        "telegram_configurado": true,
+        "vip_watchdog": {
+            "objetivos_vip_total": 14,
+            "loi_md_rastreados": 10,
+            "pilares_modulos_ok": 4,
+            "todos_rastreados": true,
+            "fallos": [],
+            "loi_paths": [
+                "assets/real_estate/LOI_paris17_01_guy_moquet_commerce.md",
+                "assets/real_estate/LOI_paris17_02_guy_moquet_showroom.md",
+                "assets/real_estate/LOI_paris17_03_axe_saint_ouen_bureaux.md",
+                "assets/real_estate/LOI_paris17_04_guy_moquet_pop_up.md",
+                "assets/real_estate/LOI_paris17_05_plateau_mixed_use.md",
+                "assets/real_estate/LOI_paris5_01_quartier_latin_commerce.md",
+                "assets/real_estate/LOI_paris5_02_saint_germain_boutique.md",
+                "assets/real_estate/LOI_paris5_03_jussieu_bureau_recherche.md",
+                "assets/real_estate/LOI_paris5_04_place_contrescarpe_mixed.md",
+                "assets/real_estate/LOI_paris5_05_mouffetard_corner.md"
+            ]
+        }
     }
 }

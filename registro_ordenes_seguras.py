@@ -1,6 +1,6 @@
 """Registro de Order Commands seguras (Jules / Chambre de Commerce): MP3 Lily + JSON + Telegram opcional.
 
-Entorno: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (nunca en código).
+Entorno: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN), TELEGRAM_CHAT_ID (nunca en código).
 Patente: PCT/EP2025/067317
 """
 
@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+
+from telegram_env import get_telegram_bot_token, get_telegram_chat_id
 
 ROOT = Path(__file__).resolve().parent
 LOG_PATH = ROOT / "order_commands_log.json"
@@ -38,8 +40,8 @@ def security_hash(payload_canonical: str) -> str:
 
 
 def telegram_send(text: str) -> bool:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", os.environ.get("TELEGRAM_TOKEN", "")).strip()
-    chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    token = get_telegram_bot_token()
+    chat = get_telegram_chat_id()
     if not token or not chat:
         return False
     url = f"https://api.telegram.org/bot{token}/sendMessage"

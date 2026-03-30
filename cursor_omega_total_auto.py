@@ -22,6 +22,8 @@ from pathlib import Path
 
 import requests
 
+from telegram_env import get_telegram_bot_token, get_telegram_chat_id
+
 ROOT = Path(__file__).resolve().parent
 VAULT_PATH = ROOT / "master_omega_vault.json"
 STATIC_AUDIO = ROOT / "static" / "audio" / "nina_perfecta_success.mp3"
@@ -81,6 +83,40 @@ def list_loi_paris17() -> list[str]:
     return out
 
 
+VIP_LOI_EXPECTED = 10
+VIP_PILARES_MODULOS = (
+    "LEGAL_IP_SIRET",
+    "FINANZAS_20PCT",
+    "INVENTARIO_300",
+    "UX_SNAP",
+)
+
+
+def _vip_watchdog_report(data: dict) -> dict:
+    """14 objetivos VIP: 10 LOI (*.md en real_estate) + 4 claves en modulos_activos del vault."""
+    loi = sorted(REAL_ESTATE.glob("LOI*.md")) if REAL_ESTATE.is_dir() else []
+    loi_rel = [str(p.relative_to(ROOT)) for p in loi]
+    modulos = data.get("modulos_activos", {})
+    failures: list[str] = []
+    if len(loi) != VIP_LOI_EXPECTED:
+        failures.append(f"LOI_md_count={len(loi)}_expected_{VIP_LOI_EXPECTED}")
+    for p in loi:
+        if not p.is_file():
+            failures.append(str(p))
+    for k in VIP_PILARES_MODULOS:
+        if k not in modulos:
+            failures.append(f"modulo_falta:{k}")
+    ok = len(failures) == 0
+    return {
+        "objetivos_vip_total": VIP_LOI_EXPECTED + len(VIP_PILARES_MODULOS),
+        "loi_md_rastreados": len(loi),
+        "pilares_modulos_ok": sum(1 for k in VIP_PILARES_MODULOS if k in modulos),
+        "todos_rastreados": ok,
+        "fallos": failures,
+        "loi_paths": loi_rel,
+    }
+
+
 def merge_vault() -> None:
     if not VAULT_PATH.is_file():
         log("Aviso: no hay master_omega_vault.json; se omite fusión del vault.")
@@ -97,7 +133,7 @@ def merge_vault() -> None:
         "jules_estado": "SELLO_DEFINITIVO_V10",
         "nota": "LOI indexadas; patente y SIRET en identidad del vault.",
     }
-    data["cursor_omega_auto"] = {
+    omega_auto = {
         "last_run_utc": meta["last_sync"],
         "release": RELEASE,
         "bunker": "Guy Moquet, París (núcleo operativo)",
@@ -105,16 +141,20 @@ def merge_vault() -> None:
         "loi_paris17_md": list_loi_paris17(),
         "make_webhook_configurado": make_url,
         "elevenlabs_configurada": bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()),
-        "telegram_configurado": bool(
-            (
-                os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-                or os.environ.get("TELEGRAM_TOKEN", "").strip()
-            )
-            and os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-        ),
+        "telegram_configurado": bool(get_telegram_bot_token() and get_telegram_chat_id()),
     }
+    omega_auto["vip_watchdog"] = _vip_watchdog_report(data)
+    data["cursor_omega_auto"] = omega_auto
     VAULT_PATH.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
     log(f"Vault fusionado: {VAULT_PATH.resolve()}")
+    wd = omega_auto["vip_watchdog"]
+    if wd["todos_rastreados"]:
+        log(
+            "Watchdog VIP: 14/14 objetivos rastreados "
+            "(10 LOI + 4 pilares modulos_activos)."
+        )
+    else:
+        log(f"Watchdog VIP: incidencias — {wd['fallos']}")
     log(
         "LOI Guy Moquet / Paris 17: referencias indexadas en cursor_omega_auto "
         "(SIRET 94361019600017 en identidad del vault; sin volcar claves)."
@@ -294,11 +334,8 @@ def synthesize_momento_jadore() -> bool:
 
 
 def telegram_notify(text: str) -> bool:
-    token = (
-        os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-        or os.environ.get("TELEGRAM_TOKEN", "").strip()
-    )
-    chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    token = get_telegram_bot_token()
+    chat = get_telegram_chat_id()
     if not token or not chat:
         log("Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) o TELEGRAM_CHAT_ID: se omite Telegram.")
         return False
@@ -349,16 +386,17 @@ def git_commit_and_push() -> int:
             log("Sin push: sin upstream.")
         return 0 if not did_commit else 2
 
+    # Con push normal, solo tiene sentido empujar si HEAD va por delante del upstream.
+    # Aplica tanto si acabamos de hacer commit como si ya había commits locales sin publicar.
     if not force_push:
-        if not did_commit:
-            ahead_cp = _git("rev-list", "--count", "@{u}..HEAD", check=False)
-            try:
-                ahead = int((ahead_cp.stdout or "0").strip() or "0")
-            except ValueError:
-                ahead = 0
-            if ahead <= 0:
-                log("Sin push: la rama no va por delante del remoto.")
-                return 0
+        ahead_cp = _git("rev-list", "--count", "@{u}..HEAD", check=False)
+        try:
+            ahead = int((ahead_cp.stdout or "0").strip() or "0")
+        except ValueError:
+            ahead = 0
+        if ahead <= 0:
+            log("Sin push: la rama no va por delante del remoto.")
+            return 0
 
     if force_push:
         br = _git("rev-parse", "--abbrev-ref", "HEAD")
