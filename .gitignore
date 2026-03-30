@@ -5,8 +5,8 @@
 .env.*
 !.env.example
 
-# Node (Vite / mirror_ui)
-node_modules/
+# Node (mirror_ui)
+mirror_ui/node_modules/
 
 # Python
 __pycache__/
