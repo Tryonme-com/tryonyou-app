@@ -16,8 +16,6 @@ from pathlib import Path
 
 import requests
 
-from telegram_env import get_telegram_bot_token, get_telegram_chat_id
-
 ROOT = Path(__file__).resolve().parent
 LOG_PATH = ROOT / "order_commands_log.json"
 AUDIO_DIR = ROOT / "static" / "audio"
@@ -40,8 +38,8 @@ def security_hash(payload_canonical: str) -> str:
 
 
 def telegram_send(text: str) -> bool:
-    token = get_telegram_bot_token()
-    chat = get_telegram_chat_id()
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", os.environ.get("TELEGRAM_TOKEN", "")).strip()
+    chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
         return False
     url = f"https://api.telegram.org/bot{token}/sendMessage"

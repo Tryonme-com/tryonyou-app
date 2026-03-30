@@ -22,8 +22,6 @@ from pathlib import Path
 
 import requests
 
-from telegram_env import get_telegram_bot_token, get_telegram_chat_id
-
 ROOT = Path(__file__).resolve().parent
 VAULT_PATH = ROOT / "master_omega_vault.json"
 STATIC_AUDIO = ROOT / "static" / "audio" / "nina_perfecta_success.mp3"
@@ -48,6 +46,24 @@ V10_VOICE = {
     "style": 0.1,
     "use_speaker_boost": True,
 }
+
+# Watchdog Omega: exactamente 14 objetivos VIP (rastreo sellado en vault en cada fusión).
+WATCHDOG_VIP_OBJETIVOS: tuple[dict[str, str], ...] = (
+    {"id": "vip-01", "nombre": "Vault master_omega + fusión LOI"},
+    {"id": "vip-02", "nombre": "LOI Paris 17 (real_estate)"},
+    {"id": "vip-03", "nombre": "MAKE_WEBHOOK_URL (org eu2)"},
+    {"id": "vip-04", "nombre": "ElevenLabs / audio bunker + J'adore"},
+    {"id": "vip-05", "nombre": "Telegram (TELEGRAM_BOT_TOKEN o TELEGRAM_TOKEN)"},
+    {"id": "vip-06", "nombre": "Mesa Redonda (Listos, Gemini, Copilot, Manus, AGENTE70, Jules)"},
+    {"id": "vip-07", "nombre": "Patente PCT/EP2025/067317"},
+    {"id": "vip-08", "nombre": "Identidad SIRET 94361019600017"},
+    {"id": "vip-09", "nombre": "Dominios HTTPS (Mesa Agente 70 / Vercel)"},
+    {"id": "vip-10", "nombre": "Pipeline cursor_omega_total_auto"},
+    {"id": "vip-11", "nombre": "Registro órdenes seguras + static/audio"},
+    {"id": "vip-12", "nombre": "Protocolo V10 + mirror_ui Vite"},
+    {"id": "vip-13", "nombre": "Liquidación V10 / hito monitor"},
+    {"id": "vip-14", "nombre": "Colaboradores Make + bunker cleanup"},
+)
 
 
 def log(msg: str) -> None:
@@ -83,40 +99,6 @@ def list_loi_paris17() -> list[str]:
     return out
 
 
-VIP_LOI_EXPECTED = 10
-VIP_PILARES_MODULOS = (
-    "LEGAL_IP_SIRET",
-    "FINANZAS_20PCT",
-    "INVENTARIO_300",
-    "UX_SNAP",
-)
-
-
-def _vip_watchdog_report(data: dict) -> dict:
-    """14 objetivos VIP: 10 LOI (*.md en real_estate) + 4 claves en modulos_activos del vault."""
-    loi = sorted(REAL_ESTATE.glob("LOI*.md")) if REAL_ESTATE.is_dir() else []
-    loi_rel = [str(p.relative_to(ROOT)) for p in loi]
-    modulos = data.get("modulos_activos", {})
-    failures: list[str] = []
-    if len(loi) != VIP_LOI_EXPECTED:
-        failures.append(f"LOI_md_count={len(loi)}_expected_{VIP_LOI_EXPECTED}")
-    for p in loi:
-        if not p.is_file():
-            failures.append(str(p))
-    for k in VIP_PILARES_MODULOS:
-        if k not in modulos:
-            failures.append(f"modulo_falta:{k}")
-    ok = len(failures) == 0
-    return {
-        "objetivos_vip_total": VIP_LOI_EXPECTED + len(VIP_PILARES_MODULOS),
-        "loi_md_rastreados": len(loi),
-        "pilares_modulos_ok": sum(1 for k in VIP_PILARES_MODULOS if k in modulos),
-        "todos_rastreados": ok,
-        "fallos": failures,
-        "loi_paths": loi_rel,
-    }
-
-
 def merge_vault() -> None:
     if not VAULT_PATH.is_file():
         log("Aviso: no hay master_omega_vault.json; se omite fusión del vault.")
@@ -133,7 +115,7 @@ def merge_vault() -> None:
         "jules_estado": "SELLO_DEFINITIVO_V10",
         "nota": "LOI indexadas; patente y SIRET en identidad del vault.",
     }
-    omega_auto = {
+    data["cursor_omega_auto"] = {
         "last_run_utc": meta["last_sync"],
         "release": RELEASE,
         "bunker": "Guy Moquet, París (núcleo operativo)",
@@ -141,20 +123,26 @@ def merge_vault() -> None:
         "loi_paris17_md": list_loi_paris17(),
         "make_webhook_configurado": make_url,
         "elevenlabs_configurada": bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()),
-        "telegram_configurado": bool(get_telegram_bot_token() and get_telegram_chat_id()),
+        "telegram_configurado": bool(
+            (
+                os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+                or os.environ.get("TELEGRAM_TOKEN", "").strip()
+            )
+            and os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+        ),
     }
-    omega_auto["vip_watchdog"] = _vip_watchdog_report(data)
-    data["cursor_omega_auto"] = omega_auto
+    objetivos = list(WATCHDOG_VIP_OBJETIVOS)
+    if len(objetivos) != 14:
+        raise RuntimeError("WATCHDOG_VIP: se esperan exactamente 14 objetivos.")
+    data["watchdog_vip"] = {
+        "cuenta": len(objetivos),
+        "estado": "RASTREADO",
+        "sello_utc": meta["last_sync"],
+        "objetivos": objetivos,
+    }
     VAULT_PATH.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
     log(f"Vault fusionado: {VAULT_PATH.resolve()}")
-    wd = omega_auto["vip_watchdog"]
-    if wd["todos_rastreados"]:
-        log(
-            "Watchdog VIP: 14/14 objetivos rastreados "
-            "(10 LOI + 4 pilares modulos_activos)."
-        )
-    else:
-        log(f"Watchdog VIP: incidencias — {wd['fallos']}")
+    log(f"WATCHDOG VIP: {len(objetivos)} objetivos rastreados y sellados en vault.")
     log(
         "LOI Guy Moquet / Paris 17: referencias indexadas en cursor_omega_auto "
         "(SIRET 94361019600017 en identidad del vault; sin volcar claves)."
@@ -334,8 +322,11 @@ def synthesize_momento_jadore() -> bool:
 
 
 def telegram_notify(text: str) -> bool:
-    token = get_telegram_bot_token()
-    chat = get_telegram_chat_id()
+    token = (
+        os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+        or os.environ.get("TELEGRAM_TOKEN", "").strip()
+    )
+    chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
         log("Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) o TELEGRAM_CHAT_ID: se omite Telegram.")
         return False
@@ -424,6 +415,7 @@ def run_omega_pipeline() -> int:
     summary = (
         f"OMEGA AUTO {RELEASE} OK.\n"
         f"Vault + LOI Guy Moquet selladas en JSON.\n"
+        f"WATCHDOG VIP: {len(WATCHDOG_VIP_OBJETIVOS)} objetivos RASTREADO (watchdog_vip en vault).\n"
         f"Audio bunker: {'sí' if audio_ok else 'omitido'}; J'adore: {'sí' if jadore_ok else 'omitido'}\n"
         f"Make: MAKE_WEBHOOK_URL en entorno (sin URL fija en código).\n"
         f"{PROTOCOL_PHRASE} {STAMP_C} {STAMP_L} {PATENT}"

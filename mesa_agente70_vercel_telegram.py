@@ -2,7 +2,7 @@
 
 No sustituye el panel de Vercel (DNS / asignación de dominios); valida que cada host responde HTTPS.
 
-  export TELEGRAM_BOT_TOKEN=…
+  export TELEGRAM_BOT_TOKEN=…   # o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID=…
   # opcional — hosts separados por coma (exactamente los que Vercel tenga asignados al proyecto)
   export MESA_VERCEL_DOMAIN_CHECK='tryonme.app,abvetos.com,tryonme.com,tryonme.org,tryonyou.app,api.tryonyou.app'
@@ -84,7 +84,8 @@ def _telegram_send(text: str) -> bool:
     chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
         print(
-            "Sin TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID: no se envía señal.",
+            "Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) / TELEGRAM_CHAT_ID: no se envía "
+            "señal.",
             file=sys.stderr,
         )
         return False

@@ -11,13 +11,13 @@ import sys
 
 import requests
 
-from telegram_env import get_telegram_bot_token, get_telegram_chat_id
-
 
 class TryOnYouSignals:
     def __init__(self) -> None:
-        self.bot_token = get_telegram_bot_token()
-        self.chat_id = get_telegram_chat_id()
+        self.bot_token = (
+            os.environ.get("TELEGRAM_BOT_TOKEN", "") or os.environ.get("TELEGRAM_TOKEN", "")
+        ).strip()
+        self.chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
         if not self.bot_token or not self.chat_id:
             raise RuntimeError(
                 "Define TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) y TELEGRAM_CHAT_ID en el entorno."
