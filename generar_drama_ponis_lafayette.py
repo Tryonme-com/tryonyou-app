@@ -1,63 +1,67 @@
-"""
-TTS vía ElevenLabs — genera drama_ponis_lafayette.mp3 (o nombre vía OUTPUT_FILENAME).
-
-Uso:
-  export ELEVENLABS_API_KEY="tu_clave_del_panel_elevenlabs"
-  export DRAMA_PONIS_TEXT="Texto largo del drama…"  # opcional
-  python3 generar_drama_ponis_lafayette.py
-
-Variables opcionales: ELEVENLABS_VOICE_ID, OUTPUT_FILENAME, ELEVENLABS_MODEL_ID
-"""
+"""Genera audio TTS via ElevenLabs. Requiere: pip install requests, env ELEVENLABS_API_KEY."""
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
 
 import requests
 
-VOICE_ID_DEFAULT = "EXAVITQu4vr4xnSDxMaL"
-OUTPUT_FILENAME_DEFAULT = "drama_ponis_lafayette.mp3"
-MODEL_DEFAULT = "eleven_multilingual_v2"
+VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnNLTejx")
+OUTPUT_FILENAME = os.environ.get("ELEVENLABS_OUTPUT", "drama_ponis_lafayette.mp3")
+MODEL_ID = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+
+# Pausas con puntuación (parsimonia / lectura pausada).
+DRAMA_DEFAULT = (
+    "Ayer en el colegio... me dijeron que los ponis rosas no existen. "
+    "Me miraron... como si yo estuviera loca. "
+    "Pero no les digas nada... "
+    "es que ellos están muy lejos de nuestro código postal."
+)
 
 
 def main() -> int:
     api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not api_key:
-        print(
-            "Define ELEVENLABS_API_KEY (clave del panel ElevenLabs, no Google).",
-            file=sys.stderr,
-        )
+        print("Falta ELEVENLABS_API_KEY en el entorno.", file=sys.stderr)
         return 1
 
-    voice_id = os.environ.get("ELEVENLABS_VOICE_ID", VOICE_ID_DEFAULT).strip()
-    output_name = os.environ.get("OUTPUT_FILENAME", OUTPUT_FILENAME_DEFAULT).strip()
-    model_id = os.environ.get("ELEVENLABS_MODEL_ID", MODEL_DEFAULT).strip()
-    text = os.environ.get(
-        "DRAMA_PONIS_TEXT",
-        "Drama Ponis Lafayette — sustituye este texto con DRAMA_PONIS_TEXT o edita aquí.",
-    ).strip()
+    if len(sys.argv) >= 2:
+        text = Path(sys.argv[1]).read_text(encoding="utf-8").strip()
+    else:
+        text = DRAMA_DEFAULT.strip()
+
     if not text:
-        print("DRAMA_PONIS_TEXT vacío.", file=sys.stderr)
+        print("El texto esta vacio.", file=sys.stderr)
         return 1
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
         "xi-api-key": api_key,
     }
-    payload = {"text": text, "model_id": model_id}
+    payload = {
+        "text": text,
+        "model_id": MODEL_ID,
+        "voice_settings": {
+            "stability": 0.8,
+            "similarity_boost": 0.9,
+            "style": 0.1,
+            "use_speaker_boost": True,
+        },
+    }
 
-    resp = requests.post(url, json=payload, headers=headers, timeout=180)
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
     if not resp.ok:
-        print(resp.status_code, resp.text[:800], file=sys.stderr)
-        return 2
+        print(resp.status_code, resp.text[:2000], file=sys.stderr)
+        return 1
 
-    out_path = Path(output_name)
-    out_path.write_bytes(resp.content)
-    print(f"OK → {out_path.resolve()} ({len(resp.content)} bytes)")
+    out = Path(OUTPUT_FILENAME)
+    out.write_bytes(resp.content)
+    print(f"OK -> {out.resolve()} ({len(resp.content)} bytes)")
     return 0
 
 
