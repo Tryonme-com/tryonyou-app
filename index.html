@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="author" content="Rubén Espinar Rodríguez">
-  <meta name="description" content="TRYONME × DIVINEO — Mirror Sanctuary V10. Patente PCT/EP2025/067317.">
-  <title>TRYONME × DIVINEO — Mirror Sanctuary V10 LIVE</title>
+  <title>TRYONME × DIVINEO — Sanctuary V10 LIVE · P.A.U.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -29,19 +28,18 @@
     #balmain-btn:active { transform: translateX(-50%) scale(0.94); filter: brightness(1.35); }
     .legal {
       position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; letter-spacing: 2px;
-      opacity: 0.55; color: #D4AF37; font-family: system-ui, sans-serif; pointer-events: none; z-index: 9998;
+      opacity: 0.5; color: #D4AF37; font-family: system-ui, sans-serif; pointer-events: none; z-index: 9998;
     }
     #ty-camera-msg {
       position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.85); color: #D4AF37; padding: 24px; text-align: center; z-index: 10000A;
+      background: rgba(0,0,0,0.85); color: #D4AF37; padding: 24px; text-align: center; z-index: 10000;
       font-family: system-ui, sans-serif; font-size: 14px; max-width: 100%;
     }
     #ty-camera-msg.ty-hidden { display: none; }
   </style>
 </head>
 <body>
-
-  <div id="ty-camera-msg" role="status">Autorisation caméra requise (HTTPS). @CertezaAbsoluta</div>
+  <div id="ty-camera-msg" role="status">Autorisation caméra requise (HTTPS).</div>
 
   <div id="canvas-container">
     <video id="input_video" style="display:none;" playsinline></video>
@@ -49,19 +47,19 @@
     <img id="balmain-btn" src="assets/balmain_look.png" alt="BALMAIN SNAP" onclick="snapEffect()">
   </div>
 
-  <div id="pau-bot" role="button" tabindex="0" title="P.A.U. (pavo real)">
+  <div id="pau-bot" role="button" tabindex="0" title="P.A.U.">
     <video id="pau-v" autoplay loop muted playsinline>
       <source src="assets/pau_transparent.webm" type="video/webm">
     </video>
   </div>
 
-  <div class="legal" aria-label="Mentions légales">
-    SIRET&nbsp;94361019600017 · Patente&nbsp;PCT/EP2025/067317 · TRYONME × DIVINEO · Paris
-  </div>
+  <footer class="legal" aria-label="Mentions légales">
+    SIRET&nbsp;94361019600017 · PATENTE&nbsp;PCT/EP2025/067317 · TRYONME × DIVINEO — Paris
+  </footer>
 
   <script>
     function snapEffect() {
-      var canvas = document.getElementById("output_canvas");
+      const canvas = document.getElementById("output_canvas");
       canvas.style.filter = "brightness(3) contrast(2)";
       setTimeout(function () {
         canvas.style.filter = "none";
@@ -70,7 +68,7 @@
     }
 
     function pauSpeak() {
-      alert("P.A.U.: Bienvenue au Sanctuaire. Protocolo Pau activo.");
+      alert("P.A.U.: Bienvenue au Sanctuaire. Protocolo V10.");
     }
 
     (function bindPau() {
@@ -136,11 +134,13 @@
 
       (async function startCam() {
         try {
-          if (typeof pose.initialize === "function") await pose.initialize();
+          if (typeof pose.initialize === "function") {
+            await pose.initialize();
+          }
           camera.start();
         } catch (err) {
-          console.warn(err);
-          cameraMsg.textContent = "Caméra indisponible (HTTPS / permissions).";
+          console.warn("Camera / Pose", err);
+          cameraMsg.textContent = "Caméra ou MediaPipe indisponible (HTTPS, permissions).";
         }
       })();
     }
