@@ -52,7 +52,10 @@ def _telegram_credentials() -> tuple[str, str]:
 def enviar_telegram(mensaje: str) -> bool:
     token, chat = _telegram_credentials()
     if not token or not chat:
-        print("ℹ️  Sin TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID: se omite Telegram.")
+        print(
+            "ℹ️  Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) / TELEGRAM_CHAT_ID: se omite "
+            "Telegram."
+        )
         return False
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     fmt = os.environ.get("TELEGRAM_FORMAT", "plain").strip().lower()

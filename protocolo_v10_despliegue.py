@@ -46,7 +46,7 @@ def _validate_chat_id(chat: str) -> str | None:
     if ":" in chat:
         return (
             "TELEGRAM_CHAT_ID no puede contener ':'. "
-            "Token → TELEGRAM_BOT_TOKEN; id → solo dígitos o @canal."
+            "Token → TELEGRAM_BOT_TOKEN o TELEGRAM_TOKEN; id → solo dígitos o @canal."
         )
     if chat.startswith("@"):
         if re.fullmatch(r"@[A-Za-z0-9_]{5,}", chat):
@@ -96,7 +96,11 @@ def notificar_telegram(mensaje: str) -> bool:
 
     token, chat = _telegram_credentials()
     if not token or not chat:
-        print("⚠️ Sin TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID: omito Telegram.", file=sys.stderr)
+        print(
+            "⚠️ Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) / TELEGRAM_CHAT_ID: omito "
+            "Telegram.",
+            file=sys.stderr,
+        )
         return False
 
     err = _validate_chat_id(chat)

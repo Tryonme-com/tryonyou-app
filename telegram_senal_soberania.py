@@ -1,7 +1,7 @@
 """
 Envía un mensaje a Telegram (plantilla TryOnYou V10). Sin secretos en código.
 
-  export TELEGRAM_BOT_TOKEN='123456789:AAH...'   # BotFather (un solo ':')
+  export TELEGRAM_BOT_TOKEN='123456789:AAH...'   # BotFather (un solo ':'); o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID='123456789'            # SOLO dígitos, o -100… grupo, o @canal
   # opcional:
   export TELEGRAM_FORMAT=markdown                # o plain (default)
@@ -41,7 +41,8 @@ def _validate_chat_id(chat: str) -> str | None:
         return (
             "TELEGRAM_CHAT_ID no puede contener ':'. "
             "Parece que pegaste el TOKEN del bot junto al id. "
-            "Token → TELEGRAM_BOT_TOKEN. Id → solo números (ej. 123456789)."
+            "Token → TELEGRAM_BOT_TOKEN o TELEGRAM_TOKEN. Id → solo números (ej. "
+            "123456789)."
         )
     if chat.startswith("@"):
         if re.fullmatch(r"@[A-Za-z0-9_]{5,}", chat):

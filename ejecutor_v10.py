@@ -1,7 +1,7 @@
 """
 Ejecutor V10 — demostración en terminal: cumplimiento → factura PDF → Telegram → Vite.
 
-  export TELEGRAM_BOT_TOKEN='…'
+  export TELEGRAM_BOT_TOKEN='…'   # o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID='…'
   export TELEGRAM_FORMAT=markdown          # opcional
   export SKIP_TELEGRAM=1                   # solo demo local sin Telegram

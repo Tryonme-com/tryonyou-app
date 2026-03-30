@@ -5,12 +5,12 @@ Monitor de referencia de liquidación V10 (consola + Telegram opcional).
 
   # Mismo informe al bot (09:00 cron en servidor):
   export MONITOR_SEND_TELEGRAM=1
-  export TELEGRAM_BOT_TOKEN='…'
+  export TELEGRAM_BOT_TOKEN='…'   # o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID='…'
   python3 monitor_liquidacion_v10.py
 
   Cron (ejemplo, ajustar rutas):
-  0 9 * * * cd /ruta/tryonyou-app && /usr/bin/env MONITOR_SEND_TELEGRAM=1 TELEGRAM_BOT_TOKEN=… TELEGRAM_CHAT_ID=… python3 monitor_liquidacion_v10.py
+  0 9 * * * cd /ruta/tryonyou-app && /usr/bin/env MONITOR_SEND_TELEGRAM=1 TELEGRAM_BOT_TOKEN=… TELEGRAM_CHAT_ID=… python3 monitor_liquidacion_v10.py  # o TELEGRAM_TOKEN
 
 Patente: PCT/EP2025/067317
 """

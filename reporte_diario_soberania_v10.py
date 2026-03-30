@@ -1,7 +1,7 @@
 """
 Reporte matutino V10 para orquestación tipo Jules V7 (cron 09:00 CET).
 
-  export TELEGRAM_BOT_TOKEN='…'
+  export TELEGRAM_BOT_TOKEN='…'   # o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID='…'
   # opcional: sin envío (solo consola)
   export SKIP_TELEGRAM=1
@@ -60,7 +60,7 @@ def enviar_al_centinela(titulo: str, mensaje: str) -> bool:
     chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
         print(
-            "❌ Falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID.",
+            "❌ Falta TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) o TELEGRAM_CHAT_ID.",
             file=sys.stderr,
         )
         return False
