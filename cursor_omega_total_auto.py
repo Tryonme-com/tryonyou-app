@@ -4,6 +4,10 @@ Claves: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN o TELEGRAM_TOKEN, TELEGRAM_CHAT_I
 
 Push forzado (force-with-lease, rama actual): CURSOR_OMEGA_GIT_PUSH_FORCE=1 o MESA_GIT_PUSH_FORCE=1
 
+Watchdog VIP (14 objetivos) en cada ``merge_vault()``. Modo centinela: ``WATCHDOG_CENTINELA=1`` o
+``OMEGA_WATCHDOG_CENTINELA=1`` sella ``watchdog_vip.modo_operativo=centinela``. Bucle largo:
+``python3 vigilancia_pau.py`` (fuera de este orquestador).
+
 Patente: PCT/EP2025/067317
 
 AVISO: No reemplaces este módulo por un script que haga ``open('master_omega_vault.json','w')`` con un
@@ -85,6 +89,15 @@ def _force_push_env() -> bool:
         if os.environ.get(k, "").strip() == "1":
             return True
     return False
+
+
+def _watchdog_centinela() -> bool:
+    """Watchdog en modo centinela: vigilancia sellada en vault (bucle externo: vigilancia_pau.py)."""
+    v = (
+        os.environ.get("WATCHDOG_CENTINELA", "").strip().lower()
+        or os.environ.get("OMEGA_WATCHDOG_CENTINELA", "").strip().lower()
+    )
+    return v in ("1", "true", "yes", "centinela")
 
 
 def list_loi_paris17() -> list[str]:
