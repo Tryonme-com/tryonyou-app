@@ -1,6 +1,6 @@
 """Orquestador Omega total (auto): vault seguro, Lily (ElevenLabs), Telegram opcional, git hasta push.
 
-Claves: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (solo entorno; nunca en el vault).
+Claves: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN o TELEGRAM_TOKEN, TELEGRAM_CHAT_ID (solo entorno; nunca en el vault).
 
 Push forzado (force-with-lease, rama actual): CURSOR_OMEGA_GIT_PUSH_FORCE=1 o MESA_GIT_PUSH_FORCE=1
 
@@ -106,7 +106,10 @@ def merge_vault() -> None:
         "make_webhook_configurado": make_url,
         "elevenlabs_configurada": bool(os.environ.get("ELEVENLABS_API_KEY", "").strip()),
         "telegram_configurado": bool(
-            os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+            (
+                os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+                or os.environ.get("TELEGRAM_TOKEN", "").strip()
+            )
             and os.environ.get("TELEGRAM_CHAT_ID", "").strip()
         ),
     }
@@ -291,10 +294,13 @@ def synthesize_momento_jadore() -> bool:
 
 
 def telegram_notify(text: str) -> bool:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    token = (
+        os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+        or os.environ.get("TELEGRAM_TOKEN", "").strip()
+    )
     chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
-        log("Sin TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID: se omite Telegram.")
+        log("Sin TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN) o TELEGRAM_CHAT_ID: se omite Telegram.")
         return False
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     r = requests.post(
