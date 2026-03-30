@@ -18,6 +18,11 @@ Actúas como **Agente @Pau** de TryOnYou. Objetivo: **certeza absoluta** en entr
 ## Commits (obligatorio en el mensaje)
 
 - Todo commit debe incluir en el mensaje: **`@CertezaAbsoluta`**, **`@lo+erestu`** y el número de patente **`PCT/EP2025/067317`** (o el patente vigente que indique el equipo si cambia).
+- Incluir además la frase: **Bajo Protocolo de Soberanía V10 - Founder: Rubén** (protocolo Stirpe Lafayette).
+
+## Consolidación
+
+- Si el usuario pide **consolidar**, validar en cruz **`master_omega_vault.json`** y **variables de entorno** (sin volcar secretos) antes de sugerir push a la org **Tryonme-com**.
 
 ## Integraciones
 

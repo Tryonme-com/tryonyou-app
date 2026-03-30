@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
 
 import requests
 
-VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnNLTejx")
+VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
 OUTPUT_FILENAME = os.environ.get("ELEVENLABS_OUTPUT", "drama_ponis_lafayette.mp3")
 MODEL_ID = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
-# Puntos suspensivos y comas marcan pausas; el modelo las interpreta al leer.
 DRAMA_DEFAULT = (
-    "Ayer en el colegio... me dijeron que los ponis rosas no existen. "
-    "Me miraron... como si yo estuviera loca. "
-    "Pero no les digas nada... "
-    "es que ellos están muy lejos de nuestro código postal."
+    "En las Galeries Lafayette, el espejo no miente. "
+    "Stirpe Lafayette: ponis de luz, protocolo V10 encendido."
 )
 
 URL = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
@@ -47,14 +45,14 @@ def main() -> int:
         "text": text,
         "model_id": MODEL_ID,
         "voice_settings": {
-            "stability": 0.8,
-            "similarity_boost": 0.9,
-            "style": 0.1,
+            "stability": 0.5,
+            "similarity_boost": 0.75,
+            "style": 0.35,
             "use_speaker_boost": True,
         },
     }
 
-    resp = requests.post(URL, headers=headers, json=payload, timeout=120)
+    resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=120)
     if not resp.ok:
         print(resp.status_code, resp.text[:2000], file=sys.stderr)
         return 1
