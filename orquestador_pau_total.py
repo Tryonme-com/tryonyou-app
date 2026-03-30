@@ -12,7 +12,7 @@ Variables de entorno (opcionales):
     ORQUESTA_SKIP_ENTREGA  1  — no genera carpetas en el Escritorio ni purga de entrega
     ORQUESTA_GITHUB_PR  0 | 2264 | 2266  — merge vía API si GITHUB_TOKEN está definido
     ORQUESTA_PURGA_GITHUB  1  — antes del merge 2266, ejecuta también purgar_friccion (v10_terminal)
-    ORQUESTA_EMAIL_TEST   correo@ejemplo.com  — prueba real con Jules (requiere GMAIL_*)
+    ORQUESTA_SLACK_TEST   — canal vía SLACK_WEBHOOK_URL (sin Gmail)
 
 Fases en modo *total* (por defecto):
   1) Protocolo liquidez / estado búnker

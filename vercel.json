@@ -1,6 +1,9 @@
 {
   "version": 2,
   "public": true,
+  "env": {
+    "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
+  },
   "cleanUrls": true,
   "builds": [
     {
