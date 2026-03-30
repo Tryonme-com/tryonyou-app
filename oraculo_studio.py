@@ -151,6 +151,11 @@ inventory_assessment, scarcity_level, fit_threshold_note, recommended_action, ra
 
 def main() -> int:
     try:
+        from google.api_core import exceptions as google_api_exceptions
+    except ImportError:
+        google_api_exceptions = None  # type: ignore[misc, assignment]
+
+    try:
         o = OraculoStudio()
         o.consultar_mesa_redonda()
         return o.conectar_a_cursor()
@@ -160,6 +165,16 @@ def main() -> int:
     except subprocess.CalledProcessError as e:
         print((e.stderr or e.stdout or "")[:2000], file=sys.stderr)
         return 1
+    except Exception as e:
+        if google_api_exceptions and isinstance(e, google_api_exceptions.InvalidArgument):
+            print(
+                "Gemini rechazó la clave (caducada, revocada o no válida para Generative Language). "
+                "Crea una API key nueva en https://aistudio.google.com/ y exporta GOOGLE_STUDIO_API_KEY "
+                "(o GEMINI_API_KEY). No la subas al repositorio.",
+                file=sys.stderr,
+            )
+            return 1
+        raise
 
 
 if __name__ == "__main__":
