@@ -147,15 +147,24 @@ def merge_vault() -> None:
     objetivos = list(WATCHDOG_VIP_OBJETIVOS)
     if len(objetivos) != 14:
         raise RuntimeError("WATCHDOG_VIP: se esperan exactamente 14 objetivos.")
-    data["watchdog_vip"] = {
+    wd: dict = {
         "cuenta": len(objetivos),
         "estado": "RASTREADO",
         "sello_utc": meta["last_sync"],
         "objetivos": objetivos,
     }
+    if _watchdog_centinela():
+        wd["modo_operativo"] = "centinela"
+        wd["bucle_vigilancia_ref"] = "vigilancia_pau.py"
+    data["watchdog_vip"] = wd
     VAULT_PATH.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
     log(f"Vault fusionado: {VAULT_PATH.resolve()}")
     log(f"WATCHDOG VIP: {len(objetivos)} objetivos rastreados y sellados en vault.")
+    if _watchdog_centinela():
+        log(
+            "WATCHDOG modo centinela: vigilancia continua sellada en vault "
+            f"({STAMP_C} {PATENT}); bucle opcional: python3 vigilancia_pau.py"
+        )
     log(
         "LOI Guy Moquet / Paris 17: referencias indexadas en cursor_omega_auto "
         "(SIRET 94361019600017 en identidad del vault; sin volcar claves)."
@@ -433,6 +442,10 @@ def run_omega_pipeline() -> int:
         f"Make: MAKE_WEBHOOK_URL en entorno (sin URL fija en código).\n"
         f"{PROTOCOL_PHRASE} {STAMP_C} {STAMP_L} {PATENT}"
     )
+    if _watchdog_centinela():
+        summary += (
+            "\nWatchdog modo centinela: sellado en vault; bucle vigilancia → python3 vigilancia_pau.py"
+        )
     telegram_notify(summary)
 
     code = git_commit_and_push()

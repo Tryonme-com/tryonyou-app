@@ -3,6 +3,8 @@ import argparse
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 from urllib.parse import urlparse
 
 # Extensions servidas comme fichiers statiques (Vercel: sinon tout GET tombait sur index.html).
@@ -47,6 +49,25 @@ _MIME = {
 
 def _project_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _slack_notify(text: str) -> None:
+    """Webhook Slack opcional (Agente 70); no bloquea la respuesta JSON."""
+    url = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
+    if not url:
+        return
+    payload = json.dumps({"text": text[:3500]}).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            del r
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return
 
 
 def _stripe_links() -> tuple[str, str]:
@@ -136,6 +157,10 @@ class handler(BaseHTTPRequestHandler):
             "stripe_link_sovereignty_98k_eur": link_98 if link_98 != "#" else "",
         }
         body = json.dumps(response).encode()
+        _slack_notify(
+            "TryOnYou FIS · POST /api (Jules serverless)\n"
+            f"Protocolo {response.get('protocolo', '')} · {response.get('patente', '')}"
+        )
         self.send_response(200)
         self.send_header("Content-type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
