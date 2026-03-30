@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -13,13 +12,15 @@ VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnNLTejx")
 OUTPUT_FILENAME = os.environ.get("ELEVENLABS_OUTPUT", "drama_ponis_lafayette.mp3")
 MODEL_ID = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
-# Pausas con puntuación (parsimonia / lectura pausada).
+# Puntos suspensivos y comas marcan pausas; el modelo las interpreta al leer.
 DRAMA_DEFAULT = (
     "Ayer en el colegio... me dijeron que los ponis rosas no existen. "
     "Me miraron... como si yo estuviera loca. "
     "Pero no les digas nada... "
     "es que ellos están muy lejos de nuestro código postal."
 )
+
+URL = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
 
 def main() -> int:
@@ -53,8 +54,7 @@ def main() -> int:
         },
     }
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
+    resp = requests.post(URL, headers=headers, json=payload, timeout=120)
     if not resp.ok:
         print(resp.status_code, resp.text[:2000], file=sys.stderr)
         return 1
