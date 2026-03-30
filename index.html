@@ -6,7 +6,7 @@
 
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>tryonyou.org — TRYONME × DIVINEO</title>
+  <title>TRYONME × DIVINEO — Mirror Sanctuary V10</title>
   <style>
     body { background: #000; color: #fff; margin: 0; font-family: Georgia, serif; }
     .ty-brand { font-family: serif; color: #D4AF37; letter-spacing: 5px; }
@@ -14,6 +14,11 @@
     #overlay-garment { position: absolute; top: 0; left: 0; width: 100%; display: none; z-index: 10; }
     .btn-soberano { display: inline-block; padding: 12px 24px; border: 1px solid #D4AF37; color: #D4AF37; text-decoration: none; text-transform: uppercase; font-size: 0.7rem; background: none; cursor: pointer; }
     #ty-vpn-note { max-width: 520px; margin: 24px auto 0; font-size: 0.65rem; color: #555; line-height: 1.4; font-family: system-ui, sans-serif; }
+    /* Pau — launcher (vídeo: assets/pau_transparent.webm); no sustituye index completo: conserva i18n + snap_v10. */
+    #pau-container { position: fixed; bottom: 20px; left: 20px; z-index: 10000; width: 150px; height: 150px; cursor: pointer; pointer-events: auto; transition: transform 0.3s ease; }
+    #pau-container:hover { transform: scale(1.08); }
+    #pau-video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: transparent; }
+    .ty-footer-legal { position: fixed; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: 1px; color: rgba(212, 175, 55, 0.55); font-family: system-ui, sans-serif; z-index: 9998; pointer-events: none; padding: 0 8px; line-height: 1.35; }
   </style>
 </head>
 <body>
@@ -121,6 +126,7 @@
         <a href="#" onclick="tySetLangAuto(); return false;" style="color:#444;">Auto</a>
       </div>
       <a href="https://buy.stripe.com/4gw5l0fGv12345" class="btn-soberano" id="btn-sovereign">Sovereignty 4.5M €</a>
+      <a href="/mirror_sanctuary_v10.html" style="color:#666;font-size:0.65rem;text-decoration:none;font-family:system-ui,sans-serif;border-bottom:1px solid #333;" title="Plein écran MediaPipe + P.A.U. (ne remplace pas cette page)">Sanctuary V10</a>
     </div>
   </nav>
   <main style="text-align:center; padding:40px;">
@@ -239,5 +245,30 @@
             }
         }
     </script>
+
+    <!-- Pau (Agente @Pau): assets/pau_transparent.webm. No borrar este index por un HTML mínimo: perderías i18n y snap_v10.js. -->
+    <div id="pau-container" title="Agente Pau — Protocolo V10" role="button" tabindex="0">
+        <video id="pau-video" autoplay loop muted playsinline>
+            <source src="assets/pau_transparent.webm" type="video/webm">
+        </video>
+    </div>
+    <script>
+        (function () {
+            var el = document.getElementById('pau-container');
+            if (!el) return;
+            function onPauActivate() {
+                console.log("P.A.U.: el espejo está listo — Snap V10. Protocolo @CertezaAbsoluta.");
+                if (typeof activateSnap === 'function') activateSnap();
+            }
+            el.addEventListener('click', onPauActivate);
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPauActivate(); }
+            });
+        })();
+    </script>
+
+    <footer class="ty-footer-legal" aria-label="Mentions légales">
+        SIRET&nbsp;94361019600017 · Patente&nbsp;PCT/EP2025/067317 · ©&nbsp;2026 TRYONME × DIVINEO — Paris ref.
+    </footer>
     </body>
 </html>

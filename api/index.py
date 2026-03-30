@@ -5,6 +5,45 @@ import os
 import sys
 from urllib.parse import urlparse
 
+# Extensions servidas comme fichiers statiques (Vercel: sinon tout GET tombait sur index.html).
+_STATIC_EXTS: frozenset[str] = frozenset(
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".svg",
+        ".ico",
+        ".webm",
+        ".mp4",
+        ".mp3",
+        ".js",
+        ".css",
+        ".json",
+        ".woff2",
+        ".txt",
+    }
+)
+
+_MIME = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".webm": "video/webm",
+    ".mp4": "video/mp4",
+    ".mp3": "audio/mpeg",
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".woff2": "font/woff2",
+    ".txt": "text/plain; charset=utf-8",
+}
+
 
 def _project_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +81,48 @@ def _html_index_body() -> bytes | None:
     return None
 
 
+def _resolve_safe_static(path: str) -> str | None:
+    """Chemin URL → fichier bajo la raíz del repo; None si no es estático seguro."""
+    root = _project_root()
+    root_prefix = os.path.normpath(root + os.sep)
+    if path.startswith("/"):
+        path = path[1:]
+    if not path or path.endswith("/"):
+        return None
+    candidate = os.path.normpath(os.path.join(root, path))
+    if not candidate.startswith(root_prefix):
+        return None
+    if not os.path.isfile(candidate):
+        return None
+    ext = os.path.splitext(candidate)[1].lower()
+    if ext not in _STATIC_EXTS:
+        return None
+    rel = os.path.relpath(candidate, root)
+    if rel.startswith("..") or os.path.isabs(rel):
+        return None
+    if rel == "index.html" or rel.startswith(".git" + os.sep) or rel.startswith("api" + os.sep):
+        return None
+    return candidate
+
+
+def _html_mirror_sanctuary() -> bytes | None:
+    root = _project_root()
+    p = os.path.join(root, "mirror_sanctuary_v10.html")
+    if not os.path.isfile(p):
+        return None
+    with open(p, encoding="utf-8") as f:
+        return f.read().encode("utf-8")
+
+
+def _send_binary(handler: BaseHTTPRequestHandler, data: bytes, content_type: str) -> None:
+    handler.send_response(200)
+    handler.send_header("Content-type", content_type)
+    handler.send_header("Cache-Control", "public, max-age=3600")
+    handler.send_header("Content-Length", str(len(data)))
+    handler.end_headers()
+    handler.wfile.write(data)
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         link_45, link_98 = _stripe_links()
@@ -63,31 +144,24 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
-        if path == "/logo_pavo_real.png":
-            root = _project_root()
-            logo = os.path.normpath(os.path.join(root, "logo_pavo_real.png"))
-            if not logo.startswith(os.path.normpath(root + os.sep)):
-                self.send_response(403)
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-                return
-            if not os.path.isfile(logo):
-                msg = b"logo_pavo_real.png not found"
-                self.send_response(404)
-                self.send_header("Content-type", "text/plain; charset=utf-8")
-                self.send_header("Content-Length", str(len(msg)))
-                self.end_headers()
-                self.wfile.write(msg)
-                return
-            with open(logo, "rb") as f:
-                data = f.read()
-            self.send_response(200)
-            self.send_header("Content-type", "image/png")
-            self.send_header("Cache-Control", "public, max-age=86400")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+        path_key = path.rstrip("/") or "/"
+
+        static_file = _resolve_safe_static(path)
+        if static_file is not None:
+            ext = os.path.splitext(static_file)[1].lower()
+            mime = _MIME.get(ext, "application/octet-stream")
+            with open(static_file, "rb") as f:
+                _send_binary(self, f.read(), mime)
             return
+
+        if path_key in (
+            "/mirror_sanctuary_v10.html",
+            "/mirror_sanctuary_v10",
+        ):
+            sanctuary = _html_mirror_sanctuary()
+            if sanctuary is not None:
+                _send_binary(self, sanctuary, "text/html; charset=utf-8")
+                return
 
         html_body = _html_index_body()
         if html_body is not None:

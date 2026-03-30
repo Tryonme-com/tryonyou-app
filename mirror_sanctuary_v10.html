@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Rubén Espinar Rodríguez">
+  <title>TRYONME × DIVINEO — Mirror Sanctuary V10</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; background: #000; color: #D4AF37; font-family: "Playfair Display", Georgia, serif; overflow: hidden; }
+    a.ty-back { position: fixed; top: 12px; left: 12px; z-index: 10001; color: #888; font-size: 11px; text-decoration: none; font-family: system-ui, sans-serif; }
+    a.ty-back:hover { color: #D4AF37; }
+    #canvas-container { position: relative; width: 100vw; height: 100vh; }
+    #output_canvas { display: block; width: 100vw; height: 100vh; object-fit: cover; background: #000; }
+    #pau-bot {
+      position: fixed; bottom: 25px; left: 25px; width: 140px; height: 140px; z-index: 9999;
+      cursor: pointer; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.45)); transition: transform 0.25s ease;
+    }
+    #pau-bot:hover { transform: scale(1.06); }
+    #pau-bot video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    #balmain-btn {
+      position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: min(180px, 40vw);
+      cursor: pointer; transition: transform 0.2s, filter 0.2s; z-index: 10;
+    }
+    #balmain-btn:active { transform: translateX(-50%) scale(0.94); filter: brightness(1.35); }
+    .legal {
+      position: fixed; bottom: 6px; width: 100%; text-align: center; font-size: 9px; letter-spacing: 2px;
+      opacity: 0.55; color: #D4AF37; font-family: system-ui, sans-serif; pointer-events: none; z-index: 9998;
+    }
+    #ty-camera-msg {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85); color: #D4AF37; padding: 24px; text-align: center; z-index: 10000;
+      font-family: system-ui, sans-serif; font-size: 14px; max-width: 100%;
+    }
+    #ty-camera-msg.ty-hidden { display: none; }
+  </style>
+</head>
+<body>
+  <a class="ty-back" href="/">← Index V10 (i18n + checkout)</a>
+
+  <div id="ty-camera-msg" role="status">Autorisation caméra requise (HTTPS). @CertezaAbsoluta</div>
+
+  <div id="canvas-container">
+    <video id="input_video" style="display:none;" playsinline></video>
+    <canvas id="output_canvas" width="1280" height="720"></canvas>
+    <!-- Logo: opcional assets/balmain_logo_gold.png; por defecto look existente -->
+    <img id="balmain-btn" src="assets/balmain_look.png" alt="BALMAIN SNAP" onclick="snapEffect()">
+  </div>
+
+  <div id="pau-bot" role="button" tabindex="0" title="P.A.U.">
+    <video id="pau-v" autoplay loop muted playsinline>
+      <source src="assets/pau_transparent.webm" type="video/webm">
+    </video>
+  </div>
+
+  <div class="legal" aria-label="Mentions légales">
+    SIRET&nbsp;94361019600017 · Patente&nbsp;PCT/EP2025/067317 · Paris
+  </div>
+
+  <script>
+    function snapEffect() {
+      const canvas = document.getElementById("output_canvas");
+      canvas.style.filter = "brightness(3) contrast(2)";
+      setTimeout(function () {
+        canvas.style.filter = "none";
+        console.log("P.A.U.: look Balmain — Snap V10. @CertezaAbsoluta");
+      }, 150);
+    }
+
+    function pauSpeak() {
+      alert("P.A.U.: Bienvenue au Sanctuaire. Un chasquido et nous transformons le cadre. Prêt?");
+    }
+
+    (function bindPau() {
+      var el = document.getElementById("pau-bot");
+      if (!el) return;
+      el.addEventListener("click", pauSpeak);
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pauSpeak(); }
+      });
+    })();
+
+    var videoElement = document.getElementById("input_video");
+    var canvasElement = document.getElementById("output_canvas");
+    var canvasCtx = canvasElement.getContext("2d");
+    var cameraMsg = document.getElementById("ty-camera-msg");
+
+    function fitCanvas() {
+      var w = Math.max(1, Math.floor(window.innerWidth));
+      var h = Math.max(1, Math.floor(window.innerHeight));
+      canvasElement.width = w;
+      canvasElement.height = h;
+    }
+
+    function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      if (results && results.image) {
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      }
+      canvasCtx.restore();
+    }
+
+    if (typeof Pose === "undefined" || typeof Camera === "undefined") {
+      cameraMsg.textContent = "MediaPipe non chargé (CDN). Vérifiez la connexion.";
+    } else {
+      var pose = new Pose({
+        locateFile: function (file) {
+          return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/" + file;
+        },
+      });
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+      pose.onResults(onResults);
+
+      window.addEventListener("resize", fitCanvas);
+      fitCanvas();
+
+      var camera = new Camera(videoElement, {
+        onFrame: function () {
+          pose.send({ image: videoElement });
+        },
+        width: 1280,
+        height: 720,
+      });
+
+      function hideCamMsg() {
+        cameraMsg.classList.add("ty-hidden");
+      }
+
+      videoElement.addEventListener(
+        "playing",
+        function () {
+          hideCamMsg();
+        },
+        { once: true }
+      );
+
+      (async function startCam() {
+        try {
+          if (typeof pose.initialize === "function") {
+            await pose.initialize();
+          }
+          camera.start();
+        } catch (err) {
+          console.warn("Camera / Pose", err);
+          cameraMsg.textContent =
+            "Caméra ou MediaPipe indisponible (HTTPS, permissions). Page principale: /";
+        }
+      })();
+    }
+  </script>
+</body>
+</html>
