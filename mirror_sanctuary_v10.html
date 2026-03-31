@@ -65,6 +65,7 @@
   <script>
     function snapEffect() {
       const canvas = document.getElementById("output_canvas");
+      if (!canvas) return;
       canvas.style.filter = "brightness(3) contrast(2)";
       setTimeout(function () {
         canvas.style.filter = "none";
@@ -87,76 +88,85 @@
 
     var videoElement = document.getElementById("input_video");
     var canvasElement = document.getElementById("output_canvas");
-    var canvasCtx = canvasElement.getContext("2d");
     var cameraMsg = document.getElementById("ty-camera-msg");
 
-    function fitCanvas() {
-      var w = Math.max(1, Math.floor(window.innerWidth));
-      var h = Math.max(1, Math.floor(window.innerHeight));
-      canvasElement.width = w;
-      canvasElement.height = h;
-    }
-
-    function onResults(results) {
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      if (results && results.image) {
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      }
-      canvasCtx.restore();
-    }
-
-    if (typeof Pose === "undefined" || typeof Camera === "undefined") {
-      cameraMsg.textContent = "MediaPipe non chargé (CDN). Vérifiez la connexion.";
+    if (!videoElement || !canvasElement || !cameraMsg) {
+      console.warn("Mirror Sanctuary V10: DOM manquant (input_video, output_canvas ou ty-camera-msg).");
     } else {
-      var pose = new Pose({
-        locateFile: function (file) {
-          return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/" + file;
-        },
-      });
-      pose.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-      pose.onResults(onResults);
-
-      window.addEventListener("resize", fitCanvas);
-      fitCanvas();
-
-      var camera = new Camera(videoElement, {
-        onFrame: function () {
-          pose.send({ image: videoElement });
-        },
-        width: 1280,
-        height: 720,
-      });
-
-      function hideCamMsg() {
-        cameraMsg.classList.add("ty-hidden");
-      }
-
-      videoElement.addEventListener(
-        "playing",
-        function () {
-          hideCamMsg();
-        },
-        { once: true }
-      );
-
-      (async function startCam() {
-        try {
-          if (typeof pose.initialize === "function") {
-            await pose.initialize();
-          }
-          camera.start();
-        } catch (err) {
-          console.warn("Camera / Pose", err);
-          cameraMsg.textContent =
-            "Caméra ou MediaPipe indisponible (HTTPS, permissions). Page principale: /";
+      var canvasCtx = canvasElement.getContext("2d");
+      if (!canvasCtx) {
+        cameraMsg.textContent = "Canvas 2D indisponible.";
+        console.warn("Mirror Sanctuary V10: getContext('2d') indisponible.");
+      } else {
+        function fitCanvas() {
+          var w = Math.max(1, Math.floor(window.innerWidth));
+          var h = Math.max(1, Math.floor(window.innerHeight));
+          canvasElement.width = w;
+          canvasElement.height = h;
         }
-      })();
+
+        function onResults(results) {
+          canvasCtx.save();
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          if (results && results.image) {
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+          }
+          canvasCtx.restore();
+        }
+
+        if (typeof Pose === "undefined" || typeof Camera === "undefined") {
+          cameraMsg.textContent = "MediaPipe non chargé (CDN). Vérifiez la connexion.";
+        } else {
+          var pose = new Pose({
+            locateFile: function (file) {
+              return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/" + file;
+            },
+          });
+          pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+          });
+          pose.onResults(onResults);
+
+          window.addEventListener("resize", fitCanvas);
+          fitCanvas();
+
+          var camera = new Camera(videoElement, {
+            onFrame: function () {
+              pose.send({ image: videoElement });
+            },
+            width: 1280,
+            height: 720,
+          });
+
+          function hideCamMsg() {
+            cameraMsg.classList.add("ty-hidden");
+          }
+
+          videoElement.addEventListener(
+            "playing",
+            function () {
+              hideCamMsg();
+            },
+            { once: true }
+          );
+
+          (async function startCam() {
+            try {
+              if (typeof pose.initialize === "function") {
+                await pose.initialize();
+              }
+              camera.start();
+            } catch (err) {
+              console.warn("Camera / Pose", err);
+              cameraMsg.textContent =
+                "Caméra ou MediaPipe indisponible (HTTPS, permissions). Page principale: /";
+            }
+          })();
+        }
+      }
     }
   </script>
 </body>

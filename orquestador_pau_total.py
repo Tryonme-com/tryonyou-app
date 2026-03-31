@@ -12,14 +12,15 @@ Variables de entorno (opcionales):
     ORQUESTA_SKIP_ENTREGA  1  — no genera carpetas en el Escritorio ni purga de entrega
     ORQUESTA_GITHUB_PR  0 | 2264 | 2266  — merge vía API si GITHUB_TOKEN está definido
     ORQUESTA_PURGA_GITHUB  1  — antes del merge 2266, ejecuta también purgar_friccion (v10_terminal)
-    ORQUESTA_SLACK_TEST   — canal vía SLACK_WEBHOOK_URL (sin Gmail)
+    ORQUESTA_SLACK_TEST   — ref. destino para disparo Jules vía Slack (requiere SLACK_WEBHOOK_URL)
+    ORQUESTA_EMAIL_TEST   — alias heredado; mismo efecto que ORQUESTA_SLACK_TEST
 
 Fases en modo *total* (por defecto):
   1) Protocolo liquidez / estado búnker
   2) Validación cola email + log en Escritorio
   3) Entrega maestra en Escritorio (una sola variante para no duplicar purgas)
   4) GitHub (solo si ORQUESTA_GITHUB_PR != 0)
-  5) Email de prueba (solo si ORQUESTA_EMAIL_TEST)
+  5) Jules / Slack de prueba (solo si ORQUESTA_SLACK_TEST u ORQUESTA_EMAIL_TEST = ref. destino)
   6) Registro simbólico monetario
 
 La vigilancia en bucle infinito no se arranca aquí; sigue siendo: python3 vigilancia_pau.py
@@ -128,13 +129,18 @@ def _fase_github() -> None:
 
 
 def _fase_email_opcional() -> None:
-    dest = os.getenv("ORQUESTA_EMAIL_TEST", "").strip()
+    dest = (
+        os.getenv("ORQUESTA_SLACK_TEST", "").strip()
+        or os.getenv("ORQUESTA_EMAIL_TEST", "").strip()
+    )
     if not dest:
-        print("ℹ️  Sin ORQUESTA_EMAIL_TEST — sin disparo SMTP.")
+        print(
+            "ℹ️  Sin ORQUESTA_SLACK_TEST ni ORQUESTA_EMAIL_TEST — sin disparo Jules (Slack)."
+        )
         return
-    from jules_force_execution import Jules_Force_Execution
+    from jules_force_execution import JulesForceExecution
 
-    Jules_Force_Execution().disparar_prueba_real(dest)
+    JulesForceExecution().disparar_prueba_real(dest)
 
 
 def _fase_registro() -> None:
@@ -182,7 +188,7 @@ def orquestar() -> None:
         print("\n⏭️  ORQUESTA_SKIP_ENTREGA=1 — fase de carpetas en Escritorio omitida.")
 
     _fase("GitHub (opcional)", _fase_github)
-    _fase("Email prueba (opcional)", _fase_email_opcional)
+    _fase("Jules Slack prueba (opcional)", _fase_email_opcional)
     _fase("Registro monetario", _fase_registro)
     _banner("Orquestación total completada (revisa avisos arriba si hubo fallos parciales)")
 
