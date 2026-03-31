@@ -4,6 +4,8 @@ TryOnYou — Jules V10 Omega (Vercel serverless, Pure SPA + bridges).
 - GET: SPA (dist/index.html tras npm run build), estáticos, santuario V10.
 - POST: handshake Jules, leads Zero-Size, biometría (firewall émotionnel),
   checkout « sélection parfaite » (Shopify + Amazon, sans tailles).
+- ANTI-ACCUMULATION: una talla certificada por trayectoria; metadatos `anti_accumulation`
+  / `single_size_certitude` en checkout y snap (ver MISSION.md).
 - Campos estables para Make.com: intent, lead_id, timestamp_iso, siren, patente, protocol.
 - Webhook opcional: TRYONYOU_LEAD_WEBHOOK_URL (o MAKE_LEADS_WEBHOOK_URL / MAKE_WEBHOOK_URL);
   cuerpo JSON: { "event": "tryonyou_lead_v1", ...mismo payload HTTP }.
@@ -451,6 +453,11 @@ class handler(BaseHTTPRequestHandler):
             response["jules_msg"] = combo
             response["inventory_match"] = inv
             response["product_lane"] = PRODUCT_LANE
+            response["anti_accumulation"] = True
+            response["single_size_certitude"] = True
+            response["quality_control_address"] = (
+                "27 Rue de Argenteuil, 75001 Paris, France"
+            )
             _slack_notify(
                 "TryOnYou · Mirror SNAP + inventaire réel\n"
                 f"{inv.get('garment_id', '')} · {PATENTE}"
@@ -465,10 +472,17 @@ class handler(BaseHTTPRequestHandler):
                 if raw_sens is not None
                 else "ajustage parfait — protocole Zero-Size"
             )[:240]
+            raw_flow = body_json.get("shopping_flow")
+            flow = (
+                str(raw_flow).strip() if raw_flow is not None else "non_stop_card"
+            )[:64]
             meta = {
                 "protocol": "zero_size",
                 "checkout": True,
                 "fabric_sensation": sensation,
+                "shopping_flow": flow,
+                "anti_accumulation": True,
+                "single_size_certitude": True,
             }
             try:
                 lead_id, ts = _insert_lead(
@@ -491,8 +505,8 @@ class handler(BaseHTTPRequestHandler):
                 primary_url = amz_u if primary == "shopify" else shop_u
 
             emotional_seal = (
-                "Votre silhouette a trouvé son équilibre — acquisition "
-                "scellée Divineo, sans sélection de taille."
+                "Votre silhouette a trouvé son équilibre — une seule taille, "
+                "celle du scan : acquisition Divineo, anti-accumulation (sans M/L/XL « au cas où »)."
             )
             if not (shop_u or amz_u):
                 emotional_seal = (
@@ -512,9 +526,14 @@ class handler(BaseHTTPRequestHandler):
                 "patente": PATENTE,
                 "product_lane": PRODUCT_LANE,
                 "protocol": "zero_size",
+                "shopping_flow": flow,
+                "anti_accumulation": True,
+                "single_size_certitude": True,
+                "quality_control_address": "27 Rue de Argenteuil, 75001 Paris, France",
             }
             _slack_notify(
-                f"TryOnYou · checkout Zero-Size · lead {lead_id} · {PATENTE} · SIREN {SIREN_SELL}"
+                f"TryOnYou · checkout Zero-Size · ANTI-ACCUMULATION · lead {lead_id} · "
+                f"{PATENTE} · SIREN {SIREN_SELL}"
             )
             _make_forward_lead(payload)
             _send_json(self, payload)

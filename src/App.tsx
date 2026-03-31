@@ -41,6 +41,9 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       body: JSON.stringify({
         fabric_sensation: fabricSensation,
         protocol: "zero_size",
+        shopping_flow: "non_stop_card",
+        anti_accumulation: true,
+        single_size_certitude: true,
       }),
     });
     if (!r.ok) return;
@@ -69,9 +72,21 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
   }
 }
 
+/** Trigger « Chas » : touche C (hors champ éditable) — bascule look miroir instantanée. */
+function isChasTriggerKey(e: KeyboardEvent): boolean {
+  if (e.repeat) return false;
+  if (e.code !== "KeyC" || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const t = e.target;
+  if (!(t instanceof HTMLElement)) return true;
+  if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)
+    return false;
+  return true;
+}
+
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
-  const [snapReveal, setSnapReveal] = useState(false);
+  /** Look augmenté (suit overlay) : Chas OU The Snap. */
+  const [lookAugmented, setLookAugmented] = useState(false);
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
 
   useEffect(() => {
@@ -92,6 +107,16 @@ export default function App() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isChasTriggerKey(e)) return;
+      e.preventDefault();
+      setLookAugmented((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const onFitVerdict = useCallback((verdictLabel: string) => {
@@ -119,7 +144,7 @@ export default function App() {
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
       );
-      setSnapReveal(true);
+      setLookAugmented(true);
       const msg =
         j?.jules_msg ??
         "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
@@ -130,7 +155,7 @@ export default function App() {
   return (
     <div className="app-root">
       <VirtualMirror
-        revealBalmainSuit={snapReveal}
+        revealBalmainSuit={lookAugmented}
         onFitVerdict={onFitVerdict}
       />
 

@@ -59,13 +59,17 @@ def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | 
     sensation = (fabric_sensation or "").strip()[:120]
     note = (
         f"Divineo V10 · lead #{lead_id} · SIREN {SIREN_SELL} · {PATENTE} · "
-        f"ajustage Zero-Size · {sensation}"
+        f"ajustage Zero-Size · ANTI-ACCUMULATION (qty=1, single_size) · QC 27 Rue Argenteuil 75001 · "
+        f"{sensation}"
     )
     body = {
         "draft_order": {
             "line_items": [{"variant_id": int(variant_raw), "quantity": 1}],
             "note": note,
-            "tags": "TryOnYou,ZeroSize,PCT_EP2025_067317,Divineo",
+            "tags": (
+                "TryOnYou,ZeroSize,PCT_EP2025_067317,Divineo,"
+                "AntiAccumulation,SingleSizeCertitude"
+            ),
         }
     }
     req = urllib.request.Request(

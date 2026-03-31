@@ -10,7 +10,10 @@ export type OfrendaKey =
   | "share";
 
 const OFRENDA: { key: OfrendaKey; label: string }[] = [
-  { key: "selection", label: "Ma sélection parfaite" },
+  {
+    key: "selection",
+    label: "Paiement carte — Non-Stop (sélection parfaite)",
+  },
   { key: "reserve", label: "Réserver cabine" },
   { key: "combo", label: "Voir les combinaisons" },
   { key: "save", label: "Enregistrer ma silhouette" },
