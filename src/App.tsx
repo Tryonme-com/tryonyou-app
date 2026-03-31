@@ -39,24 +39,38 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
     if (!r.ok) return;
     const j = (await r.json()) as {
       emotional_seal?: string;
-      operational_note?: string;
-      revenue_ready?: boolean;
       checkout_primary_url?: string;
       checkout_shopify_url?: string;
       checkout_amazon_url?: string;
+      lead_id?: number;
+      revenue_ready?: boolean;
+      checkout_pending_configuration?: boolean;
+      bridge_shopify_ok?: boolean;
+      bridge_amazon_ok?: boolean;
     };
-    if (j.emotional_seal) {
-      window.alert(j.emotional_seal);
-    }
     const url =
       j.checkout_primary_url ||
       j.checkout_shopify_url ||
       j.checkout_amazon_url;
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    } else if (j.operational_note) {
-      window.alert(j.operational_note);
+    const seal = j.emotional_seal ?? "";
+    const pending =
+      j.checkout_pending_configuration === true ||
+      j.revenue_ready === false ||
+      !url;
+
+    if (pending) {
+      window.alert(
+        `${seal}\n\n` +
+          `Lead Divineo enregistré${j.lead_id ? ` (#${j.lead_id})` : ""}. ` +
+          `Ponts : Shopify ${j.bridge_shopify_ok ? "OK" : "—"} · Amazon ${j.bridge_amazon_ok ? "OK" : "—"}. ` +
+          `Pour le paiement immédiat, configurez SHOPIFY_* (Admin ou SHOPIFY_PERFECT_CHECKOUT_URL) ou AMAZON_* sur Vercel.`,
+      );
+      return;
     }
+    if (seal) {
+      window.alert(seal);
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
   } catch {
     /* silencieux — firewall no rompe UI */
   }
