@@ -76,6 +76,41 @@ PRODUCT_LANE = "tryonyou_v10_omega"
 _VALID_INTENTS = frozenset({"selection", "reserve", "combo", "save", "share"})
 
 
+def _env_shopify_bridge_ready() -> bool:
+    """Indica si les variables serveur permettent de résoudre une URL Shopify (sans exposer de secrets)."""
+    if os.environ.get("SHOPIFY_PERFECT_CHECKOUT_URL", "").strip():
+        return True
+    store = os.environ.get("SHOPIFY_STORE_DOMAIN", "").strip()
+    if (
+        os.environ.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
+        and os.environ.get("SHOPIFY_ZERO_SIZE_VARIANT_ID", "").strip().isdigit()
+        and ".myshopify.com" in store.replace("https://", "").replace("http://", "")
+    ):
+        return True
+    return bool(store)
+
+
+def _env_amazon_bridge_ready() -> bool:
+    if os.environ.get("AMAZON_GL_CATALOG_MAP_JSON", "").strip():
+        return True
+    if os.environ.get("AMAZON_PERFECT_ASIN", "").strip():
+        return True
+    return bool(
+        os.environ.get("AMAZON_SP_API_RESOLVED_ASIN", "").strip()
+        and os.environ.get("SP_API_REFRESH_TOKEN", "").strip()
+    )
+
+
+def _bridges_status_public() -> dict:
+    return {
+        "shopify_env_ready": _env_shopify_bridge_ready(),
+        "amazon_env_ready": _env_amazon_bridge_ready(),
+        "checkout_primary_channel": (
+            os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify") or "shopify"
+        ).strip().lower(),
+    }
+
+
 def _project_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -443,6 +478,7 @@ class handler(BaseHTTPRequestHandler):
             if not primary_url:
                 primary_url = shop_u or amz_u
 
+            revenue_ready = bool(primary_url)
             payload = {
                 "ok": True,
                 "lead_id": lead_id,
@@ -454,11 +490,22 @@ class handler(BaseHTTPRequestHandler):
                 "checkout_shopify_url": shop_u or "",
                 "checkout_amazon_url": amz_u or "",
                 "checkout_primary_url": primary_url or "",
+                "revenue_ready": revenue_ready,
+                "checkout_channel_live": {
+                    "shopify": bool(shop_u),
+                    "amazon": bool(amz_u),
+                },
                 "siren": SIREN_SELL,
                 "patente": PATENTE,
                 "product_lane": PRODUCT_LANE,
                 "protocol": "zero_size",
             }
+            if not revenue_ready:
+                payload["operational_note"] = (
+                    "Lead enregistré sous sceau Divineo — ajoutez sur Vercel "
+                    "SHOPIFY_PERFECT_CHECKOUT_URL ou Admin+variante, et/ou "
+                    "AMAZON_PERFECT_ASIN / AMAZON_GL_CATALOG_MAP_JSON pour ouvrir le flux marchand."
+                )
             _slack_notify(
                 f"TryOnYou · checkout Zero-Size · lead {lead_id} · {PATENTE} · SIREN {SIREN_SELL}"
             )
@@ -478,6 +525,7 @@ class handler(BaseHTTPRequestHandler):
         path_key = path.rstrip("/") or "/"
 
         if path_key in ("/api/health", "/api/v1/health"):
+            bridges = _bridges_status_public()
             _send_json(
                 self,
                 {
@@ -487,6 +535,10 @@ class handler(BaseHTTPRequestHandler):
                     "patente": PATENTE,
                     "product_lane": PRODUCT_LANE,
                     "protocol": "zero_size",
+                    "bridges": bridges,
+                    "revenue_env_ready": bool(
+                        bridges.get("shopify_env_ready") or bridges.get("amazon_env_ready")
+                    ),
                 },
             )
             return

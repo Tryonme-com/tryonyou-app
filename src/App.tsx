@@ -39,6 +39,8 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
     if (!r.ok) return;
     const j = (await r.json()) as {
       emotional_seal?: string;
+      operational_note?: string;
+      revenue_ready?: boolean;
       checkout_primary_url?: string;
       checkout_shopify_url?: string;
       checkout_amazon_url?: string;
@@ -52,6 +54,8 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       j.checkout_amazon_url;
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
+    } else if (j.operational_note) {
+      window.alert(j.operational_note);
     }
   } catch {
     /* silencieux — firewall no rompe UI */
