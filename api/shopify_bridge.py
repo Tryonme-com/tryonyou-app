@@ -32,10 +32,22 @@ def _shopify_host() -> str:
     return raw
 
 
+def _shopify_admin_host() -> str:
+    """
+    Host exclusivo Admin API (*.myshopify.com).
+    Si storefront usa dominio público, define SHOPIFY_MYSHOPIFY_HOST=tienda.myshopify.com
+    """
+    raw = os.environ.get("SHOPIFY_MYSHOPIFY_HOST", "").strip()
+    if raw:
+        return raw.replace("https://", "").replace("http://", "").split("/")[0]
+    h = _shopify_host()
+    return h
+
+
 def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | None:
     """POST /admin/api/{ver}/draft_orders.json → invoice_url si credenciales válidas."""
     token = os.environ.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
-    host = _shopify_host()
+    host = _shopify_admin_host()
     variant_raw = os.environ.get("SHOPIFY_ZERO_SIZE_VARIANT_ID", "").strip()
     if not token or not host or not variant_raw.isdigit():
         return None

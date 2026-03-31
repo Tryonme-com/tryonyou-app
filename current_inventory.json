@@ -1,5 +1,17 @@
 [
     {
+        "id": "V10-BALMAIN-WHITE-SNAP",
+        "brand": "BALMAIN",
+        "name": "Silhouette pilote blanche — Lafayette",
+        "technical_specs": {"shoulder_max": 44, "waist_max": 32},
+        "price_eur": 0,
+        "type": "PILOT_SNAP",
+        "store_id": "GL-HAUSSMANN",
+        "stock_status": true,
+        "fabric_weight": "crêpe noble",
+        "img": "assets/balmain_white_snap.png"
+    },
+    {
         "id": "as_001",
         "brand": "ARMARIO SOLIDARIO",
         "name": "VESTE SOLIDAIRE V10",

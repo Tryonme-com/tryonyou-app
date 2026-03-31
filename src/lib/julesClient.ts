@@ -44,3 +44,35 @@ export async function postJulesHandshake(): Promise<JulesHandshake | null> {
     return null;
   }
 }
+
+export type InventoryMatch = {
+  match_absolute?: string;
+  garment_id?: string;
+  brand_line?: string;
+  message?: string;
+  protocol?: string;
+};
+
+/** The Snap : Jules + moteur inventaire réel (Elena Grandini / stock JSON). */
+export async function postMirrorSnap(
+  fabricSensation: string,
+  fabricFitVerdict?: string,
+): Promise<(JulesHandshake & { inventory_match?: InventoryMatch }) | null> {
+  try {
+    const r = await fetch("/api/v1/mirror/snap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ping: true,
+        fabric_sensation: fabricSensation,
+        fabric_fit_verdict: fabricFitVerdict ?? "",
+      }),
+    });
+    if (!r.ok) return null;
+    return (await r.json()) as JulesHandshake & {
+      inventory_match?: InventoryMatch;
+    };
+  } catch {
+    return null;
+  }
+}

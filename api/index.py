@@ -413,6 +413,41 @@ class handler(BaseHTTPRequestHandler):
             )
             return
 
+        if path in ("/api/v1/inventory/match",):
+            from inventory_engine import inventory_match_payload
+
+            try:
+                data = body_json if isinstance(body_json, dict) else {}
+                out = inventory_match_payload(data)
+                _send_json(self, {"ok": True, **out, "siren": SIREN_SELL, "patente": PATENTE})
+            except Exception:
+                _send_json_error(self, 500, "Erreur moteur inventaire Divineo")
+            return
+
+        if path in ("/api/v1/mirror/snap",):
+            from inventory_engine import inventory_match_payload
+
+            sil = {
+                "fabric_fit_verdict": str(body_json.get("fabric_fit_verdict", "") or ""),
+                "fabric_sensation": str(body_json.get("fabric_sensation", "") or ""),
+                "snap": True,
+            }
+            inv = inventory_match_payload(sil)
+            response = _jules_payload()
+            combo = (
+                f"{response.get('jules_msg', '').strip()}\n\n"
+                f"{inv.get('message', '').strip()}"
+            ).strip()
+            response["jules_msg"] = combo
+            response["inventory_match"] = inv
+            response["product_lane"] = PRODUCT_LANE
+            _slack_notify(
+                "TryOnYou · Mirror SNAP + inventaire réel\n"
+                f"{inv.get('garment_id', '')} · {PATENTE}"
+            )
+            _send_json(self, response)
+            return
+
         if path in ("/api/v1/checkout/perfect-selection",):
             raw_sens = body_json.get("fabric_sensation")
             sensation = (
@@ -442,23 +477,27 @@ class handler(BaseHTTPRequestHandler):
             primary_url = amz_u if primary == "amazon" else shop_u
             if not primary_url:
                 primary_url = shop_u or amz_u
-            revenue_ready = bool(primary_url)
+            if not primary_url:
+                primary_url = amz_u if primary == "shopify" else shop_u
+
+            emotional_seal = (
+                "Votre silhouette a trouvé son équilibre — acquisition "
+                "scellée Divineo, sans sélection de taille."
+            )
+            if not (shop_u or amz_u):
+                emotional_seal = (
+                    "Parcours Divineo enregistré — configurez les ponts Shopify ou Amazon "
+                    "dans Vercel pour ouvrir le paiement (SIREN scellé, Zero-Size intact)."
+                )
 
             payload = {
                 "ok": True,
                 "lead_id": lead_id,
                 "timestamp_iso": ts,
-                "emotional_seal": (
-                    "Votre silhouette a trouvé son équilibre — acquisition "
-                    "scellée Divineo, sans sélection de taille."
-                ),
+                "emotional_seal": emotional_seal,
                 "checkout_shopify_url": shop_u or "",
                 "checkout_amazon_url": amz_u or "",
                 "checkout_primary_url": primary_url or "",
-                "revenue_ready": revenue_ready,
-                "bridge_shopify_ok": bool(shop_u),
-                "bridge_amazon_ok": bool(amz_u),
-                "checkout_pending_configuration": not revenue_ready,
                 "siren": SIREN_SELL,
                 "patente": PATENTE,
                 "product_lane": PRODUCT_LANE,
@@ -494,6 +533,12 @@ class handler(BaseHTTPRequestHandler):
                     "protocol": "zero_size",
                 },
             )
+            return
+
+        if path_key in ("/api/v1/inventory/status",):
+            from inventory_engine import inventory_status_payload
+
+            _send_json(self, {"ok": True, **inventory_status_payload()})
             return
 
         static_file = _resolve_safe_static(path)

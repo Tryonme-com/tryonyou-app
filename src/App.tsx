@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { VirtualMirror } from "./components/VirtualMirror";
-import { fetchJulesHealth, postJulesHandshake } from "./lib/julesClient";
+import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 
 const GOLD = "#C5A46D";
 const ANTHRACITE = "#141619";
+
+/** Zero-Size: etiqueta UI → veredicto interno (sin tallas al cliente). */
+function elasticLabelToVerdict(label: string): string {
+  if (label.includes("Préférence drapé")) return "drape_bias";
+  if (label.includes("Préférence tenue")) return "tension_bias";
+  return "aligned";
+}
 
 async function postLead(intent: OfrendaKey): Promise<void> {
   const payload = {
@@ -42,35 +49,21 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       checkout_primary_url?: string;
       checkout_shopify_url?: string;
       checkout_amazon_url?: string;
-      lead_id?: number;
-      revenue_ready?: boolean;
-      checkout_pending_configuration?: boolean;
-      bridge_shopify_ok?: boolean;
-      bridge_amazon_ok?: boolean;
     };
-    const url =
-      j.checkout_primary_url ||
-      j.checkout_shopify_url ||
-      j.checkout_amazon_url;
-    const seal = j.emotional_seal ?? "";
-    const pending =
-      j.checkout_pending_configuration === true ||
-      j.revenue_ready === false ||
-      !url;
-
-    if (pending) {
+    if (j.emotional_seal) {
+      window.alert(j.emotional_seal);
+    }
+    const primary = j.checkout_primary_url?.trim();
+    const shop = j.checkout_shopify_url?.trim();
+    const amz = j.checkout_amazon_url?.trim();
+    const url = primary || shop || amz;
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else if (!j.emotional_seal) {
       window.alert(
-        `${seal}\n\n` +
-          `Lead Divineo enregistré${j.lead_id ? ` (#${j.lead_id})` : ""}. ` +
-          `Ponts : Shopify ${j.bridge_shopify_ok ? "OK" : "—"} · Amazon ${j.bridge_amazon_ok ? "OK" : "—"}. ` +
-          `Pour le paiement immédiat, configurez SHOPIFY_* (Admin ou SHOPIFY_PERFECT_CHECKOUT_URL) ou AMAZON_* sur Vercel.`,
+        "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
       );
-      return;
     }
-    if (seal) {
-      window.alert(seal);
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
   } catch {
     /* silencieux — firewall no rompe UI */
   }
@@ -117,14 +110,15 @@ export default function App() {
       save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
       share: "Partage généré — métadonnées d’ajustage neutralisées.",
     };
-    if (key !== "selection") {
-      window.alert(copy[key]);
-    }
+    window.alert(copy[key]);
   };
 
   const theSnap = () => {
     void (async () => {
-      const j = await postJulesHandshake();
+      const j = await postMirrorSnap(
+        elasticLabel,
+        elasticLabelToVerdict(elasticLabel),
+      );
       setSnapReveal(true);
       const msg =
         j?.jules_msg ??
