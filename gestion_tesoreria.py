@@ -28,12 +28,12 @@ def control_supervivencia(saldo_actual: float) -> str:
 def main() -> int:
     raw = os.environ.get("TESORERIA_SALDO", "").strip()
     if not raw:
-        print("Set TESORERIA_SALDO and run again.", file=sys.stderr)
+        print("Configura TESORERIA_SALDO y ejecuta de nuevo.", file=sys.stderr)
         return 1
     try:
         saldo = float(raw.replace(",", "."))
     except ValueError:
-        print("TESORERIA_SALDO must be a number.", file=sys.stderr)
+        print("TESORERIA_SALDO debe ser un número.", file=sys.stderr)
         return 1
     print(control_supervivencia(saldo))
     return 0
