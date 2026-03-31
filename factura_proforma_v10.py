@@ -9,10 +9,18 @@ Factura proforma PDF (referencia auditoría). IBAN vía entorno, no en código.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
-from fpdf import FPDF
-
+try:
+    from fpdf import FPDF
+except ImportError:
+    sys.stderr.write(
+        "Error: el paquete 'fpdf' es necesario para generar el PDF de la factura.\n"
+        "Instálalo con 'pip install fpdf' (o 'fpdf2', según tu entorno) "
+        "y vuelve a ejecutar el script.\n"
+    )
+    raise SystemExit(1)
 SIRET = "94361019600017"
 PATENT = "PCT/EP2025/067317"
 
