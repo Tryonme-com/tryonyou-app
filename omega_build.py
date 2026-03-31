@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build Omega: instala deps del backend (pip) y construye mirror_ui (npm run build).
+Build Omega: instala deps del backend (pip) y construye la SPA Vite en la raíz (npm run build).
 
   python3 omega_build.py
 
@@ -78,10 +78,10 @@ def main() -> int:
         print("E50_SKIP_NPM=1: omitiendo npm run build.")
         return 0
 
-    ui = ROOT / "mirror_ui"
+    ui = ROOT
     pkg = ui / "package.json"
     if not pkg.is_file():
-        print("Aviso: no hay mirror_ui/package.json; nada que construir con npm.")
+        print("Aviso: no hay package.json en la raíz; nada que construir con npm.")
         return 0
 
     if _run(["npm", "install"], cwd=ui) != 0:
@@ -91,7 +91,7 @@ def main() -> int:
         print("npm run build fallo.", file=sys.stderr)
         return 1
 
-    print(f"[omega_build] OK — mirror_ui/dist/ · {TY_LO_PLUS_TU} ({TY_LO_PLUS_FR})")
+    print(f"[omega_build] OK — dist/ · {TY_LO_PLUS_TU} ({TY_LO_PLUS_FR})")
     return 0
 
 

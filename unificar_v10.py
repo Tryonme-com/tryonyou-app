@@ -1,11 +1,11 @@
 """
-Unificar V10 — limpieza de puerto 5173, comprobación opcional Gemini, arranque Vite (mirror_ui).
+Unificar V10 — limpieza de puerto 5173, comprobación opcional Gemini, arranque Vite (raíz del repo).
 
 Clave Gemini / AI Studio solo por entorno (nunca en el código):
   GEMINI_API_KEY, GOOGLE_API_KEY o VITE_GOOGLE_API_KEY
 
   pip install google-generativeai
-  cd mirror_ui && npm install
+  npm install
   python3 unificar_v10.py
   python3 arranque_unidad_produccion.py   # alias
   python3 activar_unidad_v10.py          # alias
@@ -34,7 +34,8 @@ def _root() -> Path:
 
 
 def _mirror_ui(root: Path) -> Path:
-    return root / "mirror_ui"
+    """SPA Vite en la raíz del repo (package.json)."""
+    return root
 
 
 def _gemini_key() -> str:
@@ -96,7 +97,7 @@ def ejecutar_secuencia_maestra() -> int:
     print("-" * 50)
 
     if not (ui / "package.json").is_file():
-        print(f"❌ No hay mirror_ui/package.json bajo {root}")
+        print(f"❌ No hay package.json en la raíz del repo ({root})")
         return 1
 
     _free_port_5173()
@@ -112,7 +113,7 @@ def ejecutar_secuencia_maestra() -> int:
             stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError:
-        print("❌ No se encontró npm. Instala Node y ejecuta: cd mirror_ui && npm install")
+        print("❌ No se encontró npm. Instala Node y ejecuta: npm install en la raíz del repo")
         return 1
 
     time.sleep(2.5)

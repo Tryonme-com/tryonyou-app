@@ -1,5 +1,5 @@
 """
-Omega Consolidator — regenera backend + mirror_ui (no toca index.html de Vercel).
+Omega Consolidator — regenera backend + SPA en raíz src/ (no toca index.html de Vercel).
 
 Gobernanza (memoria de equipo TryOnYou / Divineo):
 
@@ -21,7 +21,7 @@ Luego:
   pip install -r backend/requirements.txt
   uvicorn backend.omega_core:app --reload --port 8000
 
-  cd mirror_ui && npm install && npm run dev
+  npm install && npm run dev
 """
 
 from __future__ import annotations
@@ -46,14 +46,14 @@ class OmegaConsolidatorSafe:
     def crear_directorios(self) -> None:
         print("Verificando carpetas...")
         (self.root / "backend").mkdir(parents=True, exist_ok=True)
-        (self.root / "mirror_ui" / "src" / "components").mkdir(parents=True, exist_ok=True)
+        (self.root / "src" / "components").mkdir(parents=True, exist_ok=True)
 
     def inyectar_backend(self) -> None:
         print("Backend: omega_core.py (ya versionado; este paso es idempotente).")
         # El archivo real esta en backend/omega_core.py en el repo.
 
     def inyectar_frontend(self) -> None:
-        print("Frontend: mirror_ui/ (Vite + React; ya versionado).")
+        print("Frontend: src/ + Vite en raíz (React; ya versionado).")
 
     def ejecutar(self) -> None:
         self.crear_directorios()
@@ -63,7 +63,7 @@ class OmegaConsolidatorSafe:
         self.inyectar_frontend()
         print("\nListo.")
         print("  API:  uvicorn backend.omega_core:app --reload --port 8000")
-        print("  UI:   cd mirror_ui && npm install && npm run dev")
+        print("  UI:   npm install && npm run dev")
 
 
 if __name__ == "__main__":

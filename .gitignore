@@ -5,6 +5,9 @@
 .env.*
 !.env.example
 
+# Frontend build (Vercel reconstruye en deploy)
+dist/
+
 # Python
 __pycache__/
 *.py[cod]

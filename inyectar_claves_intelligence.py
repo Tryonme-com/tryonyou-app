@@ -1,7 +1,7 @@
 """
 Inyección controlada de claves Stripe/plan (desde el entorno, no desde el código).
 
-- Raíz: E50_PROJECT_ROOT (por defecto ~/Projects/22TRYONYOU).
+- Raíz: E50_PROJECT_ROOT (por defecto la carpeta del repo donde está este script = tryonyou-app).
 - Valores: exporta antes de ejecutar, por ejemplo:
     export INJECT_VITE_STRIPE_PUBLIC_KEY='pk_live_...'
     export INJECT_STRIPE_SECRET_KEY='sk_live_...'

@@ -1,5 +1,5 @@
 """
-Arranque búnker soberanía V10: puerto 5173, Gemini (opcional), aviso Telegram (opcional), Vite mirror_ui.
+Arranque búnker soberanía V10: puerto 5173, Gemini (opcional), aviso Telegram (opcional), Vite en la raíz.
 
 Secretos solo por entorno (nunca en el código):
   GEMINI_API_KEY / GOOGLE_API_KEY / VITE_GOOGLE_API_KEY
@@ -147,7 +147,7 @@ def arranque_bunker() -> int:
     print("-" * 50)
 
     if not (ui / "package.json").is_file():
-        print(f"❌ No hay mirror_ui/package.json bajo {root}")
+        print(f"❌ No hay package.json en la raíz ({root})")
         return 1
 
     _free_port_5173()
@@ -170,7 +170,7 @@ def arranque_bunker() -> int:
             stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError:
-        print("❌ npm no encontrado. cd mirror_ui && npm install")
+        print("❌ npm no encontrado. Ejecuta npm install en la raíz del repo")
         return 1
 
     time.sleep(2.5)

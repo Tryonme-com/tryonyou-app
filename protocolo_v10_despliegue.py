@@ -28,7 +28,7 @@ import requests
 PATENT = "PCT/EP2025/067317"
 SIRET = "94361019600017"
 VITE_PORT = 5173
-UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mirror_ui")
+UI_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def _telegram_credentials() -> tuple[str, str]:
@@ -148,11 +148,11 @@ def ejecutar_despliegue() -> int:
     else:
         print("⚠️ Telegram no enviado; continúo con Vite.", file=sys.stderr)
 
-    if not os.path.isdir(UI_DIR):
-        print(f"❌ No existe {UI_DIR} (¿npm install en mirror_ui?).", file=sys.stderr)
+    if not os.path.isfile(os.path.join(UI_DIR, "package.json")):
+        print(f"❌ No existe package.json en {UI_DIR} (¿npm install?).", file=sys.stderr)
         return 1
 
-    print("\n🚀 Iniciando Espejo Digital (mirror_ui)…")
+    print("\n🚀 Iniciando Espejo Digital (Vite raíz)…")
     try:
         subprocess.run(["npm", "run", "dev"], cwd=UI_DIR, check=False)
     except KeyboardInterrupt:

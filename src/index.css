@@ -1,0 +1,28 @@
+:root {
+  --gold: #c5a46d;
+  --anthracite: #141619;
+  --bone: #f5efe6;
+  --glass: rgba(20, 22, 25, 0.72);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--anthracite);
+  color: var(--bone);
+  font-family: "Cinzel", Georgia, serif;
+}
+
+.app-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}

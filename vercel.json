@@ -1,6 +1,8 @@
 {
   "version": 2,
   "public": true,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "env": {
     "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
   },

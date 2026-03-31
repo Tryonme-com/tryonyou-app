@@ -58,6 +58,7 @@ CERTIFICAT ID: V10-2026-0001-FINAL
 def activar_modo_showroom() -> None:
     print("👗 [Moda]: Inyectando render de «Robe Rouge minimal» en el búnker…")
     candidates = [
+        ROOT / "src" / "App.tsx",
         ROOT / "mirror_ui" / "src" / "App.jsx",
         ROOT / "src" / "pages" / "Home.jsx",
     ]
@@ -67,7 +68,7 @@ def activar_modo_showroom() -> None:
     else:
         print(
             "⚠️  No se encontró App.jsx ni src/pages/Home.jsx; "
-            "saltando inyección (revisar mirror_ui)."
+            "saltando inyección (revisar src/App.tsx)."
         )
 
 
