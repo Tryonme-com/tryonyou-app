@@ -1,8 +1,9 @@
 """
-TryOnYou — Jules V10 Omega (Vercel serverless).
+TryOnYou — Jules V10 Omega (Vercel serverless, Pure SPA + bridges).
 
-- GET: SPA (dist/index.html tras npm run build), estáticos, santuario legacy.
-- POST: handshake Jules (legacy), leads Zero-Size, biometría anonimizada.
+- GET: SPA (dist/index.html tras npm run build), estáticos, santuario V10.
+- POST: handshake Jules, leads Zero-Size, biometría (firewall émotionnel),
+  checkout « sélection parfaite » (Shopify + Amazon, sans tailles).
 - Campos estables para Make.com: intent, lead_id, timestamp_iso, siren, patente, protocol.
 - Webhook opcional: TRYONYOU_LEAD_WEBHOOK_URL (o MAKE_LEADS_WEBHOOK_URL / MAKE_WEBHOOK_URL);
   cuerpo JSON: { "event": "tryonyou_lead_v1", ...mismo payload HTTP }.
@@ -23,6 +24,10 @@ import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse
+
+_API_DIR = os.path.dirname(os.path.abspath(__file__))
+if _API_DIR not in sys.path:
+    sys.path.insert(0, _API_DIR)
 
 _STATIC_EXTS: frozenset[str] = frozenset(
     {
@@ -236,7 +241,12 @@ def _send_json_error(handler: BaseHTTPRequestHandler, code: int, msg: str) -> No
 
 
 def _lead_db_path() -> str:
-    return os.environ.get("LEADS_DB_PATH", "/tmp/tryonyou_leads.db")
+    """Divineo_Leads_DB: prioriza DIVINEO_LEADS_DB_PATH, luego LEADS_DB_PATH."""
+    return (
+        os.environ.get("DIVINEO_LEADS_DB_PATH", "").strip()
+        or os.environ.get("LEADS_DB_PATH", "").strip()
+        or "/tmp/Divineo_Leads_v10.db"
+    )
 
 
 def _ensure_leads_table(conn: sqlite3.Connection) -> None:
@@ -251,6 +261,16 @@ def _ensure_leads_table(conn: sqlite3.Connection) -> None:
             meta_json TEXT
         )
         """
+    )
+
+
+def _perfect_checkout_urls(lead_id: int, fabric_sensation: str) -> tuple[str | None, str | None]:
+    from amazon_bridge import resolve_amazon_checkout_url
+    from shopify_bridge import resolve_shopify_checkout_url
+
+    return (
+        resolve_shopify_checkout_url(lead_id, fabric_sensation),
+        resolve_amazon_checkout_url(lead_id, fabric_sensation),
     )
 
 
@@ -373,19 +393,77 @@ class handler(BaseHTTPRequestHandler):
                 verdict = "drape_bias"
             elif elasticity > 0.72:
                 verdict = "tension_bias"
+            emotional = {
+                "aligned": "Fluidité noble — le drapé épouse votre ligne sans friction.",
+                "drape_bias": "Préférence pour le tombe — élégance détendue, ajustage souverain.",
+                "tension_bias": "Structure affirmée — tenue précise, silhouette sculptée.",
+            }
             _send_json(
                 self,
                 {
                     "ok": True,
                     "session_id": session_id,
-                    "elasticity_index": round(elasticity, 4),
                     "fabric_fit_verdict": verdict,
+                    "fit_experience": emotional.get(verdict, emotional["aligned"]),
                     "siren": SIREN_SELL,
                     "patente": PATENTE,
                     "product_lane": PRODUCT_LANE,
                     "protocol": "zero_size",
                 },
             )
+            return
+
+        if path in ("/api/v1/checkout/perfect-selection",):
+            raw_sens = body_json.get("fabric_sensation")
+            sensation = (
+                str(raw_sens).strip()
+                if raw_sens is not None
+                else "ajustage parfait — protocole Zero-Size"
+            )[:240]
+            meta = {
+                "protocol": "zero_size",
+                "checkout": True,
+                "fabric_sensation": sensation,
+            }
+            try:
+                lead_id, ts = _insert_lead(
+                    "selection",
+                    "ofrenda_v10_checkout",
+                    None,
+                    meta,
+                )
+            except OSError:
+                lead_id, ts = 0, datetime.now(timezone.utc).isoformat()
+
+            shop_u, amz_u = _perfect_checkout_urls(lead_id, sensation)
+            primary = str(
+                os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify") or "shopify"
+            ).lower()
+            primary_url = amz_u if primary == "amazon" else shop_u
+            if not primary_url:
+                primary_url = shop_u or amz_u
+
+            payload = {
+                "ok": True,
+                "lead_id": lead_id,
+                "timestamp_iso": ts,
+                "emotional_seal": (
+                    "Votre silhouette a trouvé son équilibre — acquisition "
+                    "scellée Divineo, sans sélection de taille."
+                ),
+                "checkout_shopify_url": shop_u or "",
+                "checkout_amazon_url": amz_u or "",
+                "checkout_primary_url": primary_url or "",
+                "siren": SIREN_SELL,
+                "patente": PATENTE,
+                "product_lane": PRODUCT_LANE,
+                "protocol": "zero_size",
+            }
+            _slack_notify(
+                f"TryOnYou · checkout Zero-Size · lead {lead_id} · {PATENTE} · SIREN {SIREN_SELL}"
+            )
+            _make_forward_lead(payload)
+            _send_json(self, payload)
             return
 
         response = _jules_payload()

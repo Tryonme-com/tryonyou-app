@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { VirtualMirror } from "./components/VirtualMirror";
 import { fetchJulesHealth, postJulesHandshake } from "./lib/julesClient";
 import "./index.css";
 
 const GOLD = "#C5A46D";
 const ANTHRACITE = "#141619";
-
-type OfrendaKey = "selection" | "reserve" | "combo" | "save" | "share";
-
-const OFRENDA: { key: OfrendaKey; label: string }[] = [
-  { key: "selection", label: "Ma sélection parfaite" },
-  { key: "reserve", label: "Réserver cabine" },
-  { key: "combo", label: "Voir les combinaisons" },
-  { key: "save", label: "Enregistrer ma silhouette" },
-  { key: "share", label: "Partager le look (mode Zero-Size)" },
-];
 
 async function postLead(intent: OfrendaKey): Promise<void> {
   const payload = {
@@ -29,16 +20,47 @@ async function postLead(intent: OfrendaKey): Promise<void> {
       body: JSON.stringify(payload),
     });
     if (!r.ok) return;
-    const _j = await r.json();
-    void _j;
+    void (await r.json());
   } catch {
     /* hors ligne ou préprod */
   }
 }
 
+async function postPerfectCheckout(fabricSensation: string): Promise<void> {
+  try {
+    const r = await fetch("/api/v1/checkout/perfect-selection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fabric_sensation: fabricSensation,
+        protocol: "zero_size",
+      }),
+    });
+    if (!r.ok) return;
+    const j = (await r.json()) as {
+      emotional_seal?: string;
+      checkout_primary_url?: string;
+      checkout_shopify_url?: string;
+      checkout_amazon_url?: string;
+    };
+    if (j.emotional_seal) {
+      window.alert(j.emotional_seal);
+    }
+    const url =
+      j.checkout_primary_url ||
+      j.checkout_shopify_url ||
+      j.checkout_amazon_url;
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  } catch {
+    /* silencieux — firewall no rompe UI */
+  }
+}
+
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
-  const [ema, setEma] = useState<number | null>(null);
+  const [snapReveal, setSnapReveal] = useState(false);
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
 
   useEffect(() => {
@@ -61,132 +83,50 @@ export default function App() {
     };
   }, []);
 
-  const onElasticity = useCallback((_ema: number, verdictLabel: string) => {
-    setEma(_ema);
+  const onFitVerdict = useCallback((verdictLabel: string) => {
     setElasticLabel(verdictLabel);
   }, []);
 
   const onOfrenda = (key: OfrendaKey) => {
+    if (key === "selection") {
+      void postPerfectCheckout(elasticLabel);
+      return;
+    }
     void postLead(key);
-    const copy: Record<OfrendaKey, string> = {
-      selection:
-        "Analyse d’épaule et drape en cours — envoyé au parcours d’essayage.",
-      reserve: "QR cabine VIP généré — Lafayette (référence pilote).",
-      combo: "Alternatives de ligne Divineo chargées.",
-      save: "Empreinte silhouette chiffrée (Zero-Size).",
-      share: "Visuel généré — métadonnées d’ajustage neutralisées.",
+    const copy: Record<Exclude<OfrendaKey, "selection">, string> = {
+      reserve: "QR cabine VIP — Lafayette, essai en courtoisie Divineo.",
+      combo: "Lignes alternatives chargées — composition Zero-Size.",
+      save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
+      share: "Partage généré — métadonnées d’ajustage neutralisées.",
     };
-    alert(copy[key]);
+    if (key !== "selection") {
+      window.alert(copy[key]);
+    }
   };
 
   const theSnap = () => {
     void (async () => {
       const j = await postJulesHandshake();
+      setSnapReveal(true);
       const msg =
         j?.jules_msg ??
-        "The Snap : élasticité et cohérence drape — look de référence pilote.";
-      alert(msg);
+        "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
+      window.alert(msg);
     })();
   };
 
   return (
     <div className="app-root">
-      <VirtualMirror onElasticity={onElasticity} />
+      <VirtualMirror
+        revealBalmainSuit={snapReveal}
+        onFitVerdict={onFitVerdict}
+      />
 
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "36px 20px 100px",
-          pointerEvents: "none",
-          zIndex: 50,
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <h1
-            style={{
-              margin: 0,
-              letterSpacing: 10,
-              fontSize: 22,
-              textShadow: `0 0 18px rgba(197, 164, 109, 0.45)`,
-            }}
-          >
-            TRYONYOU
-          </h1>
-          <div
-            style={{
-              marginTop: 10,
-              fontSize: 10,
-              letterSpacing: 2,
-              color: GOLD,
-              border: `1px solid ${GOLD}`,
-              display: "inline-block",
-              padding: "6px 14px",
-              borderRadius: 999,
-              background: "rgba(0,0,0,0.35)",
-            }}
-          >
-            Elasticité (EMA) · {ema != null ? ema.toFixed(3) : "…"} ·{" "}
-            {elasticLabel}
-          </div>
-          <p
-            style={{
-              margin: "12px 0 0",
-              fontSize: 9,
-              letterSpacing: 1,
-              opacity: 0.75,
-              maxWidth: 480,
-              marginLeft: "auto",
-              marginRight: "auto",
-              lineHeight: 1.5,
-            }}
-          >
-            {julesLane}
-          </p>
-        </div>
-
-        <div
-          style={{
-            pointerEvents: "auto",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12,
-            maxWidth: 520,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {OFRENDA.map((b, i) => (
-            <button
-              type="button"
-              key={b.key}
-              aria-label={`Ofrenda pilote — ${b.label}`}
-              onClick={() => onOfrenda(b.key)}
-              style={{
-                gridColumn: i === 4 ? "span 2" : undefined,
-                padding: "16px 10px",
-                fontSize: 10,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: GOLD,
-                border: `1px solid ${GOLD}`,
-                background:
-                  i === 4 ? "rgba(197, 164, 109, 0.14)" : "var(--glass)",
-                backdropFilter: "blur(12px)",
-                cursor: "pointer",
-                borderRadius: 4,
-                fontFamily: "inherit",
-                transition: "transform 0.2s, background 0.2s",
-              }}
-            >
-              {b.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <OfrendaOverlay
+        elasticLabel={elasticLabel}
+        julesLane={julesLane}
+        onOfrenda={onOfrenda}
+      />
 
       <button
         type="button"
