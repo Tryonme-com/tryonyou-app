@@ -2,42 +2,84 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TRYONME × DIVINEO — Mirror Engine V10</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #D4AF37; font-family: serif; overflow: hidden; }
-        #canvas-container { position: relative; width: 100vw; height: 100vh; background: #000; }
+        :root { --gold: #D4AF37; --black: #000; }
+        body { margin: 0; background: var(--black); color: var(--gold); font-family: 'Playfair Display', serif; overflow: hidden; }
+        #canvas-container { position: relative; width: 100vw; height: 100vh; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #pau-bot { position: fixed; bottom: 30px; left: 30px; width: 130px; z-index: 9999; }
-        #pau-bot video { width: 100%; border-radius: 50%; border: 1px solid #D4AF37; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
-        .legal { position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 10px; opacity: 0.6; letter-spacing: 1px; pointer-events: none; }
+        
+        /* UI OVERLAY */
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 20px; box-sizing: border-box; z-index: 100; }
+        .buttons-grid { pointer-events: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 60px; }
+        button { background: rgba(0,0,0,0.6); border: 1px solid var(--gold); color: var(--gold); padding: 15px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; backdrop-filter: blur(5px); transition: 0.3s; }
+        button:active { background: var(--gold); color: var(--black); }
+        
+        /* PAU BOT & LEGAL */
+        #pau-bot { position: fixed; bottom: 30px; left: 30px; width: 110px; z-index: 1000; pointer-events: auto; }
+        #pau-bot video { width: 100%; border-radius: 50%; border: 1px solid var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .legal { position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 9px; opacity: 0.5; letter-spacing: 1px; }
+        
+        /* SCANNER LINE */
+        .scan-line { position: absolute; width: 100%; height: 2px; background: var(--gold); opacity: 0.3; top: 0; z-index: 10; animation: scan 4s infinite linear; }
+        @keyframes scan { from { top: 0%; } to { top: 100%; } }
     </style>
 </head>
 <body>
     <div id="canvas-container">
+        <div class="scan-line"></div>
         <video id="input_video" style="display:none;"></video>
         <canvas id="output_canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div style="text-align: center;">
+                <h1 style="font-weight: 300; letter-spacing: 4px; font-size: 18px;">TRYONME</h1>
+                <p id="status" style="font-size: 10px; opacity: 0.8;">SCANNANT LA SILHOUETTE...</p>
+            </div>
+            
+            <div class="buttons-grid">
+                <button onclick="pauAction('Mi Selección Perfecta')">Mi Selección Perfecta</button>
+                <button onclick="pauAction('Reservar en Probador')">Reservar en Probador</button>
+                <button onclick="pauAction('Ver Combinaciones')">Ver Combinaciones</button>
+                <button onclick="pauAction('Guardar mi Silueta')">Guardar mi Silueta</button>
+                <button onclick="pauAction('Compartir Look')" style="grid-column: span 2;">Compartir Look</button>
+            </div>
+        </div>
     </div>
-    <div id="pau-bot">
-        <video autoplay loop muted playsinline><source src="pau_transparent.webm" type="video/webm"></video>
+
+    <div id="pau-bot" onclick="snapChange()">
+        <video id="pau-video" autoplay loop muted playsinline><source src="pau_transparent.webm" type="video/webm"></video>
     </div>
+
     <div class="legal">SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317 | PARIS</div>
 
     <script>
+        // BASE DE DATOS LOCAL (Silueta guardada)
+        const db = {
+            saveSilueta: (data) => { localStorage.setItem('silueta_pau', JSON.stringify(data)); },
+            getSilueta: () => JSON.parse(localStorage.getItem('silueta_pau'))
+        };
+
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
+        const statusText = document.getElementById('status');
 
         function onResults(results) {
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
             if (results.poseLandmarks) {
+                statusText.innerText = "SILHOUETTE DÉTECTÉE — 0 SIZES MODE";
                 drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#D4AF37', lineWidth: 2});
-                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FFFFFF', lineWidth: 1, radius: 3});
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
+                db.saveSilueta(results.poseLandmarks[0]); // Guardamos el primer punto como prueba de DB
+            } else {
+                statusText.innerText = "POSITIONNEZ-VOUS FACE AU MIROIR";
             }
             canvasCtx.restore();
         }
@@ -52,12 +94,15 @@
         });
         camera.start();
 
-        function resize() {
-            canvasElement.width = window.innerWidth;
-            canvasElement.height = window.innerHeight;
+        function pauAction(msg) { alert(msg + ": Action enregistrée par PAU."); }
+        
+        function snapChange() {
+            // Efecto de chasquido: cambia color de esqueleto o alerta
+            alert("SNAP! Balmain Look Loading...");
         }
-        window.addEventListener('resize', resize);
-        resize();
+
+        function res() { canvasElement.width = window.innerWidth; canvasElement.height = window.innerHeight; }
+        window.addEventListener('resize', res); res();
     </script>
 </body>
 </html>
