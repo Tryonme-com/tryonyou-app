@@ -2,12 +2,18 @@
   "version": 2,
   "public": true,
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "cleanUrls": true,
   "env": {
     "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
   },
-  "cleanUrls": true,
   "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
     {
       "src": "api/index.py",
       "use": "@vercel/python"
@@ -15,8 +21,19 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/api",
+      "dest": "/api/index.py"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/index.html"
     }
   ],
   "headers": [

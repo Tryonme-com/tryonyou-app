@@ -153,18 +153,28 @@ def _inject_stripe(html: str) -> str:
 
 
 def _html_index_body() -> bytes | None:
+    """
+    SOLO dist/index.html (bundle Vite con /assets/*). Nunca el index.html raíz
+    que referencia /src/main.tsx — eso en producción muestra landings rotos o estáticos ajenos.
+    """
     root = _project_root()
-    for rel in (
-        os.path.join("dist", "index.html"),
-        "index.html",
-        os.path.join("src", "templates", "mirror_v10_final.html"),
-    ):
-        path = os.path.join(root, rel)
-        if os.path.isfile(path):
-            with open(path, encoding="utf-8") as f:
-                html = _inject_stripe(f.read())
-            return html.encode("utf-8")
-    return None
+    dist_index = os.path.join(root, "dist", "index.html")
+    if os.path.isfile(dist_index):
+        with open(dist_index, encoding="utf-8") as f:
+            html = _inject_stripe(f.read())
+        return html.encode("utf-8")
+    tmpl = os.path.join(root, "src", "templates", "mirror_v10_final.html")
+    if os.path.isfile(tmpl):
+        with open(tmpl, encoding="utf-8") as f:
+            html = _inject_stripe(f.read())
+        return html.encode("utf-8")
+    msg = (
+        "<!DOCTYPE html><html><head><meta charset='utf-8'><title>TRYONYOU V10</title></head>"
+        "<body style='font-family:sans-serif;background:#141619;color:#C5A46D;padding:2rem'>"
+        "<p>Build SPA ausente — ejecutar <code>npm run build</code> en despliegue.</p>"
+        "<p>Patente PCT/EP2025/067317 · SIREN 943 610 196</p></body></html>"
+    )
+    return msg.encode("utf-8")
 
 
 def _resolve_safe_static(url_path: str) -> str | None:
