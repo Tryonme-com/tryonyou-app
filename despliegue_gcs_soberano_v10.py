@@ -78,6 +78,15 @@ def subir_codice_v10() -> int:
         bucket = client.bucket(bucket_name)
 
         if not bucket.exists():
+            create_flag = os.environ.get("GCS_CREATE_BUCKET", "").strip().lower()
+            if create_flag not in ("1", "true", "yes"):
+                print(
+                    f"❌ El bucket {bucket_name!r} no existe. "
+                    "Créalo previamente o establece GCS_CREATE_BUCKET=1 "
+                    "para permitir su creación automática.",
+                    file=sys.stderr,
+                )
+                return 1
             loc = os.environ.get("GCS_LOCATION", "EU").strip() or "EU"
             bucket = client.create_bucket(bucket_name, location=loc)
             print(f"✅ Bucket {bucket_name!r} creado (location={loc!r}).")
