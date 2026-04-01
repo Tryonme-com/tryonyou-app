@@ -192,61 +192,16 @@ export function VirtualMirror({
     <div
       style={{
         position: "relative",
-        width: "100vw",
-        height: "100vh",
+        width: "100%",
+        height: "100%",
+        minHeight: "100%",
         background: "#000",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "2px",
-          top: 0,
-          zIndex: 10,
-          opacity: 0.55,
-          background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-          animation: "ty-scan 3s infinite ease-in-out",
-        }}
-      />
-      <style>{`
-        @keyframes ty-scan {
-          0% { top: 0%; }
-          50% { top: 100%; }
-          100% { top: 0%; }
-        }
-      `}</style>
-      <video ref={videoRef} style={{ display: "none" }} playsInline muted />
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: "scaleX(-1)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 20,
-          fontSize: 11,
-          letterSpacing: 2,
-          padding: "8px 14px",
-          borderRadius: 999,
-          border: `1px solid ${GOLD}`,
-          background: "rgba(0,0,0,0.45)",
-          color: "var(--bone)",
-          pointerEvents: "none",
-        }}
-      >
-        {line}
-      </div>
+      <div className="mirror-scan" aria-hidden />
+      <video ref={videoRef} className="mirror-video-hidden" playsInline muted />
+      <canvas ref={canvasRef} className="mirror-canvas" />
+      <div className="mirror-status">{line}</div>
     </div>
   );
 }

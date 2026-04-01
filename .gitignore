@@ -32,3 +32,9 @@ Bpifrance_Envio_Urgente/
 
 # Proforma generada por peacock_v10_final_execution.py (datos comerciales)
 billing/VENTA_V10_PROFORMA.json
+
+# Bunker — journaux runtime (IP, monitor TTC)
+logs/ip_access.jsonl
+logs/IP_WATCH.md
+logs/LAFAYETTE_TTC_MONITOR.md
+logs/SISTEMA_SUSPENDIDO.jsonl

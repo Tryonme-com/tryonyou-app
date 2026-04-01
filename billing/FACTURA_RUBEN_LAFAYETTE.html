@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Facture 2026-04-01-001 — SACMUSEUM · 75001</title>
+  <style>
+    :root {
+      --ink: #0a0a0b;
+      --panel: #121214;
+      --gold: #c5a46d;
+      --gold-bright: #e4c892;
+      --muted: #8a7f6d;
+      --line: rgba(197, 164, 109, 0.35);
+      --serif: "Georgia", "Times New Roman", serif;
+      --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--ink);
+      color: var(--gold);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.55;
+      min-height: 100vh;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    .sheet {
+      max-width: 720px;
+      margin: 0 auto;
+      background: linear-gradient(165deg, var(--panel) 0%, #0e0e10 100%);
+      border: 1px solid var(--line);
+      box-shadow:
+        0 0 0 1px rgba(197, 164, 109, 0.08),
+        0 32px 64px rgba(0, 0, 0, 0.45);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .crest {
+      padding: 2.25rem 2rem 1.5rem;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+      background: radial-gradient(ellipse 80% 120% at 50% -20%, rgba(197, 164, 109, 0.12), transparent 55%);
+    }
+    .crest svg { display: block; margin: 0 auto 1rem; }
+    .crest .wordmark {
+      font-family: var(--serif);
+      font-size: clamp(1.35rem, 4vw, 1.75rem);
+      letter-spacing: 0.42em;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+    }
+    .crest .sub {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .crest .seal {
+      margin-top: 0.85rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+    }
+    .body {
+      padding: 2rem;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: normal;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+      color: var(--gold-bright);
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.75rem;
+    }
+    h2 {
+      font-family: var(--serif);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      margin: 1.75rem 0 0.85rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--line);
+    }
+    h2:first-of-type { margin-top: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 0.35rem 1rem;
+      font-size: 0.92rem;
+    }
+    .grid dt { color: var(--muted); font-size: 0.82rem; }
+    .grid dd { color: #d8c9a8; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.65rem 0.5rem;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    td:last-child, th:last-child { text-align: right; }
+    .totals {
+      margin-top: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .totals table { margin: 0; }
+    .totals tr:last-child td {
+      border-bottom: none;
+      background: rgba(197, 164, 109, 0.08);
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      color: var(--gold-bright);
+    }
+    .iban {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      color: var(--gold-bright);
+      word-break: break-all;
+    }
+    .pay-box {
+      margin-top: 1rem;
+      padding: 1rem 1.1rem;
+      background: rgba(197, 164, 109, 0.06);
+      border-left: 3px solid var(--gold);
+      font-size: 0.88rem;
+      color: #c4b59a;
+    }
+    .mentions {
+      margin-top: 1.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .mentions ul { margin-left: 1rem; margin-top: 0.35rem; }
+    footer {
+      padding: 1.25rem 2rem 2rem;
+      text-align: center;
+      font-family: var(--serif);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+    @media print {
+      body { background: #fff; color: #1a1a1a; padding: 0; }
+      .sheet {
+        box-shadow: none;
+        border: none;
+        max-width: none;
+        background: #fff;
+      }
+      .crest { background: #faf8f5; border-bottom: 1px solid #c5a46d; }
+      .crest .wordmark, h1, h2, .totals tr:last-child td { color: #6b542c; }
+      .crest .sub, .crest .seal, .meta, .grid dt, th, .mentions, footer { color: #555; }
+      .grid dd, td, .pay-box { color: #222; }
+      .iban { color: #1a1a1a; }
+    }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <header class="crest" aria-label="En-tête SACMUSEUM">
+      <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+        <defs>
+          <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#e4c892" />
+            <stop offset="50%" style="stop-color:#c5a46d" />
+            <stop offset="100%" style="stop-color:#8a7355" />
+          </linearGradient>
+        </defs>
+        <circle cx="44" cy="44" r="40" fill="none" stroke="url(#ring)" stroke-width="1.25" opacity="0.9" />
+        <circle cx="44" cy="44" r="33" fill="none" stroke="rgba(197,164,109,0.25)" stroke-width="1" />
+        <path d="M44 22v44M30 34c0-8 14-10 28-4m-28 16c0 8 14 10 28 4" fill="none" stroke="#c5a46d" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="44" cy="44" r="3" fill="#c5a46d" opacity="0.85" />
+      </svg>
+      <div class="wordmark">SACMUSEUM</div>
+      <div class="sub">TryOnYou · V10 Omega · 75001 Paris</div>
+      <div class="seal">PCT/EP2025/067317 · SIREN 943 610 196</div>
+    </header>
+
+    <div class="body">
+      <h1>Facture n° 2026-04-01-001</h1>
+      <p class="meta">Date d’émission : 1<sup>er</sup> avril 2026 · Paris, France</p>
+
+      <h2>Émetteur</h2>
+      <dl class="grid">
+        <dt>Titulaire</dt><dd><strong>Rubén Espinar Rodríguez</strong></dd>
+        <dt>Siège</dt><dd>27 Rue de Argenteuil, 75001 Paris, France</dd>
+        <dt>Contact</dt><dd>ruben.espinar.10@icloud.com · +33 6 99 46 94 79</dd>
+      </dl>
+
+      <h2>Destinataire</h2>
+      <dl class="grid">
+        <dt>Organisation</dt><dd>Galeries Lafayette Haussmann</dd>
+        <dt>Attention</dt><dd>M. Nicolas Tesnier</dd>
+        <dt>Adresse</dt><dd>40 Boulevard Haussmann, 75009 Paris, France</dd>
+      </dl>
+
+      <h2>Prestation</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Désignation</th>
+            <th>Qté</th>
+            <th>P.U. HT</th>
+            <th>Total HT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Forfait setup — digitalisation moteur V10, 310 références, intégration protocole commerce</td>
+            <td>1</td>
+            <td>7 500,00 €</td>
+            <td><strong>7 500,00 €</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Récapitulatif</h2>
+      <div class="totals">
+        <table>
+          <tbody>
+            <tr><td colspan="3">Total HT</td><td><strong>7 500,00 €</strong></td></tr>
+            <tr><td colspan="3">TVA (20 %)</td><td>1 500,00 €</td></tr>
+            <tr><td colspan="3"><strong>Total TTC</strong></td><td><strong>9 000,00 €</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem;font-family:Georgia,serif;font-size:1rem;color:var(--gold-bright);">
+        Net à payer : <strong>neuf mille euros TTC</strong>.
+      </p>
+
+      <h2>Paiement — BNP Paribas</h2>
+      <dl class="grid">
+        <dt>Mode</dt><dd>Virement bancaire</dd>
+        <dt>Titulaire</dt><dd>Rubén Espinar Rodríguez</dd>
+        <dt>IBAN</dt><dd class="iban">FR76 3000 4031 8900 0058 4046 934</dd>
+        <dt>BIC</dt><dd class="iban">BNPAFRPPXXX</dd>
+      </dl>
+      <div class="pay-box">
+        <strong>Référence de virement :</strong> FACTURE 2026-04-01-001 — SIREN 943610196<br /><br />
+        Libération du moteur inventaire (310 références) après validation du règlement intégral <strong>9 000,00 € TTC</strong> sur cet IBAN — variables serveur : <code style="font-size:0.8em;opacity:.9;">LAFAYETTE_SETUP_FEE_TTC_VALIDATED</code> / <code style="font-size:0.8em;opacity:.9;">LAFAYETTE_CONFIRMED_PAYMENT_TTC_EUR</code>.
+      </div>
+
+      <div class="mentions">
+        <strong>Mentions</strong>
+        <ul>
+          <li>Indemnité forfaitaire pour frais de recouvrement en cas de retard : 40 €.</li>
+          <li>Pas d’escompte pour paiement anticipé.</li>
+          <li>Document aligné sur <code>/legal/IDENTITY.md</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      Bajo Protocolo de Soberanía V10 · Founder: Rubén Espinar Rodríguez
+    </footer>
+  </article>
+</body>
+</html>

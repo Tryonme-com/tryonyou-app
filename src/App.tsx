@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
-import { VirtualMirror } from "./components/VirtualMirror";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
+import "./App.css";
 
-const GOLD = "#C5A46D";
-const ANTHRACITE = "#141619";
+const VirtualMirror = lazy(() =>
+  import("./components/VirtualMirror").then((m) => ({
+    default: m.VirtualMirror,
+  })),
+);
 
-/** Zero-Size: etiqueta UI → veredicto interno (sin tallas al cliente). */
 function elasticLabelToVerdict(label: string): string {
   if (label.includes("Préférence drapé")) return "drape_bias";
   if (label.includes("Préférence tenue")) return "tension_bias";
@@ -29,7 +31,7 @@ async function postLead(intent: OfrendaKey): Promise<void> {
     if (!r.ok) return;
     void (await r.json());
   } catch {
-    /* hors ligne ou préprod */
+    /* hors ligne */
   }
 }
 
@@ -68,11 +70,10 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       );
     }
   } catch {
-    /* silencieux — firewall no rompe UI */
+    /* silencieux */
   }
 }
 
-/** Trigger « Chas » : touche C (hors champ éditable) — bascule look miroir instantanée. */
 function isChasTriggerKey(e: KeyboardEvent): boolean {
   if (e.repeat) return false;
   if (e.code !== "KeyC" || e.ctrlKey || e.metaKey || e.altKey) return false;
@@ -85,7 +86,6 @@ function isChasTriggerKey(e: KeyboardEvent): boolean {
 
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
-  /** Look augmenté (suit overlay) : Chas OU The Snap. */
   const [lookAugmented, setLookAugmented] = useState(false);
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
 
@@ -154,64 +154,49 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <VirtualMirror
-        revealBalmainSuit={lookAugmented}
-        onFitVerdict={onFitVerdict}
-      />
-
-      <OfrendaOverlay
-        elasticLabel={elasticLabel}
-        julesLane={julesLane}
-        onOfrenda={onOfrenda}
-      />
-
-      <button
-        type="button"
-        onClick={theSnap}
-        title="P.A.U."
-        aria-label="P.A.U. — snap et orchestration Jules"
-        style={{
-          position: "fixed",
-          bottom: 28,
-          left: 28,
-          width: 96,
-          height: 96,
-          borderRadius: "50%",
-          border: `2px solid ${GOLD}`,
-          overflow: "hidden",
-          padding: 0,
-          cursor: "pointer",
-          zIndex: 60,
-          background: ANTHRACITE,
-          boxShadow: `0 0 26px rgba(197, 164, 109, 0.35)`,
-        }}
-      >
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      <div className="app-stage">
+        <Suspense
+          fallback={<div className="loading">LIVIxLAFAYETTE</div>}
         >
-          <source src="/pau_transparent.webm" type="video/webm" />
-        </video>
-      </button>
+          <VirtualMirror
+            revealBalmainSuit={lookAugmented}
+            onFitVerdict={onFitVerdict}
+          />
+        </Suspense>
+      </div>
 
-      <div
-        style={{
-          position: "fixed",
-          bottom: 10,
-          width: "100%",
-          textAlign: "center",
-          fontSize: 8,
-          opacity: 0.45,
-          letterSpacing: 1,
-          pointerEvents: "none",
-          zIndex: 40,
-        }}
-      >
-        SIREN: 943 610 196 | Patente: PCT/EP2025/067317 | © 2026 DIVINEO PARIS — V10
-        OMEGA
+      <div className="app-ui">
+        <OfrendaOverlay
+          elasticLabel={elasticLabel}
+          julesLane={julesLane}
+          onOfrenda={onOfrenda}
+        />
+
+        <div className="app-pau-row">
+          <button
+            type="button"
+            className="app-pau"
+            onClick={theSnap}
+            title="P.A.U."
+            aria-label="P.A.U. — snap et orchestration Jules"
+          >
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+            >
+              <source src="/videos/pau_transparent.webm" type="video/webm" />
+              <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+            </video>
+          </button>
+        </div>
+
+        <div className="app-legal">
+          SIREN: 943 610 196 | Patente: PCT/EP2025/067317 | © 2026 DIVINEO PARIS —
+          V10 OMEGA
+        </div>
       </div>
     </div>
   );

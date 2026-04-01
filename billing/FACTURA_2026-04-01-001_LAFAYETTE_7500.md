@@ -1,13 +1,15 @@
-# Facture **2026-04-01-001** — Setup digitalisation V10 (7 500,00 €)
+# Facture **2026-04-01-001** — Setup V10 (base HT 7 500 € · **TTC 9 000 €**)
 
 **Date d’émission :** 2026-04-01  
 **Devise :** EUR  
 **Référence patente :** PCT/EP2025/067317  
 **Référence SIREN :** 943 610 196
 
+> **Édition complète (même numéro, libellés légaux) :** [`FACTURA_RUBEN_LAFAYETTE.md`](./FACTURA_RUBEN_LAFAYETTE.md)
+
 ---
 
-## Émetteur (identité alignée sur `/legal/IDENTITY.md`)
+## Émetteur (voir `/legal/IDENTITY.md`)
 
 | Champ | Valeur |
 |--------|--------|
@@ -24,7 +26,7 @@
 | **IBAN** | FR76 3000 4031 8900 0058 4046 934 |
 | **BIC** | BNPAFRPPXXX |
 
-*Le déblocage technique du moteur inventaire (310 références) est lié à la validation du règlement sur cet IBAN — variables d’environnement `LAFAYETTE_SETUP_PAYMENT_IBAN` / `LAFAYETTE_BNP_IBAN_7500_VALIDATED` (voir `api/stealth_bunker.py`).*
+*Kill-switch moteur 310 refs : déblocage après validation du **9 000,00 € TTC** (`LAFAYETTE_SETUP_FEE_TTC_VALIDATED` ou `LAFAYETTE_CONFIRMED_PAYMENT_TTC_EUR=9000`, avec IBAN BNP si voie automatique).*
 
 ---
 
@@ -32,28 +34,28 @@
 
 | Champ | Valeur |
 |--------|--------|
-| **Organisation** | Galeries Lafayette Paris Haussmann (pilot innovation / équipe projet) |
+| **Organisation** | Galeries Lafayette Paris Haussmann |
 | **Adresse** | 40 Boulevard Haussmann, 75009 Paris, France |
 
 ---
 
-## Détail
+## Détail (récapitulé en une ligne HT)
 
-| Description | Qté | P.U. | Total |
-|-------------|-----|------|------:|
-| Digitalisation références luxe | 310 | 20,00 € | 6 200,00 € |
-| Calibrage biométrique & mapping matière | 1 | 1 300,00 € | 1 300,00 € |
+| Description | Qté | P.U. HT | Total HT |
+|-------------|-----|---------|----------|
+| Digitalisation références + calibrage biométrique + mise en service protocole V10 (forfait setup) | 1 | 7 500,00 € | **7 500,00 €** |
 
-| | Montant |
-|---|--------:|
-| **Total TTC à régler (setup)** | **7 500,00 €** |
+| Libellé | Montant |
+|---------|--------:|
+| Total HT | 7 500,00 € |
+| TVA 20 % | 1 500,00 € |
+| **Total TTC à régler** | **9 000,00 €** |
 
 ---
 
 ## Mentions
 
-- Libellé de virement recommandé : `FACTURE 2026-04-01-001 — SIREN 943610196`.
-- Toute correspondance administrative : coordonnées ci-dessus.
+- Libellé de virement : `FACTURE 2026-04-01-001 — SIREN 943610196`.
 
 ---
 

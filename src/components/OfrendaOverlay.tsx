@@ -9,15 +9,15 @@ export type OfrendaKey =
   | "save"
   | "share";
 
-const OFRENDA: { key: OfrendaKey; label: string }[] = [
+const OFRENDA_BOTTOM: { key: OfrendaKey; label: string; accent?: boolean }[] = [
   {
     key: "selection",
     label: "Paiement carte — Non-Stop (sélection parfaite)",
+    accent: true,
   },
-  { key: "reserve", label: "Réserver cabine" },
+  { key: "reserve", label: "Armario" },
   { key: "combo", label: "Voir les combinaisons" },
-  { key: "save", label: "Enregistrer ma silhouette" },
-  { key: "share", label: "Partager le look (mode Zero-Size)" },
+  { key: "save", label: "Sac Museum" },
 ];
 
 type Props = {
@@ -34,19 +34,8 @@ export function OfrendaOverlay({
   headerExtra,
 }: Props) {
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "36px 20px 100px",
-        pointerEvents: "none",
-        zIndex: 50,
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
+    <div className="ofrenda-overlay">
+      <div className="ofrenda-header">
         <h1
           style={{
             margin: 0,
@@ -89,46 +78,35 @@ export function OfrendaOverlay({
         </p>
       </div>
 
-      <div
-        style={{
-          pointerEvents: "auto",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-          maxWidth: 520,
-          width: "100%",
-          alignSelf: "center",
-        }}
-      >
-        {OFRENDA.map((b, i) => (
+      <div className="ofrenda-spacer" aria-hidden />
+
+      <div>
+        <div className="ofrenda-share-row">
           <button
             type="button"
-            key={b.key}
-            aria-label={`Ofrenda pilote — ${b.label}`}
-            onClick={() => onOfrenda(b.key)}
-            style={{
-              gridColumn: i === 4 ? "span 2" : undefined,
-              padding: "16px 10px",
-              fontSize: 10,
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              color: GOLD,
-              border: `1px solid ${GOLD}`,
-              background:
-                i === 4 ? "rgba(197, 164, 109, 0.14)" : "var(--glass)",
-              backdropFilter: "blur(12px)",
-              cursor: "pointer",
-              borderRadius: 4,
-              fontFamily: "inherit",
-              transition: "transform 0.2s, background 0.2s",
-            }}
+            className="ofrenda-share-btn"
+            aria-label="Share My VIP Look"
+            onClick={() => onOfrenda("share")}
           >
-            {b.label}
+            Share My VIP Look
           </button>
-        ))}
+        </div>
+        <div className="ofrenda-bottom-row">
+          {OFRENDA_BOTTOM.map((b) => (
+            <button
+              type="button"
+              key={b.key}
+              data-accent={b.accent ? "1" : undefined}
+              aria-label={`Ofrenda pilote — ${b.label}`}
+              onClick={() => onOfrenda(b.key)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-export { OFRENDA };
+export { OFRENDA_BOTTOM as OFRENDA };

@@ -49,6 +49,75 @@ def _expected_iban_for_unlock() -> str:
     return _CANONICAL_LAFAYETTE_IBAN_FR
 
 
+# Facture 2026-04-01-001 : 7 500 € HT + TVA 20 % = 9 000 € TTC (kill-switch production).
+_EXPECTED_LAFAYETTE_TTC_EUR = 9000.0
+
+
+def _parse_euro_amount(raw: str) -> float | None:
+    s = (raw or "").strip().replace(" ", "").replace("€", "").replace("\u00a0", "")
+    if not s:
+        return None
+    if "," in s and "." in s:
+        s = s.replace(".", "").replace(",", ".")
+    elif "," in s:
+        s = s.replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _payment_ttc_gate_satisfied() -> bool:
+    """True si l'ingreso íntegre facture maestra (9 000 € TTC) est confirmé."""
+    flag = os.environ.get("LAFAYETTE_SETUP_FEE_TTC_VALIDATED", "").strip().lower()
+    if flag in ("1", "true", "yes", "on"):
+        return True
+    for key in ("LAFAYETTE_CONFIRMED_PAYMENT_TTC_EUR", "LAFAYETTE_PAYMENT_TTC_EUR"):
+        v = _parse_euro_amount(os.environ.get(key, "") or "")
+        if v is not None and v + 1e-9 >= _EXPECTED_LAFAYETTE_TTC_EUR:
+            return True
+    return False
+
+
+def bunker_blackout_mode() -> bool:
+    return os.environ.get("BUNKER_BLACKOUT_MODE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def lafayette_ip_matches(handler: BaseHTTPRequestHandler) -> bool:
+    if os.environ.get("LAFAYETTE_BLACKOUT_ALL_IPS_AS_LAFAYETTE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return True
+    prefixes = [
+        p.strip()
+        for p in os.environ.get("LAFAYETTE_IP_PREFIXES", "").split(",")
+        if p.strip()
+    ]
+    if not prefixes:
+        return False
+    ip = client_ip(handler)
+    return any(ip.startswith(p) for p in prefixes)
+
+
+def append_sistema_suspendido_log(ip: str, detail: str) -> None:
+    path = os.path.join(_logs_dir(), "SISTEMA_SUSPENDIDO.jsonl")
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    line = json.dumps(
+        {"ts": ts, "ip": ip, "event": "sistema_suspendido", "detail": detail[:200]},
+        ensure_ascii=False,
+    )
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
 def client_ip(handler: BaseHTTPRequestHandler) -> str:
     xff = handler.headers.get("X-Forwarded-For", "") or ""
     if xff.strip():
@@ -64,42 +133,118 @@ def client_ip(handler: BaseHTTPRequestHandler) -> str:
 
 def inventory_references_unlocked() -> bool:
     """
-    Déblocage inventaire (310 refs) — liquidation setup 7 500 €, priorité validation IBAN BNP.
+    Déblocage inventaire (310 refs) — facture F-2026-001 : **9 000 € TTC** sur IBAN BNP.
 
-    - IBAN : LAFAYETTE_BNP_IBAN_7500_VALIDATED=1 (contrôle manuel virement reçu)
-      ou LAFAYETTE_SETUP_PAYMENT_IBAN normalisé == LAFAYETTE_EXPECTED_IBAN (fallback : IDENTITY.md).
-    - Secours : SETUP_FEE_7500_VALIDATED / hash (intégration historique).
+    Toute levée exige le gate TTC (sauf LAFAYETTE_ALLOW_HASH_UNLOCK_WITHOUT_TTC pour hash atelier).
     """
+    ttc_ok = _payment_ttc_gate_satisfied()
+
     fee_paid_flag = (
         os.environ.get("LAFAYETTE_SETUP_FEE_STATUS", "").strip().upper() == "PAID"
     )
-    if fee_paid_flag:
+    if fee_paid_flag and ttc_ok:
         return True
 
-    iban_confirm = os.environ.get("LAFAYETTE_BNP_IBAN_7500_VALIDATED", "").strip().lower()
-    if iban_confirm in ("1", "true", "yes", "on"):
+    iban_confirm = (
+        os.environ.get("LAFAYETTE_BNP_IBAN_TTC_VALIDATED", "").strip().lower()
+        or os.environ.get("LAFAYETTE_BNP_IBAN_7500_VALIDATED", "").strip().lower()
+    )
+    if iban_confirm in ("1", "true", "yes", "on") and ttc_ok:
         return True
 
     submitted_iban = _normalize_iban(
         os.environ.get("LAFAYETTE_SETUP_PAYMENT_IBAN", "").strip()
     )
     expected_iban = _expected_iban_for_unlock()
-    if submitted_iban and expected_iban and submitted_iban == expected_iban:
+    if (
+        submitted_iban
+        and expected_iban
+        and submitted_iban == expected_iban
+      and ttc_ok
+    ):
         return True
 
     flag = os.environ.get("SETUP_FEE_7500_VALIDATED", "").strip().lower()
-    if flag in ("1", "true", "yes", "on"):
+    if flag in ("1", "true", "yes", "on") and ttc_ok:
         return True
     expected = os.environ.get("LAFAYETTE_SETUP_EXPECTED_HASH", "").strip()
     provided = os.environ.get("LAFAYETTE_SETUP_PAYMENT_HASH", "").strip()
     if expected and provided and provided.lower() == expected.lower():
-        return True
+        if (
+            os.environ.get("LAFAYETTE_ALLOW_HASH_UNLOCK_WITHOUT_TTC", "")
+            .strip()
+            .lower()
+            in ("1", "true", "yes", "on")
+        ):
+            return True
+        return ttc_ok
     secret = os.environ.get("LAFAYETTE_SETUP_UNLOCK_SECRET", "").strip()
     if secret and provided:
         calc = hashlib.sha256(f"{secret}:7500:EUR".encode("utf-8")).hexdigest()
         if provided.lower() == calc.lower():
-            return True
+            if (
+                os.environ.get("LAFAYETTE_ALLOW_HASH_UNLOCK_WITHOUT_TTC", "")
+                .strip()
+                .lower()
+                in ("1", "true", "yes", "on")
+            ):
+                return True
+            return ttc_ok
     return False
+
+
+def inventory_collection_path_forbidden(url_path: str) -> bool:
+    if inventory_references_unlocked():
+        return False
+    p = (url_path or "").replace("\\", "/").lower()
+    if "current_inventory" in p:
+        return True
+    if "inventory_engine" in p:
+        return True
+    seg = p.strip("/").split("/")
+    if len(seg) >= 2 and seg[0] == "api" and "inventory" in p:
+        return True
+    return False
+
+
+def maybe_log_ttc_unlock_event(handler: BaseHTTPRequestHandler | None = None) -> None:
+    """
+    Si LAFAYETTE_TTC_MONITOR_LOG=1 et moteur débloqué : une ligne / jour UTC dans
+    logs/LAFAYETTE_TTC_MONITOR.md (détection abono 9 000 € TTC côté env).
+    Sur serverless, FS souvent éphémère — traiter comme indicateur, pas preuve comptable.
+    """
+    if not inventory_references_unlocked():
+        return
+    if os.environ.get("LAFAYETTE_TTC_MONITOR_LOG", "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    path = os.path.join(_logs_dir(), "LAFAYETTE_TTC_MONITOR.md")
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                tail = f.read()[-600:]
+            if day in tail and "UNLOCK" in tail:
+                return
+        except OSError:
+            pass
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ip = client_ip(handler) if handler is not None else "—"
+    row = (
+        f"| {ts} | **UNLOCK** | Gate TTC 9 000 € (F-2026-001) — moteur 310 refs · IP `{ip}` |\n"
+    )
+    if not os.path.isfile(path):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(
+                "# LAFAYETTE TTC — monitor (abono 9 000 € TTC)\n\n"
+                "| UTC | État | Détail |\n|-----|------|--------|\n"
+            )
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(row)
 
 
 def _append_jsonl(entry: dict[str, Any]) -> None:
@@ -122,7 +267,7 @@ def _append_ip_watch_row(
     if not os.path.isfile(md_path):
         header = (
             "# IP_WATCH — accès bunker (généré automatiquement)\n\n"
-            "Colonne *outcome* : `inventory_locked` = kill-switch setup 7 500 € "
+            "Colonne *outcome* : `inventory_locked` = kill-switch facture 9 000 € TTC / IBAN "
             "non validé ; `stealth` = page masquée servie.\n\n"
             "| UTC | IP | Méthode | Chemin | Outcome | Détail |\n"
             "|-----|----|---------|--------|---------|--------|\n"

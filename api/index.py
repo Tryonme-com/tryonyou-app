@@ -34,9 +34,15 @@ if _API_DIR not in sys.path:
 
 from peacock_core import is_webhook_destination_forbidden
 from stealth_bunker import (
+    append_sistema_suspendido_log,
+    bunker_blackout_mode,
     bunker_stealth_enabled,
+    client_ip,
+    inventory_collection_path_forbidden,
     inventory_references_unlocked,
+    lafayette_ip_matches,
     log_bunker_access,
+    maybe_log_ttc_unlock_event,
     stealth_html_body,
 )
 
@@ -204,6 +210,8 @@ def _resolve_safe_static(url_path: str) -> str | None:
         path = path[1:]
     if not path or path.endswith("/"):
         return None
+    if inventory_collection_path_forbidden("/" + path):
+        return None
 
     candidates = [
         os.path.normpath(os.path.join(root, path)),
@@ -356,22 +364,45 @@ def _inventory_kill_paths_block(method: str, path_key: str) -> bool:
     return False
 
 
+_SLACK_SUSPENDIDO_SENT = False
+
+
+def _maybe_slack_sistema_suspendido() -> None:
+    global _SLACK_SUSPENDIDO_SENT
+    if _SLACK_SUSPENDIDO_SENT:
+        return
+    if not bunker_blackout_mode():
+        return
+    _SLACK_SUSPENDIDO_SENT = True
+    _slack_notify(
+        "TryOnYou · Sistema Suspendido — blackout Lafayette / 9 000 € TTC non confirmé. "
+        f"{PATENTE} · SIREN {SIREN_SELL}"
+    )
+
+
 def _respond_inventory_locked(
     handler: BaseHTTPRequestHandler, path_key: str, method: str
 ) -> None:
-    log_bunker_access(
-        handler,
-        method,
-        path_key,
-        "inventory_locked",
-        "setup_7500_eur_not_validated",
-        403,
+    code = 403
+    outcome = "inventory_locked"
+    detail = "setup_9000_ttc_not_validated"
+    msg = (
+        "Inventaire verrouillé — validation du règlement 9 000 € TTC "
+        "(facture F-2026-001) requise."
     )
-    _send_json_error(
-        handler,
-        403,
-        "Inventaire verrouillé — validation du setup requise.",
-    )
+    if bunker_blackout_mode() and lafayette_ip_matches(handler):
+        code = 503
+        outcome = "service_unavailable_blackout"
+        detail = "lafayette_9k_pending"
+        msg = (
+            "Service Unavailable — moteur V10 suspendu (abono 9 000 € TTC). "
+            "Réessayer après validation."
+        )
+    log_bunker_access(handler, method, path_key, outcome, detail, code)
+    if bunker_blackout_mode() and code == 503:
+        append_sistema_suspendido_log(client_ip(handler), detail)
+        _maybe_slack_sistema_suspendido()
+    _send_json_error(handler, code, msg)
 
 
 def _stealth_should_log(method: str, path_key: str) -> bool:
@@ -526,6 +557,7 @@ class handler(BaseHTTPRequestHandler):
                 "TryOnYou · Mirror SNAP + inventaire réel\n"
                 f"{inv.get('garment_id', '')} · {PATENTE}"
             )
+            maybe_log_ttc_unlock_event(self)
             _send_json(self, response)
             return
 
@@ -615,6 +647,8 @@ class handler(BaseHTTPRequestHandler):
         path_key = path.rstrip("/") or "/"
 
         if path_key in ("/api/health", "/api/v1/health"):
+            if bunker_blackout_mode():
+                _maybe_slack_sistema_suspendido()
             _send_json(
                 self,
                 {
@@ -624,13 +658,18 @@ class handler(BaseHTTPRequestHandler):
                     "patente": PATENTE,
                     "product_lane": PRODUCT_LANE,
                     "protocol": "zero_size",
+                    "bunker_blackout": bunker_blackout_mode(),
                 },
             )
             return
 
         if path_key in ("/api/v1/inventory/status",):
+            if _inventory_kill_paths_block("GET", path_key):
+                _respond_inventory_locked(self, path_key, "GET")
+                return
             from inventory_engine import inventory_status_payload
 
+            maybe_log_ttc_unlock_event(self)
             _send_json(self, {"ok": True, **inventory_status_payload()})
             return
 

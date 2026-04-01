@@ -1,0 +1,204 @@
+.app-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  min-height: 0;
+}
+
+.app-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.app-ui > * {
+  pointer-events: auto;
+}
+
+.ofrenda-overlay {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 36px 20px 0;
+  width: 100%;
+}
+
+.ofrenda-header {
+  text-align: center;
+}
+
+.ofrenda-spacer {
+  flex: 1;
+  min-height: 24px;
+}
+
+.ofrenda-share-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.ofrenda-share-btn {
+  padding: 14px 22px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  background: rgba(197, 164, 109, 0.18);
+  backdrop-filter: blur(12px);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ofrenda-bottom-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 12px;
+}
+
+.ofrenda-bottom-row button {
+  flex: 1 1 40%;
+  min-width: min(140px, 44vw);
+  padding: 14px 10px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.ofrenda-bottom-row button[data-accent="1"] {
+  background: rgba(197, 164, 109, 0.14);
+}
+
+.app-pau-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.app-pau {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  background: var(--anthracite);
+  box-shadow: 0 0 26px rgba(197, 164, 109, 0.35);
+}
+
+.app-pau video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-legal {
+  text-align: center;
+  font-size: 8px;
+  opacity: 0.45;
+  letter-spacing: 1px;
+  pointer-events: none;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background: #000;
+  color: var(--gold);
+  letter-spacing: 0.35em;
+  font-size: 11px;
+}
+
+.mirror-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 1;
+}
+
+.mirror-video-hidden {
+  display: none;
+  z-index: 0;
+}
+
+.mirror-status {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--bone);
+  pointer-events: none;
+}
+
+.mirror-scan {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  top: 0;
+  z-index: 10;
+  opacity: 0.55;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gold),
+    transparent
+  );
+  animation: ty-scan 3s infinite ease-in-out;
+}
+
+@keyframes ty-scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
