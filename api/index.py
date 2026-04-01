@@ -9,6 +9,7 @@ TryOnYou — Jules V10 Omega (Vercel serverless, Pure SPA + bridges).
 - Campos estables para Make.com: intent, lead_id, timestamp_iso, siren, patente, protocol.
 - Webhook opcional: TRYONYOU_LEAD_WEBHOOK_URL (o MAKE_LEADS_WEBHOOK_URL / MAKE_WEBHOOK_URL);
   cuerpo JSON: { "event": "tryonyou_lead_v1", ...mismo payload HTTP }.
+- Integración Peacock_Core: prohibido destino webhook hacia abvetos.com; licencia activada sólo en proceso interno manual.
 
 CLI local: python3 api/index.py --action send_bpifrance_emergency
 """
@@ -30,6 +31,14 @@ from urllib.parse import urlparse
 _API_DIR = os.path.dirname(os.path.abspath(__file__))
 if _API_DIR not in sys.path:
     sys.path.insert(0, _API_DIR)
+
+from peacock_core import is_webhook_destination_forbidden
+from stealth_bunker import (
+    bunker_stealth_enabled,
+    inventory_references_unlocked,
+    log_bunker_access,
+    stealth_html_body,
+)
 
 _STATIC_EXTS: frozenset[str] = frozenset(
     {
@@ -86,6 +95,8 @@ def _slack_notify(text: str) -> None:
     url = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
     if not url:
         return
+    if is_webhook_destination_forbidden(url):
+        return
     payload = json.dumps({"text": text[:3500]}).encode("utf-8")
     req = urllib.request.Request(
         url,
@@ -113,6 +124,8 @@ def _make_forward_lead(payload: dict) -> None:
     """Encadena Make.com sin bloquear la respuesta al cliente (mismos campos que el JSON HTTP)."""
     url = _lead_webhook_url()
     if not url:
+        return
+    if is_webhook_destination_forbidden(url):
         return
     envelope = {
         "event": "tryonyou_lead_v1",
@@ -149,16 +162,20 @@ def _stripe_links() -> tuple[str, str]:
 def _inject_stripe(html: str) -> str:
     link_45, link_98 = _stripe_links()
     return (
-        html.replace("{{STRIPE_LINK_4_5M}}", link_45)
-        .replace("{{STRIPE_LINK_98K}}", link_98)
-    )
+                html.replace("{{STRIPE_LINK_4_5M}}", link_45)
+                .replace("{{STRIPE_LINK_98K}}", link_98)
+            )
 
 
 def _html_index_body() -> bytes | None:
     """
     SOLO dist/index.html (bundle Vite con /assets/*). Nunca el index.html raíz
     que referencia /src/main.tsx — eso en producción muestra landings rotos o estáticos ajenos.
+
+    BUNKER_STEALTH_TOTAL: cocotte SACMUSEUM (no SPA) vía stealth_html_body().
     """
+    if bunker_stealth_enabled():
+        return stealth_html_body()
     root = _project_root()
     dist_index = os.path.join(root, "dist", "index.html")
     if os.path.isfile(dist_index):
@@ -169,7 +186,7 @@ def _html_index_body() -> bytes | None:
     if os.path.isfile(tmpl):
         with open(tmpl, encoding="utf-8") as f:
             html = _inject_stripe(f.read())
-        return html.encode("utf-8")
+            return html.encode("utf-8")
     msg = (
         "<!DOCTYPE html><html><head><meta charset='utf-8'><title>TRYONYOU V10</title></head>"
         "<body style='font-family:sans-serif;background:#141619;color:#C5A46D;padding:2rem'>"
@@ -326,6 +343,47 @@ def _jules_payload() -> dict:
     }
 
 
+def _inventory_kill_paths_block(method: str, path_key: str) -> bool:
+    if inventory_references_unlocked():
+        return False
+    if method == "GET" and path_key == "/api/v1/inventory/status":
+        return True
+    if method == "POST" and path_key in (
+        "/api/v1/inventory/match",
+        "/api/v1/mirror/snap",
+    ):
+        return True
+    return False
+
+
+def _respond_inventory_locked(
+    handler: BaseHTTPRequestHandler, path_key: str, method: str
+) -> None:
+    log_bunker_access(
+        handler,
+        method,
+        path_key,
+        "inventory_locked",
+        "setup_7500_eur_not_validated",
+        403,
+    )
+    _send_json_error(
+        handler,
+        403,
+        "Inventaire verrouillé — validation du setup requise.",
+    )
+
+
+def _stealth_should_log(method: str, path_key: str) -> bool:
+    if path_key.startswith("/api"):
+        return True
+    if path_key in ("/", "/index.html"):
+        return True
+    if path_key in ("/mirror_sanctuary_v10.html", "/mirror_sanctuary_v10"):
+        return True
+    return False
+
+
 class handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:  # noqa: A003
         return
@@ -342,11 +400,17 @@ class handler(BaseHTTPRequestHandler):
 
         length = int(self.headers.get("Content-Length", "0") or "0")
         raw = self.rfile.read(length) if length > 0 else b"{}"
+        if _inventory_kill_paths_block("POST", path):
+            _respond_inventory_locked(self, path, "POST")
+            return
         try:
             body_json = json.loads(raw.decode("utf-8") or "{}")
         except json.JSONDecodeError:
             _send_json_error(self, 400, "JSON invalide")
             return
+
+        if bunker_stealth_enabled() and _stealth_should_log("POST", path):
+            log_bunker_access(self, "POST", path, "request", "", 200)
 
         if path in ("/api/v1/leads",):
             intent = str(body_json.get("intent", "")).strip().lower()
@@ -585,7 +649,7 @@ class handler(BaseHTTPRequestHandler):
             sanctuary = _html_mirror_sanctuary()
             if sanctuary is not None:
                 _send_binary(self, sanctuary, "text/html; charset=utf-8")
-                return
+            return
 
         html_body = _html_index_body()
         if html_body is not None:

@@ -43,6 +43,7 @@ Subcomandos:
   telegram-senal    telegram_senal_soberania (plantilla TryOnYou)
   gcs-contrato      despliegue_gcs_soberano_v10
   gcs-core          desplegar_v10_core_gcs
+  sacmuseum         sacmuseum_empire — soberanía económica (kill-switch + eventos)
 """
 
 
@@ -87,6 +88,10 @@ def main() -> int:
     s.add_parser("telegram-senal", help="telegram_senal_soberania")
     s.add_parser("gcs-contrato", help="despliegue_gcs_soberano_v10")
     s.add_parser("gcs-core", help="desplegar_v10_core_gcs")
+    s.add_parser(
+        "sacmuseum",
+        help="sacmuseum_empire: kill-switch Lafayette, nodos CP, RelicValue, log fiestas",
+    )
 
     args = p.parse_args()
     _path()
@@ -179,6 +184,11 @@ def main() -> int:
         from desplegar_v10_core_gcs import desplegar_configuracion
 
         return desplegar_configuracion()
+    if args.cmd == "sacmuseum":
+        from sacmuseum_empire import run_sacmuseum_sovereignty
+
+        run_sacmuseum_sovereignty()
+        return 0
 
     return 2
 
