@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { detectLeadScore, type LeadScore } from "./lib/leadScoring";
 import "./index.css";
 import "./App.css";
 
@@ -71,6 +72,11 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
+  const [leadScore, setLeadScore] = useState<LeadScore>({
+    isVip: false,
+    brand: null,
+    label: "",
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +106,34 @@ export default function App() {
     };
     window.addEventListener("tryonyou:fit", onFit);
     return () => window.removeEventListener("tryonyou:fit", onFit);
+  }, []);
+
+  // Live Lead Scoring — detect VIP visitors (Inditex / BPI) on mount
+  useEffect(() => {
+    const score = detectLeadScore();
+    if (score.isVip) {
+      setLeadScore(score);
+      // Apply a subtle VIP colour override via CSS custom properties
+      const root = document.documentElement;
+      if (score.brand === "inditex") {
+        root.style.setProperty("--gold", "#e8c87a");
+        root.style.setProperty("--anthracite", "#0d0d14");
+      } else if (score.brand === "bpi") {
+        root.style.setProperty("--gold", "#7ab8e8");
+        root.style.setProperty("--anthracite", "#0a0d14");
+      }
+      // Notify the backend so the lead is scored in real time
+      void fetch("/api/v1/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "vip_demo",
+          source: `lead_scoring_${score.brand}`,
+          protocol: "zero_size",
+          vip_brand: score.brand,
+        }),
+      }).catch((err) => { console.warn("[leadScoring] lead POST failed:", err); });
+    }
   }, []);
 
   const onOfrenda = (key: OfrendaKey) => {
@@ -135,6 +169,13 @@ export default function App() {
       <div className="app-stage" aria-hidden />
 
       <div className="app-ui">
+        {leadScore.isVip && (
+          <div className="vip-demo-banner" role="status" aria-live="polite">
+            <span className="vip-demo-dot" aria-hidden="true" />
+            Demo VIP — {leadScore.label}
+          </div>
+        )}
+
         <OfrendaOverlay
           elasticLabel={elasticLabel}
           julesLane={julesLane}
