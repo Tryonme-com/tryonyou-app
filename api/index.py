@@ -443,6 +443,20 @@ class handler(BaseHTTPRequestHandler):
         if bunker_stealth_enabled() and _stealth_should_log("POST", path):
             log_bunker_access(self, "POST", path, "request", "", 200)
 
+        if path in ("/api/webhook_test",):
+            _send_json(
+                self,
+                {
+                    "ok": True,
+                    "service": "webhook_test",
+                    "echo": body_json,
+                    "siren": SIREN_SELL,
+                    "patente": PATENTE,
+                    "product_lane": PRODUCT_LANE,
+                },
+            )
+            return
+
         if path in ("/api/v1/leads",):
             intent = str(body_json.get("intent", "")).strip().lower()
             if intent not in _VALID_INTENTS:
