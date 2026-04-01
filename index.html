@@ -1,20 +1,152 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta
-      name="description"
-      content="TRYONYOU × Divineo — miroir biométrique Zero-Size, orchestration Jules V10. Patente PCT/EP2025/067317."
-    />
-    <meta name="theme-color" content="#141619" />
-    <title>TRYONYOU V10 OMEGA — L'Usine Numérique</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRYONME - SOUVERAINETÉ NUMÉRIQUE</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    
+    <style>
+        :root { --gold: #D4AF37; --black: #0a0a0a; --gray: #1a1a1a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--black); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; overflow: hidden; }
+
+        /* HEADER ESTRATÉGICO */
+        header {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            padding: 20px; text-align: center;
+        }
+        .brand-nav { display: flex; justify-content: center; gap: 20px; font-size: 0.7rem; letter-spacing: 3px; color: #888; margin-top: 10px; }
+        .brand-nav span:hover { color: var(--gold); cursor: pointer; }
+
+        /* EL ESPEJO (EL MOTOR) */
+        #mirror-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center; z-index: 1;
+        }
+        video#webcam { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        canvas#output_canvas { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.1) brightness(0.9); }
+
+        /* OVERLAY PRENDA */
+        #overlay-garment {
+            position: absolute; display: none; pointer-events: none;
+            z-index: 5; transition: all 0.15s ease-out;
+        }
+
+        /* HERO TEXT */
+        .hero-ui {
+            position: absolute; width: 100%; top: 20%; text-align: center; z-index: 10; pointer-events: none;
+        }
+        .hero-ui h1 { font-size: 2.5rem; letter-spacing: 12px; font-weight: 200; text-transform: uppercase; }
+        .hero-ui .highlight { color: var(--gold); }
+        .countdown { font-size: 0.9rem; letter-spacing: 5px; margin-top: 20px; color: var(--gold); font-weight: bold; }
+
+        /* UI DE ACCIÓN (SISTEMA DE ARMARIOS) */
+        .bottom-nav {
+            position: fixed; bottom: 40px; width: 100%; display: grid; 
+            grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 20px; z-index: 100;
+        }
+        .btn-bunker {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 15px 5px; font-size: 0.6rem; letter-spacing: 2px;
+            cursor: pointer; text-transform: uppercase; transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .btn-bunker:hover { background: var(--gold); color: black; border-color: var(--gold); }
+        .btn-pay {
+            grid-column: span 3; background: var(--gold); color: black; font-weight: bold;
+            margin-top: 10px; padding: 20px; font-size: 0.8rem;
+        }
+
+        /* FOOTER LEGAL */
+        footer {
+            position: fixed; bottom: 10px; width: 100%; text-align: center;
+            font-size: 0.5rem; color: #444; letter-spacing: 1px; z-index: 100;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    </body>
+
+    <header>
+        <div style="font-size: 1.2rem; letter-spacing: 8px;">TRYONME × DIVINEO</div>
+        <div class="brand-nav">
+            <span>BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span>
+        </div>
+    </header>
+
+    <div class="hero-ui">
+        <h1>Arrêtez le <span class="highlight">Faux-Fit</span></h1>
+        <div class="countdown">GALERIES LAFAYETTE • MAI 2026</div>
+    </div>
+
+    <div id="mirror-container">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="output_canvas"></canvas>
+        <img id="overlay-garment" src="assets/balmain_look.png" alt="Souveraineté">
+    </div>
+
+    <div class="bottom-nav">
+        <button class="btn-bunker" onclick="setMode('solidario')">Armoire Solidaire</button>
+        <button class="btn-bunker" onclick="setMode('intelligent')">Armoire Intelligent</button>
+        <button class="btn-bunker" onclick="setMode('museum')">SAC Museum</button>
+        <button class="btn-bunker btn-pay" onclick="window.location.href='https://buy.stripe.com/test_soberania_4_5'">
+            SOUVERAINETÉ : PAYER 12.500 €
+        </button>
+    </div>
+
+    <footer>
+        SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317 | © 2026 RUBÉN ESPINAR RODRÍGUEZ
+    </footer>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const overlay = document.getElementById('overlay-garment');
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            
+            if (results.poseLandmarks) {
+                // Robert Engine: Lógica de ajuste automático
+                const leftShoulder = results.poseLandmarks[11];
+                const rightShoulder = results.poseLandmarks[12];
+                const width = Math.abs(leftShoulder.x - rightShoulder.x) * canvasElement.width * 2.5;
+                
+                overlay.style.display = "block";
+                overlay.style.width = width + "px";
+                overlay.style.left = (leftShoulder.x * canvasElement.width - (width/4)) + "px";
+                overlay.style.top = (leftShoulder.y * canvasElement.height - 50) + "px";
+            }
+            canvasCtx.restore();
+        }
+
+        const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5 });
+        pose.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 1280, height: 720
+        });
+        camera.start();
+
+        function setMode(mode) {
+            console.log("Mode activé:", mode);
+            document.body.style.boxShadow = "inset 0 0 100px " + (mode === 'museum' ? "#D4AF37" : "#111");
+        }
+
+        function resize() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
 </html>
