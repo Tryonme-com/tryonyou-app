@@ -40,7 +40,7 @@ class JulesForceExecution:
             print("✅ Mensaje enviado a Slack.")
             return 0
         print("❌ Fallo webhook Slack.", file=sys.stderr)
-        return 1
+            return 1
 
 
 def main(argv: list[str] | None = None) -> int:

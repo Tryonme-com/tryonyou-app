@@ -1,14 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
-
-const VirtualMirror = lazy(() =>
-  import("./components/VirtualMirror").then((m) => ({
-    default: m.VirtualMirror,
-  })),
-);
 
 function elasticLabelToVerdict(label: string): string {
   if (label.includes("Préférence drapé")) return "drape_bias";
@@ -74,19 +68,8 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
   }
 }
 
-function isChasTriggerKey(e: KeyboardEvent): boolean {
-  if (e.repeat) return false;
-  if (e.code !== "KeyC" || e.ctrlKey || e.metaKey || e.altKey) return false;
-  const t = e.target;
-  if (!(t instanceof HTMLElement)) return true;
-  if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)
-    return false;
-  return true;
-}
-
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
-  const [lookAugmented, setLookAugmented] = useState(false);
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
 
   useEffect(() => {
@@ -110,17 +93,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!isChasTriggerKey(e)) return;
-      e.preventDefault();
-      setLookAugmented((v) => !v);
+    const onFit = (e: Event) => {
+      const ce = e as CustomEvent<{ label?: string }>;
+      const lab = ce.detail?.label;
+      if (typeof lab === "string" && lab.length > 0) setElasticLabel(lab);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const onFitVerdict = useCallback((verdictLabel: string) => {
-    setElasticLabel(verdictLabel);
+    window.addEventListener("tryonyou:fit", onFit);
+    return () => window.removeEventListener("tryonyou:fit", onFit);
   }, []);
 
   const onOfrenda = (key: OfrendaKey) => {
@@ -144,7 +123,6 @@ export default function App() {
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
       );
-      setLookAugmented(true);
       const msg =
         j?.jules_msg ??
         "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
@@ -154,16 +132,7 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <div className="app-stage">
-        <Suspense
-          fallback={<div className="loading">LIVIxLAFAYETTE</div>}
-        >
-          <VirtualMirror
-            revealBalmainSuit={lookAugmented}
-            onFitVerdict={onFitVerdict}
-          />
-        </Suspense>
-      </div>
+      <div className="app-stage" aria-hidden />
 
       <div className="app-ui">
         <OfrendaOverlay
@@ -180,22 +149,11 @@ export default function App() {
             title="P.A.U."
             aria-label="P.A.U. — snap et orchestration Jules"
           >
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="auto"
-            >
+            <video autoPlay loop muted playsInline preload="auto">
               <source src="/videos/pau_transparent.webm" type="video/webm" />
               <source src="/videos/pau_transparent.mp4" type="video/mp4" />
             </video>
           </button>
-        </div>
-
-        <div className="app-legal">
-          SIREN: 943 610 196 | Patente: PCT/EP2025/067317 | © 2026 DIVINEO PARIS —
-          V10 OMEGA
         </div>
       </div>
     </div>

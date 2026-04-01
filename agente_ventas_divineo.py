@@ -68,9 +68,9 @@ def draft_email_personalise(
         ),
     }
     body = intro.get(langue, intro["fr"])
-    canal = f"\n\n---\nCanal indicado ({marque.contact_type}): {marque.contact_valeur}"
+    canal = f"\n\n---\nCanal indiqué ({marque.contact_type}) : {marque.contact_valeur}"
     if marque.source_note:
-        canal += f"\nNota: {marque.source_note}"
+        canal += f"\nNote : {marque.source_note}"
     return body + canal
 
 
