@@ -1,10 +1,6 @@
 {
   "version": 2,
   "public": true,
-  "deploymentProtection": {
-    "status": "disabled",
-    "protectionMode": "all"
-  },
   "installCommand": "npm install && pip install -r requirements.txt",
   "cleanUrls": true,
   "env": {
