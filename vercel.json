@@ -17,9 +17,17 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "api/vetos_core_inference.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
+    {
+      "src": "/api/vetos_core_inference",
+      "dest": "/api/vetos_core_inference.py"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.py"

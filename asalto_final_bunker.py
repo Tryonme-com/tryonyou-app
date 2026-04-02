@@ -14,6 +14,28 @@ from datetime import datetime
 
 ROOT = os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _verificar_ingreso_7500_o_abort() -> None:
+    """Protege el asalto: sin cuota 7.500 € confirmada, no se toca el búnker."""
+    if _SCRIPT_DIR not in sys.path:
+        sys.path.insert(0, _SCRIPT_DIR)
+    try:
+        from bpifrance_protocol import (
+            VerificacionIngreso7500Error,
+            assert_ingreso_7500_protegido,
+        )
+    except ImportError as e:
+        print(f"❌ No se pudo cargar bpifrance_protocol: {e}")
+        sys.exit(1)
+    try:
+        assert_ingreso_7500_protegido()
+    except VerificacionIngreso7500Error as e:
+        print(f"❌ Verificación 7.500€: {e}")
+        print("🛑 Asalto final abortado — sistema protegido.")
+        sys.exit(1)
+
 
 def _run(argv: list[str]) -> bool:
     try:
@@ -25,6 +47,8 @@ def _run(argv: list[str]) -> bool:
 
 def asalto_final_bunker() -> None:
     print("🚀 EQUIPO 50: Iniciando suma estratégica final (Jules + 70 + Copilot)...")
+
+    _verificar_ingreso_7500_o_abort()
 
     os.makedirs(ROOT, exist_ok=True)
     os.chdir(ROOT)
