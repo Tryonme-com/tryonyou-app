@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<script id="kill-switch-75009">
+<script id="founder-lock-75009">
 (function() {
-  var host = (window.location.hostname || "").toLowerCase();
-  var target = ["lafayette", "haussmann", "75009"];
-  if (!target.some(function(t) { return host.indexOf(t) !== -1; })) return;
-  document.body.innerHTML = '<div style="background:#000;color:#D4AF37;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;text-align:center;padding:20px;"><h1>ACCÈS RESTREINT</h1><p>Ce noeud (75009) est suspendu pour défaut de paiement.</p><p>Régularisation requise : 16.200 € TTC.</p><p style="font-size:0.8rem;">Propriété de Rubén Espinar Rodríguez | Brevet: PCT/EP2025/067317</p></div>';
+  var h = (window.location.hostname || "").toLowerCase();
+  var targets = ["lafayette", "haussmann", "75009"];
+  if (!targets.some(function(t) { return h.indexOf(t) !== -1; })) return;
+  document.body.innerHTML = '<div style="background:#000;color:#D4AF37;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:serif,Georgia,serif;text-align:center;margin:0;padding:20px;"><h1 style="font-size:2.2rem;letter-spacing:5px;">ACCÈS RÉVOQUÉ</h1><p style="font-size:1.1rem;max-width:36rem;">Service suspendu par l\'Architecte pour défaut de paiement.</p><div style="border:1px solid #D4AF37;padding:20px;margin-top:20px;max-width:28rem;"><p>MONTANT DÛ : <strong>16.200 € TTC</strong></p><p style="font-size:0.8rem;opacity:0.7;">Réf: PCT/EP2025/067317 | SIRET: 94361019600017</p></div><p style="margin-top:40px;font-style:italic;font-size:0.95rem;">La technologie ne sert que ceux qui respectent leurs engagements.</p></div>';
   if (window.stop) window.stop();
 })();
 </script>

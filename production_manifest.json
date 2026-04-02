@@ -18,15 +18,22 @@
             "tryonme.org"
         ],
         "hosting": "Vercel Sovereign Cloud",
-        "status": "LITIGATION_LOCK",
+        "status": "TOTAL_SUSPENSION",
         "target_node": "75009",
-        "debt_amount": "16.200 € TTC"
+        "debt_amount": "16.200 € TTC",
+        "incident_id": "DEBT_RECOVERY_75009",
+        "debt_total": "16.200 € TTC",
+        "timestamp_utc": "2026-04-02T15:06:39Z",
+        "founder_lock": true
     },
     "lockdown": {
-        "status": "LITIGATION_LOCK",
-        "reason": "Awaiting Payment: 16.200 € TTC",
+        "status": "TOTAL_SUSPENSION",
+        "reason": "Debt recovery 16.200 € TTC",
         "client_access": false,
         "node": "75009",
-        "debt_amount": "16.200 € TTC"
+        "debt_amount": "16.200 € TTC",
+        "incident_id": "DEBT_RECOVERY_75009",
+        "timestamp_utc": "2026-04-02T15:06:39Z",
+        "founder_lock": true
     }
 }
