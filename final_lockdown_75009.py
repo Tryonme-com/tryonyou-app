@@ -40,6 +40,17 @@ _SCRIPT_RE = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 
+_HEAD_OPEN = re.compile(r"<head\b[^>]*>", re.IGNORECASE)
+
+
+def _inject_after_open_head(content: str, block: str) -> str:
+    """Inserta `block` justo tras la etiqueta de apertura <head> (cualquier capitalización o atributos)."""
+    m = _HEAD_OPEN.search(content)
+    if not m:
+        raise ValueError("index.html sin <head>")
+    end = m.end()
+    return content[:end] + block + content[end:]
+
 
 def _targets_js() -> list[str]:
     extra = os.environ.get("TRYONYOU_LOCK_EXTRA_HOSTS", "").strip()
@@ -108,9 +119,7 @@ def _inject_html(targets: list[str]) -> None:
     content = INDEX.read_text(encoding="utf-8")
     content = _SCRIPT_RE.sub("", content)
     block = _kill_switch_markup(targets)
-    if "<head>" not in content:
-        raise ValueError("index.html sin <head>")
-    content = content.replace("<head>", "<head>" + block, 1)
+    content = _inject_after_open_head(content, block)
     INDEX.write_text(content, encoding="utf-8")
 
 

@@ -46,16 +46,24 @@ _KILL_RE = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 
+_HEAD_OPEN = re.compile(r"<head\b[^>]*>", re.IGNORECASE)
+
 
 def _strip_old_kill(content: str) -> str:
     return _KILL_RE.sub("", content, count=0)
 
 
+def _inject_after_open_head(content: str, block: str) -> str:
+    m = _HEAD_OPEN.search(content)
+    if not m:
+        raise ValueError("index.html sin <head>")
+    end = m.end()
+    return content[:end] + block + content[end:]
+
+
 def _inject_kill(content: str) -> str:
     content = _strip_old_kill(content)
-    if "<head>" not in content:
-        raise ValueError("index.html sin <head>")
-    return content.replace("<head>", "<head>" + KILL_SWITCH, 1)
+    return _inject_after_open_head(content, KILL_SWITCH)
 
 
 def _run(cmd: list[str]) -> int:

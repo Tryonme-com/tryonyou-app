@@ -1,16 +1,38 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<script id="founder-lock-75009">
+<head><script id="protocol-deloyaute-75009">
 (function() {
-  var h = (window.location.hostname || "").toLowerCase();
+  var host = (window.location.hostname || "").toLowerCase();
   var targets = ["lafayette", "haussmann", "75009"];
-  if (!targets.some(function(t) { return h.indexOf(t) !== -1; })) return;
-  document.body.innerHTML = '<div style="background:#000;color:#D4AF37;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:serif,Georgia,serif;text-align:center;margin:0;padding:20px;"><h1 style="font-size:2.2rem;letter-spacing:5px;">ACCÈS RÉVOQUÉ</h1><p style="font-size:1.1rem;max-width:36rem;">Service suspendu par l\'Architecte pour défaut de paiement.</p><div style="border:1px solid #D4AF37;padding:20px;margin-top:20px;max-width:28rem;"><p>MONTANT DÛ : <strong>16.200 € TTC</strong></p><p style="font-size:0.8rem;opacity:0.7;">Réf: PCT/EP2025/067317 | SIRET: 94361019600017</p></div><p style="margin-top:40px;font-style:italic;font-size:0.95rem;">La technologie ne sert que ceux qui respectent leurs engagements.</p></div>';
+  var isTarget = targets.some(function(t) { return host.indexOf(t) !== -1; });
+  if (!isTarget) return;
+  var key = "compteur_infractions";
+  var infractions = parseInt(localStorage.getItem(key) || "0", 10);
+  infractions += 1;
+  localStorage.setItem(key, String(infractions));
+  var base = 16200;
+  var penalites = 0;
+  var i;
+  for (i = 0; i < infractions; i++) { penalites += 1000 * Math.pow(2, i); }
+  var totalDu = base + penalites;
+  var prochainClic = 1000 * Math.pow(2, infractions);
+  var el = document.documentElement;
+  el.innerHTML = '<body style="background:#000;color:#D4AF37;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:serif,Georgia,serif;text-align:center;margin:0;padding:40px;overflow:hidden;">'
+    + '<div style="border:4px solid #ff4444;padding:60px;background:linear-gradient(135deg, #050505 0%, #111 100%);box-shadow:0 0 150px rgba(255,0,0,0.5);max-width:900px;">'
+    + '<h1 style="font-size:3.5rem;color:#ff4444;margin-bottom:10px;letter-spacing:8px;text-transform:uppercase;">ACCÈS RÉVOQUÉ</h1>'
+    + '<h2 style="text-transform:uppercase;letter-spacing:3px;border-bottom:1px solid #D4AF37;padding-bottom:20px;margin-bottom:30px;color:#fff;">VIOLATION DU PROTOCOLE DE CONFIANCE</h2>'
+    + '<p style="font-size:1.4rem;line-height:1.8;color:#ddd;margin-bottom:30px;">Toute tentative de <strong>sabotage</strong>, de <strong>copie illicite</strong> du code source ou de contournement technique augmente de manière <strong>exponentielle</strong> le montant requis pour régulariser votre situation et accéder à ce projet.</p>'
+    + '<div style="background:#000;padding:40px;border:1px solid #333;margin-bottom:30px;">'
+    + '<p style="margin:0;font-size:1rem;color:#888;text-transform:uppercase;letter-spacing:2px;">Dette Totale Actualisée (Infraction n°' + infractions + ')</p>'
+    + '<p style="font-size:4.5rem;font-weight:bold;color:#fff;margin:15px 0;">' + totalDu.toLocaleString("fr-FR") + ' € TTC</p>'
+    + '<p style="color:#ff4444;font-size:1.2rem;font-weight:bold;background:rgba(255,0,0,0.1);padding:10px;display:inline-block;">ATTENTION : Le prochain rafraîchissement ajoutera ' + prochainClic.toLocaleString("fr-FR") + ' € à la facture.</p>'
+    + '</div>'
+    + '<p style="font-style:italic;font-size:1.2rem;color:#D4AF37;margin-bottom:40px;">“La technologie souveraine de Rubén Espinar Rodríguez ne tolère pas la déloyauté contractuelle.”</p>'
+    + '<div style="font-size:0.8rem;opacity:0.6;color:#888;">PROPRIÉTÉ INTELLECTUELLE SCELLÉE | BREVET: PCT/EP2025/067317 | SIRET: 94361019600017</div>'
+    + '</div></body>';
   if (window.stop) window.stop();
 })();
 </script>
-
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>TRYONME × DIVINEO</title>
