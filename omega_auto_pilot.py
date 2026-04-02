@@ -13,7 +13,7 @@ def main():
             timeout=120,
         )
         print(f"📡 MAKE.COM: Status {res.status_code}")
-    except Exception:
+    except:
         print("❌ MAKE.COM: Fallo")
     with open("node_lock_status.json", "w") as f:
         json.dump(
@@ -23,11 +23,8 @@ def main():
         )
     try:
         subprocess.run(["git", "add", "."], check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "🚨 OMEGA: Auto-Pilot Execution"],
-            check=True,
-        )
-    except Exception:
+        subprocess.run(["git", "commit", "-m", "🚨 OMEGA: Auto-Pilot Execution"], check=True)
+    except:
         pass
 
 
