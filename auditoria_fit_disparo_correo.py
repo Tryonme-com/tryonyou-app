@@ -108,9 +108,12 @@ def main() -> int:
         return 3
 
     enviados = 0
+    sin_destino = 0
+    fallidos = 0
     for path in files:
         to_addr, subject, body = _parse_borrador(path.read_text(encoding="utf-8"))
         if not to_addr:
+            sin_destino += 1
             print(f"⚠️  Sin Para: — {path.name}", file=sys.stderr)
             continue
         if dry:
@@ -124,16 +127,36 @@ def main() -> int:
         msg["To"] = to_addr
         msg.set_content(body)
 
-        with smtplib.SMTP(host, port, timeout=30) as s:
-            s.starttls()
-            s.login(user, password)
-            s.send_message(msg)
+        try:
+            with smtplib.SMTP(host, port, timeout=30) as s:
+                s.starttls()
+                s.login(user, password)
+                s.send_message(msg)
+        except (OSError, smtplib.SMTPException) as e:
+            fallidos += 1
+            print(f"❌ SMTP falló ({path.name} → {to_addr}): {e}", file=sys.stderr)
+            continue
+        except Exception as e:
+            fallidos += 1
+            print(
+                f"❌ Error inesperado ({path.name} → {to_addr}): {type(e).__name__}: {e}",
+                file=sys.stderr,
+            )
+            continue
+
         print(f"✅ Enviado → {to_addr}")
         enviados += 1
         time.sleep(2.0)
 
-    print(f"Total procesados: {enviados}/{len(files)}")
-    return 0 if enviados == len(files) else 4
+    print(
+        f"Resumen: enviados OK {enviados}, fallidos SMTP {fallidos}, sin destinatario {sin_destino}, "
+        f"archivos {len(files)}"
+    )
+    if fallidos:
+        return 1
+    if sin_destino:
+        return 4
+    return 0
 
 
 if __name__ == "__main__":
