@@ -1,9 +1,11 @@
 """
-Cierre quirúrgico nodo 75009 (Lafayette / Haussmann) — manifiesto + kill-switch acotado.
+Cierre quirúrgico nodo 75009 (Lafayette / Haussmann): manifiesto + kill-switch por hostname.
 
-- No machaca `deployment` entero: conserva verified_domains, hosting, etc.
-- Kill-switch solo si hostname contiene lafayette | haussmann | 75009.
-- Git: add, commit, push normal (sin --force).
+Importante: **fusiona** claves en `deployment` (no sustituye el objeto; conserva verified_domains, hosting).
+
+Git: add, commit, push normal a `main` (sin --force).
+
+Opcional: TRYONYOU_SKIP_GIT=1 — solo archivos locales.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
@@ -21,12 +23,6 @@ ROOT = Path(__file__).resolve().parent
 MANIFEST = ROOT / "production_manifest.json"
 INDEX = ROOT / "index.html"
 
-COMMIT_MSG = (
-    "SECURITY: Selective lockdown Node 75009 (Lafayette). Sovereignty active. "
-    "@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 "
-    "Bajo Protocolo de Soberanía V10 - Founder: Rubén"
-)
-
 KILL_SWITCH = """
 <script id="kill-switch-75009">
 (function() {
@@ -39,9 +35,31 @@ KILL_SWITCH = """
 </script>
 """
 
+COMMIT_MSG = (
+    "SECURITY: Selective lockdown for Node 75009 (Lafayette). Sovereignty active. "
+    "@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 "
+    "Bajo Protocolo de Soberanía V10 - Founder: Rubén"
+)
+
+_KILL_RE = re.compile(
+    r'<script id="kill-switch-(?:lafayette|75009)"[^>]*>.*?</script>\s*',
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def _strip_old_kill(content: str) -> str:
+    return _KILL_RE.sub("", content, count=0)
+
+
+def _inject_kill(content: str) -> str:
+    content = _strip_old_kill(content)
+    if "<head>" not in content:
+        raise ValueError("index.html sin <head>")
+    return content.replace("<head>", "<head>" + KILL_SWITCH, 1)
+
 
 def _run(cmd: list[str]) -> int:
-    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
+    r = subprocess.run(["git", "-C", str(ROOT)] + cmd, capture_output=True, text=True)
     if r.stdout:
         print(r.stdout.rstrip())
     if r.stderr:
@@ -57,56 +75,61 @@ def execute_lockdown() -> int:
         dep = data.get("deployment")
         if not isinstance(dep, dict):
             dep = {}
-            data["deployment"] = dep
+        dep["verified_domains"] = dep.get("verified_domains") or [
+            "abvetos.com",
+            "tryonme.com",
+            "tryonme.app",
+            "tryonme.org",
+        ]
+        dep.setdefault("hosting", "Vercel Sovereign Cloud")
         dep["status"] = "LITIGATION_LOCK"
         dep["target_node"] = "75009"
         dep["debt_amount"] = "16.200 € TTC"
-        data.setdefault("lockdown", {}).update(
-            {
-                "status": "LITIGATION_LOCK",
-                "node": "75009",
-                "debt_amount": '16.200 € TTC',
-                "client_access": False,
-            }
-        )
+        data["deployment"] = dep
+        data.setdefault("lockdown", {})
+        if isinstance(data["lockdown"], dict):
+            data["lockdown"].update(
+                {
+                    "status": "LITIGATION_LOCK",
+                    "reason": "Awaiting Payment: 16.200 € TTC",
+                    "client_access": False,
+                    "node": "75009",
+                    "debt_amount": "16.200 € TTC",
+                }
+            )
         MANIFEST.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
-        print("✅ Manifiesto actualizado: Nodo 75009 en estado de litigio (deployment preservado).")
+        print("✅ Manifiesto actualizado: Nodo 75009 en estado de litigio (deployment fusionado).")
     else:
         print("⚠️  Sin production_manifest.json.")
 
     if INDEX.is_file():
-        content = INDEX.read_text(encoding="utf-8")
-        content = re.sub(
-            r"<script id=\"kill-switch-lafayette\">.*?</script>\s*",
-            "",
-            content,
-            flags=re.DOTALL,
-        )
-        if 'id="kill-switch-75009"' not in content:
-            if "<head>" not in content:
-                print("❌ index.html sin <head>.", file=sys.stderr)
-                return 2
-            content = content.replace("<head>", "<head>" + KILL_SWITCH, 1)
-            INDEX.write_text(content, encoding="utf-8")
-        else:
-            INDEX.write_text(content, encoding="utf-8")
-        print("✅ Kill-switch 75009 activo (solo hosts cliente).")
+        try:
+            content = INDEX.read_text(encoding="utf-8")
+            new_content = _inject_kill(content)
+            INDEX.write_text(new_content, encoding="utf-8")
+            print("✅ Kill-switch inyectado (solo hosts lafayette | haussmann | 75009).")
+        except ValueError as e:
+            print(f"❌ {e}", file=sys.stderr)
+            return 2
     else:
         print("⚠️  Sin index.html.")
 
     if os.environ.get("TRYONYOU_SKIP_GIT", "").strip() == "1":
-        print("ℹ️  Git omitido (TRYONYOU_SKIP_GIT=1).")
+        print("\nℹ️  TRYONYOU_SKIP_GIT=1 — sin git push.")
         return 0
 
     print("Sincronizando búnker...")
-    _run(["git", "-C", str(ROOT), "add", "."])
-    rc = _run(["git", "-C", str(ROOT), "commit", "-m", COMMIT_MSG])
+    _run(["add", "."])
+    rc = _run(["commit", "-m", COMMIT_MSG])
     if rc != 0:
-        print("⚠️  Git commit no ejecutado o sin cambios nuevos (rc=%s)." % rc)
-    _run(["git", "-C", str(ROOT), "push", "origin", "main"])
+        print("ℹ️  Commit omitido o sin cambios (código", rc, ").", sep="")
+    rc_push = _run(["push", "origin", "main"])
+    if rc_push != 0:
+        print("⚠️  git push falló — revisa remoto y credenciales.", file=sys.stderr)
+        return rc_push
 
-    print("\n--- 🔱 SISTEMA BLOQUEADO PARA EL CLIENTE (hosts acotados) ---")
-    print("Otros dominios sin esas cadenas en el host no ven la pantalla de bloqueo.\n")
+    print("\n--- 🔱 SISTEMA BLOQUEADO PARA EL CLIENTE ---")
+    print("Dominios sin esos fragmentos en el host siguen sirviendo la app; Lafayette ve pantalla de restricción.")
     return 0
 
 
