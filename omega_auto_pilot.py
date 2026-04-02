@@ -34,9 +34,55 @@ def clean_orphans() -> None:
     orphans = ["terminal_cleanup.py", "check_system_health.py", "deploy_omega_final.py"]
     for name in orphans:
         path = os.path.join(root, name)
-        if os.path.isfile(path):
+        if not os.path.isfile(path):
+            continue
+        try:
             os.remove(path)
             print(f"🔥 Eliminado archivo huérfano: {name}")
+        except OSError as e:
+            print(f"⚠️ No se pudo eliminar {name}: {e}")
+
+
+def _git_seal(root: str, commit_msg: str, base_msg: str) -> None:
+    try:
+        subprocess.run(
+            ["git", "add", "."],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git: git add falló (código {e.returncode}).")
+        err = (e.stderr or e.stdout or "").strip()
+        if err:
+            print(err)
+        return
+
+    committed = subprocess.run(
+        ["git", "commit", "-m", commit_msg],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if committed.returncode == 0:
+        print(f"✅ Git: {base_msg}")
+        return
+
+    combined = ((committed.stdout or "") + (committed.stderr or "")).lower()
+    benign = (
+        "nothing to commit" in combined
+        or "no changes added to commit" in combined
+        or "working tree clean" in combined
+    )
+    if committed.returncode == 1 and benign:
+        print("✅ Git: Sin cambios adicionales.")
+        return
+
+    print(f"❌ Git: commit falló (código {committed.returncode}).")
+    out = (committed.stderr or committed.stdout or "").strip()
+    if out:
+        print(out)
 
 
 def run_omega_cycle() -> None:
@@ -73,12 +119,7 @@ def run_omega_cycle() -> None:
         f"🔒 Omega Auto-Pilot: Ciclo completado. Nodo 75009 bloqueado ({CONFIG['total_due']})"
     )
     commit_msg = f"{base_msg} | {GIT_COMMIT_SUFFIX}"
-    try:
-        subprocess.run(["git", "add", "."], check=True, cwd=root)
-        subprocess.run(["git", "commit", "-m", commit_msg], check=True, cwd=root)
-        print(f"✅ Git: {base_msg}")
-    except subprocess.CalledProcessError:
-        print("✅ Git: Sin cambios adicionales.")
+    _git_seal(root, commit_msg, base_msg)
 
 
 if __name__ == "__main__":
