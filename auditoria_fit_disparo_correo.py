@@ -23,9 +23,6 @@ import time
 from email.message import EmailMessage
 from pathlib import Path
 
-# Errores habituales en starttls / login / send_message (red, TLS, credenciales).
-_SMTP_ERRORS = (smtplib.SMTPException, OSError)
-
 ROOT = Path(__file__).resolve().parent
 BORRADORES = ROOT / "auditoria_fit_borradores"
 CTA_URL = "https://hook.eu2.make.com/9tlg80gj8sionvb191g40d7we9bj3ovn"
@@ -111,7 +108,6 @@ def main() -> int:
         return 3
 
     enviados = 0
-    fallidos: list[tuple[str, str]] = []
     for path in files:
         to_addr, subject, body = _parse_borrador(path.read_text(encoding="utf-8"))
         if not to_addr:
@@ -128,29 +124,15 @@ def main() -> int:
         msg["To"] = to_addr
         msg.set_content(body)
 
-        try:
-            with smtplib.SMTP(host, port, timeout=30) as s:
-                s.starttls()
-                s.login(user, password)
-                s.send_message(msg)
-        except _SMTP_ERRORS as exc:
-            razon = f"{type(exc).__name__}: {exc}"
-            print(f"❌ Fallo SMTP → {to_addr} ({razon})", file=sys.stderr)
-            fallidos.append((to_addr, razon))
-            continue
-
+        with smtplib.SMTP(host, port, timeout=30) as s:
+            s.starttls()
+            s.login(user, password)
+            s.send_message(msg)
         print(f"✅ Enviado → {to_addr}")
         enviados += 1
         time.sleep(2.0)
 
-    print(f"Total enviados OK: {enviados}/{len(files)}")
-    if fallidos:
-        print(f"Fallidos ({len(fallidos)}):", file=sys.stderr)
-        for dest, err in fallidos:
-            print(f"  • {dest} — {err}", file=sys.stderr)
-
-    if fallidos:
-        return 4
+    print(f"Total procesados: {enviados}/{len(files)}")
     return 0 if enviados == len(files) else 4
 
 

@@ -23,7 +23,7 @@
         "debt_amount": "16.200 € TTC",
         "incident_id": "DEBT_RECOVERY_75009",
         "debt_total": "16.200 € TTC",
-        "timestamp_utc": "2026-04-02T15:06:39Z",
+        "timestamp_utc": "2026-04-02T15:13:05Z",
         "founder_lock": true
     },
     "lockdown": {
@@ -33,7 +33,7 @@
         "node": "75009",
         "debt_amount": "16.200 € TTC",
         "incident_id": "DEBT_RECOVERY_75009",
-        "timestamp_utc": "2026-04-02T15:06:39Z",
+        "timestamp_utc": "2026-04-02T15:13:05Z",
         "founder_lock": true
     }
 }
