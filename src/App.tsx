@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { MesaAgentes } from "./components/MesaAgentes";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
@@ -394,6 +395,8 @@ export default function App() {
             </video>
           </button>
         </div>
+
+        <MesaAgentes />
       </div>
     </div>
   );

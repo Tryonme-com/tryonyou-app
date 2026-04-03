@@ -1,0 +1,536 @@
+{
+  "timestamp": "2026-04-03T05:36:10.404798+00:00",
+  "started_at": "2026-04-03T05:36:10.403602+00:00",
+  "patent": "PCT/EP2025/067317",
+  "agents": [
+    {
+      "id": 1,
+      "name": "tryonyouagent",
+      "role": "coordinador_principal",
+      "status": "done",
+      "last_output": "Agente tryonyouagent ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404199+00:00"
+    },
+    {
+      "id": 2,
+      "name": "agent70",
+      "role": "ip_validation",
+      "status": "done",
+      "last_output": "Agente agent70 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404204+00:00"
+    },
+    {
+      "id": 3,
+      "name": "jules",
+      "role": "monetizacion_financiero",
+      "status": "done",
+      "last_output": "Agente jules ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404209+00:00"
+    },
+    {
+      "id": 4,
+      "name": "gemini",
+      "role": "ia_externo",
+      "status": "done",
+      "last_output": "Agente gemini ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404212+00:00"
+    },
+    {
+      "id": 5,
+      "name": "copilot",
+      "role": "desarrollo_tecnico",
+      "status": "done",
+      "last_output": "Agente copilot ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404215+00:00"
+    },
+    {
+      "id": 6,
+      "name": "manus",
+      "role": "operaciones",
+      "status": "done",
+      "last_output": "Agente manus ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404220+00:00"
+    },
+    {
+      "id": 7,
+      "name": "listos",
+      "role": "mesa_redonda",
+      "status": "done",
+      "last_output": "Agente listos ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404223+00:00"
+    },
+    {
+      "id": 8,
+      "name": "agente_bunker_final",
+      "role": "bunker_seguridad",
+      "status": "done",
+      "last_output": "Agente agente_bunker_final ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404226+00:00"
+    },
+    {
+      "id": 9,
+      "name": "agente_divino_siren",
+      "role": "notificaciones_voz",
+      "status": "done",
+      "last_output": "Agente agente_divino_siren ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404229+00:00"
+    },
+    {
+      "id": 10,
+      "name": "agente_ejecutor_pr2264",
+      "role": "github_pr",
+      "status": "done",
+      "last_output": "Agente agente_ejecutor_pr2264 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404232+00:00"
+    },
+    {
+      "id": 11,
+      "name": "agente_jules_monetizador_v10",
+      "role": "monetizacion_v10",
+      "status": "done",
+      "last_output": "Agente agente_jules_monetizador_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404235+00:00"
+    },
+    {
+      "id": 12,
+      "name": "agente_monetizacion",
+      "role": "ingresos",
+      "status": "done",
+      "last_output": "Agente agente_monetizacion ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404238+00:00"
+    },
+    {
+      "id": 13,
+      "name": "agente_omnipresente",
+      "role": "presencia_omnicanal",
+      "status": "done",
+      "last_output": "Agente agente_omnipresente ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404240+00:00"
+    },
+    {
+      "id": 14,
+      "name": "agente_remitente_omega",
+      "role": "correo_omega",
+      "status": "done",
+      "last_output": "Agente agente_remitente_omega ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404243+00:00"
+    },
+    {
+      "id": 15,
+      "name": "billing_enforcer",
+      "role": "facturacion",
+      "status": "done",
+      "last_output": "Agente billing_enforcer ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404246+00:00"
+    },
+    {
+      "id": 16,
+      "name": "billing_engine",
+      "role": "motor_facturacion",
+      "status": "done",
+      "last_output": "Agente billing_engine ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404249+00:00"
+    },
+    {
+      "id": 17,
+      "name": "biometric_matcher_v10",
+      "role": "biometria",
+      "status": "done",
+      "last_output": "Agente biometric_matcher_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404251+00:00"
+    },
+    {
+      "id": 18,
+      "name": "brand_selector_injector",
+      "role": "seleccion_marca",
+      "status": "done",
+      "last_output": "Agente brand_selector_injector ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404254+00:00"
+    },
+    {
+      "id": 19,
+      "name": "bunker_cleaner_v10",
+      "role": "limpieza_bunker",
+      "status": "done",
+      "last_output": "Agente bunker_cleaner_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404257+00:00"
+    },
+    {
+      "id": 20,
+      "name": "bpifrance_protocol",
+      "role": "protocolo_bpi",
+      "status": "done",
+      "last_output": "Agente bpifrance_protocol ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404259+00:00"
+    },
+    {
+      "id": 21,
+      "name": "centinela_hambre",
+      "role": "vigilancia_activa",
+      "status": "done",
+      "last_output": "Agente centinela_hambre ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404262+00:00"
+    },
+    {
+      "id": 22,
+      "name": "collaborator_bridge",
+      "role": "puente_colaboradores",
+      "status": "done",
+      "last_output": "Agente collaborator_bridge ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404265+00:00"
+    },
+    {
+      "id": 23,
+      "name": "collect_pilot_metrics",
+      "role": "metricas_piloto",
+      "status": "done",
+      "last_output": "Agente collect_pilot_metrics ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404268+00:00"
+    },
+    {
+      "id": 24,
+      "name": "core_mirror_orchestrator",
+      "role": "orquestador_espejo",
+      "status": "done",
+      "last_output": "Agente core_mirror_orchestrator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404270+00:00"
+    },
+    {
+      "id": 25,
+      "name": "cursor_omega_total_auto",
+      "role": "cursor_automatico",
+      "status": "done",
+      "last_output": "Agente cursor_omega_total_auto ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404273+00:00"
+    },
+    {
+      "id": 26,
+      "name": "deep_tech_system",
+      "role": "sistema_tech",
+      "status": "done",
+      "last_output": "Agente deep_tech_system ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404276+00:00"
+    },
+    {
+      "id": 27,
+      "name": "deploy_telemetria",
+      "role": "telemetria_deploy",
+      "status": "done",
+      "last_output": "Agente deploy_telemetria ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404278+00:00"
+    },
+    {
+      "id": 28,
+      "name": "destilar_divineo_total",
+      "role": "divineo_destilado",
+      "status": "done",
+      "last_output": "Agente destilar_divineo_total ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404281+00:00"
+    },
+    {
+      "id": 29,
+      "name": "domain_shield_orchestrator",
+      "role": "proteccion_dominio",
+      "status": "done",
+      "last_output": "Agente domain_shield_orchestrator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404284+00:00"
+    },
+    {
+      "id": 30,
+      "name": "e50_final_attack_to_green",
+      "role": "equipo50_verde",
+      "status": "done",
+      "last_output": "Agente e50_final_attack_to_green ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404286+00:00"
+    },
+    {
+      "id": 31,
+      "name": "elevar_autoridad_social",
+      "role": "autoridad_social",
+      "status": "done",
+      "last_output": "Agente elevar_autoridad_social ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404289+00:00"
+    },
+    {
+      "id": 32,
+      "name": "enviar_correo_soberano",
+      "role": "correo_soberano",
+      "status": "done",
+      "last_output": "Agente enviar_correo_soberano ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404291+00:00"
+    },
+    {
+      "id": 33,
+      "name": "factura_proforma_v10",
+      "role": "factura_proforma",
+      "status": "done",
+      "last_output": "Agente factura_proforma_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404294+00:00"
+    },
+    {
+      "id": 34,
+      "name": "fijar_posicionamiento_oficial",
+      "role": "posicionamiento",
+      "status": "done",
+      "last_output": "Agente fijar_posicionamiento_oficial ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404297+00:00"
+    },
+    {
+      "id": 35,
+      "name": "fiverr_csm_agent",
+      "role": "fiverr_csm",
+      "status": "done",
+      "last_output": "Agente fiverr_csm_agent ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404299+00:00"
+    },
+    {
+      "id": 36,
+      "name": "gatillo_stripe_final",
+      "role": "stripe_activacion",
+      "status": "done",
+      "last_output": "Agente gatillo_stripe_final ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404302+00:00"
+    },
+    {
+      "id": 37,
+      "name": "generador_qr_probador",
+      "role": "qr_probador",
+      "status": "done",
+      "last_output": "Agente generador_qr_probador ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404305+00:00"
+    },
+    {
+      "id": 38,
+      "name": "generar_invoice_98k",
+      "role": "invoice_98k",
+      "status": "done",
+      "last_output": "Agente generar_invoice_98k ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404307+00:00"
+    },
+    {
+      "id": 39,
+      "name": "genesis_consolidacion_total",
+      "role": "genesis",
+      "status": "done",
+      "last_output": "Agente genesis_consolidacion_total ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404310+00:00"
+    },
+    {
+      "id": 40,
+      "name": "google_studio",
+      "role": "google_studio",
+      "status": "done",
+      "last_output": "Agente google_studio ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404315+00:00"
+    },
+    {
+      "id": 41,
+      "name": "interceptor_paris_hq",
+      "role": "paris_hq",
+      "status": "done",
+      "last_output": "Agente interceptor_paris_hq ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404317+00:00"
+    },
+    {
+      "id": 42,
+      "name": "inventory_sync_logic",
+      "role": "inventario",
+      "status": "done",
+      "last_output": "Agente inventory_sync_logic ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404320+00:00"
+    },
+    {
+      "id": 43,
+      "name": "jules_finance_agent_v10",
+      "role": "finanzas_jules",
+      "status": "done",
+      "last_output": "Agente jules_finance_agent_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404323+00:00"
+    },
+    {
+      "id": 44,
+      "name": "master_omega_orchestrator",
+      "role": "maestro_omega",
+      "status": "done",
+      "last_output": "Agente master_omega_orchestrator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404326+00:00"
+    },
+    {
+      "id": 45,
+      "name": "mesa_de_los_listos",
+      "role": "mesa_listos",
+      "status": "done",
+      "last_output": "Agente mesa_de_los_listos ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404328+00:00"
+    },
+    {
+      "id": 46,
+      "name": "mesa_redonda_omega",
+      "role": "mesa_redonda",
+      "status": "done",
+      "last_output": "Agente mesa_redonda_omega ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404331+00:00"
+    },
+    {
+      "id": 47,
+      "name": "mirror_sanctuary_orchestrator",
+      "role": "santuario_espejo",
+      "status": "done",
+      "last_output": "Agente mirror_sanctuary_orchestrator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404333+00:00"
+    },
+    {
+      "id": 48,
+      "name": "motor_certeza_absoluta_v10",
+      "role": "certeza_absoluta",
+      "status": "done",
+      "last_output": "Agente motor_certeza_absoluta_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404336+00:00"
+    },
+    {
+      "id": 49,
+      "name": "motor_divineo_v10",
+      "role": "motor_divineo",
+      "status": "done",
+      "last_output": "Agente motor_divineo_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404339+00:00"
+    },
+    {
+      "id": 50,
+      "name": "motor_inclusion_v10",
+      "role": "inclusion",
+      "status": "done",
+      "last_output": "Agente motor_inclusion_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404341+00:00"
+    },
+    {
+      "id": 51,
+      "name": "motor_vida_avatar_v10",
+      "role": "vida_avatar",
+      "status": "done",
+      "last_output": "Agente motor_vida_avatar_v10 ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404344+00:00"
+    },
+    {
+      "id": 52,
+      "name": "omega_auto_pilot",
+      "role": "piloto_automatico",
+      "status": "done",
+      "last_output": "Agente omega_auto_pilot ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404346+00:00"
+    },
+    {
+      "id": 53,
+      "name": "omega_build",
+      "role": "construccion_omega",
+      "status": "done",
+      "last_output": "Agente omega_build ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404349+00:00"
+    },
+    {
+      "id": 54,
+      "name": "omega_consolidator",
+      "role": "consolidacion_omega",
+      "status": "done",
+      "last_output": "Agente omega_consolidator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404352+00:00"
+    },
+    {
+      "id": 55,
+      "name": "oraculo_studio",
+      "role": "oraculo",
+      "status": "done",
+      "last_output": "Agente oraculo_studio ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404355+00:00"
+    },
+    {
+      "id": 56,
+      "name": "orchestrator_v10_final",
+      "role": "orquestador_v10",
+      "status": "done",
+      "last_output": "Agente orchestrator_v10_final ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404357+00:00"
+    },
+    {
+      "id": 57,
+      "name": "pau_expansion",
+      "role": "expansion_pau",
+      "status": "done",
+      "last_output": "Agente pau_expansion ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404360+00:00"
+    },
+    {
+      "id": 58,
+      "name": "sacmuseum_empire",
+      "role": "sac_museum",
+      "status": "done",
+      "last_output": "Agente sacmuseum_empire ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404362+00:00"
+    },
+    {
+      "id": 59,
+      "name": "smart_cart",
+      "role": "carrito_inteligente",
+      "status": "done",
+      "last_output": "Agente smart_cart ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404365+00:00"
+    },
+    {
+      "id": 60,
+      "name": "telegram_signal_system",
+      "role": "senal_telegram",
+      "status": "done",
+      "last_output": "Agente telegram_signal_system ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404368+00:00"
+    },
+    {
+      "id": 61,
+      "name": "vercel_deploy_orchestrator",
+      "role": "deploy_vercel",
+      "status": "done",
+      "last_output": "Agente vercel_deploy_orchestrator ejecutado correctamente.",
+      "updated_at": "2026-04-03T05:36:10.404370+00:00"
+    }
+  ],
+  "mesa_decision": {
+    "timestamp": "2026-04-03T05:36:10.404759+00:00",
+    "bunker_id": "STIRPE-LAFAYETTE-V10",
+    "integrantes": [
+      "LISTOS",
+      "GEMINI",
+      "COPILOT",
+      "MANUS",
+      "AGENTE70",
+      "JULES",
+      "TRYONYOUAGENT"
+    ],
+    "patent": "PCT/EP2025/067317",
+    "resumen_agentes": {
+      "total": 61,
+      "completados": 61,
+      "con_error": 0
+    },
+    "decisiones": {
+      "comercial": "ACTIVAR CIERRE: 61/61 agentes completados. Prioridad: Galeries Lafayette × Balmain.",
+      "tecnica": "Inyectar Biometric Matcher V10. Errores detectados: 0. Escalado a @copilot y @jules."
+    },
+    "ideas": [
+      {
+        "id": 1,
+        "origen": "mesa_redonda",
+        "contenido": "Solicitar a @gemini análisis de tendencias para Zero-Size Protocol vía @agent70 + @jules.",
+        "timestamp": "2026-04-03T05:36:10.404703+00:00"
+      }
+    ],
+    "status": "BAJO PROTOCOLO DE SOBERANÍA V10 - FOUNDER: RUBÉN"
+  },
+  "gemini_response": {
+    "destinatario": "gemini",
+    "pregunta": "¿Cuál es el estado del sistema TryOnYou V10 y próximos pasos?",
+    "respuesta_agent70": "@agent70 confirma: Agente agent70 ejecutado correctamente. PCT/EP2025/067317 activo.",
+    "respuesta_jules": "@jules reporta: Agente jules ejecutado correctamente. Protocolo BPI 7500€ listo.",
+    "coordinador": "tryonyouagent",
+    "timestamp": "2026-04-03T05:36:10.404767+00:00",
+    "patent": "PCT/EP2025/067317"
+  }
+}
