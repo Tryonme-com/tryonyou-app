@@ -88,8 +88,9 @@ def agents_status():
     try:
         result = handle_agents_status()
         return _cors(jsonify(result)), 200
-    except Exception as e:
-        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+    except Exception:
+        app.logger.exception("agents_status error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500
 
 
 @app.route("/api/agents/run", methods=["OPTIONS"])
@@ -103,8 +104,9 @@ def agents_run():
         result = handle_agents_run()
         code = 200 if result.get("status") == "ok" else 500
         return _cors(jsonify(result)), code
-    except Exception as e:
-        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+    except Exception:
+        app.logger.exception("agents_run error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500
 
 
 @app.route("/api/mesa/decision", methods=["OPTIONS"])
@@ -117,5 +119,6 @@ def mesa_decision():
     try:
         result = handle_mesa_decision()
         return _cors(jsonify(result)), 200
-    except Exception as e:
-        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+    except Exception:
+        app.logger.exception("mesa_decision error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500

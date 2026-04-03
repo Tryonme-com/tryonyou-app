@@ -225,6 +225,13 @@ class AgentePerfectoOrquestador:
         finally:
             record.updated_at = datetime.now(timezone.utc).isoformat()
 
+    def _agent_by_name(self, name: str) -> AgentRecord | None:
+        """Retorna el agente por nombre (búsqueda O(n), catálogo fijo de 61)."""
+        for rec in self.agents.values():
+            if rec.name == name:
+                return rec
+        return None
+
     async def orquestar_todos(self) -> dict[str, Any]:
         """Lanza los 61 agentes en paralelo y consolida el resultado."""
         logger.info("🚀 Perfecto Orquestador: iniciando los 61 agentes…")
@@ -237,16 +244,16 @@ class AgentePerfectoOrquestador:
         decision = self.mesa.sesion_decisiones(agents_summary)
 
         # Respuesta hacia @gemini: agent70 aporta validación IP, jules aporta finanzas
-        agent70_rec = self.agents[2]
-        jules_rec = self.agents[3]
+        agent70_rec = self._agent_by_name("agent70")
+        jules_rec = self._agent_by_name("jules")
         respuesta_gemini = self.mesa.responder_a_gemini(
             pregunta="¿Cuál es el estado del sistema TryOnYou V10 y próximos pasos?",
             via_agent70=(
-                f"@agent70 confirma: {agent70_rec.last_output} "
+                f"@agent70 confirma: {agent70_rec.last_output if agent70_rec else 'agente no encontrado'} "
                 f"PCT/EP2025/067317 activo."
             ),
             via_jules=(
-                f"@jules reporta: {jules_rec.last_output} "
+                f"@jules reporta: {jules_rec.last_output if jules_rec else 'agente no encontrado'} "
                 "Protocolo BPI 7500€ listo."
             ),
         )
