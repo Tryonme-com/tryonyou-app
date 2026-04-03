@@ -55,7 +55,7 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
 <body>
 <header>
   <div style="letter-spacing: 10px; font-size: 1rem;">TRYONME</div>
-  <div class="brands"><span>BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
+  <div class="brands"><span id="cta-balmain" role="button" tabindex="0" style="cursor:pointer" title="Balmain">BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
 </header>
 <div class="hero">
   <h1>STOP THE <span style="color:var(--gold)">FAKE FIT</span></h1>
@@ -66,11 +66,48 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
   <canvas id="output_canvas"></canvas>
     </div>
 <footer>SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317</footer>
+<script>
+(function () {
+  function tryonyouMirrorMake(eventKey, extra) {
+    var p = Object.assign(
+      { event: eventKey, pathname: location.pathname, href: location.href },
+      extra || {}
+    );
+    fetch("/api/mirror_make_event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(p),
+      keepalive: true,
+    }).catch(function () {});
+  }
+  window.tryonyouMirrorMake = tryonyouMirrorMake;
+  function wireBalmain() {
+    var el = document.getElementById("cta-balmain");
+    if (!el) return;
+    function go() {
+      tryonyouMirrorMake("balmain_brand_click");
+    }
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        go();
+      }
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireBalmain);
+  } else {
+    wireBalmain();
+  }
+})();
+</script>
 <div class="nav-bottom">
   <div class="btn" onclick="location.reload()">Solidaire</div>
   <div class="btn" onclick="location.reload()">Intelligent</div>
   <div class="btn" onclick="location.reload()">Museum</div>
-  <div class="pay-bar" onclick="window.location.href='https://buy.stripe.com/test_soberania_4_5'">
+  <div class="pay-bar" id="cta-reserva-probador" role="button" tabindex="0" title="Réserver en salon d'essayage"
+    onclick="if(window.tryonyouMirrorMake){tryonyouMirrorMake('reserva_probador');}window.location.href='https://buy.stripe.com/test_soberania_4_5';">
     SOUVERAINETÉ : 12.500 € (PAYER)
       </div>
     </div>
