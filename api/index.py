@@ -12,6 +12,11 @@ from bunker_full_orchestrator import (
     orchestrate_beta_waitlist,
     orchestrate_mirror_shadow_dwell,
 )
+from agent_orchestrator import (
+    handle_agents_status,
+    handle_agents_run,
+    handle_mesa_decision,
+)
 
 app = Flask(__name__)
 
@@ -67,3 +72,53 @@ def mirror_shadow_log():
         return _cors(jsonify({"status": "ok", **result})), 200
     except Exception as e:
         return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+# ---------------------------------------------------------------------------
+# Agente Perfecto Orquestador — 61 agentes + Mesa de los Listos
+# ---------------------------------------------------------------------------
+
+@app.route("/api/agents/status", methods=["OPTIONS"])
+def agents_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/agents/status", methods=["GET"])
+def agents_status():
+    try:
+        result = handle_agents_status()
+        return _cors(jsonify(result)), 200
+    except Exception:
+        app.logger.exception("agents_status error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500
+
+
+@app.route("/api/agents/run", methods=["OPTIONS"])
+def agents_run_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/agents/run", methods=["POST"])
+def agents_run():
+    try:
+        result = handle_agents_run()
+        code = 200 if result.get("status") == "ok" else 500
+        return _cors(jsonify(result)), code
+    except Exception:
+        app.logger.exception("agents_run error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500
+
+
+@app.route("/api/mesa/decision", methods=["OPTIONS"])
+def mesa_decision_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/mesa/decision", methods=["GET"])
+def mesa_decision():
+    try:
+        result = handle_mesa_decision()
+        return _cors(jsonify(result)), 200
+    except Exception:
+        app.logger.exception("mesa_decision error")
+        return _cors(jsonify({"status": "error", "message": "Internal server error"})), 500

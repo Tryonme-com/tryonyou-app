@@ -8,6 +8,9 @@
 # Frontend build (Vercel reconstruye en deploy)
 dist/
 
+# Node modules
+node_modules/
+
 # Python
 __pycache__/
 *.py[cod]
