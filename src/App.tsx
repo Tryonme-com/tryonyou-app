@@ -272,6 +272,19 @@ export default function App() {
           >
             TRYONYOU · DIVINEO
           </p>
+          <p
+            style={{
+              fontSize: 13,
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              color: "#D3B26A",
+              fontStyle: "italic",
+              marginBottom: 14,
+              marginTop: 0,
+            }}
+          >
+            Essayage Virtuel en France
+          </p>
           <h1
             style={{
               fontSize: "clamp(26px, 4vw, 38px)",
