@@ -1,69 +1,64 @@
-import json
-import sys
-from pathlib import Path
+"""
+API TryOnYou — FastAPI asíncrono, webhook Make en segundo plano.
+Variable: MAKE_WEBHOOK_URL. Objeto app en nivel de módulo para Vercel (ASGI).
+Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
+Bajo Protocolo de Soberanía V10 - Founder: Rubén
+"""
+import logging
+import os
 
-from flask import Flask, Response, jsonify, request
+from fastapi import BackgroundTasks, FastAPI, Request
+from httpx import AsyncClient
 
-_ROOT = Path(__file__).resolve().parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-from bunker_full_orchestrator import (
-    orchestrate_beta_waitlist,
-    orchestrate_mirror_shadow_dwell,
-)
+app = FastAPI()
 
-app = Flask(__name__)
-
-
-@app.route("/")
-def home():
-    return "API Active"
+MAKE_WEBHOOK_URL = os.getenv("MAKE_WEBHOOK_URL")
 
 
-def _cors(resp):
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    return resp
+async def notify_make(event_name: str, payload: dict):
+    """Envío asíncrono a Make sin retrasar la respuesta al usuario."""
+    if not MAKE_WEBHOOK_URL:
+        logger.warning("MAKE_WEBHOOK_URL no configurada.")
+        return
 
-
-@app.route("/api/waitlist_beta", methods=["OPTIONS"])
-@app.route("/waitlist_beta", methods=["OPTIONS"])
-def waitlist_beta_options():
-    return _cors(Response(status=204))
-
-
-@app.route("/api/waitlist_beta", methods=["POST"])
-@app.route("/waitlist_beta", methods=["POST"])
-def waitlist_beta():
-    body = request.get_json(force=True, silent=True) or {}
-    try:
-        result = orchestrate_beta_waitlist(body)
-        return _cors(jsonify({"status": "ok", **result})), 200
-    except Exception as e:
-        return _cors(jsonify({"status": "error", "message": str(e)})), 500
-
-
-@app.route("/api/mirror_shadow_log", methods=["OPTIONS"])
-@app.route("/mirror_shadow_log", methods=["OPTIONS"])
-def mirror_shadow_options():
-    return _cors(Response(status=204))
-
-
-@app.route("/api/mirror_shadow_log", methods=["POST"])
-@app.route("/mirror_shadow_log", methods=["POST"])
-def mirror_shadow_log():
-    if request.content_type and "application/json" not in request.content_type:
-        raw = request.get_data(cache=True, as_text=True) or "{}"
+    async with AsyncClient() as client:
         try:
-            body = json.loads(raw)
-        except json.JSONDecodeError:
-            body = {}
-    else:
-        body = request.get_json(force=True, silent=True) or {}
-    try:
-        result = orchestrate_mirror_shadow_dwell(body)
-        return _cors(jsonify({"status": "ok", **result})), 200
-    except Exception as e:
-        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+            response = await client.post(
+                MAKE_WEBHOOK_URL,
+                json={
+                    "event": event_name,
+                    "data": payload,
+                    "source": "tryonyou-v10-omega",
+                },
+                timeout=5.0,
+            )
+            logger.info("Make Notification Success: %s", response.status_code)
+        except Exception as e:
+            logger.error("Make Notification Failed: %s", str(e))
+
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "online", "bunker": "protected"}
+
+
+@app.post("/api/mirror/action")
+async def handle_action(request: Request, background_tasks: BackgroundTasks):
+    """
+    Endpoint único para 'Los Listos'. Maneja:
+    seleccion, reserva, combinaciones, silueta, compartir, balmain.
+    """
+    data = await request.json()
+    action = data.get("action", "unknown")
+
+    response = {"status": "received", "action": action}
+
+    if action == "balmain":
+        response["trigger"] = "snap_avatar_change"
+
+    background_tasks.add_task(notify_make, action, data)
+
+    return response
