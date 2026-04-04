@@ -33,7 +33,7 @@ def main() -> int:
     orch = VoiceOrchestrator(
         name="Luna",
         brand="TryOnMe",
-        llm=os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"),
+        llm=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
         tools=TryOnMeTools.get_all(),
         system_prompt=prompts.SYSTEM_PROMPT,
     )

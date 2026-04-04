@@ -19,7 +19,7 @@ import prompts
 class VoiceOrchestrator:
     name: str = "Luna"
     brand: str = "TryOnMe"
-    llm: str = "gemini-1.5-flash"
+    llm: str = "gemini-2.5-flash"
     tools: dict[str, Callable[[dict[str, Any]], str]] = field(default_factory=dict)
     system_prompt: str = field(default_factory=lambda: prompts.SYSTEM_PROMPT)
 
