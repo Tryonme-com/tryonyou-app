@@ -19,8 +19,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("AgentePerfectoOrquestador")
+logger.addHandler(logging.NullHandler())
 
 REPO_ROOT = Path(__file__).resolve().parent
 ESTADO_PATH = REPO_ROOT / "src" / "data" / "agent_orchestration_status.json"
