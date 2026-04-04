@@ -12,7 +12,7 @@ Estándar Agent 70 + Jules:
   luna = VoiceOrchestrator(
       name="Luna",
       brand="TryOnMe",
-      llm="gemini-1.5-flash",
+      llm="gemini-2.5-flash",
       tools=TryOnMeTools.get_all(),
       system_prompt=prompts.SYSTEM_PROMPT,
   )
@@ -56,7 +56,7 @@ def _gemini_key() -> str:
 
 
 def _model_id() -> str:
-    return os.environ.get("GEMINI_MODEL", "gemini-1.5-flash").strip()
+    return os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 
 def _get_orchestrator(request: Request) -> VoiceOrchestrator:
