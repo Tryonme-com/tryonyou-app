@@ -268,16 +268,35 @@ class AgentePerfectoOrquestador:
         }
 
         self._persistir_estado(resultado)
-        logger.info("✅ Orquestación completa — estado persistido en src/data/")
+        logger.info("✅ Orquestación completa — persistencia de estado intentada")
         return resultado
 
+    def _candidate_estado_paths(self) -> list[Path]:
+        """Retorna rutas candidatas para persistir el estado."""
+        candidates = [ESTADO_PATH]
+        tmp_path = Path("/tmp") / ESTADO_PATH.name
+        if tmp_path != ESTADO_PATH:
+            candidates.append(tmp_path)
+        return candidates
+
+    def _write_estado_file(self, path: Path, payload: str) -> bool:
+        """Intenta escribir el estado y registra el error si falla."""
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(payload, encoding="utf-8")
+            logger.info("Estado de orquestación persistido en %s", path)
+            return True
+        except OSError as exc:
+            logger.warning("No se pudo persistir estado en %s: %s", path, exc)
+            return False
+
     def _persistir_estado(self, estado: dict[str, Any]) -> None:
-        """Escribe el estado en src/data/ para que la web lo consuma."""
-        ESTADO_PATH.parent.mkdir(parents=True, exist_ok=True)
-        ESTADO_PATH.write_text(
-            json.dumps(estado, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
+        """Escribe el estado con fallback a /tmp para entornos read-only."""
+        payload = json.dumps(estado, ensure_ascii=False, indent=2) + "\n"
+        for path in self._candidate_estado_paths():
+            if self._write_estado_file(path, payload):
+                return
+        logger.error("No se pudo persistir el estado en ninguna ruta candidata")
 
     def get_status_snapshot(self) -> dict[str, Any]:
         """Devuelve un resumen ligero del estado actual (para el endpoint API)."""
