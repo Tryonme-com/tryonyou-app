@@ -48,10 +48,9 @@ def handle_agents_status() -> dict[str, Any]:
 
 def handle_agents_run() -> dict[str, Any]:
     """POST /api/agents/run — ejecuta la orquestación completa."""
-    global _orquestador
-    _orquestador = AgentePerfectoOrquestador()
+    orquestador = AgentePerfectoOrquestador()
     try:
-        resultado = asyncio.run(_orquestador.orquestar_todos())
+        resultado = asyncio.run(orquestador.orquestar_todos())
         completados = sum(
             1 for a in resultado["agents"] if a["status"] == "done"
         )
