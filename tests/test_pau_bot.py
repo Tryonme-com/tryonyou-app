@@ -55,6 +55,17 @@ class TestPauBotMissingToken(unittest.TestCase):
                     import pau_bot
                     importlib.reload(pau_bot)
 
+    def test_raises_valueerror_without_gemini_key(self) -> None:
+        """Debe lanzar ValueError si GEMINI_API_KEY no está configurado."""
+        import importlib
+        env = {"TELEGRAM_TOKEN": "123456789:AAHfaketoken", "GEMINI_API_KEY": ""}
+        with patch("google.generativeai.configure"), \
+             patch("google.generativeai.GenerativeModel"):
+            with patch.dict(os.environ, env, clear=False):
+                with self.assertRaises(ValueError):
+                    import pau_bot
+                    importlib.reload(pau_bot)
+
 
 class TestPauBotModule(unittest.TestCase):
     """Verifica que el módulo pau_bot carga correctamente con token simulado."""
@@ -137,16 +148,8 @@ class TestHandleMessage(unittest.TestCase):
         mock_ai_response = MagicMock()
         mock_ai_response.text = "respuesta"
 
-        # Primera llamada (respuesta Gemini) falla; segunda llamada (mensaje de error) tiene éxito
-        call_count = {"n": 0}
-
-        def reply_side_effect(*args, **kwargs):
-            call_count["n"] += 1
-            if call_count["n"] == 1:
-                raise Exception("network error")
-
         with patch.object(self.pau_bot.model, "generate_content", return_value=mock_ai_response), \
-             patch.object(self.pau_bot.bot, "reply_to", side_effect=reply_side_effect) as mock_reply:
+             patch.object(self.pau_bot.bot, "reply_to", side_effect=[Exception("network error"), None]) as mock_reply:
             try:
                 self.pau_bot.handle_message(msg)
             except Exception:

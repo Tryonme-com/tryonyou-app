@@ -12,6 +12,9 @@ PROJECT_ID = "gen-lang-client-0091228222"
 if not TELEGRAM_TOKEN:
     raise ValueError("TELEGRAM_TOKEN no está configurado en las variables de entorno")
 
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY no está configurado en las variables de entorno")
+
 # 2. Configuración del Agente P.A.U.
 genai.configure(api_key=GEMINI_API_KEY)
 # Configuración del modelo con las directrices de comportamiento
