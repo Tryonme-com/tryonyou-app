@@ -202,3 +202,40 @@
     top: 0%;
   }
 }
+
+/* Contenedor de la Moneda de Pau */
+.moneda-biometrica {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(212,175,55,0.2) 0%, rgba(0,0,0,1) 70%);
+  border: 2px solid #D4AF37;
+  border-radius: 50%;
+  box-shadow: 0 0 50px rgba(212,175,55,0.3);
+  overflow: hidden;
+  position: relative;
+  margin: auto;
+  padding: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+/* El vídeo de Pau sin fondo */
+.moneda-biometrica video {
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  mix-blend-mode: screen; /* Elimina fondos negros del vídeo */
+}
+
+/* Lema del Fin de las Tallas */
+.claim-divine {
+  font-family: 'Cormorant Garamond', serif;
+  color: white;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-top: 40px;
+  letter-spacing: 2px;
+}

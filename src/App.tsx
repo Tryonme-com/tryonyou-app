@@ -442,7 +442,7 @@ export default function App() {
         <div className="app-pau-row">
           <button
             type="button"
-            className="app-pau"
+            className="moneda-biometrica"
             onClick={theSnap}
             title="P.A.U."
             aria-label="P.A.U. — snap et orchestration Jules"
@@ -452,6 +452,7 @@ export default function App() {
               <source src="/videos/pau_transparent.mp4" type="video/mp4" />
             </video>
           </button>
+          <p className="claim-divine">EL FIN DE LAS TALLAS</p>
         </div>
 
         <nav
