@@ -1,0 +1,38 @@
+# Bugbot — automated review for TryOnYou payment flows
+# Bajo Protocolo de Soberanía V10 — Founder: Rubén
+
+enabled: true
+
+labels:
+  - "bugbot:reviewed"
+  - "pagos-lafayette"
+
+review:
+  auto_review: true
+  paths:
+    - "api/stripe_connect.py"
+    - "api/stealth_bunker.py"
+    - "sacmuseum_empire.py"
+    - "billing_enforcer.py"
+    - "src/pages/payment-terminal.tsx"
+    - "src/config/payment_settings.ts"
+    - "src/constants/stripe_links.ts"
+    - "activar_pago_inmediato.py"
+    - "activar_flujo_dinero.py"
+    - "vincular_stripe_validado.py"
+    - "generar_links_cobro.py"
+    - "migrar_a_stripe_total_safe.py"
+    - "generar_invoice_98k.py"
+    - "factura_proforma_v10.py"
+    - "billing/**"
+    - "legal/**"
+    - "tests/test_stripe_connect.py"
+    - "tests/test_payment_flow_lafayette.py"
+
+checks:
+  secrets_in_code: true
+  hardcoded_keys: true
+  env_var_validation: true
+
+notifications:
+  on_review_complete: true
