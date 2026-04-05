@@ -66,9 +66,25 @@ class OraculoStudio:
             ) from e
 
         genai.configure(api_key=key)
-        model_name = os.environ.get("ORACLE_GEMINI_MODEL", "gemini-1.5-flash").strip()
+        model_name = (os.environ.get("ORACLE_GEMINI_MODEL", "").strip() or "gemini-2.5-flash")
+        # Thinking configuration for deep reasoning (Gemini 2.5+ extended thinking feature).
+        # See: https://ai.google.dev/gemini-api/docs/thinking
+        generation_config = {
+            "temperature": 0.1,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 8192,
+            "thinking_config": {
+                "include_thoughts": True,
+                "thinking_budget": 1024,
+                "thinking_level": "high",
+            },
+        }
         self._genai = genai
-        self.model = genai.GenerativeModel(model_name)
+        self.model = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config=generation_config,
+        )
         self.patent = PATENT
         self.founder = "Rubén Espinar Rodríguez"
 
@@ -91,7 +107,7 @@ inventory_assessment, scarcity_level, fit_threshold_note, recommended_action, ra
             "timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "founder": self.founder,
             "patente": self.patent,
-            "model": os.environ.get("ORACLE_GEMINI_MODEL", "gemini-1.5-flash"),
+            "model": (os.environ.get("ORACLE_GEMINI_MODEL", "").strip() or "gemini-2.5-flash"),
             "raw_response": raw,
         }
 
