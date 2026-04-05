@@ -152,5 +152,71 @@ class TestUnknownOption(unittest.TestCase):
         self.assertIn("Opción desconocida", result.stderr)
 
 
+class TestWrapperScripts(unittest.TestCase):
+    """Verifica que todos los wrappers deleguen en supercommit_max.sh."""
+
+    _WRAPPERS = [
+        "SUPERCOMMIT.sh",
+        "TRYONYOU_SUPERCOMMIT_MAX.sh",
+        "Tryonme_supercommit_max.sh",
+        "percommit_max.sh",
+    ]
+
+    def _run_wrapper(self, wrapper: str, *args: str) -> subprocess.CompletedProcess:
+        script = os.path.join(_ROOT, wrapper)
+        return subprocess.run(
+            ["bash", script, *args],
+            capture_output=True,
+            text=True,
+            cwd=_ROOT,
+        )
+
+    def test_all_wrappers_exist(self) -> None:
+        for wrapper in self._WRAPPERS:
+            path = os.path.join(_ROOT, wrapper)
+            self.assertTrue(os.path.isfile(path), f"Wrapper no encontrado: {wrapper}")
+
+    def test_all_wrappers_valid_bash_syntax(self) -> None:
+        for wrapper in self._WRAPPERS:
+            path = os.path.join(_ROOT, wrapper)
+            result = subprocess.run(["bash", "-n", path], capture_output=True)
+            self.assertEqual(
+                result.returncode, 0, f"{wrapper} tiene errores de sintaxis bash"
+            )
+
+    def test_all_wrappers_delegate_dry_run(self) -> None:
+        """Cada wrapper debe producir la misma salida que supercommit_max.sh en dry-run."""
+        canonical = subprocess.run(
+            ["bash", _SCRIPT, "--dry-run", VALID_MSG],
+            capture_output=True,
+            text=True,
+            cwd=_ROOT,
+        )
+        self.assertEqual(canonical.returncode, 0)
+
+        for wrapper in self._WRAPPERS:
+            with self.subTest(wrapper=wrapper):
+                result = self._run_wrapper(wrapper, "--dry-run", VALID_MSG)
+                self.assertEqual(
+                    result.returncode,
+                    0,
+                    f"{wrapper}: returncode={result.returncode}\n{result.stderr}",
+                )
+                self.assertIn(
+                    "Supercommit MAX finalizado",
+                    result.stdout,
+                    f"{wrapper} no produjo la salida esperada",
+                )
+
+    def test_all_wrappers_reject_missing_stamps(self) -> None:
+        """Cada wrapper debe rechazar mensajes sin sellos obligatorios."""
+        for wrapper in self._WRAPPERS:
+            with self.subTest(wrapper=wrapper):
+                result = self._run_wrapper(wrapper, "--dry-run", "mensaje-sin-sellos")
+                self.assertNotEqual(
+                    result.returncode, 0, f"{wrapper} debería rechazar mensajes sin sellos"
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
