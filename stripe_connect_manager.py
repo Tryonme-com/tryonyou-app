@@ -286,7 +286,7 @@ class TryOnYouOrchestrator:
 
         primary_currency = "eur"
         if currency_set:
-            primary_currency = "eur" if "eur" in currency_set else next(iter(currency_set))
+            primary_currency = "eur" if "eur" in currency_set else sorted(currency_set)[0]
 
         solvency = self.generate_bpi_report()
 
