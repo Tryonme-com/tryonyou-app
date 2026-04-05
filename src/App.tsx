@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { LiveDemo } from "./components/LiveDemo";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { createPerfectCheckout } from "./lib/shopifyCheckout";
 import "./index.css";
@@ -381,6 +382,8 @@ export default function App() {
             </video>
           </button>
         </div>
+
+        <LiveDemo />
       </div>
     </div>
   );
