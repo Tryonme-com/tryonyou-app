@@ -1,0 +1,6 @@
+export const SNAP_TAKEN = 'SNAP_TAKEN';
+export const FIT_UPDATED = 'FIT_UPDATED';
+export const LEAD_SUBMITTED = 'LEAD_SUBMITTED';
+export const BETA_JOINED = 'BETA_JOINED';
+export const CHECKOUT_INITIATED = 'CHECKOUT_INITIATED';
+export const MIRROR_RESERVE = 'MIRROR_RESERVE';
