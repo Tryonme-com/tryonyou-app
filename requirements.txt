@@ -11,6 +11,8 @@ pillow>=10.0
 google-generativeai>=0.8.0
 # Opcional: arranque_bunker_soberania.py (Telegram)
 requests>=2.28.0
+# Bot de despliegue @tryonyou_deploy_bot (tryonyou_deploy_bot.py)
+pyTelegramBotAPI>=4.14.0
 # Jules V7 CRM — Google Sheets (api/index.py; opcional si hay GOOGLE_CREDENTIALS_JSON)
 google-auth>=2.23.0
 google-api-python-client>=2.100.0
