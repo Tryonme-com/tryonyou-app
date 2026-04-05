@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { CollaboratorNav } from "./components/CollaboratorNav";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
@@ -420,6 +421,8 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      <CollaboratorNav />
     </div>
   );
 }
