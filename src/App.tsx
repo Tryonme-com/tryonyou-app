@@ -5,6 +5,8 @@ import { useSovereignty } from "./hooks/useSovereignty";
 import { IDENTITY, SNAP_TIMING_MS } from "./constants/Actions";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { createPerfectCheckout } from "./lib/shopifyCheckout";
+import VendorDashboard from "./components/commerce/VendorDashboard";
+import Storefront from "./components/commerce/Storefront";
 import "./index.css";
 import "./App.css";
 
@@ -25,6 +27,17 @@ function getUrlCode(): string | undefined {
     return code && code.trim().length > 0 ? code.trim() : undefined;
   } catch {
     return undefined;
+  }
+}
+
+/** Returns the active view from the ?view= query param. */
+function getUrlView(): "vendor" | "storefront" | null {
+  try {
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "vendor" || v === "storefront") return v;
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -134,10 +147,12 @@ export default function App() {
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
   const urlCode = getUrlCode();
+  const urlView = getUrlView();
 
   const { state: sovereigntyState, startScan, lockIdentity, finish } = useSovereignty();
 
   useEffect(() => {
+    if (urlView !== null) return;
     let cancelled = false;
     void (async () => {
       const h = await fetchJulesHealth();
@@ -155,9 +170,10 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [urlView]);
 
   useEffect(() => {
+    if (urlView !== null) return;
     const onFit = (e: Event) => {
       const ce = e as CustomEvent<{ label?: string }>;
       const lab = ce.detail?.label;
@@ -165,7 +181,42 @@ export default function App() {
     };
     window.addEventListener("tryonyou:fit", onFit);
     return () => window.removeEventListener("tryonyou:fit", onFit);
-  }, []);
+  }, [urlView]);
+
+  // Render the seller dashboard or storefront when requested via ?view=
+  if (urlView === "vendor") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(145deg, #F5F5DC 0%, #FFFFFF 38%, #D3B26A 100%)",
+        }}
+      >
+        <nav style={navStyle}>
+          <a href="/" style={navLinkStyle}>← Volver al espejo</a>
+          <a href="?view=storefront" style={navLinkStyle}>🛍️ Ver Storefront</a>
+        </nav>
+        <VendorDashboard sellerId={urlCode ?? "anonymous"} />
+      </div>
+    );
+  }
+
+  if (urlView === "storefront") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(145deg, #F5F5DC 0%, #FFFFFF 38%, #D3B26A 100%)",
+        }}
+      >
+        <nav style={navStyle}>
+          <a href="/" style={navLinkStyle}>← Volver al espejo</a>
+          <a href="?view=vendor" style={navLinkStyle}>🔱 Panel de Vendedor</a>
+        </nav>
+        <Storefront />
+      </div>
+    );
+  }
 
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
@@ -402,7 +453,42 @@ export default function App() {
             </video>
           </button>
         </div>
+
+        <nav
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 16,
+            padding: "16px 20px",
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <a href="?view=vendor" style={navLinkStyle}>
+            🔱 Panel de Vendedor
+          </a>
+          <a href="?view=storefront" style={navLinkStyle}>
+            🛍️ Storefront
+          </a>
+        </nav>
       </div>
     </div>
   );
 }
+
+const navStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+  padding: "12px 20px",
+  background: "rgba(255,255,255,0.85)",
+  borderBottom: "1px solid #e0d4b0",
+};
+
+const navLinkStyle: React.CSSProperties = {
+  fontSize: "0.75rem",
+  letterSpacing: 1,
+  fontWeight: 600,
+  color: "#6b5b3a",
+  textDecoration: "none",
+  textTransform: "uppercase",
+};

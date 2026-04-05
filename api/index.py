@@ -12,6 +12,7 @@ if str(_api_dir) not in sys.path:
     sys.path.insert(0, str(_api_dir))
 
 from shopify_bridge import resolve_shopify_checkout_url
+from stripe_connect import router as stripe_connect_router
 
 # Configuración de la aplicación
 app = FastAPI(title="TryOnYou API", version="1.0.0")
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Stripe Connect seller dashboard routes
+app.include_router(stripe_connect_router, prefix="/api")
 
 # Modelos de datos
 class SelectionRequest(BaseModel):
