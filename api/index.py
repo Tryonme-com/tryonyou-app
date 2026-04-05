@@ -19,7 +19,6 @@ from stripe_connect_manager import (
     TryOnYouManager,
     TryOnYouOrchestrator,
     WEBHOOK_SECRET,
-    stripe_client,
 )
 
 # Configuración de la aplicación
