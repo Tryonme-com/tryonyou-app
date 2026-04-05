@@ -16,7 +16,12 @@ for _p in (_api_dir, _root_dir):
         sys.path.insert(0, str(_p))
 
 from shopify_bridge import resolve_shopify_checkout_url
-from stripe_connect_manager import TryOnYouManager, WEBHOOK_SECRET, stripe_client
+from stripe_connect_manager import (
+    TryOnYouManager,
+    TryOnYouOrchestrator,
+    WEBHOOK_SECRET,
+    stripe_client,
+)
 
 # Configuración de la aplicación
 app = FastAPI(title="TryOnYou API", version="1.0.0")
@@ -193,6 +198,54 @@ async def stripe_webhook(request: Request):
         )
 
     return JSONResponse({"received": True, "type": event_type})
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator — Lafayette + Bpifrance
+# ---------------------------------------------------------------------------
+
+_orchestrator = TryOnYouOrchestrator()
+
+
+class LafayetteCheckoutRequest(BaseModel):
+    destination_account: str
+    success_url: Optional[str] = "https://tryonyou.com/success"
+    cancel_url: Optional[str] = None
+
+
+@app.get("/api/stripe/bpifrance/solvency-report")
+async def bpifrance_solvency_report():
+    """Genera el reporte de solvencia para Bpifrance vinculado a activos y contrato Lafayette."""
+    return {"success": True, "report": _orchestrator.generate_bpi_report()}
+
+
+@app.post("/api/stripe/lafayette/checkout")
+async def lafayette_checkout(req: LafayetteCheckoutRequest):
+    """Crea Checkout Session para el cobro Pack Empire Lafayette con Destination Charge + comisión 5 %."""
+    try:
+        url = _orchestrator.create_lafayette_checkout(
+            destination_account=req.destination_account,
+            success_url=req.success_url or "https://tryonyou.com/success",
+            cancel_url=req.cancel_url,
+        )
+        report = _orchestrator.generate_bpi_report()
+        return {"success": True, "checkout_url": url, "solvency_report": report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class V2EventRequest(BaseModel):
+    event_id: str
+
+
+@app.post("/api/stripe/v2/process-event")
+async def process_v2_event(req: V2EventRequest):
+    """Recupera y procesa un Thin Event de la API V2 de Stripe."""
+    try:
+        result = TryOnYouOrchestrator.handle_v2_thin_event(req.event_id)
+        return {"success": True, **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Adaptador para Vercel (si es necesario)

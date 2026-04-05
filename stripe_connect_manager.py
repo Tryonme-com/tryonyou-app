@@ -11,12 +11,14 @@ Bajo Protocolo de Soberanía V10 — Founder: Rubén Espinar Rodríguez
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from typing import Optional
 
 import stripe
 
 STRIPE_API_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+BPI_DOSSIER_ID = os.getenv("BPI_DOSSIER_ID", "27-206446")
 
 _test_mode = STRIPE_API_KEY.startswith("sk_test_")
 
@@ -130,9 +132,99 @@ class TryOnYouManager:
         return session.url
 
 
+class TryOnYouOrchestrator:
+    """Orquestador de operaciones financieras: Lafayette + Bpifrance + Stripe V2 events."""
+
+    DEFAULT_RELIC_ASSETS = 65_000
+    DEFAULT_CASH_ON_HAND = 32_800
+    DEFAULT_LAFAYETTE_CONTRACT_EUR = 88_000
+    LAFAYETTE_FEE_PERCENT = 5
+
+    def __init__(
+        self,
+        relic_assets: Optional[int] = None,
+        cash_on_hand: Optional[int] = None,
+        lafayette_contract_eur: Optional[int] = None,
+    ):
+        self.relic_assets = relic_assets or self.DEFAULT_RELIC_ASSETS
+        self.cash_on_hand = cash_on_hand or self.DEFAULT_CASH_ON_HAND
+        self.lafayette_contract_eur = (
+            lafayette_contract_eur or self.DEFAULT_LAFAYETTE_CONTRACT_EUR
+        )
+
+    def generate_bpi_report(self) -> dict:
+        """Genera un resumen de solvencia para Bpifrance."""
+        total = self.relic_assets + self.cash_on_hand + self.lafayette_contract_eur
+        return {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "dossier_bpi": BPI_DOSSIER_ID,
+            "relic_assets_eur": self.relic_assets,
+            "cash_on_hand_eur": self.cash_on_hand,
+            "lafayette_contract_eur": self.lafayette_contract_eur,
+            "total_assets_eur": total,
+            "status": "SOLVENTE",
+        }
+
+    def create_lafayette_checkout(
+        self,
+        destination_account: str,
+        success_url: str = "https://tryonyou.com/success",
+        cancel_url: Optional[str] = None,
+    ) -> str:
+        """Checkout Session para el cobro Lafayette (Pack Empire) con Destination Charge."""
+        client = _require_client()
+        fee_cents = int(
+            self.lafayette_contract_eur * 100 * self.LAFAYETTE_FEE_PERCENT / 100
+        )
+        params: dict = {
+            "line_items": [
+                {
+                    "price_data": {
+                        "currency": "eur",
+                        "product_data": {
+                            "name": "Pack Empire - Jules AI (Lafayette)",
+                        },
+                        "unit_amount": self.lafayette_contract_eur * 100,
+                    },
+                    "quantity": 1,
+                }
+            ],
+            "payment_intent_data": {
+                "application_fee_amount": fee_cents,
+                "transfer_data": {"destination": destination_account},
+            },
+            "mode": "payment",
+            "success_url": success_url,
+        }
+        if cancel_url:
+            params["cancel_url"] = cancel_url
+        session = client.checkout.sessions.create(**params)
+        return session.url
+
+    @staticmethod
+    def handle_v2_thin_event(event_id: str) -> dict:
+        """Recupera y procesa un Thin Event de la API V2."""
+        client = _require_client()
+        event = client.v2.core.events.retrieve(event_id)
+        result: dict = {"event_id": event_id, "type": event.type}
+
+        if event.type == "v2.core.account[requirements].updated":
+            result["action"] = "requirements_updated"
+            result["account_id"] = getattr(
+                getattr(event, "data", None), "object", {}
+            )
+            if hasattr(result["account_id"], "id"):
+                result["account_id"] = result["account_id"].id
+
+        return result
+
+
 if __name__ == "__main__":
     if _test_mode:
         print("OPERANDO EN MODO TEST")
 
     manager = TryOnYouManager()
-    print("Stripe Connect Manager listo para procesar pagos.")
+    orchestrator = TryOnYouOrchestrator()
+    report = orchestrator.generate_bpi_report()
+    print(f"Reporte Bpifrance: {report}")
+    print("Stripe Connect Manager + Orchestrator listo para procesar pagos.")
