@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { triggerIgnition } from "./ignition.js";
 
 function App() {
   const [elasticLabel, setElasticLabel] = useState("Analyse en cours…");
   const [snapDone, setSnapDone] = useState(false);
+  const [snapError, setSnapError] = useState(null);
 
   useEffect(() => {
     const onFit = (e) => {
@@ -15,9 +17,20 @@ function App() {
     return () => window.removeEventListener("tryonyou:fit", onFit);
   }, []);
 
-  const handleSnap = () => {
+  const handleSnap = async () => {
+    setSnapError(null);
     setSnapDone(true);
-    setTimeout(() => setSnapDone(false), 2000);
+
+    try {
+      const canvas = document.getElementById("output_canvas");
+      const meshData = canvas
+        ? { size: canvas.width * canvas.height * 4 }
+        : null;
+      await triggerIgnition(meshData);
+    } catch (err) {
+      setSnapError(err.message);
+      setTimeout(() => setSnapDone(false), 2000);
+    }
   };
 
   return (
@@ -107,6 +120,20 @@ function App() {
         >
           TRYONYOU V100 · ZERO-SIZE · PCT/EP2025/067317
         </p>
+
+        {snapError && (
+          <p
+            style={{
+              fontSize: 9,
+              color: "#ff4444",
+              textAlign: "center",
+              letterSpacing: 1,
+              margin: 0,
+            }}
+          >
+            {snapError}
+          </p>
+        )}
       </div>
     </div>
   );
