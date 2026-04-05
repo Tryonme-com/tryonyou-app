@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { DivineMirror } from "./components/DivineMirror";
 import { useSovereignty } from "./hooks/useSovereignty";
+import { IDENTITY, SNAP_TIMING_MS } from "./constants/Actions";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { createPerfectCheckout } from "./lib/shopifyCheckout";
 import "./index.css";
@@ -184,12 +185,12 @@ export default function App() {
   const theSnap = () => {
     startScan();
 
-    // Simulación de Criba de Datos en us-west1 (2s)
+    // Simulación de Criba de Datos en us-west1
     setTimeout(() => {
-      lockIdentity('#E60000'); // Rojo Valentino
-    }, 2000);
+      lockIdentity(IDENTITY.ROJO_VALENTINO);
+    }, SNAP_TIMING_MS.LOCK_IDENTITY);
 
-    // Finalización: Redirección a Shopify (3.5s)
+    // Finalización: Redirección a Shopify
     setTimeout(() => {
       finish();
       void (async () => {
@@ -203,7 +204,7 @@ export default function App() {
           "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
         window.alert(msg);
       })();
-    }, 3500);
+    }, SNAP_TIMING_MS.FINISH);
   };
 
   const onHeroSubmit = async () => {

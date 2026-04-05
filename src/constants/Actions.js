@@ -12,3 +12,13 @@ export const STATUS = {
   LOCKED: 'LOCKED',
   SNAP_READY: 'SNAP_READY'
 };
+
+export const IDENTITY = {
+  LILA_INICIAL: '#C8A2C8',
+  ROJO_VALENTINO: '#E60000'
+};
+
+export const SNAP_TIMING_MS = {
+  LOCK_IDENTITY: 2000,
+  FINISH: 3500
+};

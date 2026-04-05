@@ -1,9 +1,9 @@
 import { useReducer, useCallback } from 'react';
-import { ACTIONS, STATUS } from '../constants/Actions';
+import { ACTIONS, STATUS, IDENTITY } from '../constants/Actions';
 
 const initialState = {
   status: STATUS.READY,
-  identity: '#C8A2C8',
+  identity: IDENTITY.LILA_INICIAL,
   patent: typeof import.meta !== 'undefined' && import.meta.env
     ? import.meta.env.VITE_PATENT_ID || 'PCT/EP2025/067317'
     : 'PCT/EP2025/067317'
@@ -49,5 +49,5 @@ export function useSovereignty() {
     dispatch({ type: ACTIONS.RESET });
   }, []);
 
-  return { state, dispatch, startScan, lockIdentity, meshLoaded, finish, reset };
+  return { state, startScan, lockIdentity, meshLoaded, finish, reset };
 }
