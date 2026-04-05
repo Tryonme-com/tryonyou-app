@@ -1,4 +1,6 @@
 .vercel
+node_modules/
+package-lock.json
 
 # Secretos y entorno local
 .env
