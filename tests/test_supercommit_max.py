@@ -246,20 +246,32 @@ class TestPercommitMax(unittest.TestCase):
         """Un token shpat_… en el diff staged debe ser rechazado."""
         import tempfile
         with tempfile.TemporaryDirectory() as tmpdir:
-            subprocess.run(["git", "init", tmpdir], capture_output=True)
-            subprocess.run(["git", "-C", tmpdir, "config", "user.email", "test@test.com"], capture_output=True)
-            subprocess.run(["git", "-C", tmpdir, "config", "user.name", "Test"], capture_output=True)
+            subprocess.run(["git", "init", tmpdir], capture_output=True, check=True)
+            subprocess.run(
+                ["git", "-C", tmpdir, "config", "user.email", "test@test.com"],
+                capture_output=True,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", tmpdir, "config", "user.name", "Test"],
+                capture_output=True,
+                check=True,
+            )
             # Crea un commit inicial para que el diff funcione
             init_file = os.path.join(tmpdir, "init.txt")
             with open(init_file, "w") as f:
                 f.write("init\n")
-            subprocess.run(["git", "-C", tmpdir, "add", "."], capture_output=True)
-            subprocess.run(["git", "-C", tmpdir, "commit", "-m", "init"], capture_output=True)
+            subprocess.run(["git", "-C", tmpdir, "add", "."], capture_output=True, check=True)
+            subprocess.run(
+                ["git", "-C", tmpdir, "commit", "-m", "init"],
+                capture_output=True,
+                check=True,
+            )
             # Ahora añade un archivo con un token de Shopify
             secret_file = os.path.join(tmpdir, "secret.txt")
             with open(secret_file, "w") as f:
                 f.write("SHOPIFY_TOKEN=shpat_abcdefghij1234567890\n")
-            subprocess.run(["git", "-C", tmpdir, "add", "."], capture_output=True)
+            subprocess.run(["git", "-C", tmpdir, "add", "."], capture_output=True, check=True)
             result = subprocess.run(
                 ["bash", _PERCOMMIT_SCRIPT, "--dry-run", VALID_MSG],
                 capture_output=True,
