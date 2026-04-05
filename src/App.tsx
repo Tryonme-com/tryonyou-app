@@ -5,6 +5,7 @@ import { useSovereignty } from "./hooks/useSovereignty";
 import { IDENTITY, SNAP_TIMING_MS } from "./constants/Actions";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { createPerfectCheckout } from "./lib/shopifyCheckout";
+import { triggerVisualCertainty } from "./lib/visualCertainty";
 import "./index.css";
 import "./App.css";
 
@@ -169,6 +170,7 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
+      triggerVisualCertainty();
       void createPerfectCheckout(elasticLabel, elasticLabel, urlCode);
       return;
     }
