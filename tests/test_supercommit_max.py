@@ -218,5 +218,241 @@ class TestWrapperScripts(unittest.TestCase):
                 )
 
 
-if __name__ == "__main__":
+class TestCursorRulesCheck(unittest.TestCase):
+    """Verifica que supercommit_max.sh comprueba las reglas de Cursor."""
+
+    def test_cursor_rules_verified_message(self) -> None:
+        """El script debe indicar que las reglas de Cursor están verificadas."""
+        result = subprocess.run(
+            ["bash", _SCRIPT, "--dry-run", VALID_MSG],
+            capture_output=True,
+            text=True,
+            cwd=_ROOT,
+        )
+        self.assertEqual(result.returncode, 0)
+        # El repo tiene .cursor/rules/ — se espera confirmación de verificación
+        self.assertIn("Cursor", result.stdout)
+
+    def test_cursor_rules_warning_when_missing(self) -> None:
+        """Sin .cursor/rules ni .cursorrules debe emitir un aviso en stderr."""
+        import tempfile
+        import shutil
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            # Copiar solo supercommit_max.sh al dir temporal (sin .cursor/rules)
+            shutil.copy(_SCRIPT, tmpdir)
+            tmp_script = os.path.join(tmpdir, "supercommit_max.sh")
+            result = subprocess.run(
+                ["bash", tmp_script, "--dry-run", VALID_MSG],
+                capture_output=True,
+                text=True,
+                cwd=tmpdir,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("AVISO", result.stderr)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+class TestTryonyouSupercommitMax(unittest.TestCase):
+    """Verifica el comportamiento de TRYONYOU_SUPERCOMMIT_MAX.sh."""
+
+    _TRYONYOU = os.path.join(_ROOT, "TRYONYOU_SUPERCOMMIT_MAX.sh")
+
+    def _run_tryonyou(self, *args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+        merged_env = {**os.environ, **(env or {})}
+        return subprocess.run(
+            ["bash", self._TRYONYOU, *args],
+            capture_output=True,
+            text=True,
+            env=merged_env,
+            cwd=_ROOT,
+        )
+
+    def test_script_exists(self) -> None:
+        self.assertTrue(os.path.isfile(self._TRYONYOU))
+
+    def test_valid_bash_syntax(self) -> None:
+        result = subprocess.run(["bash", "-n", self._TRYONYOU], capture_output=True)
+        self.assertEqual(result.returncode, 0)
+
+    def test_fails_without_vite_shop_variant(self) -> None:
+        """Sin VITE_SHOP_VARIANT en modo real debe fallar con error descriptivo."""
+        env = {k: v for k, v in os.environ.items() if k != "VITE_SHOP_VARIANT"}
+        result = self._run_tryonyou(VALID_MSG, env=env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("VITE_SHOP_VARIANT", result.stderr)
+
+    def test_dryrun_skips_vite_shop_variant_check(self) -> None:
+        """En --dry-run debe omitir la verificación de VITE_SHOP_VARIANT."""
+        env = {k: v for k, v in os.environ.items() if k != "VITE_SHOP_VARIANT"}
+        result = self._run_tryonyou("--dry-run", VALID_MSG, env=env)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Supercommit MAX finalizado", result.stdout)
+
+    def test_adds_deploy_flag_automatically(self) -> None:
+        """Debe añadir --deploy automáticamente (vercel deploy visible en dry-run)."""
+        env = {k: v for k, v in os.environ.items() if k != "VITE_SHOP_VARIANT"}
+        result = self._run_tryonyou("--dry-run", VALID_MSG, env=env)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("vercel deploy", result.stdout)
+
+    def test_does_not_duplicate_deploy_flag(self) -> None:
+        """Si --deploy ya está presente no debe duplicarlo."""
+        env = {k: v for k, v in os.environ.items() if k != "VITE_SHOP_VARIANT"}
+        result = self._run_tryonyou("--dry-run", "--deploy", VALID_MSG, env=env)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("vercel deploy", result.stdout)
+
+    def test_rejects_missing_stamps(self) -> None:
+        """Debe rechazar mensajes sin sellos obligatorios."""
+        env = {k: v for k, v in os.environ.items() if k != "VITE_SHOP_VARIANT"}
+        result = self._run_tryonyou("--dry-run", "mensaje-sin-sellos", env=env)
+        self.assertNotEqual(result.returncode, 0)
+
+
+class TestPercommitFilter(unittest.TestCase):
+    """Verifica el filtro de vulgarización de percommit_max.sh."""
+
+    _PERCOMMIT = os.path.join(_ROOT, "percommit_max.sh")
+
+    def _make_git_repo(self) -> str:
+        """Crea un repositorio git temporal con los scripts necesarios."""
+        import shutil
+        import tempfile
+
+        tmpdir = tempfile.mkdtemp()
+        subprocess.run(["git", "init"], cwd=tmpdir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmpdir, check=True, capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=tmpdir, check=True, capture_output=True,
+        )
+        shutil.copy(self._PERCOMMIT, tmpdir)
+        shutil.copy(_SCRIPT, tmpdir)
+        return tmpdir
+
+    def test_script_exists(self) -> None:
+        self.assertTrue(os.path.isfile(self._PERCOMMIT))
+
+    def test_valid_bash_syntax(self) -> None:
+        result = subprocess.run(["bash", "-n", self._PERCOMMIT], capture_output=True)
+        self.assertEqual(result.returncode, 0)
+
+    def test_dryrun_bypasses_filter(self) -> None:
+        """En --dry-run los filtros se omiten."""
+        result = subprocess.run(
+            ["bash", self._PERCOMMIT, "--dry-run", VALID_MSG],
+            capture_output=True,
+            text=True,
+            cwd=_ROOT,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Supercommit MAX finalizado", result.stdout)
+
+    def test_blocks_size_labels_in_staged_content(self) -> None:
+        """Debe bloquear commits con etiquetas de talla S, M o L en el diff staged."""
+        import shutil
+
+        tmpdir = self._make_git_repo()
+        try:
+            test_file = os.path.join(tmpdir, "sizes.txt")
+            with open(test_file, "w") as fh:
+                fh.write("Available sizes: S M L\n")
+            subprocess.run(
+                ["git", "add", "sizes.txt"],
+                cwd=tmpdir, check=True, capture_output=True,
+            )
+            result = subprocess.run(
+                ["bash", "percommit_max.sh", VALID_MSG],
+                capture_output=True,
+                text=True,
+                cwd=tmpdir,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("BLOQUEADO", result.stderr)
+            self.assertIn("talla", result.stderr)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_blocks_shopify_admin_token_shpat(self) -> None:
+        """Debe bloquear commits que expongan un token shpat_ de Shopify."""
+        import shutil
+
+        tmpdir = self._make_git_repo()
+        try:
+            test_file = os.path.join(tmpdir, "config.py")
+            with open(test_file, "w") as fh:
+                fh.write("TOKEN = 'shpat_abc123XYZ'\n")
+            subprocess.run(
+                ["git", "add", "config.py"],
+                cwd=tmpdir, check=True, capture_output=True,
+            )
+            result = subprocess.run(
+                ["bash", "percommit_max.sh", VALID_MSG],
+                capture_output=True,
+                text=True,
+                cwd=tmpdir,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("BLOQUEADO", result.stderr)
+            self.assertIn("Shopify", result.stderr)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_blocks_shopify_admin_access_token_assignment(self) -> None:
+        """Debe bloquear commits que expongan SHOPIFY_ADMIN_ACCESS_TOKEN con valor."""
+        import shutil
+
+        tmpdir = self._make_git_repo()
+        try:
+            test_file = os.path.join(tmpdir, ".env")
+            with open(test_file, "w") as fh:
+                fh.write("SHOPIFY_ADMIN_ACCESS_TOKEN=shpat_secrettoken123\n")
+            subprocess.run(
+                ["git", "add", ".env"],
+                cwd=tmpdir, check=True, capture_output=True,
+            )
+            result = subprocess.run(
+                ["bash", "percommit_max.sh", VALID_MSG],
+                capture_output=True,
+                text=True,
+                cwd=tmpdir,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("BLOQUEADO", result.stderr)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_allows_empty_shopify_token_assignment(self) -> None:
+        """SHOPIFY_ADMIN_ACCESS_TOKEN= sin valor (como en .env.example) no debe bloquearse."""
+        import shutil
+
+        tmpdir = self._make_git_repo()
+        try:
+            test_file = os.path.join(tmpdir, ".env.example")
+            with open(test_file, "w") as fh:
+                fh.write("SHOPIFY_ADMIN_ACCESS_TOKEN=\n")
+            subprocess.run(
+                ["git", "add", ".env.example"],
+                cwd=tmpdir, check=True, capture_output=True,
+            )
+            result = subprocess.run(
+                ["bash", "percommit_max.sh", VALID_MSG],
+                capture_output=True,
+                text=True,
+                cwd=tmpdir,
+            )
+            # Should not be blocked by the Shopify token filter
+            # (may still fail at git commit/push, but not due to the token filter)
+            self.assertNotIn("BLOQUEADO", result.stderr)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+if __name__ == '__main__':
     unittest.main()
