@@ -44,7 +44,11 @@ def _shopify_admin_host() -> str:
     return h
 
 
-def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | None:
+def admin_draft_order_invoice_url(
+    lead_id: int,
+    fabric_sensation: str,
+    biometric_hash: str = "",
+) -> str | None:
     """POST /admin/api/{ver}/draft_orders.json → invoice_url si credenciales válidas."""
     token = os.environ.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
     host = _shopify_admin_host()
@@ -57,14 +61,25 @@ def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | 
     ver = os.environ.get("SHOPIFY_ADMIN_API_VERSION", "2024-10").strip() or "2024-10"
     url = f"https://{host}/admin/api/{ver}/draft_orders.json"
     sensation = (fabric_sensation or "").strip()[:120]
+    sovereign_id = (biometric_hash or "").strip()[:128]
     note = (
         f"Divineo V10 · lead #{lead_id} · SIREN {SIREN_SELL} · {PATENTE} · "
         f"ajustage Zero-Size · ANTI-ACCUMULATION (qty=1, single_size) · QC 27 Rue Argenteuil 75001 · "
         f"{sensation}"
     )
+    line_item_properties = []
+    if sovereign_id:
+        line_item_properties.append({"name": "_Sovereignty_ID", "value": sovereign_id})
+    line_item_properties.append({"name": "_Patent", "value": PATENTE})
     body = {
         "draft_order": {
-            "line_items": [{"variant_id": int(variant_raw), "quantity": 1}],
+            "line_items": [
+                {
+                    "variant_id": int(variant_raw),
+                    "quantity": 1,
+                    "properties": line_item_properties,
+                }
+            ],
             "note": note,
             "tags": (
                 "TryOnYou,ZeroSize,PCT_EP2025_067317,Divineo,"
@@ -90,19 +105,25 @@ def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | 
     return inv if isinstance(inv, str) and inv.startswith("http") else None
 
 
-def build_shopify_perfect_selection_url(lead_id: int, fabric_sensation: str) -> str | None:
+def build_shopify_perfect_selection_url(
+    lead_id: int,
+    fabric_sensation: str,
+    biometric_hash: str = "",
+) -> str | None:
     """URL storefront / carrito piloto con atributos de sello (sin tallas)."""
     sensation = (fabric_sensation or "").strip()[:160]
+    sovereign_id = (biometric_hash or "").strip()[:128]
     direct = os.environ.get("SHOPIFY_PERFECT_CHECKOUT_URL", "").strip()
     if direct:
-        attrs = urllib.parse.urlencode(
-            {
-                "attributes[tryonyou_lead]": str(lead_id),
-                "attributes[fit_sensation]": sensation[:80],
-                "attributes[siren]": SIREN_SELL.replace(" ", ""),
-                "attributes[patente]": PATENTE,
-            }
-        )
+        q_params: dict[str, str] = {
+            "attributes[tryonyou_lead]": str(lead_id),
+            "attributes[fit_sensation]": sensation[:80],
+            "attributes[siren]": SIREN_SELL.replace(" ", ""),
+            "attributes[patente]": PATENTE,
+        }
+        if sovereign_id:
+            q_params["attributes[_Sovereignty_ID]"] = sovereign_id
+        attrs = urllib.parse.urlencode(q_params)
         sep = "&" if "?" in direct else "?"
         return f"{direct}{sep}{attrs}"
 
@@ -124,9 +145,13 @@ def build_shopify_perfect_selection_url(lead_id: int, fabric_sensation: str) -> 
     return f"{base}?{q}"
 
 
-def resolve_shopify_checkout_url(lead_id: int, fabric_sensation: str) -> str | None:
+def resolve_shopify_checkout_url(
+    lead_id: int,
+    fabric_sensation: str,
+    biometric_hash: str = "",
+) -> str | None:
     """Prioriza facturación Admin (draft invoice); si falla, URL storefront configurada."""
-    inv = admin_draft_order_invoice_url(lead_id, fabric_sensation)
+    inv = admin_draft_order_invoice_url(lead_id, fabric_sensation, biometric_hash)
     if inv:
         return inv
-    return build_shopify_perfect_selection_url(lead_id, fabric_sensation)
+    return build_shopify_perfect_selection_url(lead_id, fabric_sensation, biometric_hash)

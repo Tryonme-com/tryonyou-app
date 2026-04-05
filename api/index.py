@@ -3,6 +3,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+import hashlib
+import sys
+from pathlib import Path
+
+_api_dir = Path(__file__).resolve().parent
+if str(_api_dir) not in sys.path:
+    sys.path.insert(0, str(_api_dir))
+
+from shopify_bridge import resolve_shopify_checkout_url
 
 # Configuración de la aplicación
 app = FastAPI(title="TryOnYou API", version="1.0.0")
@@ -56,6 +65,26 @@ async def get_combinations(user_id: str):
 async def save_silhouette(data: dict):
     """Almacena los datos del escaneo en el perfil."""
     return {"status": "success", "message": "Silueta guardada correctamente"}
+
+
+@app.post("/api/v1/checkout/perfect-selection")
+async def perfect_checkout_selection(data: dict):
+    """Checkout de certeza — vincula hash biométrico (_Sovereignty_ID) al pedido Shopify (Zero-Size)."""
+    biometric_hash = str(data.get("biometric_hash", "")).strip()
+    fabric_sensation = str(data.get("fabric_sensation", "")).strip()
+    code = str(data.get("code", "")).strip()
+
+    # Identificador de sesión estable derivado del hash biométrico (SHA-256 → 7 dígitos).
+    seed = (biometric_hash or fabric_sensation or code or "0").encode("utf-8")
+    lead_id = int(hashlib.sha256(seed).hexdigest(), 16) % 10_000_000
+
+    url = resolve_shopify_checkout_url(lead_id, fabric_sensation, biometric_hash)
+
+    result: dict = {}
+    if url:
+        result["checkout_primary_url"] = url
+        result["checkout_shopify_url"] = url
+    return result
 
 # Adaptador para Vercel (si es necesario)
 # handler = app
