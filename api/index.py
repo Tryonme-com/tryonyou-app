@@ -3,9 +3,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 import hashlib
-import os
 import sys
 from pathlib import Path
 
