@@ -4,7 +4,18 @@
   "installCommand": "npm install && pip install -r requirements.txt",
   "cleanUrls": true,
   "env": {
-    "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
+    "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app",
+    "APP_ENV": "production",
+    "STRICT_DIVINEO_MODE": "true",
+    "SERVER_URL": "https://tryonyou-v100-final-201614778520.us-west1.run.app",
+    "PRIMARY_DOMAIN": "tryonyou.app",
+    "REPO_FULLNAME": "LVT-ENG/TRYONME-TRYONYOU-ABVETOS--INTELLIGENCE--SYSTEM",
+    "AVBET_API_URL": "https://api.avbet.com",
+    "VITE_API_URL": "https://api.tryonyou.app",
+    "VITE_ENVIRONMENT": "production",
+    "VITE_GITHUB_REPO": "LVT-ENG/TRYONME-TRYONYOU-ABVETOS--INTELLIGENCE--SYSTEM",
+    "VITE_PRODUCTION_URL": "https://tryonyou.app",
+    "VITE_DASHBOARD_URL": "https://tryonyou.app/dashboard/abvetos-dashboard/"
   },
   "builds": [
     {
