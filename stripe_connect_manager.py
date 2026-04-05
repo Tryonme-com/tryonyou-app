@@ -147,10 +147,16 @@ class TryOnYouOrchestrator:
         cash_on_hand: Optional[int] = None,
         lafayette_contract_eur: Optional[int] = None,
     ):
-        self.relic_assets = relic_assets or self.DEFAULT_RELIC_ASSETS
-        self.cash_on_hand = cash_on_hand or self.DEFAULT_CASH_ON_HAND
+        self.relic_assets = (
+            self.DEFAULT_RELIC_ASSETS if relic_assets is None else relic_assets
+        )
+        self.cash_on_hand = (
+            self.DEFAULT_CASH_ON_HAND if cash_on_hand is None else cash_on_hand
+        )
         self.lafayette_contract_eur = (
-            lafayette_contract_eur or self.DEFAULT_LAFAYETTE_CONTRACT_EUR
+            self.DEFAULT_LAFAYETTE_CONTRACT_EUR
+            if lafayette_contract_eur is None
+            else lafayette_contract_eur
         )
 
     def generate_bpi_report(self) -> dict:
