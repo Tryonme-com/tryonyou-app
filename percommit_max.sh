@@ -21,20 +21,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
-# Filtro de seguridad: inspecciona el diff staged y el mensaje de commit
+# Filtro de seguridad: inspecciona solo líneas añadidas del diff staged
 # ---------------------------------------------------------------------------
 if [ "$SKIP_SECURITY_CHECK" -eq 0 ]; then
   # 1. Detecta etiquetas de talla sueltas ("S", "M" o "L" como palabra completa)
-  # en el diff staged (para evitar exponer variantes de talla en texto plano).
-  STAGED_DIFF="$(git diff --cached 2>/dev/null || true)"
-  if echo "$STAGED_DIFF" | grep -qE '(^|[^A-Za-z])(S|M|L)([^A-Za-z]|$)'; then
-    echo "❌ BLOQUEADO: el diff staged contiene etiquetas de talla (S, M, L) en texto plano. Usa constantes o enumeraciones en su lugar." >&2
+  # únicamente en líneas añadidas del diff staged, para no bloquear commits
+  # de saneamiento que estén eliminando valores sensibles.
+  ADDED_STAGED_DIFF="$(git diff --cached -U0 --no-color 2>/dev/null | grep -E '^+[^+]' || true)"
+  if echo "$ADDED_STAGED_DIFF" | grep -qE '(^|[^A-Za-z])(S|M|L)([^A-Za-z]|$)'; then
+    echo "❌ BLOQUEADO: las líneas añadidas del diff staged contienen etiquetas de talla (S, M, L) en texto plano. Usa constantes o enumeraciones en su lugar." >&2
     exit 1
   fi
 
-  # 2. Detecta patrones de Shopify Admin Token (shpat_ o shpca_ como prefijo).
-  if echo "$STAGED_DIFF" | grep -qE 'shp(at|ca)_[A-Za-z0-9_-]{10,}'; then
-    echo "❌ BLOQUEADO: se ha detectado un posible Shopify Admin Token en el diff staged. Retira el secreto del código antes de continuar." >&2
+  # 2. Detecta patrones de Shopify Admin Token (shpat_ o shpca_ como prefijo)
+  # únicamente en líneas añadidas del diff staged.
+  if echo "$ADDED_STAGED_DIFF" | grep -qE 'shp(at|ca)_[A-Za-z0-9_-]{10,}'; then
+    echo "❌ BLOQUEADO: se ha detectado un posible Shopify Admin Token en las líneas añadidas del diff staged. Retira el secreto del código antes de continuar." >&2
     exit 1
   fi
 
