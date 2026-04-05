@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { createPerfectCheckout } from "./lib/shopifyCheckout";
 import "./index.css";
 import "./App.css";
 
@@ -123,46 +124,7 @@ async function postBetaWaitlist(code?: string): Promise<void> {
   }
 }
 
-async function postPerfectCheckout(fabricSensation: string, code?: string): Promise<void> {
-  try {
-    const payload: Record<string, unknown> = {
-      fabric_sensation: fabricSensation,
-      protocol: "zero_size",
-      shopping_flow: "non_stop_card",
-      anti_accumulation: true,
-      single_size_certitude: true,
-    };
-    if (code) payload.code = code;
-    const r = await fetch("/api/v1/checkout/perfect-selection", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!r.ok) return;
-    const j = (await r.json()) as {
-      emotional_seal?: string;
-      checkout_primary_url?: string;
-      checkout_shopify_url?: string;
-      checkout_amazon_url?: string;
-    };
-    if (j.emotional_seal) {
-      window.alert(j.emotional_seal);
-    }
-    const primary = j.checkout_primary_url?.trim();
-    const shop = j.checkout_shopify_url?.trim();
-    const amz = j.checkout_amazon_url?.trim();
-    const url = primary || shop || amz;
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    } else if (!j.emotional_seal) {
-      window.alert(
-        "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
-      );
-    }
-  } catch {
-    /* silencieux */
-  }
-}
+
 
 export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
@@ -202,7 +164,7 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
-      void postPerfectCheckout(elasticLabel, urlCode);
+      void createPerfectCheckout(elasticLabel, elasticLabel, urlCode);
       return;
     }
     void postLead(key, urlCode);
