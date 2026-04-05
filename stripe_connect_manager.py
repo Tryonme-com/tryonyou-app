@@ -10,8 +10,9 @@ Bajo Protocolo de Soberanía V10 — Founder: Rubén Espinar Rodríguez
 
 from __future__ import annotations
 
+import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import stripe
@@ -200,6 +201,116 @@ class TryOnYouOrchestrator:
             params["cancel_url"] = cancel_url
         session = client.checkout.sessions.create(**params)
         return session.url
+
+    def prepare_bpi_evidence(
+        self,
+        days: int = 90,
+        limit: int = 100,
+        output_path: Optional[str] = None,
+    ) -> dict:
+        """Genera un JSON de evidencia con los pagos exitosos de Stripe para Bpifrance.
+
+        Consulta PaymentIntents con status ``succeeded`` de los últimos *days* días,
+        extrae la información relevante (importe, moneda, fecha, comisión de plataforma,
+        destino Connect) y construye un dossier listo para adjuntar al expediente BPI.
+
+        Args:
+            days: Ventana temporal hacia atrás (por defecto 90 días).
+            limit: Máximo de registros por página de la API (100 máx Stripe).
+            output_path: Si se indica, escribe el JSON a disco.
+
+        Returns:
+            dict con la estructura completa de evidencia.
+        """
+        client = _require_client()
+
+        now = datetime.now(timezone.utc)
+        since = now - timedelta(days=days)
+        created_gte = int(since.timestamp())
+
+        transactions: list[dict] = []
+        total_revenue_cents = 0
+        total_fees_cents = 0
+        currency_set: set[str] = set()
+
+        has_more = True
+        starting_after: Optional[str] = None
+
+        while has_more:
+            params: dict = {
+                "limit": min(limit, 100),
+                "created": {"gte": created_gte},
+            }
+            if starting_after:
+                params["starting_after"] = starting_after
+
+            page = client.payment_intents.list(**params)
+
+            for pi in page.data:
+                if pi.status != "succeeded":
+                    continue
+
+                fee_amount = 0
+                if hasattr(pi, "application_fee_amount") and pi.application_fee_amount:
+                    fee_amount = pi.application_fee_amount
+
+                destination = None
+                if hasattr(pi, "transfer_data") and pi.transfer_data:
+                    destination = getattr(pi.transfer_data, "destination", None)
+
+                tx = {
+                    "payment_intent_id": pi.id,
+                    "amount_cents": pi.amount,
+                    "currency": pi.currency,
+                    "created": datetime.fromtimestamp(
+                        pi.created, tz=timezone.utc
+                    ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "description": pi.description or "",
+                    "platform_fee_cents": fee_amount,
+                    "destination_account": destination,
+                }
+                transactions.append(tx)
+                total_revenue_cents += pi.amount
+                total_fees_cents += fee_amount
+                currency_set.add(pi.currency)
+
+            has_more = page.has_more
+            if has_more and page.data:
+                starting_after = page.data[-1].id
+
+        primary_currency = "eur"
+        if currency_set:
+            primary_currency = "eur" if "eur" in currency_set else next(iter(currency_set))
+
+        solvency = self.generate_bpi_report()
+
+        evidence = {
+            "meta": {
+                "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "dossier_bpi": BPI_DOSSIER_ID,
+                "period_days": days,
+                "period_from": since.strftime("%Y-%m-%d"),
+                "period_to": now.strftime("%Y-%m-%d"),
+                "stripe_mode": "TEST" if _test_mode else "LIVE",
+            },
+            "summary": {
+                "total_succeeded_transactions": len(transactions),
+                "total_revenue_cents": total_revenue_cents,
+                "total_revenue_display": f"{total_revenue_cents / 100:.2f} {primary_currency.upper()}",
+                "total_platform_fees_cents": total_fees_cents,
+                "total_platform_fees_display": f"{total_fees_cents / 100:.2f} {primary_currency.upper()}",
+                "currencies": sorted(currency_set),
+            },
+            "solvency_snapshot": solvency,
+            "transactions": transactions,
+        }
+
+        if output_path:
+            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(evidence, f, ensure_ascii=False, indent=2)
+
+        return evidence
 
     @staticmethod
     def handle_v2_thin_event(event_id: str) -> dict:

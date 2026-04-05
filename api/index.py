@@ -219,6 +219,16 @@ async def bpifrance_solvency_report():
     return {"success": True, "report": _orchestrator.generate_bpi_report()}
 
 
+@app.get("/api/stripe/bpifrance/evidence")
+async def bpifrance_evidence(days: int = 90, limit: int = 100):
+    """Genera evidencia de facturación Jules AI para Bpifrance (pagos exitosos de Stripe)."""
+    try:
+        evidence = _orchestrator.prepare_bpi_evidence(days=days, limit=limit)
+        return {"success": True, "evidence": evidence}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/stripe/lafayette/checkout")
 async def lafayette_checkout(req: LafayetteCheckoutRequest):
     """Crea Checkout Session para el cobro Pack Empire Lafayette con Destination Charge + comisión 5 %."""
