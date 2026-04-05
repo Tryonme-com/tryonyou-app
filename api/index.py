@@ -1,17 +1,27 @@
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import hashlib
+import os
 import sys
 from pathlib import Path
 
 _api_dir = Path(__file__).resolve().parent
-if str(_api_dir) not in sys.path:
-    sys.path.insert(0, str(_api_dir))
+_root_dir = _api_dir.parent
+for _p in (_api_dir, _root_dir):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 from shopify_bridge import resolve_shopify_checkout_url
+from stripe_connect_manager import (
+    TryOnYouManager,
+    TryOnYouOrchestrator,
+    WEBHOOK_SECRET,
+    stripe_client,
+)
 
 # Configuración de la aplicación
 app = FastAPI(title="TryOnYou API", version="1.0.0")
@@ -85,6 +95,168 @@ async def perfect_checkout_selection(data: dict):
         result["checkout_primary_url"] = url
         result["checkout_shopify_url"] = url
     return result
+
+# ---------------------------------------------------------------------------
+# Stripe Connect — Plataforma de pagos
+# ---------------------------------------------------------------------------
+
+_stripe_manager = TryOnYouManager()
+
+
+class ConnectAccountRequest(BaseModel):
+    email: str
+    name: str
+
+
+class OnboardingLinkRequest(BaseModel):
+    account_id: str
+    return_url: str
+
+
+class CheckoutRequest(BaseModel):
+    price_id: str
+    destination_account: str
+    success_url: Optional[str] = "https://tryonyou.com/success"
+    cancel_url: Optional[str] = None
+
+
+@app.post("/api/stripe/connect/create-account")
+async def stripe_create_account(req: ConnectAccountRequest):
+    """Crea una cuenta Stripe Connect V2 para un vendedor."""
+    try:
+        account_id = _stripe_manager.create_connected_account(req.email, req.name)
+        return {"success": True, "account_id": account_id}
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe/connect/onboarding-link")
+async def stripe_onboarding_link(req: OnboardingLinkRequest):
+    """Genera un link de onboarding para completar la verificación del vendedor."""
+    try:
+        url = _stripe_manager.get_onboarding_link(req.account_id, req.return_url)
+        return {"success": True, "url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stripe/connect/account-status/{account_id}")
+async def stripe_account_status(account_id: str):
+    """Verifica el estado de una cuenta Connect (transferencias activas, onboarding)."""
+    try:
+        status = _stripe_manager.check_account_status(account_id)
+        return {"success": True, **status}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe/checkout/create-session")
+async def stripe_create_checkout(req: CheckoutRequest):
+    """Crea una Checkout Session con Destination Charge y comisión de plataforma."""
+    try:
+        url = _stripe_manager.create_checkout_session(
+            price_id=req.price_id,
+            destination_account=req.destination_account,
+            success_url=req.success_url or "https://tryonyou.com/success",
+            cancel_url=req.cancel_url,
+        )
+        return {"success": True, "checkout_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Recibe eventos de Stripe (webhooks) y procesa los relevantes."""
+    import stripe as _stripe
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    if not WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+
+    try:
+        event = _stripe.Webhook.construct_event(payload, sig_header, WEBHOOK_SECRET)
+    except _stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    event_type = event.get("type", "")
+
+    if event_type == "checkout.session.completed":
+        session = event["data"]["object"]
+        return JSONResponse(
+            {"received": True, "type": event_type, "session_id": session.get("id")}
+        )
+
+    if event_type == "account.updated":
+        account = event["data"]["object"]
+        return JSONResponse(
+            {"received": True, "type": event_type, "account_id": account.get("id")}
+        )
+
+    return JSONResponse({"received": True, "type": event_type})
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator — Lafayette + Bpifrance
+# ---------------------------------------------------------------------------
+
+_orchestrator = TryOnYouOrchestrator()
+
+
+class LafayetteCheckoutRequest(BaseModel):
+    destination_account: str
+    success_url: Optional[str] = "https://tryonyou.com/success"
+    cancel_url: Optional[str] = None
+
+
+@app.get("/api/stripe/bpifrance/solvency-report")
+async def bpifrance_solvency_report():
+    """Genera el reporte de solvencia para Bpifrance vinculado a activos y contrato Lafayette."""
+    return {"success": True, "report": _orchestrator.generate_bpi_report()}
+
+
+@app.get("/api/stripe/bpifrance/evidence")
+async def bpifrance_evidence(days: int = 90, limit: int = 100):
+    """Genera evidencia de facturación Jules AI para Bpifrance (pagos exitosos de Stripe)."""
+    try:
+        evidence = _orchestrator.prepare_bpi_evidence(days=days, limit=limit)
+        return {"success": True, "evidence": evidence}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe/lafayette/checkout")
+async def lafayette_checkout(req: LafayetteCheckoutRequest):
+    """Crea Checkout Session para el cobro Pack Empire Lafayette con Destination Charge + comisión 5 %."""
+    try:
+        url = _orchestrator.create_lafayette_checkout(
+            destination_account=req.destination_account,
+            success_url=req.success_url or "https://tryonyou.com/success",
+            cancel_url=req.cancel_url,
+        )
+        report = _orchestrator.generate_bpi_report()
+        return {"success": True, "checkout_url": url, "solvency_report": report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class V2EventRequest(BaseModel):
+    event_id: str
+
+
+@app.post("/api/stripe/v2/process-event")
+async def process_v2_event(req: V2EventRequest):
+    """Recupera y procesa un Thin Event de la API V2 de Stripe."""
+    try:
+        result = TryOnYouOrchestrator.handle_v2_thin_event(req.event_id)
+        return {"success": True, **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Adaptador para Vercel (si es necesario)
 # handler = app
