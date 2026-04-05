@@ -45,6 +45,8 @@ jobs:
           VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
           VITE_STRIPE_LINK_SOVEREIGNTY_4_5M: ${{ secrets.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M }}
           VITE_STRIPE_LINK_SOVEREIGNTY_98K: ${{ secrets.VITE_STRIPE_LINK_SOVEREIGNTY_98K }}
+          VITE_SHOP_DOMAIN: ${{ secrets.VITE_SHOP_DOMAIN }}
+          VITE_SHOP_VARIANT: ${{ secrets.VITE_SHOP_VARIANT }}
         run: npm run build
 
       - name: Upload build artifact
