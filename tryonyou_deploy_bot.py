@@ -39,7 +39,7 @@ def initialize_tryonyou_bot(token: str) -> None:
         bot = telebot.TeleBot(token)
 
         @bot.message_handler(commands=["start", "help"])
-        def send_welcome(message: telebot.types.Message) -> None:  # type: ignore[name-defined]
+        def send_welcome(message: object) -> None:
             bot.reply_to(message, WELCOME_MESSAGE)
 
         print("Conexión establecida con @tryonyou_deploy_bot")
