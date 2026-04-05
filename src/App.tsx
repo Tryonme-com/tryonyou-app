@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { DivineMirror } from "./components/DivineMirror";
+import { useSovereignty } from "./hooks/useSovereignty";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { createPerfectCheckout } from "./lib/shopifyCheckout";
 import "./index.css";
@@ -132,6 +134,8 @@ export default function App() {
   const [emailHero, setEmailHero] = useState<string>("");
   const urlCode = getUrlCode();
 
+  const { state: sovereigntyState, startScan, lockIdentity, finish } = useSovereignty();
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -178,17 +182,28 @@ export default function App() {
   };
 
   const theSnap = () => {
-    void (async () => {
-      const j = await postMirrorSnap(
-        elasticLabel,
-        elasticLabelToVerdict(elasticLabel),
-        urlCode,
-      );
-      const msg =
-        j?.jules_msg ??
-        "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
-      window.alert(msg);
-    })();
+    startScan();
+
+    // Simulación de Criba de Datos en us-west1 (2s)
+    setTimeout(() => {
+      lockIdentity('#E60000'); // Rojo Valentino
+    }, 2000);
+
+    // Finalización: Redirección a Shopify (3.5s)
+    setTimeout(() => {
+      finish();
+      void (async () => {
+        const j = await postMirrorSnap(
+          elasticLabel,
+          elasticLabelToVerdict(elasticLabel),
+          urlCode,
+        );
+        const msg =
+          j?.jules_msg ??
+          "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
+        window.alert(msg);
+      })();
+    }, 3500);
   };
 
   const onHeroSubmit = async () => {
@@ -365,6 +380,11 @@ export default function App() {
               Únete a la beta
             </button>
           }
+        />
+
+        <DivineMirror
+          status={sovereigntyState.status}
+          identity={sovereigntyState.identity}
         />
 
         <div className="app-pau-row">
