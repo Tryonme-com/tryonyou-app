@@ -2,10 +2,11 @@
 # TRYONYOU_SUPERCOMMIT_MAX — Agente 70: Ignición Total.
 #
 # Flujo:
-#   1. Limpia la caché de Vite (node_modules/.vite y dist/).
-#   2. Verifica que VITE_SHOP_VARIANT esté definida.
+#   1. Verifica que VITE_SHOP_VARIANT esté definida.
+#   2. Limpia la caché de Vite (node_modules/.vite y dist/).
 #   3. Delega el commit (con sellos obligatorios) en supercommit_max.sh.
-#   4. Si se pasa --deploy (o -d), despliega en Vercel con prioridad Soberana (--force).
+#   4. Si se pasa --deploy (o -d), esa opción se reenvía a supercommit_max.sh;
+#      este script no añade --force automáticamente.
 #
 # Opciones propias:
 #   --skip-env-check   Omite la verificación de VITE_SHOP_VARIANT (útil en CI que inyecta la var tarde).
