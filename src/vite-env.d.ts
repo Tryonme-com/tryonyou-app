@@ -1,0 +1,23 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_JULES_API_KEY?: string;
+  readonly VITE_GOOGLE_API_KEY?: string;
+  readonly VITE_STORE_DOMAIN?: string;
+  readonly VITE_SHOPIFY_PERFECT_CHECKOUT_URL?: string;
+  readonly VITE_SHOPIFY_ZERO_SIZE_VARIANT_ID?: string;
+  readonly VITE_PATENT_ID?: string;
+  readonly VITE_STRIPE_LINK_SOVEREIGNTY_4_5M?: string;
+  readonly VITE_STRIPE_LINK_SOVEREIGNTY_98K?: string;
+  readonly VITE_FIREBASE_API_KEY?: string;
+  readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
+  readonly VITE_FIREBASE_PROJECT_ID?: string;
+  readonly VITE_FIREBASE_STORAGE_BUCKET?: string;
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string;
+  readonly VITE_FIREBASE_APP_ID?: string;
+  readonly VITE_FIREBASE_MEASUREMENT_ID?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

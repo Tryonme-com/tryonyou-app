@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { triggerPerfectSnap } from "./lib/checkoutEngine";
 import "./index.css";
 import "./App.css";
 
@@ -148,6 +149,15 @@ async function postPerfectCheckout(fabricSensation: string, code?: string): Prom
     if (j.emotional_seal) {
       window.alert(j.emotional_seal);
     }
+
+    // Client-side direct checkout: zero-friction same-tab redirect (no size lottery)
+    const snapVariantId = import.meta.env.VITE_SHOPIFY_ZERO_SIZE_VARIANT_ID;
+    if (snapVariantId) {
+      triggerPerfectSnap(snapVariantId, fabricSensation);
+      return;
+    }
+
+    // Fallback: use backend-resolved URL
     const primary = j.checkout_primary_url?.trim();
     const shop = j.checkout_shopify_url?.trim();
     const amz = j.checkout_amazon_url?.trim();
