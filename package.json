@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
+    "express": "^5.2.1",
+    "stripe": "^22.0.0",
     "@mediapipe/holistic": "^0.5.1675471629",
     "firebase": "^12.11.0",
     "framer-motion": "^12.38.0",
