@@ -42,6 +42,17 @@ _commit_stamps_ok() {
 }
 
 # ---------------------------------------------------------------------------
+# Cursor rules check — verifica que existan reglas .cursor/rules o .cursorrules
+# ---------------------------------------------------------------------------
+_check_cursor_rules() {
+  if [ -d "$ROOT/.cursor/rules" ] || [ -f "$ROOT/.cursorrules" ]; then
+    echo "✅ Reglas de Cursor verificadas (.cursor/rules)."
+  else
+    echo "⚠️  AVISO: No se encontraron reglas de Cursor (.cursor/rules o .cursorrules). Considera añadirlas." >&2
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Parse de opciones
 # ---------------------------------------------------------------------------
 DRY_RUN=0
@@ -69,6 +80,9 @@ if ! _commit_stamps_ok "$MSG"; then
   echo "   Uso: $0 [opciones] 'Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317'" >&2
   exit 1
 fi
+
+# Verificar reglas de Cursor
+_check_cursor_rules
 
 # ---------------------------------------------------------------------------
 # Helpers: run / dryrun
