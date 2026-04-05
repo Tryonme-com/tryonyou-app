@@ -57,16 +57,19 @@ export type InventoryMatch = {
 export async function postMirrorSnap(
   fabricSensation: string,
   fabricFitVerdict?: string,
+  code?: string,
 ): Promise<(JulesHandshake & { inventory_match?: InventoryMatch }) | null> {
   try {
+    const payload: Record<string, unknown> = {
+      ping: true,
+      fabric_sensation: fabricSensation,
+      fabric_fit_verdict: fabricFitVerdict ?? "",
+    };
+    if (code) payload.code = code;
     const r = await fetch("/api/v1/mirror/snap", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ping: true,
-        fabric_sensation: fabricSensation,
-        fabric_fit_verdict: fabricFitVerdict ?? "",
-      }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) return null;
     return (await r.json()) as JulesHandshake & {

@@ -14,6 +14,16 @@ type BunkerSyncResult =
   | { ok: true; data: unknown }
   | { ok: false; error: unknown };
 
+function getUrlCode(): string | undefined {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    return code && code.trim().length > 0 ? code.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function syncLeadsToBunker(
   payload: Record<string, unknown>,
 ): Promise<BunkerSyncResult> {
@@ -51,13 +61,14 @@ const OFRENDA_REVENUE_VALIDATION_EUR = 7500;
 /** Prioridad VetosCore para lista beta (Make + leads_empire/waitlist.json). */
 const BUNKER_BETA_PRIORITY = 0.92;
 
-async function postLead(intent: OfrendaKey): Promise<void> {
-  const payload = {
+async function postLead(intent: OfrendaKey, code?: string): Promise<void> {
+  const payload: Record<string, unknown> = {
     intent,
     source: "ofrenda_v10",
     protocol: "zero_size",
     revenue_validation: OFRENDA_REVENUE_VALIDATION_EUR,
   };
+  if (code) payload.code = code;
   const bunker = await syncLeadsToBunker(payload);
   if (!bunker.ok) {
     console.warn("Bunker sync no completada; no se envía el lead a /api/v1/leads.", bunker.error);
@@ -76,9 +87,9 @@ async function postLead(intent: OfrendaKey): Promise<void> {
   }
 }
 
-async function postBetaWaitlist(): Promise<void> {
+async function postBetaWaitlist(code?: string): Promise<void> {
   const email = window.prompt("Email (opcional) para la lista beta:", "") ?? "";
-  const payload = {
+  const payload: Record<string, unknown> = {
     email: email.trim() || undefined,
     source: "app_v10",
     priority: BUNKER_BETA_PRIORITY,
@@ -86,6 +97,7 @@ async function postBetaWaitlist(): Promise<void> {
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
     ts: new Date().toISOString(),
   };
+  if (code) payload.code = code;
   try {
     const r = await fetch("/api/bunker_full_orchestrator", {
       method: "POST",
@@ -111,18 +123,20 @@ async function postBetaWaitlist(): Promise<void> {
   }
 }
 
-async function postPerfectCheckout(fabricSensation: string): Promise<void> {
+async function postPerfectCheckout(fabricSensation: string, code?: string): Promise<void> {
   try {
+    const payload: Record<string, unknown> = {
+      fabric_sensation: fabricSensation,
+      protocol: "zero_size",
+      shopping_flow: "non_stop_card",
+      anti_accumulation: true,
+      single_size_certitude: true,
+    };
+    if (code) payload.code = code;
     const r = await fetch("/api/v1/checkout/perfect-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fabric_sensation: fabricSensation,
-        protocol: "zero_size",
-        shopping_flow: "non_stop_card",
-        anti_accumulation: true,
-        single_size_certitude: true,
-      }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) return;
     const j = (await r.json()) as {
@@ -154,6 +168,7 @@ export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
+  const urlCode = getUrlCode();
 
   useEffect(() => {
     let cancelled = false;
@@ -187,10 +202,10 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
-      void postPerfectCheckout(elasticLabel);
+      void postPerfectCheckout(elasticLabel, urlCode);
       return;
     }
-    void postLead(key);
+    void postLead(key, urlCode);
     const copy: Record<Exclude<OfrendaKey, "selection">, string> = {
       reserve: "QR cabine VIP — Lafayette, essai en courtoisie Divineo.",
       combo: "Lignes alternatives chargées — composition Zero-Size.",
@@ -205,6 +220,7 @@ export default function App() {
       const j = await postMirrorSnap(
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
+        urlCode,
       );
       const msg =
         j?.jules_msg ??
@@ -219,7 +235,7 @@ export default function App() {
       email.length > 0 ? email : window.prompt("Email para probarla hoy:", "") ?? "";
     const finalEmail = normalized.trim();
     if (!finalEmail) return;
-    const payload = {
+    const payload: Record<string, unknown> = {
       email: finalEmail,
       source: "hero_above_the_fold",
       priority: BUNKER_BETA_PRIORITY,
@@ -227,6 +243,7 @@ export default function App() {
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       ts: new Date().toISOString(),
     };
+    if (urlCode) payload.code = urlCode;
     try {
       const r = await fetch("/api/bunker_full_orchestrator", {
         method: "POST",
@@ -369,7 +386,7 @@ export default function App() {
           headerExtra={
             <button
               type="button"
-              onClick={() => void postBetaWaitlist()}
+              onClick={() => void postBetaWaitlist(urlCode)}
               style={{
                 marginTop: 14,
                 padding: "8px 18px",
