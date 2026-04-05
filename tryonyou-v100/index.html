@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TRYONYOU × DIVINEO V100</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <style>
+    :root { --gold: #D4AF37; --black: #000; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--black); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
+    #container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    #container video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    #container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+    header {
+      position: fixed; top: 0; width: 100%; z-index: 100; padding: 30px;
+      text-align: center; background: linear-gradient(to bottom, black, transparent);
+    }
+    .brands { display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); }
+    .hero {
+      position: absolute; top: 25%; width: 100%; text-align: center; z-index: 10; pointer-events: none;
+    }
+    .hero h1 { font-size: 2rem; letter-spacing: 10px; text-transform: uppercase; font-weight: 100; }
+    .nav-bottom {
+      position: fixed; bottom: 0; width: 100%; z-index: 100;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+    }
+    .btn {
+      position: relative; z-index: 100;
+      padding: 20px 10px; border: 0.5px solid #222; color: white;
+      font-size: 0.6rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
+    }
+    .btn:hover { background: var(--gold); color: black; }
+    .pay-bar {
+      position: relative; z-index: 100;
+      grid-column: span 3; background: var(--gold); color: black;
+      font-weight: bold; text-align: center; padding: 25px; font-size: 0.8rem; cursor: pointer;
+    }
+    footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-size: 0.4rem; color: #555; z-index: 90; }
+    #root { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+    #root .app-ui { pointer-events: none; }
+    #root .app-ui > * { pointer-events: auto; }
+  </style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing: 10px; font-size: 1rem;">TRYONYOU V100</div>
+  <div class="brands"><span>BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
+</header>
+<div class="hero">
+  <h1>STOP THE <span style="color:var(--gold)">FAKE FIT</span></h1>
+  <p style="font-size:0.7rem; margin-top:10px; letter-spacing:4px;">DIVINEO V100</p>
+</div>
+<div id="container">
+  <video id="input_video" playsinline muted></video>
+  <canvas id="output_canvas"></canvas>
+</div>
+<footer>SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317</footer>
+<div class="nav-bottom">
+  <div class="btn" onclick="location.reload()">Solidaire</div>
+  <div class="btn" onclick="location.reload()">Intelligent</div>
+  <div class="btn" onclick="location.reload()">Museum</div>
+  <div class="pay-bar">
+    ESPEJO DIVINEO V100 — SNAP
+  </div>
+</div>
+<div id="root"></div>
+<script>
+(function(){
+  var GOLD="#D4AF37";
+  var ALPHA=0.22;
+  var ema=0.5;
+  function dist2(a,b){var dx=a.x-b.x;var dy=a.y-b.y;return Math.hypot(dx,dy);}
+  function computeElasticityRatio(lm){if(!lm||lm.length<25)return 0.5;var s=dist2(lm[11],lm[12]);var h=dist2(lm[23],lm[24]);return s/Math.max(h,1e-6);}
+  function fabricFitComparator(e,b){b=b||[0.82,1.18];if(e>=b[0]&&e<=b[1])return "aligned";if(e<b[0])return "drape_bias";return "tension_bias";}
+  function verdictToUiLabel(v){if(v==="aligned")return "Cohérence drape — tenue";if(v==="drape_bias")return "Préférence drapé";if(v==="tension_bias")return "Préférence tenue";return "Analyse en cours";}
+  function drawConn(ctx,lm,pairs,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=2;for(var i=0;i<pairs.length;i++){var a=pairs[i][0],b=pairs[i][1];var pa=lm[a],pb=lm[b];if(!pa||!pb)continue;ctx.beginPath();ctx.moveTo(pa.x*w,pa.y*h);ctx.lineTo(pb.x*w,pb.y*h);ctx.stroke();}}
+  function drawLm(ctx,lm,w,h,c){ctx.fillStyle=c;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.visibility!==undefined&&p.visibility<0.45)continue;ctx.beginPath();ctx.arc(p.x*w,p.y*h,2,0,Math.PI*2);ctx.fill();}}
+  var videoElement=document.getElementById("input_video");
+  var canvasElement=document.getElementById("output_canvas");
+  if(!videoElement||!canvasElement)return;
+  var canvasCtx=canvasElement.getContext("2d");
+  if(!canvasCtx)return;
+  var PoseCtor=window.Pose;
+  var CameraCtor=window.Camera;
+  var POSE_CONNECTIONS=window.POSE_CONNECTIONS;
+  if(!PoseCtor||!CameraCtor||!POSE_CONNECTIONS)return;
+  function resize(){canvasElement.width=window.innerWidth;canvasElement.height=window.innerHeight;}
+  window.addEventListener("resize",resize);
+  resize();
+  function onResults(results){
+    var w=canvasElement.width,h=canvasElement.height;
+    canvasCtx.save();
+    canvasCtx.clearRect(0,0,w,h);
+    if(results.image)canvasCtx.drawImage(results.image,0,0,w,h);
+    if(results.poseLandmarks&&results.poseLandmarks.length>=33){
+      var ratio=computeElasticityRatio(results.poseLandmarks);
+      ema=ALPHA*ratio+(1-ALPHA)*ema;
+      var v=fabricFitComparator(ema);
+      var label=verdictToUiLabel(v);
+      try{window.dispatchEvent(new CustomEvent("tryonyou:fit",{detail:{label:label}}));}catch(e){}
+      drawConn(canvasCtx,results.poseLandmarks,POSE_CONNECTIONS,w,h,GOLD);
+      drawLm(canvasCtx,results.poseLandmarks,w,h,GOLD);
+    }
+    canvasCtx.restore();
+  }
+  var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
+  pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
+  pose.onResults(onResults);
+  var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
+  camera.start().catch(function(){});
+})();
+</script>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
