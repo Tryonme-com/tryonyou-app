@@ -327,11 +327,8 @@ class TryOnYouOrchestrator:
 
         if event.type == "v2.core.account[requirements].updated":
             result["action"] = "requirements_updated"
-            result["account_id"] = getattr(
-                getattr(event, "data", None), "object", {}
-            )
-            if hasattr(result["account_id"], "id"):
-                result["account_id"] = result["account_id"].id
+            account_object = getattr(getattr(event, "data", None), "object", None)
+            result["account_id"] = getattr(account_object, "id", None)
 
         return result
 
