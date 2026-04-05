@@ -440,18 +440,22 @@ export default function App() {
         />
 
         <div className="app-pau-row">
-          <button
-            type="button"
-            className="app-pau"
-            onClick={theSnap}
-            title="P.A.U."
-            aria-label="P.A.U. — snap et orchestration Jules"
-          >
-            <video autoPlay loop muted playsInline preload="auto">
-              <source src="/videos/pau_transparent.webm" type="video/webm" />
-              <source src="/videos/pau_transparent.mp4" type="video/mp4" />
-            </video>
-          </button>
+          <div className="pau-guide-container">
+            <span className="pau-guide-ring" aria-hidden />
+            <button
+              type="button"
+              className="app-pau"
+              onClick={theSnap}
+              title="P.A.U."
+              aria-label="P.A.U. — snap et orchestration Jules"
+            >
+              <video autoPlay loop muted playsInline preload="auto">
+                <source src="/videos/pau_transparent.webm" type="video/webm" />
+                <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+              </video>
+            </button>
+            <span className="pau-guide-label">The Snap</span>
+          </div>
         </div>
 
         <nav
