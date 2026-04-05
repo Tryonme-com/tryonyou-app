@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
+import { createPerfectCheckout } from "./shopifyCheckout.js";
 
 function App() {
   const [elasticLabel, setElasticLabel] = useState("Analyse en cours…");
   const [snapDone, setSnapDone] = useState(false);
+  const [biometricHash, setBiometricHash] = useState("");
 
   useEffect(() => {
     const onFit = (e) => {
       const label = e.detail?.label;
       if (typeof label === "string" && label.length > 0) {
         setElasticLabel(label);
+      }
+      const hash = e.detail?.biometricHash;
+      if (typeof hash === "string" && hash.length > 0) {
+        setBiometricHash(hash);
       }
     };
     window.addEventListener("tryonyou:fit", onFit);
@@ -17,6 +23,8 @@ function App() {
 
   const handleSnap = () => {
     setSnapDone(true);
+    const hash = biometricHash || `tryonyou-${Date.now()}`;
+    createPerfectCheckout(hash);
     setTimeout(() => setSnapDone(false), 2000);
   };
 
