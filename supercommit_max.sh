@@ -122,7 +122,7 @@ if [ "$did_commit" -eq 1 ]; then
   echo "📤 Commit creado — haciendo push..."
   _push
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
-  ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
+  ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || true)"
   ahead="${ahead:-0}"
   case "$ahead" in
     *[!0-9]*) ahead=0 ;;

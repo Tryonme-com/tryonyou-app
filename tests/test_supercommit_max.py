@@ -69,7 +69,7 @@ class TestStampValidation(unittest.TestCase):
         self.assertIn("PCT/EP2025/067317", result.stderr)
 
     def test_rejects_empty_message(self) -> None:
-        # Un mensaje sin sellos explícito debe ser rechazado
+        # Un mensaje sin sellos debe ser rechazado explícitamente
         result = _run("--dry-run", "sin-sellos-aqui")
         self.assertNotEqual(result.returncode, 0)
 
