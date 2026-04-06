@@ -1,5 +1,8 @@
 .vercel
 
+# Node (evitar que git add -A incluya dependencias locales)
+node_modules/
+
 # Secretos y entorno local
 .env
 .env.*
