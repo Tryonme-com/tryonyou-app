@@ -4,7 +4,7 @@ Envío Soberano — SMTP Gmail con credenciales solo en entorno (nunca en el rep
   export EMAIL_USER='ruben@tryonyou.app'
   export EMAIL_PASS='xxxx xxxx xxxx xxxx'   # App Password de Google
   # o E50_SMTP_USER / E50_SMTP_PASS
-  # Opcional (p. ej. bloque Lafayette): SMTP_HOST, SMTP_PORT, REMITENTE
+  # Opcional: SMTP_HOST, SMTP_PORT, REMITENTE (cabecera From; suele coincidir con EMAIL_USER)
 
   python3 enviar_correo_soberano.py --dry-run
   python3 enviar_correo_soberano.py --printemps email@printemps.fr
@@ -55,29 +55,6 @@ def _creds() -> tuple[str, str]:
     return user, password
 
 
-def _smtp_host_from_env() -> str:
-    h = (os.environ.get("SMTP_HOST") or os.environ.get("E50_SMTP_HOST") or "").strip()
-    return h or "smtp.gmail.com"
-
-
-def _smtp_port_from_env() -> int:
-    raw = (os.environ.get("SMTP_PORT") or os.environ.get("E50_SMTP_PORT") or "").strip() or "587"
-    try:
-        p = int(raw, 10)
-        return p if p > 0 else 587
-    except ValueError:
-        return 587
-
-
-def _remitente_from_env() -> str | None:
-    r = (
-        os.environ.get("REMITENTE", "").strip()
-        or os.environ.get("EMAIL_FROM", "").strip()
-        or os.environ.get("SMTP_FROM", "").strip()
-    )
-    return r or None
-
-
 def cuerpo_printemps() -> str:
     return """\
 Monsieur/Madame,
@@ -123,9 +100,9 @@ def enviar_correo_soberano(
     dry_run: bool = False,
 ) -> bool:
     user, password = _creds()
-    host = (smtp_host if smtp_host is not None else _smtp_host_from_env()).strip()
-    port = int(smtp_port) if smtp_port is not None else _smtp_port_from_env()
-    from_addr = (remitente or _remitente_from_env() or user).strip()
+    eff_host = _smtp_host(smtp_host)
+    eff_port = _smtp_port(smtp_port)
+    from_addr = (_remitente_env(remitente) or user).strip()
     # SMTP LOGIN usa la cuenta real; el remitente en cabecera puede venir solo de `remitente`.
     login_user = (user or from_addr).strip()
     if not from_addr or not password or not login_user:
@@ -145,7 +122,7 @@ def enviar_correo_soberano(
     msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
 
     try:
-        with smtplib.SMTP(host, port, timeout=30) as server:
+        with smtplib.SMTP(eff_host, eff_port, timeout=30) as server:
             server.starttls()
             server.login(login_user, password)
             server.sendmail(from_addr, [destinatario.strip()], msg.as_string())
