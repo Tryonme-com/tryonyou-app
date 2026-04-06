@@ -1,8 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import {
+  initFirebaseApplet,
+  initFirebaseAnalytics,
+  initFirebaseAppCheckIfConfigured,
+} from "./lib/firebaseApplet";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
+
+/** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais). */
+const PAU_POSTAL_NODES = new Set(["75009", "75004"]);
+
+function readPostalFromWindowOrUrl(): string {
+  const w = window as Window & { __TRYONYOU_POSTAL__?: string };
+  const fromGlobal = (w.__TRYONYOU_POSTAL__ || "").trim();
+  if (/^\d{5}$/.test(fromGlobal)) return fromGlobal;
+  try {
+    const u = new URL(window.location.href);
+    const q = (u.searchParams.get("postal") || u.searchParams.get("cp") || "").trim();
+    if (/^\d{5}$/.test(q)) return q;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+/**
+ * UserCheck truthy → autorizado (App Check debug + Pau).
+ * Código postal 75009 o 75004 (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
+ */
+function isPauAuthorized(): boolean {
+  const w = window as Window & { UserCheck?: unknown };
+  const uc = w.UserCheck;
+  if (uc != null && uc !== false && uc !== "") return true;
+  const postal = readPostalFromWindowOrUrl();
+  return PAU_POSTAL_NODES.has(postal);
+}
 
 function elasticLabelToVerdict(label: string): string {
   if (label.includes("Préférence drapé")) return "drape_bias";
@@ -48,9 +82,6 @@ async function syncLeadsToBunker(
 /** Umbral Bpifrance / Mesa: explícito en payload (el API no asume 7500 por defecto). */
 const OFRENDA_REVENUE_VALIDATION_EUR = 7500;
 
-/** Prioridad VetosCore para lista beta (Make + leads_empire/waitlist.json). */
-const BUNKER_BETA_PRIORITY = 0.92;
-
 async function postLead(intent: OfrendaKey): Promise<void> {
   const payload = {
     intent,
@@ -81,13 +112,11 @@ async function postBetaWaitlist(): Promise<void> {
   const payload = {
     email: email.trim() || undefined,
     source: "app_v10",
-    priority: BUNKER_BETA_PRIORITY,
-    vetos_priority: BUNKER_BETA_PRIORITY,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
     ts: new Date().toISOString(),
   };
   try {
-    const r = await fetch("/api/bunker_full_orchestrator", {
+    const r = await fetch("/api/waitlist_beta", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -95,7 +124,6 @@ async function postBetaWaitlist(): Promise<void> {
     const j = (await r.json().catch(() => ({}))) as {
       waitlist_persisted?: boolean;
       make_ok?: boolean;
-      priority?: number;
     };
     if (!r.ok) {
       window.alert("Lista beta: error de API (revisa consola).");
@@ -103,8 +131,8 @@ async function postBetaWaitlist(): Promise<void> {
     }
     window.alert(
       j.waitlist_persisted
-        ? `Inscrito — Make + waitlist (prioridad ${j.priority ?? BUNKER_BETA_PRIORITY}).`
-        : `Make: ${j.make_ok ? "ok" : "no configurado / fallo"}. Waitlist puede ir a /tmp en serverless.`,
+        ? "Inscrito — Make + waitlist (leads_empire/waitlist.json o /tmp en Vercel)."
+        : `Webhook Make: ${j.make_ok ? "ok" : "no configurado / fallo"}. Persistencia limitada en serverless.`,
     );
   } catch {
     window.alert("Sin conexión al bunker API.");
@@ -201,6 +229,7 @@ export default function App() {
   };
 
   const theSnap = () => {
+    if (!pauStarted) return;
     void (async () => {
       const j = await postMirrorSnap(
         elasticLabel,
@@ -222,13 +251,11 @@ export default function App() {
     const payload = {
       email: finalEmail,
       source: "hero_above_the_fold",
-      priority: BUNKER_BETA_PRIORITY,
-      vetos_priority: BUNKER_BETA_PRIORITY,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       ts: new Date().toISOString(),
     };
     try {
-      const r = await fetch("/api/bunker_full_orchestrator", {
+      const r = await fetch("/api/waitlist_beta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -243,8 +270,8 @@ export default function App() {
       }
       window.alert(
         j.waitlist_persisted || j.make_ok
-          ? "Slot reservado — webhook Make y bunker confirmados. Te contactamos hoy."
-          : "Solicitud recibida; revisa MAKE_WEBHOOK_URL en Vercel si no llega la notificación.",
+          ? "Slot reservado. Te contactaremos para probarla hoy."
+          : "Hemos recibido tu solicitud. El bunker te confirmará en breve.",
       );
     } catch {
       window.alert("Sin conexión al bunker API.");
@@ -279,19 +306,6 @@ export default function App() {
             }}
           >
             TRYONYOU · DIVINEO
-          </p>
-          <p
-            style={{
-              fontSize: 13,
-              letterSpacing: 3,
-              textTransform: "uppercase",
-              color: "#D3B26A",
-              fontStyle: "italic",
-              marginBottom: 14,
-              marginTop: 0,
-            }}
-          >
-            Essayage Virtuel en France
           </p>
           <h1
             style={{
@@ -392,9 +406,18 @@ export default function App() {
           <button
             type="button"
             className="app-pau"
+            disabled={!pauStarted}
             onClick={theSnap}
-            title="P.A.U."
+            title={
+              pauStarted
+                ? "P.A.U. — Lafayette 75009 / Marais 75004 (o UserCheck)"
+                : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+            }
             aria-label="P.A.U. — snap et orchestration Jules"
+            style={{
+              opacity: pauStarted ? 1 : 0.55,
+              cursor: pauStarted ? "pointer" : "not-allowed",
+            }}
           >
             <video autoPlay loop muted playsInline preload="auto">
               <source src="/videos/pau_transparent.webm" type="video/webm" />

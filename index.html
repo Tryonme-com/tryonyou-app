@@ -1,7 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head><script id="sovereign-protocol-75009-fr">
+<head>
+<script id="tryonyou-pilot-nodes-usercheck">
+(function () {
+  try {
+    var u = new URL(window.location.href);
+    var p = (u.searchParams.get("postal") || u.searchParams.get("cp") || "").trim();
+    var h = (u.hostname || "").toLowerCase();
+    if (!/^\d{5}$/.test(p)) {
+      if (h.indexOf("lafayette") !== -1 || h.indexOf("haussmann") !== -1 || h.indexOf("75009") !== -1) p = "75009";
+      else if (h.indexOf("marais") !== -1 || h.indexOf("75004") !== -1) p = "75004";
+    }
+    if (/^\d{5}$/.test(p)) window.__TRYONYOU_POSTAL__ = p;
+    if (p === "75009" || p === "75004") window.UserCheck = true;
+  } catch (e) {}
+})();
+</script>
+<script id="sovereign-protocol-75009-fr">
 (function() {
+  if (window.UserCheck) return;
   var host = (window.location.hostname || "").toLowerCase();
   var targets = ["lafayette", "haussmann", "75009"];
   if (!targets.some(function(t) { return host.indexOf(t) !== -1; })) return;
