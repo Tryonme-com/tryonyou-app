@@ -1,10 +1,10 @@
-/** Inyectado en build por `vite.config.ts` desde LICENSE_PAID / VITE_LICENSE_PAID. */
-
+/**
+ * Licencia soberana vía VITE_LICENSE_PAID (Vite solo expone variables VITE_* al cliente).
+ */
 export function isSovereigntyLicenseActive(): boolean {
-  const raw =
-    typeof __TRYONYOU_LICENSE_PAID__ !== "undefined"
-      ? __TRYONYOU_LICENSE_PAID__
-      : "false";
-  const v = String(raw).toLowerCase().trim();
-  return v === "true" || v === "1" || v === "yes" || v === "on";
+  const raw = String(import.meta.env.VITE_LICENSE_PAID ?? "")
+    .toLowerCase()
+    .trim();
+  if (!raw) return false;
+  return raw === "true" || raw === "1" || raw === "yes" || raw === "on";
 }

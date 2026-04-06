@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
@@ -45,16 +51,23 @@ function readPostalFromWindowOrUrl(): string {
 function isPauAuthorized(): boolean {
   const w = window as Window & { UserCheck?: unknown };
   const uc = w.UserCheck;
-  if (uc != null && uc !== false && uc !== "") return true;
+  if (typeof uc === "object" && uc !== null) return true;
+  if (uc === true) return true;
   const postal = readPostalFromWindowOrUrl();
   return PAU_POSTAL_NODES.has(postal);
+}
+
+function userCheckPilotObjectComplete(uc: unknown): boolean {
+  if (typeof uc !== "object" || uc === null) return false;
+  const nodos = (uc as { nodos?: unknown }).nodos;
+  return Array.isArray(nodos) && nodos.length > 0;
 }
 
 /** Primera pasada: UserCheck soberano para App Check + Pau (sin esperar efectos). */
 function forceUserCheckIfPilotCold(): void {
   if (typeof window === "undefined") return;
   const win = window as Window & { UserCheck?: unknown };
-  if (win.UserCheck != null && win.UserCheck !== false && win.UserCheck !== "") return;
+  if (userCheckPilotObjectComplete(win.UserCheck)) return;
   const postal = readPostalFromWindowOrUrl();
   const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
   const loc: "75009" | "75004" =
@@ -247,7 +260,10 @@ export default function App() {
   const pauStarted = isPauAuthorized();
 
   useEffect(() => {
-    const id = window.setInterval(() => setPauDistrictTick((n) => n + 1), 900);
+    const id = window.setInterval(
+      () => setPauDistrictTick((n: number) => n + 1),
+      900,
+    );
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
@@ -256,7 +272,7 @@ export default function App() {
       launchMarais?: () => void;
     };
     const bumpPau = () => {
-      setPauDistrictTick((n) => n + 1);
+      setPauDistrictTick((n: number) => n + 1);
       const v = document.querySelector<HTMLVideoElement>(".app-pau video");
       void v?.play().catch(() => {});
     };
@@ -472,7 +488,9 @@ export default function App() {
             <input
               type="email"
               value={emailHero}
-              onChange={(e) => setEmailHero(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setEmailHero(e.target.value)
+              }
               placeholder="Tu email para probarla hoy"
               style={{
                 flex: "1 1 220px",
