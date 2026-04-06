@@ -13,18 +13,20 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-MSG="${1:-Protocolo Soberanía: mirror V10 sello Divineo + fallback CSS @CertezaAbsoluta @lo+erestu PCT/EP2025/067317}"
+MSG="${1:-Protocolo Soberanía V10: mirror + Pau Marais + Firebase applet @CertezaAbsoluta @lo+erestu PCT/EP2025/067317 Bajo Protocolo de Soberanía V10 - Founder: Rubén}"
 
-# Regla TryOnYou: todo commit debe llevar los tres sellos (mensaje custom o por defecto).
+# Regla TryOnYou: sellos + protocolo Stirpe Lafayette.
 _commit_stamps_ok() {
   local m="$1"
   [[ "$m" == *"@CertezaAbsoluta"* ]] || { echo "❌ Falta @CertezaAbsoluta en el mensaje de commit." >&2; return 1; }
   [[ "$m" == *"@lo+erestu"* ]] || { echo "❌ Falta @lo+erestu en el mensaje de commit." >&2; return 1; }
   [[ "$m" == *"PCT/EP2025/067317"* ]] || { echo "❌ Falta la patente PCT/EP2025/067317 en el mensaje de commit." >&2; return 1; }
+  [[ "$m" == *"Bajo Protocolo de Soberanía V10"* ]] || { echo "❌ Falta «Bajo Protocolo de Soberanía V10» en el mensaje de commit." >&2; return 1; }
+  [[ "$m" == *"Founder: Rubén"* ]] || { echo "❌ Falta «Founder: Rubén» en el mensaje de commit." >&2; return 1; }
   return 0
 }
 if ! _commit_stamps_ok "$MSG"; then
-  echo "   Uso: $0 'Tu título @CertezaAbsoluta @lo+erestu PCT/EP2025/067317'" >&2
+  echo "   Uso: $0 'Tu título @CertezaAbsoluta @lo+erestu PCT/EP2025/067317 Bajo Protocolo de Soberanía V10 - Founder: Rubén'" >&2
   exit 1
 fi
 
