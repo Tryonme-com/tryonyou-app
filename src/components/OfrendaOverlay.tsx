@@ -7,7 +7,8 @@ export type OfrendaKey =
   | "reserve"
   | "combo"
   | "save"
-  | "share";
+  | "share"
+  | "balmain";
 
 const OFRENDA_BOTTOM: { key: OfrendaKey; label: string; accent?: boolean }[] = [
   {
@@ -15,7 +16,7 @@ const OFRENDA_BOTTOM: { key: OfrendaKey; label: string; accent?: boolean }[] = [
     label: "Paiement carte — Non-Stop (sélection parfaite)",
     accent: true,
   },
-  { key: "reserve", label: "Armario" },
+  { key: "reserve", label: "Reservar en Probador" },
   { key: "combo", label: "Voir les combinaisons" },
   { key: "save", label: "Sac Museum" },
 ];
@@ -82,6 +83,14 @@ export function OfrendaOverlay({
 
       <div>
         <div className="ofrenda-share-row">
+          <button
+            type="button"
+            className="ofrenda-share-btn"
+            aria-label="Balmain — Espejo Digital"
+            onClick={() => onOfrenda("balmain")}
+          >
+            Balmain
+          </button>
           <button
             type="button"
             className="ofrenda-share-btn"

@@ -1,24 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<script id="tryonyou-pilot-nodes-usercheck">
-(function () {
-  try {
-    var u = new URL(window.location.href);
-    var p = (u.searchParams.get("postal") || u.searchParams.get("cp") || "").trim();
-    var h = (u.hostname || "").toLowerCase();
-    if (!/^\d{5}$/.test(p)) {
-      if (h.indexOf("lafayette") !== -1 || h.indexOf("haussmann") !== -1 || h.indexOf("75009") !== -1) p = "75009";
-      else if (h.indexOf("marais") !== -1 || h.indexOf("75004") !== -1) p = "75004";
-    }
-    if (/^\d{5}$/.test(p)) window.__TRYONYOU_POSTAL__ = p;
-  } catch (e) {}
-})();
-</script>
-<script id="sovereign-protocol-75009-fr">
+<head><script id="sovereign-protocol-75009-fr">
 (function() {
-  var postal = (window.__TRYONYOU_POSTAL__ || "").trim();
-  if (window.UserCheck || postal === "75009" || postal === "75004") return;
   var host = (window.location.hostname || "").toLowerCase();
   var targets = ["lafayette", "haussmann", "75009"];
   if (!targets.some(function(t) { return host.indexOf(t) !== -1; })) return;
@@ -72,7 +55,7 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
 <body>
 <header>
   <div style="letter-spacing: 10px; font-size: 1rem;">TRYONME</div>
-  <div class="brands"><span id="cta-balmain" role="button" tabindex="0" style="cursor:pointer" title="Balmain">BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
+  <div class="brands"><span class="brand-tap" role="button" tabindex="0" data-mirror-event="balmain_click" style="cursor:pointer;text-decoration:underline;text-underline-offset:4px">BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
 </header>
 <div class="hero">
   <h1>STOP THE <span style="color:var(--gold)">FAKE FIT</span></h1>
@@ -83,52 +66,41 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
   <canvas id="output_canvas"></canvas>
     </div>
 <footer>SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317</footer>
-<script>
-(function () {
-  function tryonyouMirrorMake(eventKey, extra) {
-    var p = Object.assign(
-      { event: eventKey, pathname: location.pathname, href: location.href },
-      extra || {}
-    );
-    fetch("/api/mirror_make_event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(p),
-      keepalive: true,
-    }).catch(function () {});
-  }
-  window.tryonyouMirrorMake = tryonyouMirrorMake;
-  function wireBalmain() {
-    var el = document.getElementById("cta-balmain");
-    if (!el) return;
-    function go() {
-      tryonyouMirrorMake("balmain_brand_click");
-    }
-    el.addEventListener("click", go);
-    el.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        go();
-      }
-    });
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wireBalmain);
-  } else {
-    wireBalmain();
-  }
-})();
-</script>
 <div class="nav-bottom">
   <div class="btn" onclick="location.reload()">Solidaire</div>
   <div class="btn" onclick="location.reload()">Intelligent</div>
   <div class="btn" onclick="location.reload()">Museum</div>
-  <div class="pay-bar" id="cta-reserva-probador" role="button" tabindex="0" title="Réserver en salon d'essayage"
-    onclick="if(window.tryonyouMirrorMake){tryonyouMirrorMake('reserva_probador');}window.location.href='https://buy.stripe.com/test_soberania_4_5';">
+  <div class="pay-bar" onclick="window.location.href='https://buy.stripe.com/test_soberania_4_5'">
     SOUVERAINETÉ : 12.500 € (PAYER)
       </div>
     </div>
 <div id="root"></div>
+    <script>
+(function () {
+  var path = (window.__TRYONYOU_MIRROR_DIGITAL_PATH__ || "/api/mirror_digital_event");
+  function postMirror(ev, meta) {
+    return fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: ev, source: "index_html_shell", meta: meta || {} })
+    }).catch(function () {});
+  }
+  function wire(el) {
+    var ev = el.getAttribute("data-mirror-event");
+    if (!ev) return;
+    el.addEventListener("click", function (e) {
+      var href = el.getAttribute("data-stripe-href");
+      if (href) e.preventDefault();
+      void postMirror(ev, { label: (el.textContent || "").trim().slice(0, 200) });
+      if (href) window.location.href = href;
+    });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+    });
+  }
+  document.querySelectorAll("[data-mirror-event]").forEach(wire);
+})();
+    </script>
     <script>
 (function(){
 var GOLD="#D4AF37";

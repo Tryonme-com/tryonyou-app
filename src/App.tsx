@@ -16,6 +16,7 @@ import {
 } from "./lib/firebaseApplet";
 import { getLafayetteStripeCheckoutUrl } from "./lib/lafayetteCheckout";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
 import "./index.css";
 import "./App.css";
 
@@ -354,8 +355,15 @@ export default function App() {
       void postPerfectCheckout(elasticLabel);
       return;
     }
+    if (key === "balmain") {
+      mirrorDigitalMiddleware.onBalmainClick(elasticLabel);
+    }
+    if (key === "reserve") {
+      mirrorDigitalMiddleware.onReserveFittingClick(elasticLabel);
+    }
     void postLead(key);
     const copy: Record<Exclude<OfrendaKey, "selection">, string> = {
+      balmain: "Ligne Balmain — Espejo Digital notificado; poursuite sous protocole Zero-Size.",
       reserve: "QR cabine VIP — Lafayette, essai en courtoisie Divineo.",
       combo: "Lignes alternatives chargées — composition Zero-Size.",
       save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
