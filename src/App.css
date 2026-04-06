@@ -122,6 +122,22 @@
   object-fit: cover;
 }
 
+/* Marais 75004 — look “atelier” (fallback visual si el asset Marais no está aún en /public) */
+.app-pau--marais {
+  border-color: #8b7355;
+  box-shadow:
+    0 0 28px rgba(139, 115, 85, 0.45),
+    inset 0 0 20px rgba(60, 48, 36, 0.25);
+}
+
+.app-pau--marais video {
+  filter: saturate(1.08) contrast(1.06) hue-rotate(-6deg);
+}
+
+.app-pau--lafayette {
+  border-color: var(--gold);
+}
+
 .app-legal {
   text-align: center;
   font-size: 8px;

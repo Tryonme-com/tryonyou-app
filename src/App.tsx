@@ -38,6 +38,21 @@ function isPauAuthorized(): boolean {
   return PAU_POSTAL_NODES.has(postal);
 }
 
+/** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
+function resolveActiveDistrict(): "75009" | "75004" | "" {
+  const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
+  if (vite === "75009" || vite === "75004") return vite;
+  const w = window as Window & { UserCheck?: unknown };
+  const uc = w.UserCheck;
+  if (uc && typeof uc === "object" && uc !== null) {
+    const loc = String((uc as { location?: string }).location ?? "").trim();
+    if (loc === "75009" || loc === "75004") return loc;
+  }
+  const postal = readPostalFromWindowOrUrl();
+  if (postal === "75009" || postal === "75004") return postal;
+  return "";
+}
+
 function elasticLabelToVerdict(label: string): string {
   if (label.includes("Préférence drapé")) return "drape_bias";
   if (label.includes("Préférence tenue")) return "tension_bias";
@@ -182,6 +197,53 @@ export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
+
+  /** window.UserCheck truthy, o nodo postal 75009 / 75004 (Lafayette / Marais) → Pau activo. */
+  const pauStarted = isPauAuthorized();
+
+  /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
+  const [pauDistrictTick, setPauDistrictTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setPauDistrictTick((n) => n + 1), 900);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    const w = window as Window & {
+      initPauAlpha?: () => void;
+      launchMarais?: () => void;
+    };
+    const bumpPau = () => {
+      setPauDistrictTick((n) => n + 1);
+      const v = document.querySelector<HTMLVideoElement>(".app-pau video");
+      void v?.play().catch(() => {});
+    };
+    w.initPauAlpha = bumpPau;
+    w.launchMarais = () => {
+      const win = window as Window & { UserCheck?: unknown };
+      win.UserCheck = {
+        isAuthorized: true,
+        role: "SOUVERAIN",
+        location: "75004",
+        contract: "MARAIS_88K",
+      };
+      bumpPau();
+      console.log("✅ [BOOM]: Marais 75004 — pavo activo (contrat bunker 88k).");
+    };
+    return () => {
+      delete w.initPauAlpha;
+      delete w.launchMarais;
+    };
+  }, []);
+
+  const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
+  const isMaraisNode = activeDistrict === "75004";
+
+  useEffect(() => {
+    const app = initFirebaseApplet();
+    if (!app) return;
+    void initFirebaseAnalytics(app);
+    void initFirebaseAppCheckIfConfigured(app);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -405,12 +467,18 @@ export default function App() {
         <div className="app-pau-row">
           <button
             type="button"
-            className="app-pau"
+            className={
+              isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
+            }
             disabled={!pauStarted}
             onClick={theSnap}
             title={
               pauStarted
-                ? "P.A.U. — Lafayette 75009 / Marais 75004 (o UserCheck)"
+                ? isMaraisNode
+                  ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+                  : activeDistrict === "75009"
+                    ? "P.A.U. — Lafayette 75009"
+                    : "P.A.U. — Lafayette / Marais (UserCheck)"
                 : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
             }
             aria-label="P.A.U. — snap et orchestration Jules"
@@ -419,9 +487,27 @@ export default function App() {
               cursor: pauStarted ? "pointer" : "not-allowed",
             }}
           >
-            <video autoPlay loop muted playsInline preload="auto">
-              <source src="/videos/pau_transparent.webm" type="video/webm" />
-              <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+            <video
+              key={isMaraisNode ? "marais" : "lafayette"}
+              id={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+            >
+              {isMaraisNode ? (
+                <>
+                  <source src="/assets/marais_pau_v10.mp4" type="video/mp4" />
+                  <source src="/videos/pau_transparent.webm" type="video/webm" />
+                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+                </>
+              ) : (
+                <>
+                  <source src="/videos/pau_transparent.webm" type="video/webm" />
+                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+                </>
+              )}
             </video>
           </button>
         </div>
