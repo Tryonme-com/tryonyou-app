@@ -12,13 +12,13 @@
       else if (h.indexOf("marais") !== -1 || h.indexOf("75004") !== -1) p = "75004";
     }
     if (/^\d{5}$/.test(p)) window.__TRYONYOU_POSTAL__ = p;
-    if (p === "75009" || p === "75004") window.UserCheck = true;
   } catch (e) {}
 })();
 </script>
 <script id="sovereign-protocol-75009-fr">
 (function() {
-  if (window.UserCheck) return;
+  var postal = (window.__TRYONYOU_POSTAL__ || "").trim();
+  if (window.UserCheck || postal === "75009" || postal === "75004") return;
   var host = (window.location.hostname || "").toLowerCase();
   var targets = ["lafayette", "haussmann", "75009"];
   if (!targets.some(function(t) { return host.indexOf(t) !== -1; })) return;
