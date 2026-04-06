@@ -23,6 +23,9 @@ venv/
 .DS_Store
 .env*.local
 
+# Java / legado (no front Vite)
+01-Genericos/
+
 # Carpeta anidada accidental (no versionar)
 tryonyou-app/
 test_write_tool.txt

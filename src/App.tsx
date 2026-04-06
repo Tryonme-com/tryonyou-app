@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
+import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import {
   initFirebaseApplet,
   initFirebaseAnalytics,
@@ -494,6 +497,29 @@ export default function App() {
               Pruébatela YA (5 slots hoy)
             </button>
           </div>
+          <p
+            style={{
+              marginTop: 14,
+              fontSize: 12,
+              letterSpacing: 1,
+              color: "#5c4f3d",
+            }}
+          >
+            <a
+              href={getDivineoCheckoutUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: ORO_DIVINEO,
+                fontWeight: 600,
+                textDecoration: "none",
+                borderBottom: `1px solid ${ORO_DIVINEO}`,
+              }}
+            >
+              {SOVEREIGN_FIT_LABEL}
+            </a>
+            <span style={{ opacity: 0.9 }}> · checkout Divineo V11 → abvetos.com</span>
+          </p>
         </section>
 
         <OfrendaOverlay
@@ -522,7 +548,17 @@ export default function App() {
           }
         />
 
-        <div className="app-pau-row">
+        <motion.div
+          className="app-pau-row"
+          animate={{
+            boxShadow: [
+              `0 0 0 1px ${ORO_DIVINEO}33`,
+              `0 0 28px ${ORO_DIVINEO}55`,
+              `0 0 0 1px ${ORO_DIVINEO}33`,
+            ],
+          }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        >
           <button
             type="button"
             className={
@@ -568,7 +604,7 @@ export default function App() {
               )}
             </video>
           </button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -10,14 +10,17 @@
   },
   "dependencies": {
     "firebase": "^11.10.0",
+    "framer-motion": "^11.18.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.0.4",
     "picomatch": "^4.0.4",
+    "tailwindcss": "^4.1.0",
     "typescript": "^5.7.3",
     "vite": "^7.3.1"
   }
