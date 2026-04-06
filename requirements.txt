@@ -1,16 +1,2 @@
-flask>=3.0.0
-¥¥¥¥fastapi>=0.109.0
-httpx>=0.27.0
-pandas>=2.0
-stripe>=7.0
-pillow>=10.0
-# Opcional: unificar_v10.py (Gemini)
-google-generativeai>=0.8.0
-# Opcional: arranque_bunker_soberania.py (Telegram)
-requests>=2.28.0
-# Jules V7 CRM — Google Sheets (api/index.py; opcional si hay GOOGLE_CREDENTIALS_JSON)
-google-auth>=2.23.0
-google-api-python-client>=2.100.0
-fpdf2>=2.7.0
-# Opcional: despliegue_gcs_soberano_v10.py
-google-cloud-storage>=2.14.0
+stripe
+pandas
