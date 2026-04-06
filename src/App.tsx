@@ -8,6 +8,7 @@ import {
   initFirebaseAnalytics,
   initFirebaseAppCheckIfConfigured,
 } from "./lib/firebaseApplet";
+import { getLafayetteStripeCheckoutUrl } from "./lib/lafayetteCheckout";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
@@ -91,29 +92,6 @@ function resolveActiveDistrict(): "75009" | "75004" | "" {
   return "";
 }
 
-/** Enlace Stripe Payment Link LIVE del contrato Lafayette (Vercel / .env local). */
-function lafayetteStripeChargeUrl(): string {
-  const primary = (
-    import.meta.env.VITE_STRIPE_LAFAYETTE_CHECKOUT_URL as string | undefined
-  )?.trim();
-  if (primary) return primary;
-  const fallback = (
-    import.meta.env.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M as string | undefined
-  )?.trim();
-  return fallback ?? "";
-}
-
-function ejecutarCobroLafayette(): void {
-  const url = lafayetteStripeChargeUrl();
-  if (!url) {
-    window.alert(
-      "Configura VITE_STRIPE_LAFAYETTE_CHECKOUT_URL (Payment Link LIVE) o VITE_STRIPE_LINK_SOVEREIGNTY_4_5M en Vercel / .env.",
-    );
-    return;
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
 function elasticLabelToVerdict(label: string): string {
   if (label.includes("Préférence drapé")) return "drape_bias";
   if (label.includes("Préférence tenue")) return "tension_bias";
@@ -149,7 +127,6 @@ async function syncLeadsToBunker(
 
     return { ok: true, data };
   } catch (error) {
-    console.error("❌ Error Crítico Bunker:", error);
     return { ok: false, error };
   }
 }
@@ -166,7 +143,6 @@ async function postLead(intent: OfrendaKey): Promise<void> {
   };
   const bunker = await syncLeadsToBunker(payload);
   if (!bunker.ok) {
-    console.warn("Bunker sync no completada; no se envía el lead a /api/v1/leads.", bunker.error);
     return;
   }
   try {
@@ -422,6 +398,17 @@ export default function App() {
     }
   };
 
+  const onLafayetteStripeCharge = () => {
+    const url = getLafayetteStripeCheckoutUrl();
+    if (!url) {
+      window.alert(
+        "Contrato Lafayette: define VITE_LAFAYETTE_STRIPE_CHECKOUT_URL (Stripe Payment Link LIVE) en Vercel o .env local.",
+      );
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div
       className="app-root"
@@ -517,25 +504,27 @@ export default function App() {
             >
               Pruébatela YA (5 slots hoy)
             </button>
+          </div>
+          <div style={{ marginTop: 16 }}>
             <button
               type="button"
-              onClick={ejecutarCobroLafayette}
+              onClick={onLafayetteStripeCharge}
               style={{
-                flex: "1 1 100%",
-                minWidth: "min(100%, 280px)",
-                padding: "14px 20px",
+                width: "100%",
+                maxWidth: 440,
+                padding: "14px 22px",
                 borderRadius: 12,
                 border: `2px solid ${ORO_DIVINEO}`,
-                background: "linear-gradient(145deg, #2d1b69 0%, #4c1d95 55%, #1e1b4b 100%)",
-                color: "#faf5ff",
-                fontSize: 11,
+                background:
+                  "linear-gradient(145deg, #4a148c 0%, #6a1b9a 40%, #311b92 100%)",
+                color: "#fff",
+                fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: 3,
                 textTransform: "uppercase",
                 cursor: "pointer",
-                boxShadow: `0 0 24px ${ORO_DIVINEO}44`,
+                boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
               }}
-              title={lafayetteStripeChargeUrl() || "Stripe Payment Link (VITE_STRIPE_LAFAYETTE_CHECKOUT_URL)"}
             >
               EJECUTAR COBRO LAFAYETTE
             </button>

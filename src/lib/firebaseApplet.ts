@@ -46,10 +46,9 @@ export function initFirebaseApplet(): FirebaseApp | null {
     try {
       appSingleton = initializeApp(opts);
     } catch (e) {
-      console.warn(
-        "[TryOnYou Firebase] init omitido (p. ej. auth/invalid-api-key). Pau / UI siguen; pega apiKey real en Firebase Console.",
-        e,
-      );
+      if (import.meta.env.DEV) {
+        console.warn("[TryOnYou Firebase] init omitida (revisar apiKey / consola).", e);
+      }
       return null;
     }
   }
