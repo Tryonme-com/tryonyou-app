@@ -1,4 +1,8 @@
+@import "tailwindcss";
+
 :root {
+  /* Oro Divineo V11 — protocolo UI */
+  --oro-divineo: #d4af37;
   --gold: #c5a46d;
   --anthracite: #141619;
   --bone: #f5efe6;
