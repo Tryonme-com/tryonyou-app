@@ -62,6 +62,8 @@ function forceUserCheckIfPilotCold(): void {
   win.UserCheck = {
     isAuthorized: true,
     role: "SOUVERAIN",
+    nodos: ["75009", "75004"],
+    contrato: "194.800€",
     location: loc,
     contract: loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
     source: "pau_v10_forced_pilot",
@@ -263,6 +265,8 @@ export default function App() {
       win.UserCheck = {
         isAuthorized: true,
         role: "SOUVERAIN",
+        nodos: ["75009", "75004"],
+        contrato: "194.800€",
         location: "75004",
         contract: "MARAIS_88K",
         operationalState: OPERATIONAL_STATE_DIAMANTE,
