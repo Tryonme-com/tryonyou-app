@@ -43,7 +43,20 @@ export function initFirebaseApplet(): FirebaseApp | null {
     return null;
   }
   if (!appSingleton) {
-    appSingleton = initializeApp(opts);
+    try {
+      appSingleton = initializeApp(opts);
+      console.info(
+        "[TryOnYou Firebase] Inicialización OK · proyecto",
+        opts.projectId,
+        "· estado operativo DIAMANTE",
+      );
+    } catch (e) {
+      console.warn(
+        "[TryOnYou Firebase] init omitido (p. ej. auth/invalid-api-key). Pau / UI siguen; pega apiKey real en Firebase Console.",
+        e,
+      );
+      return null;
+    }
   }
   return appSingleton;
 }

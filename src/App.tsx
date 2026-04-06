@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import {
   initFirebaseApplet,
@@ -11,6 +11,14 @@ import "./App.css";
 
 /** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais). */
 const PAU_POSTAL_NODES = new Set(["75009", "75004"]);
+
+/** Estado operativo bunker / preview (narrativa V10). */
+const OPERATIONAL_STATE_DIAMANTE = "DIAMANTE" as const;
+
+function setWindowOperationalStateDiamante(): void {
+  const w = window as Window & { __TRYONYOU_OPERATIONAL_STATE__?: string };
+  w.__TRYONYOU_OPERATIONAL_STATE__ = OPERATIONAL_STATE_DIAMANTE;
+}
 
 function readPostalFromWindowOrUrl(): string {
   const w = window as Window & { __TRYONYOU_POSTAL__?: string };
@@ -36,6 +44,31 @@ function isPauAuthorized(): boolean {
   if (uc != null && uc !== false && uc !== "") return true;
   const postal = readPostalFromWindowOrUrl();
   return PAU_POSTAL_NODES.has(postal);
+}
+
+/** Primera pasada: UserCheck soberano para App Check + Pau (sin esperar efectos). */
+function forceUserCheckIfPilotCold(): void {
+  if (typeof window === "undefined") return;
+  const win = window as Window & { UserCheck?: unknown };
+  if (win.UserCheck != null && win.UserCheck !== false && win.UserCheck !== "") return;
+  const postal = readPostalFromWindowOrUrl();
+  const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
+  const loc: "75009" | "75004" =
+    vite === "75004" || postal === "75004"
+      ? "75004"
+      : vite === "75009" || postal === "75009"
+        ? "75009"
+        : "75009";
+  win.UserCheck = {
+    isAuthorized: true,
+    role: "SOUVERAIN",
+    location: loc,
+    contract: loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
+    source: "pau_v10_forced_pilot",
+    operationalState: OPERATIONAL_STATE_DIAMANTE,
+    pilotVenue: loc === "75004" ? "BHV_MARAIS" : "GALERIES_LAFAYETTE",
+  };
+  setWindowOperationalStateDiamante();
 }
 
 /** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
@@ -194,15 +227,22 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
 }
 
 export default function App() {
+  const pauSovereignBoot = useRef(false);
+  if (!pauSovereignBoot.current) {
+    pauSovereignBoot.current = true;
+    forceUserCheckIfPilotCold();
+  }
+
   const [elasticLabel, setElasticLabel] = useState("—");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
 
+  /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
+  const [pauDistrictTick, setPauDistrictTick] = useState(0);
+
   /** window.UserCheck truthy, o nodo postal 75009 / 75004 (Lafayette / Marais) → Pau activo. */
   const pauStarted = isPauAuthorized();
 
-  /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
-  const [pauDistrictTick, setPauDistrictTick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setPauDistrictTick((n) => n + 1), 900);
     return () => clearInterval(id);
@@ -225,10 +265,15 @@ export default function App() {
         role: "SOUVERAIN",
         location: "75004",
         contract: "MARAIS_88K",
+        operationalState: OPERATIONAL_STATE_DIAMANTE,
+        pilotVenue: "BHV_MARAIS",
       };
+      setWindowOperationalStateDiamante();
       bumpPau();
       console.log("✅ [BOOM]: Marais 75004 — pavo activo (contrat bunker 88k).");
     };
+    bumpPau();
+    window.requestAnimationFrame(() => bumpPau());
     return () => {
       delete w.initPauAlpha;
       delete w.launchMarais;
@@ -237,6 +282,15 @@ export default function App() {
 
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
+
+  /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
+  useEffect(() => {
+    const d = resolveActiveDistrict();
+    if (d !== "75009" && d !== "75004") return;
+    setWindowOperationalStateDiamante();
+    const w = window as Window & { initPauAlpha?: () => void };
+    queueMicrotask(() => w.initPauAlpha?.());
+  }, [activeDistrict, pauDistrictTick]);
 
   useEffect(() => {
     const app = initFirebaseApplet();
