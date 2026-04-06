@@ -10,6 +10,8 @@ import os
 from fastapi import BackgroundTasks, FastAPI, Request
 from httpx import AsyncClient
 
+from social_sync_bridge import register_social_sync_fastapi
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -62,3 +64,6 @@ async def handle_action(request: Request, background_tasks: BackgroundTasks):
     background_tasks.add_task(notify_make, action, data)
 
     return response
+
+
+register_social_sync_fastapi(app)
