@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Storage — lectura pública (evita XML Access Denied en GET sin token).
+// Escritura: no definida aquí → denegada por defecto (endurecer con auth si subís desde cliente).
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+  }
+}
