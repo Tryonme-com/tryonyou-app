@@ -6,11 +6,6 @@ import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv
 
 let appSingleton: FirebaseApp | null = null;
 
-/**
- * Inicialización Firebase Web (app / analytics / App Check). No usa `getStorage()` aquí:
- * las `VITE_*` se sustituyen en build (Vite); no hay ventana donde el SDK acceda a Storage
- * antes de que exista configuración — cualquier Storage debe ir en otro módulo tras `initFirebaseApplet()`.
- */
 function mergedOptions(): FirebaseOptions {
   const apiKey =
     viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
@@ -23,11 +18,7 @@ function mergedOptions(): FirebaseOptions {
   const storageBucketRaw =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
     String(appletConfig.storageBucket ?? "").trim();
-  let storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
-  const pid = String(projectId ?? "").trim();
-  if (!storageBucket && pid) {
-    storageBucket = `${pid}.appspot.com`;
-  }
+  const storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
   const messagingSenderId =
     viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
     String(appletConfig.messagingSenderId ?? "").trim() ||
@@ -40,6 +31,11 @@ function mergedOptions(): FirebaseOptions {
     viteFirebaseValue("VITE_FIREBASE_MEASUREMENT_ID") ||
     String(appletConfig.measurementId ?? "").trim() ||
     "";
+  if (import.meta.env.DEV && !storageBucket && projectId) {
+    console.warn(
+      "[TryOnYou Firebase] VITE_FIREBASE_STORAGE_BUCKET vacío: Storage/XML denegado hasta definir bucket (solo proyecto.appspot.com).",
+    );
+  }
   return {
     apiKey,
     authDomain,
@@ -66,6 +62,8 @@ export function applyUserCheckForAppCheck(): void {
 
 export function initFirebaseApplet(): FirebaseApp | null {
   applyUserCheckForAppCheck();
+  // No se usa getStorage() aquí: las VITE_* están resueltas en build (import.meta.env)
+  // antes de initializeApp(); evita inicializar Storage con bucket desalineado al .env.
   const opts = mergedOptions();
   if (!opts.apiKey || !opts.projectId) {
     console.warn(

@@ -37,11 +37,11 @@
       "dest": "/api/index.py"
     },
     {
-      "src": "/",
-      "dest": "/index.html"
+      "handle": "filesystem"
     },
     {
-      "handle": "filesystem"
+      "src": "/",
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
