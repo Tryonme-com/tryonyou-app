@@ -130,3 +130,52 @@ def resolve_shopify_checkout_url(lead_id: int, fabric_sensation: str) -> str | N
     if inv:
         return inv
     return build_shopify_perfect_selection_url(lead_id, fabric_sensation)
+
+
+class ShopifyBridge:
+    """
+    Puente de integración Robert Engine → Shopify para el flujo de venta soberana.
+
+    Sincroniza los datos de Fit calculados por el motor Robert con la orden
+    correspondiente en Shopify (draft order o checkout storefront).
+    """
+
+    def sync_robert_to_shopify(
+        self, fabric_key: str, fit_data: dict
+    ) -> dict:
+        """
+        Prepara y registra una orden Shopify a partir del Fit del motor Robert.
+
+        Args:
+            fabric_key: Identificador de la prenda/tejido.
+            fit_data:   Datos de Fit producidos por RobertEngine
+                        (debe incluir al menos «fitScore»).
+
+        Returns:
+            Diccionario con el estado de la orden:
+              - status       : «DRAFT_CREATED» | «CHECKOUT_URL» | «PENDING»
+              - fabric_key   : clave de prenda enviada
+              - fit_score    : puntuación de ajuste recibida
+              - shopify_ref  : invoice_url o checkout URL (o None si no disponible)
+              - legal        : sello legal / patente
+        """
+        fit_score = float((fit_data or {}).get("fitScore", 0))
+        lead_id = abs(hash(str(fabric_key))) % 10_000_000
+
+        # Prioridad 1: draft invoice (Admin API) → DRAFT_CREATED
+        # Prioridad 2: storefront checkout URL → CHECKOUT_URL
+        # Sin credenciales configuradas → PENDING
+        shopify_ref = admin_draft_order_invoice_url(lead_id, str(fabric_key)[:120])
+        if shopify_ref:
+            status = "DRAFT_CREATED"
+        else:
+            shopify_ref = build_shopify_perfect_selection_url(lead_id, str(fabric_key)[:120])
+            status = "CHECKOUT_URL" if shopify_ref else "PENDING"
+
+        return {
+            "status": status,
+            "fabric_key": fabric_key,
+            "fit_score": fit_score,
+            "shopify_ref": shopify_ref,
+            "legal": f"SIREN {SIREN_SELL} · {PATENTE}",
+        }
