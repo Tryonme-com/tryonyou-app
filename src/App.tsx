@@ -18,7 +18,7 @@ import {
   getInaugurationStripeCheckoutUrl,
   getInaugurationStripeEnvUrl,
   getLafayetteStripeCheckoutUrl,
-  openPaymentUrl,
+  openInaugurationStripeLiquidity,
 } from "./lib/lafayetteCheckout";
 import {
   pauInaugurationCompliment,
@@ -452,7 +452,6 @@ export default function App() {
   };
 
   const onInaugurationStripeCharge = () => {
-    // Prioridad absoluta: VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Stripe Live 12.500 €); respaldo cadena inauguración.
     const url =
       getInaugurationStripeEnvUrl() || getInaugurationStripeCheckoutUrl();
     if (!url) {
@@ -461,7 +460,8 @@ export default function App() {
       );
       return;
     }
-    openPaymentUrl(url);
+    // Prioridad env inaugural; sin alert posterior que bloquee el flujo ni validación Shopify/Firebase.
+    openInaugurationStripeLiquidity();
   };
 
   return (

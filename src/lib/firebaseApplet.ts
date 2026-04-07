@@ -2,7 +2,7 @@ import { type FirebaseApp, type FirebaseOptions, initializeApp } from "firebase/
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import appletConfig from "../../firebase-applet-config.json";
-import { viteFirebaseValue } from "./firebaseEnv";
+import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv";
 
 let appSingleton: FirebaseApp | null = null;
 
@@ -15,9 +15,10 @@ function mergedOptions(): FirebaseOptions {
     viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
   const projectId =
     viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
-  const storageBucket =
+  const storageBucketRaw =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
-    appletConfig.storageBucket;
+    String(appletConfig.storageBucket ?? "").trim();
+  const storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
   const messagingSenderId =
     viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
     String(appletConfig.messagingSenderId ?? "").trim() ||

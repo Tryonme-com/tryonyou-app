@@ -31,3 +31,30 @@ export function viteFirebaseValue(key: ViteFirebaseKey): string {
   }
   return s;
 }
+
+/**
+ * Firebase `storageBucket` debe ser solo `proyecto.appspot.com` (sin `gs://` ni path).
+ * Un `.env` con `gs://bucket/path` provoca mismatch con Storage y errores de acceso.
+ */
+export function normalizeFirebaseStorageBucket(raw: string): string {
+  let x = String(raw ?? "").trim();
+  if (x.length >= 2) {
+    const open = x[0];
+    const close = x[x.length - 1];
+    if (
+      (open === '"' && close === '"') ||
+      (open === "'" && close === "'")
+    ) {
+      x = x.slice(1, -1).trim();
+    }
+  }
+  const lower = x.toLowerCase();
+  if (lower.startsWith("gs://")) {
+    x = x.slice(5).trim();
+  }
+  const slash = x.indexOf("/");
+  if (slash !== -1) {
+    x = x.slice(0, slash).trim();
+  }
+  return x;
+}
