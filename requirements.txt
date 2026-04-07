@@ -1,4 +1,6 @@
+# api/index.py (Vercel) usa Flask; otros módulos (voice_agent, omega_core) siguen con FastAPI/uvicorn.
 fastapi>=0.109.0
+flask>=3.0.0
 httpx>=0.27.0
 requests>=2.31.0
 stripe>=7.0

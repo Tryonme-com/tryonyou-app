@@ -1,4 +1,4 @@
-    YY"""
+"""
 Evita el bucle de reprovisionado de firebase-applet-config.json.
 
   TRYONYOU_FIREBASE_REPROVISION=1  → permite que despertar_a_pau / forzar_llave / fix_marais escriban el JSON.

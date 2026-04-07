@@ -2,6 +2,7 @@
 <html lang="fr">
 <head><script id="sovereign-protocol-75009-fr">
 (function() {
+  if (window.UserCheck) return;
   var host = (window.location.hostname || "").toLowerCase();
   var targets = ["lafayette", "haussmann", "75009"];
   if (!targets.some(function(t) { return host.indexOf(t) !== -1; })) return;
