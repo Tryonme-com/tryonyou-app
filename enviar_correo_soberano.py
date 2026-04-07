@@ -3,8 +3,8 @@ Envío Soberano — SMTP Gmail con credenciales solo en entorno (nunca en el rep
 
   export EMAIL_USER='ruben@tryonyou.app'
   export EMAIL_PASS='xxxx xxxx xxxx xxxx'   # App Password de Google
-  # o E50_SMTP_USER / E50_SMTP_PASS
-  # Opcional: SMTP_HOST, SMTP_PORT, REMITENTE (cabecera From; suele coincidir con EMAIL_USER)
+  # Obligatorio: EMAIL_USER (o E50_SMTP_USER / FOUNDER_EMAIL) para el login SMTP.
+  # Opcional: SMTP_HOST, SMTP_PORT, REMITENTE / EMAIL_FROM (solo cabecera From).
 
   python3 enviar_correo_soberano.py --dry-run
   python3 enviar_correo_soberano.py --printemps email@printemps.fr
@@ -55,6 +55,25 @@ def _creds() -> tuple[str, str]:
     return user, password
 
 
+def _smtp_host_port(explicit_host: str, explicit_port: int) -> tuple[str, int]:
+    host = (
+        (os.environ.get("SMTP_HOST") or os.environ.get("E50_SMTP_HOST") or "").strip()
+        or explicit_host
+    )
+    raw = (os.environ.get("SMTP_PORT") or os.environ.get("E50_SMTP_PORT") or "").strip()
+    if not raw:
+        return host, explicit_port
+    try:
+        return host, int(raw)
+    except ValueError:
+        return host, explicit_port
+
+
+def _default_remitente_env() -> str | None:
+    v = (os.environ.get("REMITENTE") or os.environ.get("EMAIL_FROM") or "").strip()
+    return v or None
+
+
 def cuerpo_printemps() -> str:
     return """\
 Monsieur/Madame,
@@ -95,19 +114,20 @@ def enviar_correo_soberano(
     cuerpo: str,
     *,
     remitente: str | None = None,
-    smtp_host: str | None = None,
-    smtp_port: int | None = None,
+    smtp_host: str = "smtp.gmail.com",
+    smtp_port: int = 587,
     dry_run: bool = False,
 ) -> bool:
     user, password = _creds()
-    eff_host = _smtp_host(smtp_host)
-    eff_port = _smtp_port(smtp_port)
-    from_addr = (_remitente_env(remitente) or user).strip()
-    # SMTP LOGIN usa la cuenta real; el remitente en cabecera puede venir solo de `remitente`.
-    login_user = (user or from_addr).strip()
-    if not from_addr or not password or not login_user:
+    user = user.strip()
+    if not user:
+        print("Error: Configuración de remitente incompleta", file=sys.stderr)
+        return False
+    from_addr = (remitente or _default_remitente_env() or user).strip()
+    smtp_host, smtp_port = _smtp_host_port(smtp_host, smtp_port)
+    if not from_addr or not password:
         print(
-            "❌ Define EMAIL_USER + EMAIL_PASS (o E50_SMTP_*) (y remitente coherente con esa cuenta).",
+            "❌ Define EMAIL_PASS (o E50_SMTP_PASS) y destinatario/remitente válidos.",
             file=sys.stderr,
         )
         return False
@@ -122,9 +142,26 @@ def enviar_correo_soberano(
     msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
 
     try:
-        with smtplib.SMTP(eff_host, eff_port, timeout=30) as server:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
             server.starttls()
-            server.login(login_user, password)
+            try:
+                server.login(user, password)
+            except smtplib.SMTPAuthenticationError as e:
+                err = getattr(e, "smtp_error", b"") or b""
+                if isinstance(err, bytes):
+                    try:
+                        err_s = err.decode("utf-8", "replace")
+                    except Exception:
+                        err_s = repr(err)
+                else:
+                    err_s = str(err)
+                code = getattr(e, "smtp_code", "?")
+                print(
+                    f"Error: autenticación SMTP rechazada ({code} {err_s}). "
+                    "Revisa EMAIL_USER y contraseña de aplicación.",
+                    file=sys.stderr,
+                )
+                return False
             server.sendmail(from_addr, [destinatario.strip()], msg.as_string())
     except (OSError, smtplib.SMTPException) as e:
         print(f"❌ Erreur technique du Búnker : {e}", file=sys.stderr)

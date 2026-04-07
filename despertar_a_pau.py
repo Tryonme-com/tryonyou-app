@@ -12,11 +12,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from firebase_reprovision_guard import exit_if_firebase_applet_locked
+
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "firebase-applet-config.json"
 
 PAU_CONFIG = {
-    "apiKey": "AIzaSy_PAU_SOVEREIGN_V10_2026",
+    "_manifest": (
+        "Reprovisión explícita (TRYONYOU_FIREBASE_REPROVISION=1). "
+        "Pega apiKey Web real o usa VITE_FIREBASE_API_KEY. PCT/EP2025/067317."
+    ),
+    "apiKey": "",
     "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
     "projectId": "gen-lang-client-0066102635",
     "storageBucket": "gen-lang-client-0066102635.appspot.com",
@@ -27,6 +33,7 @@ PAU_CONFIG = {
 
 
 def despertar_a_pau() -> None:
+    exit_if_firebase_applet_locked("despertar_a_pau.py")
     CONFIG.write_text(
         json.dumps(PAU_CONFIG, indent=4, ensure_ascii=False) + "\n",
         encoding="utf-8",

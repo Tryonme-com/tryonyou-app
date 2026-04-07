@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Escribe firebase-applet-config.json para el proyecto gen-lang-client-0066102635."""
 import json
-
 from pathlib import Path
+
+from firebase_reprovision_guard import exit_if_firebase_applet_locked
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "firebase-applet-config.json"
 
 
 def forzar_llave_pau() -> None:
+    exit_if_firebase_applet_locked("forzar_llave_pau.py")
     pau_config = {
-        "apiKey": "AIzaSy_PAU_SOVEREIGN_V10_2026",
+        "_manifest": "Reprovisión explícita — misma estructura que firebase-applet-config.json sellado.",
+        "apiKey": "",
         "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
         "projectId": "gen-lang-client-0066102635",
         "storageBucket": "gen-lang-client-0066102635.appspot.com",

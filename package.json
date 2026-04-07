@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/assert-firebase-applet.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

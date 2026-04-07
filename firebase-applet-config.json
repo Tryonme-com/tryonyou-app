@@ -1,5 +1,6 @@
 {
-    "apiKey": "AIzaSy_PAU_SOVEREIGN_V10_2026",
+    "_manifest": "TryOnYou Firebase Web — proyecto gen-lang-client-0066102635. Rellena apiKey (SDK Web, Firebase Console) o define VITE_FIREBASE_API_KEY. NO reprovisionar scripts sin TRYONYOU_FIREBASE_REPROVISION=1. PCT/EP2025/067317.",
+    "apiKey": "",
     "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
     "projectId": "gen-lang-client-0066102635",
     "storageBucket": "gen-lang-client-0066102635.appspot.com",

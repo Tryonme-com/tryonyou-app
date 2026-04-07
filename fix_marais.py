@@ -11,6 +11,8 @@ import json
 import re
 from pathlib import Path
 
+from firebase_reprovision_guard import exit_if_firebase_applet_locked
+
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "firebase-applet-config.json"
 ENV_PATH = ROOT / ".env"
@@ -19,7 +21,8 @@ ENV_PATH = ROOT / ".env"
 # Nota: si Firebase devuelve auth/invalid-api-key, sustituye apiKey por la clave Web real
 # en Firebase Console → Configuración del proyecto → Tus apps → SDK.
 FIREBASE_CONFIG = {
-    "apiKey": "AIzaSy_Soberania_V10_Omega_Marais_2026",
+    "_manifest": "Reprovisión Marais — apiKey real vía Consola o .env (VITE_FIREBASE_API_KEY).",
+    "apiKey": "",
     "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
     "projectId": "gen-lang-client-0066102635",
     "storageBucket": "gen-lang-client-0066102635.appspot.com",
@@ -60,6 +63,7 @@ def _merge_env(path: Path, updates: dict[str, str]) -> None:
 
 
 def restore_sovereignty_keys() -> None:
+    exit_if_firebase_applet_locked("fix_marais.py")
     CONFIG_PATH.write_text(
         json.dumps(FIREBASE_CONFIG, indent=4, ensure_ascii=False) + "\n",
         encoding="utf-8",

@@ -2,21 +2,42 @@ import { type FirebaseApp, type FirebaseOptions, initializeApp } from "firebase/
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import appletConfig from "../../firebase-applet-config.json";
+import { viteFirebaseValue } from "./firebaseEnv";
 
 let appSingleton: FirebaseApp | null = null;
 
 function mergedOptions(): FirebaseOptions {
-  const env = import.meta.env;
+  const apiKey =
+    viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
+    String(appletConfig.apiKey ?? "").trim() ||
+    "";
+  const authDomain =
+    viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
+  const projectId =
+    viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
+  const storageBucket =
+    viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
+    appletConfig.storageBucket;
+  const messagingSenderId =
+    viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
+    String(appletConfig.messagingSenderId ?? "").trim() ||
+    "";
+  const appId =
+    viteFirebaseValue("VITE_FIREBASE_APP_ID") ||
+    String(appletConfig.appId ?? "").trim() ||
+    "";
+  const mid =
+    viteFirebaseValue("VITE_FIREBASE_MEASUREMENT_ID") ||
+    String(appletConfig.measurementId ?? "").trim() ||
+    "";
   return {
-    apiKey: env.VITE_FIREBASE_API_KEY || appletConfig.apiKey || "",
-    authDomain: appletConfig.authDomain,
-    projectId: appletConfig.projectId,
-    storageBucket: appletConfig.storageBucket,
-    messagingSenderId:
-      env.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || "",
-    appId: env.VITE_FIREBASE_APP_ID || appletConfig.appId || "",
-    measurementId:
-      env.VITE_FIREBASE_MEASUREMENT_ID || appletConfig.measurementId || undefined,
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket,
+    messagingSenderId,
+    appId,
+    measurementId: mid || undefined,
   };
 }
 
@@ -38,7 +59,7 @@ export function initFirebaseApplet(): FirebaseApp | null {
   const opts = mergedOptions();
   if (!opts.apiKey || !opts.projectId) {
     console.warn(
-      "[TryOnYou Firebase] Config incompleta: rellena firebase-applet-config.json o VITE_FIREBASE_*",
+      "[TryOnYou Firebase] Config incompleta: define VITE_FIREBASE_API_KEY (sin comillas en .env) o apiKey en firebase-applet-config.json. Proyecto esperado: gen-lang-client-0066102635.",
     );
     return null;
   }
@@ -63,10 +84,10 @@ export async function initFirebaseAnalytics(app: FirebaseApp): Promise<void> {
 }
 
 export async function initFirebaseAppCheckIfConfigured(app: FirebaseApp): Promise<void> {
-  const siteKey = import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY;
+  const siteKey = viteFirebaseValue("VITE_FIREBASE_APPCHECK_SITE_KEY");
   const w = window as Window & { UserCheck?: unknown };
   if (w.UserCheck) return;
-  if (!siteKey?.trim()) return;
+  if (!siteKey) return;
   initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(siteKey),
     isTokenAutoRefreshEnabled: true,
