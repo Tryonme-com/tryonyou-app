@@ -15,19 +15,10 @@ type ViteFirebaseKey =
   | "VITE_FIREBASE_MEASUREMENT_ID"
   | "VITE_FIREBASE_APPCHECK_SITE_KEY";
 
-/** Quita BOM, zero-width y espacios Unicode que suelen colarse en .env / pegados. */
-function stripConfigNoise(s: string): string {
-  return String(s ?? "")
-    .replace(/\uFEFF/g, "")
-    .replace(/[\u200B-\u200D\u2060]/g, "")
-    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, "")
-    .trim();
-}
-
 export function viteFirebaseValue(key: ViteFirebaseKey): string {
   const raw = import.meta.env[key];
   if (raw === undefined || raw === null) return "";
-  let s = stripConfigNoise(String(raw));
+  let s = String(raw).trim();
   if (s.length >= 2) {
     const open = s[0];
     const close = s[s.length - 1];
@@ -35,10 +26,19 @@ export function viteFirebaseValue(key: ViteFirebaseKey): string {
       (open === '"' && close === '"') ||
       (open === "'" && close === "'")
     ) {
-      s = stripConfigNoise(s.slice(1, -1));
+      s = s.slice(1, -1).trim();
     }
   }
   return s;
+}
+
+/** Quita BOM, anchura cero y espacios unicode que suelen colarse en .env / Vercel. */
+function stripInvisibleAndEdgeSpaces(s: string): string {
+  return s
+    .replace(/\uFEFF/g, "")
+    .replace(/[\u200B-\u200D\u2060]/g, "")
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, "")
+    .trim();
 }
 
 /**
@@ -46,7 +46,7 @@ export function viteFirebaseValue(key: ViteFirebaseKey): string {
  * Un `.env` con `gs://bucket/path` provoca mismatch con Storage y errores de acceso.
  */
 export function normalizeFirebaseStorageBucket(raw: string): string {
-  let x = stripConfigNoise(String(raw ?? ""));
+  let x = stripInvisibleAndEdgeSpaces(String(raw ?? ""));
   if (x.length >= 2) {
     const open = x[0];
     const close = x[x.length - 1];
@@ -54,17 +54,16 @@ export function normalizeFirebaseStorageBucket(raw: string): string {
       (open === '"' && close === '"') ||
       (open === "'" && close === "'")
     ) {
-      x = stripConfigNoise(x.slice(1, -1));
+      x = stripInvisibleAndEdgeSpaces(x.slice(1, -1));
     }
   }
   const lower = x.toLowerCase();
   if (lower.startsWith("gs://")) {
-    x = stripConfigNoise(x.slice(5));
+    x = stripInvisibleAndEdgeSpaces(x.slice(5));
   }
   const slash = x.indexOf("/");
   if (slash !== -1) {
-    x = stripConfigNoise(x.slice(0, slash));
+    x = x.slice(0, slash);
   }
-  x = x.replace(/\s+/g, "");
-  return x;
+  return stripInvisibleAndEdgeSpaces(x);
 }
