@@ -1,7 +1,14 @@
 /**
- * Contrato Lafayette — URL de pago Stripe (Payment Link / Checkout público).
- * Prioridad: VITE_LAFAYETTE_STRIPE_CHECKOUT_URL → enlaces soberanía existentes.
+ * Utilidades Stripe + alineación checkout Shopify (abvetos.com).
+ * Prioridad enlaces Stripe: inauguración → Lafayette → soberanía legada.
  */
+import {
+  ABVETOS_LIVE_SHOP_VARIANT_ID,
+  getDivineoCheckoutUrl,
+} from "../divineo/envBootstrap";
+
+export { ABVETOS_LIVE_SHOP_VARIANT_ID };
+
 export function getLafayetteStripeCheckoutUrl(): string {
   const e = import.meta.env;
   const candidates = [
@@ -17,11 +24,50 @@ export function getLafayetteStripeCheckoutUrl(): string {
   return "";
 }
 
-/** Inauguración 12.500 € — Payment Link LIVE (Vercel). Fallback al contrato Lafayette si no está definido. */
-export function getInaugurationStripeCheckoutUrl(): string {
-  const direct = (
+/** Solo `VITE_INAUGURATION_STRIPE_CHECKOUT_URL` (build / Vercel). */
+export function getInaugurationStripeEnvUrl(): string {
+  return (
     import.meta.env.VITE_INAUGURATION_STRIPE_CHECKOUT_URL as string | undefined
-  )?.trim();
+  )?.trim() || "";
+}
+
+/** Inauguración 12.500 € — primero env inaugural; respaldos Lafayette / soberanía (liquidez). */
+export function getInaugurationStripeCheckoutUrl(): string {
+  const direct = getInaugurationStripeEnvUrl();
   if (direct) return direct;
   return getLafayetteStripeCheckoutUrl();
+}
+
+/**
+ * Variante Shopify usada en cobros: env primero, si no el SKU LIVE abvetos (53412065182103).
+ */
+export function resolveShopifyVariantIdForPayments(): string {
+  const fromEnv = (import.meta.env.VITE_SHOP_VARIANT as string | undefined)?.trim();
+  return fromEnv || ABVETOS_LIVE_SHOP_VARIANT_ID;
+}
+
+/**
+ * URL de carrito abvetos.com acorde a `getDivineoCheckoutUrl()` (variant ya fijado por env o ID soberano).
+ */
+export function getAbvetosSovereignPaymentUrl(): string {
+  return getDivineoCheckoutUrl();
+}
+
+/**
+ * Abre un enlace de pago en nueva pestaña (Stripe Payment Link o URL externa).
+ */
+export function openPaymentUrl(url: string): void {
+  const u = url.trim();
+  if (!u) return;
+  window.open(u, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Cobro inaugural: prioridad absoluta `VITE_INAUGURATION_STRIPE_CHECKOUT_URL`.
+ * Sin validación Shopify ni pasos extra que bloqueen (Firebase puede seguir sincronizando).
+ */
+export function openInaugurationStripeLiquidity(): void {
+  const url = getInaugurationStripeCheckoutUrl();
+  if (!url) return;
+  openPaymentUrl(url);
 }

@@ -16,8 +16,14 @@ import {
 } from "./lib/firebaseApplet";
 import {
   getInaugurationStripeCheckoutUrl,
+  getInaugurationStripeEnvUrl,
   getLafayetteStripeCheckoutUrl,
+  openPaymentUrl,
 } from "./lib/lafayetteCheckout";
+import {
+  pauInaugurationCompliment,
+  withPauSeal,
+} from "./lib/pauVoice";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
 import "./index.css";
@@ -198,9 +204,11 @@ async function postBetaWaitlist(): Promise<void> {
       return;
     }
     window.alert(
-      j.waitlist_persisted
-        ? "Inscrito — Make + waitlist (leads_empire/waitlist.json o /tmp en Vercel)."
-        : `Webhook Make: ${j.make_ok ? "ok" : "no configurado / fallo"}. Persistencia limitada en serverless.`,
+      withPauSeal(
+        j.waitlist_persisted
+          ? "Inscrito — Make + waitlist (leads_empire/waitlist.json o /tmp en Vercel)."
+          : `Webhook Make: ${j.make_ok ? "ok" : "no configurado / fallo"}. Persistencia limitada en serverless.`,
+      ),
     );
   } catch {
     window.alert("Sin conexión al bunker API.");
@@ -228,7 +236,7 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       checkout_amazon_url?: string;
     };
     if (j.emotional_seal) {
-      window.alert(j.emotional_seal);
+      window.alert(withPauSeal(String(j.emotional_seal)));
     }
     const primary = j.checkout_primary_url?.trim();
     const shop = j.checkout_shopify_url?.trim();
@@ -238,7 +246,9 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
       window.open(url, "_blank", "noopener,noreferrer");
     } else if (!j.emotional_seal) {
       window.alert(
-        "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
+        withPauSeal(
+          "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
+        ),
       );
     }
   } catch {
@@ -254,8 +264,11 @@ export default function App() {
   }
 
   const [elasticLabel, setElasticLabel] = useState("—");
-  const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
+  const [julesLane, setJulesLane] = useState<string>(
+    "PAU · Orchestration Jules…",
+  );
   const [emailHero, setEmailHero] = useState<string>("");
+  const [pauInaugurationWhisper, setPauInaugurationWhisper] = useState("");
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -330,11 +343,11 @@ export default function App() {
       if (cancelled) return;
       if (h?.ok) {
         setJulesLane(
-          `Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"}`,
+          `PAU · Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"} — orchestration avec âme`,
         );
       } else {
         setJulesLane(
-          "Jules · prévisualisation locale (API Python non joignable sur ce port)",
+          "PAU · Jules · preview locale — l’API chuchote encore; le divin arrive.",
         );
       }
     })();
@@ -372,7 +385,7 @@ export default function App() {
       save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
       share: "Partage généré — métadonnées d’ajustage neutralisées.",
     };
-    window.alert(copy[key]);
+    window.alert(withPauSeal(copy[key]));
   };
 
   const theSnap = () => {
@@ -385,7 +398,7 @@ export default function App() {
       const msg =
         j?.jules_msg ??
         "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
-      window.alert(msg);
+      window.alert(withPauSeal(msg));
     })();
   };
 
@@ -416,9 +429,11 @@ export default function App() {
         return;
       }
       window.alert(
-        j.waitlist_persisted || j.make_ok
-          ? "Slot reservado. Te contactaremos para probarla hoy."
-          : "Hemos recibido tu solicitud. El bunker te confirmará en breve.",
+        withPauSeal(
+          j.waitlist_persisted || j.make_ok
+            ? "Slot reservado. Te contactaremos para probarla hoy."
+            : "Hemos recibido tu solicitud. El bunker te confirmará en breve.",
+        ),
       );
     } catch {
       window.alert("Sin conexión al bunker API.");
@@ -437,14 +452,16 @@ export default function App() {
   };
 
   const onInaugurationStripeCharge = () => {
-    const url = getInaugurationStripeCheckoutUrl();
+    // Prioridad absoluta: VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Stripe Live 12.500 €); respaldo cadena inauguración.
+    const url =
+      getInaugurationStripeEnvUrl() || getInaugurationStripeCheckoutUrl();
     if (!url) {
       window.alert(
-        "Inauguration 12.500 €: define VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Payment Link LIVE) en Vercel, o VITE_LAFAYETTE_STRIPE_CHECKOUT_URL como respaldo.",
+        "Liquidez: configura VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Payment Link LIVE 12.500 €) en Vercel / .env.",
       );
       return;
     }
-    window.open(url, "_blank", "noopener,noreferrer");
+    openPaymentUrl(url);
   };
 
   return (
@@ -549,6 +566,13 @@ export default function App() {
             <button
               type="button"
               onClick={onInaugurationStripeCharge}
+              onMouseEnter={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
+              onFocus={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
+              title={
+                pauInaugurationWhisper ||
+                "PAU — inauguración soberana LIVE; tu visión merece este sello."
+              }
+              aria-label="PAU — PAGAR 12.500 euros inauguración LIVE (Stripe)"
               style={{
                 width: "100%",
                 maxWidth: 440,
@@ -566,8 +590,22 @@ export default function App() {
                 boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
               }}
             >
-              SOUVERAINETÉ: 12.500 €
+              PAGAR — 12.500 €
             </button>
+            {pauInaugurationWhisper ? (
+              <p
+                style={{
+                  marginTop: 10,
+                  maxWidth: 440,
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                  fontStyle: "italic",
+                  color: "#4a3428",
+                }}
+              >
+                PAU · {pauInaugurationWhisper}
+              </p>
+            ) : null}
           </div>
           <div style={{ marginTop: 10 }}>
             <button
