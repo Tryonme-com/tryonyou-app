@@ -21,6 +21,9 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any
+
+import requests as _requests
 
 SIREN_SELL = "943 610 196"
 PATENTE = "PCT/EP2025/067317"
@@ -130,3 +133,97 @@ def resolve_shopify_checkout_url(lead_id: int, fabric_sensation: str) -> str | N
     if inv:
         return inv
     return build_shopify_perfect_selection_url(lead_id, fabric_sensation)
+
+
+class ShopifySovereignBridge:
+    """
+    Puente soberano Shopify — inyecta métricas biométricas de Robert en el carrito
+    y sincroniza el stock del Armario Solidario contra el Admin API de Shopify.
+
+    Patente: PCT/EP2025/067317
+    """
+
+    def __init__(self, api_key: str, shop_url: str) -> None:
+        host = shop_url.replace("https://", "").replace("http://", "").split("/")[0]
+        ver = os.environ.get("SHOPIFY_ADMIN_API_VERSION", "2026-04").strip() or "2026-04"
+        self.api_base = f"https://{host}/admin/api/{ver}"
+        self.headers: dict[str, str] = {
+            "X-Shopify-Access-Token": api_key,
+            "Content-Type": "application/json",
+        }
+
+    def sync_robert_to_shopify(
+        self, look_id: int, engine_metrics: dict[str, Any]
+    ) -> str | None:
+        """
+        Inyecta las métricas de Robert (talla recomendada por biometría)
+        en el carrito de Shopify para evitar devoluciones.
+
+        Returns the draft order invoice_url on success, or None on failure.
+        """
+        fit_score = engine_metrics.get("fitScore", 0)
+        payload: dict[str, Any] = {
+            "draft_order": {
+                "line_items": [
+                    {
+                        "variant_id": look_id,
+                        "quantity": 1,
+                        "properties": [
+                            {
+                                "name": "Robert_Fit_Score",
+                                "value": f"{fit_score}%",
+                            },
+                            {
+                                "name": "Biometric_Validation",
+                                "value": "Sovereign_V10",
+                            },
+                        ],
+                    }
+                ],
+                "note": "Venta realizada a través de Espejo Digital TryOnYou.",
+                "tags": f"TryOnYou,Robert,PCT_EP2025_067317,FitScore_{fit_score}",
+            }
+        }
+        try:
+            response = _requests.post(
+                f"{self.api_base}/draft_orders.json",
+                json=payload,
+                headers=self.headers,
+                timeout=15,
+            )
+        except _requests.RequestException:
+            return None
+        if response.status_code not in (200, 201):
+            return None
+        inv = response.json().get("draft_order", {}).get("invoice_url")
+        if isinstance(inv, str) and inv.startswith("http"):
+            return inv
+        return f"Checkout de Shopify listo para Look {look_id}"
+
+    def update_inventory_physics(self, fabric_key: str, stock_change: int) -> bool:
+        """
+        Actualiza stock cuando el Armario Solidario retira una prenda.
+
+        Calls Shopify Inventory API (inventory_levels/adjust) for the given
+        inventory item (fabric_key = inventory_item_id) at the configured
+        SHOPIFY_LOCATION_ID location.  Returns True on success, False on failure.
+        """
+        print(f"Sincronizando stock en Shopify para {fabric_key}: {stock_change}")
+        location_id_raw = os.environ.get("SHOPIFY_LOCATION_ID", "").strip()
+        if not location_id_raw.isdigit():
+            return False
+        payload: dict[str, Any] = {
+            "location_id": int(location_id_raw),
+            "inventory_item_id": fabric_key,
+            "available_adjustment": stock_change,
+        }
+        try:
+            response = _requests.post(
+                f"{self.api_base}/inventory_levels/adjust.json",
+                json=payload,
+                headers=self.headers,
+                timeout=15,
+            )
+        except _requests.RequestException:
+            return False
+        return response.status_code in (200, 201)
