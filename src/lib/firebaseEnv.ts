@@ -15,10 +15,19 @@ type ViteFirebaseKey =
   | "VITE_FIREBASE_MEASUREMENT_ID"
   | "VITE_FIREBASE_APPCHECK_SITE_KEY";
 
+/** Quita BOM, zero-width y espacios Unicode que suelen colarse en .env / pegados. */
+function stripConfigNoise(s: string): string {
+  return String(s ?? "")
+    .replace(/\uFEFF/g, "")
+    .replace(/[\u200B-\u200D\u2060]/g, "")
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, "")
+    .trim();
+}
+
 export function viteFirebaseValue(key: ViteFirebaseKey): string {
   const raw = import.meta.env[key];
   if (raw === undefined || raw === null) return "";
-  let s = String(raw).trim();
+  let s = stripConfigNoise(String(raw));
   if (s.length >= 2) {
     const open = s[0];
     const close = s[s.length - 1];
@@ -26,7 +35,7 @@ export function viteFirebaseValue(key: ViteFirebaseKey): string {
       (open === '"' && close === '"') ||
       (open === "'" && close === "'")
     ) {
-      s = s.slice(1, -1).trim();
+      s = stripConfigNoise(s.slice(1, -1));
     }
   }
   return s;
@@ -37,7 +46,7 @@ export function viteFirebaseValue(key: ViteFirebaseKey): string {
  * Un `.env` con `gs://bucket/path` provoca mismatch con Storage y errores de acceso.
  */
 export function normalizeFirebaseStorageBucket(raw: string): string {
-  let x = String(raw ?? "").trim();
+  let x = stripConfigNoise(String(raw ?? ""));
   if (x.length >= 2) {
     const open = x[0];
     const close = x[x.length - 1];
@@ -45,16 +54,17 @@ export function normalizeFirebaseStorageBucket(raw: string): string {
       (open === '"' && close === '"') ||
       (open === "'" && close === "'")
     ) {
-      x = x.slice(1, -1).trim();
+      x = stripConfigNoise(x.slice(1, -1));
     }
   }
   const lower = x.toLowerCase();
   if (lower.startsWith("gs://")) {
-    x = x.slice(5).trim();
+    x = stripConfigNoise(x.slice(5));
   }
   const slash = x.indexOf("/");
   if (slash !== -1) {
-    x = x.slice(0, slash).trim();
+    x = stripConfigNoise(x.slice(0, slash));
   }
+  x = x.replace(/\s+/g, "");
   return x;
 }
