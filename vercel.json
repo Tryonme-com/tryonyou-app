@@ -37,6 +37,10 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
       "handle": "filesystem"
     },
     {
@@ -45,6 +49,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
     {
       "source": "/index.html",
       "headers": [
