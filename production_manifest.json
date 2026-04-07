@@ -25,7 +25,14 @@
         "debt_total": "33.200 € TTC",
         "timestamp_utc": "2026-04-02T18:09:07Z",
         "founder_lock": true,
-        "protocol_version": "V11_FR"
+        "protocol_version": "V11_FR",
+        "v10_2_inauguration": {
+            "version": "10.2",
+            "milestone": "Lafayette Inauguration",
+            "sovereignty_value": "12.500€",
+            "hash": "68752fc",
+            "timestamp": "2026-04-07T06:45:00Z"
+        }
     },
     "lockdown": {
         "status": "SOVEREIGNTY_LOCK_V11",
