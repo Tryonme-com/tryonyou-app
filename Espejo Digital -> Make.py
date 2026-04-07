@@ -47,6 +47,7 @@ class DivineoAutomation:
         Envía los datos del piloto a Make.
         Acciones: 'seleccion_perfecta', 'reserva_probador', 'silueta'.
         """
+        # datetime.now(timezone.utc): aware UTC (evita datetime.utcnow() deprecado en 3.12+).
         payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user_id": user_data.get("id"),
@@ -82,7 +83,13 @@ class DivineoAutomation:
 
 
 if __name__ == "__main__":
-    url = _default_make_webhook_url() or "https://hook.eu1.make.com/tu_id_de_webhook"
+    url = _default_make_webhook_url()
+    if not url:
+        print(
+            "Defina MAKE_MIRROR_DIGITAL_WEBHOOK_URL o MAKE_WEBHOOK_URL en el entorno "
+            "para ejecutar una prueba; no se enviarán peticiones sin URL."
+        )
+        raise SystemExit(0)
     tracker = DivineoAutomation(url)
     test_user = {"id": "user_88_pau"}
     test_look = {"brand": "Balmain", "id": "BLM-992", "size": "M"}

@@ -29,8 +29,22 @@
     if (window.stop) window.stop();
   }
   if (!hostMatches()) return;
-  // El bundle React asigna UserCheck tras el primer render; este script va en &lt;head&gt; y corre antes. Aplazar y revalidar.
-  setTimeout(applyLockdown, 400);
+  if (window.UserCheck) return;
+  if (postalPilotBypass()) return;
+  // React asigna UserCheck tras hidratar; esperar antes de bloquear para no revocar a usuarios autorizados.
+  var _attempts = 0;
+  var _maxAttempts = 8;
+  var _t = setInterval(function() {
+    if (shouldBypassLockdown()) {
+      clearInterval(_t);
+      return;
+    }
+    _attempts++;
+    if (_attempts >= _maxAttempts) {
+      clearInterval(_t);
+      applyLockdown();
+    }
+  }, 100);
 })();
 </script>
 <meta charset="UTF-8" />

@@ -16,3 +16,12 @@ export function getLafayetteStripeCheckoutUrl(): string {
   }
   return "";
 }
+
+/** Inauguración 12.500 € — Payment Link LIVE (Vercel). Fallback al contrato Lafayette si no está definido. */
+export function getInaugurationStripeCheckoutUrl(): string {
+  const direct = (
+    import.meta.env.VITE_INAUGURATION_STRIPE_CHECKOUT_URL as string | undefined
+  )?.trim();
+  if (direct) return direct;
+  return getLafayetteStripeCheckoutUrl();
+}

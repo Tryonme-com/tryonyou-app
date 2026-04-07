@@ -14,7 +14,10 @@ import {
   initFirebaseAnalytics,
   initFirebaseAppCheckIfConfigured,
 } from "./lib/firebaseApplet";
-import { getLafayetteStripeCheckoutUrl } from "./lib/lafayetteCheckout";
+import {
+  getInaugurationStripeCheckoutUrl,
+  getLafayetteStripeCheckoutUrl,
+} from "./lib/lafayetteCheckout";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
 import "./index.css";
@@ -433,6 +436,17 @@ export default function App() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const onInaugurationStripeCharge = () => {
+    const url = getInaugurationStripeCheckoutUrl();
+    if (!url) {
+      window.alert(
+        "Inauguration 12.500 €: define VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Payment Link LIVE) en Vercel, o VITE_LAFAYETTE_STRIPE_CHECKOUT_URL como respaldo.",
+      );
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div
       className="app-root"
@@ -534,7 +548,7 @@ export default function App() {
           <div style={{ marginTop: 16 }}>
             <button
               type="button"
-              onClick={onLafayetteStripeCharge}
+              onClick={onInaugurationStripeCharge}
               style={{
                 width: "100%",
                 maxWidth: 440,
@@ -552,7 +566,29 @@ export default function App() {
                 boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
               }}
             >
-              EJECUTAR COBRO LAFAYETTE
+              SOUVERAINETÉ: 12.500 €
+            </button>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              onClick={onLafayetteStripeCharge}
+              style={{
+                width: "100%",
+                maxWidth: 440,
+                padding: "10px 18px",
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,0.2)",
+                background: "rgba(255,255,255,0.75)",
+                color: "#26201A",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              Contrato Lafayette (Stripe)
             </button>
           </div>
           <p
