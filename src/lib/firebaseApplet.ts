@@ -6,6 +6,11 @@ import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv
 
 let appSingleton: FirebaseApp | null = null;
 
+/**
+ * Opciones Firebase (Vite sustituye `import.meta.env` en build; no hay carga async).
+ * Este módulo no llama a `getStorage()`: cualquier Storage debe usar el mismo `FirebaseApp`
+ * tras `initFirebaseApplet()`.
+ */
 function mergedOptions(): FirebaseOptions {
   const apiKey =
     viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
@@ -18,7 +23,10 @@ function mergedOptions(): FirebaseOptions {
   const storageBucketRaw =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
     String(appletConfig.storageBucket ?? "").trim();
-  const storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
+  let storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
+  if (!storageBucket && projectId) {
+    storageBucket = normalizeFirebaseStorageBucket(`${projectId}.appspot.com`);
+  }
   const messagingSenderId =
     viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
     String(appletConfig.messagingSenderId ?? "").trim() ||
@@ -31,11 +39,6 @@ function mergedOptions(): FirebaseOptions {
     viteFirebaseValue("VITE_FIREBASE_MEASUREMENT_ID") ||
     String(appletConfig.measurementId ?? "").trim() ||
     "";
-  if (import.meta.env.DEV && !storageBucket && projectId) {
-    console.warn(
-      "[TryOnYou Firebase] VITE_FIREBASE_STORAGE_BUCKET vacío: Storage/XML denegado hasta definir bucket (solo proyecto.appspot.com).",
-    );
-  }
   return {
     apiKey,
     authDomain,
@@ -62,8 +65,6 @@ export function applyUserCheckForAppCheck(): void {
 
 export function initFirebaseApplet(): FirebaseApp | null {
   applyUserCheckForAppCheck();
-  // No se usa getStorage() aquí: las VITE_* están resueltas en build (import.meta.env)
-  // antes de initializeApp(); evita inicializar Storage con bucket desalineado al .env.
   const opts = mergedOptions();
   if (!opts.apiKey || !opts.projectId) {
     console.warn(
