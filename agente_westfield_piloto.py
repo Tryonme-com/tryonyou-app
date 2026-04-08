@@ -2,25 +2,25 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN DE SEGURIDAD ---
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
+
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj" 
-REPLY_TO_EMAIL = "rubensanzburo@gmail.com"
+
 
 def enviar_v10_westfield(email_destinatario, nombre_contacto, centros):
-    # LINKS DE STRIPE WESTFIELD (Cifra corregida a 12.500 € para el Piloto)
     link_piloto = "https://buy.stripe.com/live_tu_link_12500_Westfield"
     link_mensual = "https://buy.stripe.com/live_tu_link_9900"
     link_anual = "https://buy.stripe.com/live_tu_link_98000"
 
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"P.A.U. | Innovation TryOnYou <{SENDER_EMAIL}>"
-        msg['To'] = email_destinatario
-        msg['Bcc'] = REPLY_TO_EMAIL
-        msg['Reply-To'] = REPLY_TO_EMAIL
+        msg["From"] = f"P.A.U. | Innovation TryOnYou <{sender_email}>"
+        msg["To"] = email_destinatario
+        msg["Bcc"] = reply_to
+        msg["Reply-To"] = reply_to
         msg['Subject'] = f"🔱 PROTOCOLE PILOTE SOUVERAINETÉ V10 - WESTFIELD PARIS"
 
         cuerpo = f"""
@@ -56,8 +56,8 @@ def enviar_v10_westfield(email_destinatario, nombre_contacto, centros):
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, [email_destinatario, REPLY_TO_EMAIL], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, [email_destinatario, reply_to], msg.as_string())
         server.quit()
 
         print(f"✅ PROTOCOLO PILOTO WESTFIELD (12.500€) ENVIADO.")

@@ -3,10 +3,7 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN DE PODER ---
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj"
-REPLY_TO = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
 
 # --- OBJETIVOS (30 CONTACTOS VERIFICADOS: DISTRITOS 1, 6, 7, 8, 16 + TOP VC) ---
 targets = [
@@ -33,11 +30,13 @@ targets = [
 
 def enviar_omega(target):
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"L'Architecte | TryOnYou Sovereign <{SENDER_EMAIL}>"
+        msg['From'] = f"L'Architecte | TryOnYou Sovereign <{sender_email}>"
         msg['To'] = target['e']
-        msg['Bcc'] = REPLY_TO
-        msg['Reply-To'] = REPLY_TO
+        msg['Bcc'] = reply_to
+        msg['Reply-To'] = reply_to
         msg['Subject'] = "🔱 MANIFESTE 2026 : Le Luxe, le Non-sens et votre Souveraineté (Essai Offert)"
 
         cuerpo = f"""
@@ -73,8 +72,8 @@ def enviar_omega(target):
         msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, [target['e'], REPLY_TO], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, [target['e'], reply_to], msg.as_string())
         server.quit()
         return True
     except Exception as e:

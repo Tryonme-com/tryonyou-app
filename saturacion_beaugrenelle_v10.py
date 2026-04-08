@@ -2,10 +2,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN DE SOBERANÍA ---
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj"
-REPLY_TO = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
+
 
 def disparar_protocolo_total():
     # Los 5 pilares de decisión en Apsys/Beaugrenelle
@@ -18,11 +16,13 @@ def disparar_protocolo_total():
     ]
     
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"L'Architecte | P.A.U. Sovereign <{SENDER_EMAIL}>"
+        msg['From'] = f"L'Architecte | P.A.U. Sovereign <{sender_email}>"
         msg['To'] = ", ".join(destinatarios)
-        msg['Bcc'] = REPLY_TO
-        msg['Reply-To'] = REPLY_TO
+        msg['Bcc'] = reply_to
+        msg['Reply-To'] = reply_to
         msg['Subject'] = "🔱 PROTOCOLE SOUVERAINETÉ V10 : Transformation Numérique Beaugrenelle Paris"
 
         cuerpo = f"""
@@ -59,10 +59,9 @@ def disparar_protocolo_total():
         
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        
-        # Envío masivo con copia para ti
-        server.sendmail(SENDER_EMAIL, destinatarios + [REPLY_TO], msg.as_string())
+        server.login(sender_email, sender_password)
+
+        server.sendmail(sender_email, destinatarios + [reply_to], msg.as_string())
         server.quit()
         print("✅ SATURACIÓN COMPLETADA: Los 5 responsables de Beaugrenelle han sido notificados.")
         

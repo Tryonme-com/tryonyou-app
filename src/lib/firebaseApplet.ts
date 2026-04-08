@@ -7,14 +7,20 @@ import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv
 let appSingleton: FirebaseApp | null = null;
 
 function mergedOptions(): FirebaseOptions {
+  const projectId =
+    viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") ||
+    String(appletConfig.projectId ?? "").trim() ||
+    "";
+  const authDomainFromEnv =
+    viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") ||
+    String(appletConfig.authDomain ?? "").trim();
+  const authDomain =
+    authDomainFromEnv ||
+    (projectId ? `${projectId}.firebaseapp.com` : "");
   const apiKey =
     viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
     String(appletConfig.apiKey ?? "").trim() ||
     "";
-  const authDomain =
-    viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
-  const projectId =
-    viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
   const storageBucketRaw =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
     String(appletConfig.storageBucket ?? "").trim();
@@ -38,7 +44,7 @@ function mergedOptions(): FirebaseOptions {
     apiKey,
     authDomain,
     projectId,
-    storageBucket,
+    ...(storageBucket ? { storageBucket } : {}),
     messagingSenderId,
     appId,
     measurementId: mid || undefined,

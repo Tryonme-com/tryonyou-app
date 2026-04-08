@@ -102,9 +102,7 @@ def sync_selective(root: str) -> int:
         "BUNKER_GIT_COMMIT_MSG",
         "CORE: consolidación selectiva | @CertezaAbsoluta @lo+erestu PCT/EP2025/067317",
     ).strip()
-    sub = (
-        "Bajo Protocolo de Soberanía V10 - Founder: Rubén",
-    )
+    sub = "Bajo Protocolo de Soberanía V10 - Founder: Rubén"
 
     r = _run(["git", "add", *paths], cwd=root)
     if r.returncode != 0:

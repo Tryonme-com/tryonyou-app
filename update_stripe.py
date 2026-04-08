@@ -1,9 +1,10 @@
 import stripe
 
-# TU CLAVE REAL DETECTADA EN EL LOG
-stripe.api_key = "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"
+from sovereign_script_env import require_stripe_secret
+
 
 def crear_productos_v10():
+    stripe.api_key = require_stripe_secret()
     print("🚀 Iniciando inyección de productos en Stripe...")
     productos = [
         {"name": "V10-LAFAYETTE-ENTRY-P1", "amount": 2750000, "desc": "Activación V10: Setup 10 Nodos + Exclusividad D9."},

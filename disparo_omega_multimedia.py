@@ -3,10 +3,7 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN DE PODER ---
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj"
-REPLY_TO = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
 
 # --- OBJETIVOS ESTRATÉGICOS ---
 inversores = [
@@ -21,10 +18,12 @@ inversores = [
 
 def enviar_pack_lujo(destinatario):
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"L'Architecte | Sovereign V10 <{SENDER_EMAIL}>"
+        msg['From'] = f"L'Architecte | Sovereign V10 <{sender_email}>"
         msg['To'] = destinatario
-        msg['Reply-To'] = REPLY_TO
+        msg['Reply-To'] = reply_to
         msg['Subject'] = "🔱 DOSSIER V10: Métriques Lafayette & Vision Stratégique"
 
         cuerpo = f"""
@@ -61,8 +60,8 @@ def enviar_pack_lujo(destinatario):
         
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, [destinatario, REPLY_TO], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, [destinatario, reply_to], msg.as_string())
         server.quit()
         return True
     except Exception as e:

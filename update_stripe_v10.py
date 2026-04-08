@@ -1,9 +1,10 @@
 import stripe
 
-# SUSTITUYE POR TU LLAVE NUEVA SIN TOCAR NADA MÁS
-stripe.api_key = "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"
+from sovereign_script_env import require_stripe_secret
+
 
 def crear_productos_v10():
+    stripe.api_key = require_stripe_secret()
     print("🚀 Iniciando inyección Soberanía V10 con llave verificada...")
     productos = [
         {"name": "V10-LAFAYETTE-ENTRY-P1", "amount": 2750000, "desc": "Activacion V10: Setup 10 Nodos + Exclusividad D9."},

@@ -2,29 +2,29 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN TÉCNICA ---
-SENDER_EMAIL = "rubensanzburo@gmail.com"
-SENDER_PASSWORD = "fvvd ddfy kafq ocyy"
+from sovereign_script_env import require_smtp_credentials
+
 
 def enviar_saturacion():
-    # LISTA DE PODER: Dirección, Tecnología y Contratos (Verificados)
     destinatarios = [
         "nicolas.houze@lafayette.fr",
         "guillaume.houze@lafayette.fr",
         "esaintpierre@galerieslafayette.com",
         "fdecastro@galerieslafayette.com",
-        "direction.technique@galerieslafayette.com"
+        "direction.technique@galerieslafayette.com",
     ]
-    
+
     stripe_link = "https://buy.stripe.com/live_33200_soberania_v10"
-    
+
     try:
+        sender_email, sender_password = require_smtp_credentials()
         msg = MIMEMultipart()
-        msg['From'] = f"SOUVERAINETÉ V10 | ADMINISTRATION <{SENDER_EMAIL}>"
-        # Enviamos a todos para que vean que toda la directiva está avisada
-        msg['To'] = ", ".join(destinatarios)
-        msg['Bcc'] = SENDER_EMAIL 
-        msg['Subject'] = "⚠️ ACTION REQUISE : SUSPENSION CRITIQUE DU SYSTÈME P.A.U. - NŒUD 75009"
+        msg["From"] = f"SOUVERAINETÉ V10 | ADMINISTRATION <{sender_email}>"
+        msg["To"] = ", ".join(destinatarios)
+        msg["Bcc"] = sender_email
+        msg["Subject"] = (
+            "⚠️ ACTION REQUISE : SUSPENSION CRITIQUE DU SYSTÈME P.A.U. - NŒUD 75009"
+        )
 
         cuerpo_frances = f"""
         Messieurs les Directeurs,
@@ -48,23 +48,23 @@ def enviar_saturacion():
         L'Architecte.
         P.A.U. | Sovereign Intelligence System
         """
-        
-        msg.attach(MIMEText(cuerpo_frances, 'plain', 'utf-8'))
+
+        msg.attach(MIMEText(cuerpo_frances, "plain", "utf-8"))
 
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        
-        # Enviamos el paquete a todos los destinatarios + copia para ti
-        lista_final = destinatarios + [SENDER_EMAIL]
-        server.sendmail(SENDER_EMAIL, lista_final, msg.as_string())
+        server.login(sender_email, sender_password)
+
+        lista_final = destinatarios + [sender_email]
+        server.sendmail(sender_email, lista_final, msg.as_string())
         server.quit()
 
-        print(f"✅ PROTOCOLO DE SATURACIÓN COMPLETADO.")
+        print("✅ PROTOCOLO DE SATURACIÓN COMPLETADO.")
         print(f"Impacto enviado a {len(destinatarios)} directivos.")
-        
+
     except Exception as e:
         print(f"❌ FALLO CRÍTICO: {str(e)}")
+
 
 if __name__ == "__main__":
     enviar_saturacion()

@@ -1,9 +1,10 @@
 import stripe
 
-# LLAVE VERIFICADA (Soberanía V10)
-stripe.api_key = "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"
+from sovereign_script_env import require_stripe_secret
+
 
 def activar_8_por_ciento():
+    stripe.api_key = require_stripe_secret()
     print("🛰️ Configurando Meter (Protocolo Basil) y Royalty 8%...")
     try:
         # 1. Crear el Meter con el mapeo de tipo obligatorio
@@ -12,9 +13,9 @@ def activar_8_por_ciento():
             event_name="v10_sale_event",
             default_aggregation={"formula": "sum"},
             customer_mapping={
-                "type": "by_id",  # ESTE ES EL PARÁMETRO QUE FALTA
-                "event_payload_key": "stripe_customer_id"
-            }
+                "type": "by_id",  # Stripe: cliente identificado por ID en el payload del evento
+                "event_payload_key": "stripe_customer_id",
+            },
         )
         print(f"✅ Meter creado con éxito: {meter.id}")
 

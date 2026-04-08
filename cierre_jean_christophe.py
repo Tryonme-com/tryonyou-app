@@ -2,19 +2,19 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN BLINDADA ---
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj" 
-REPLY_TO_EMAIL = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
+
 
 def enviar_cierre_ip(destinatario, nombre, link):
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"P.A.U. | Sovereign Capital <{SENDER_EMAIL}>"
-        msg['To'] = destinatario
-        msg['Bcc'] = REPLY_TO_EMAIL
-        msg['Reply-To'] = REPLY_TO_EMAIL
-        msg['Subject'] = f"🔱 PROTOCOLO DE CIERRE IP V10 - ATENCIÓN: {nombre.upper()}"
+        msg["From"] = f"P.A.U. | Sovereign Capital <{sender_email}>"
+        msg["To"] = destinatario
+        msg["Bcc"] = reply_to
+        msg["Reply-To"] = reply_to
+        msg["Subject"] = f"🔱 PROTOCOLO DE CIERRE IP V10 - ATENCIÓN: {nombre.upper()}"
 
         cuerpo = f"""
         Hola {nombre},
@@ -31,17 +31,22 @@ def enviar_cierre_ip(destinatario, nombre, link):
         Atentamente,
         El Arquitecto.
         """
-        
-        msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
+
+        msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, [destinatario, REPLY_TO_EMAIL], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, [destinatario, reply_to], msg.as_string())
         server.quit()
         print(f"✅ PROTOCOLO ENVIADO A {nombre.upper()} ({destinatario}).")
-        
+
     except Exception as e:
         print(f"❌ FALLO EN EL SISTEMA: {str(e)}")
 
+
 if __name__ == "__main__":
-    enviar_cierre_ip("invest@patrimoine-v10.fr", "Jean-Christophe", "https://buy.stripe.com/live_tu_link_98250")
+    enviar_cierre_ip(
+        "invest@patrimoine-v10.fr",
+        "Jean-Christophe",
+        "https://buy.stripe.com/live_tu_link_98250",
+    )

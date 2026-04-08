@@ -16,6 +16,7 @@ import stripe
 
 _DEFAULT_PRODUCT_NAME = "Inauguración V10.2 Lafayette"
 _DEFAULT_AMOUNT_CENTS = 1_250_000  # 12.500,00 €
+_MANIFEST_PATENT = "PCT/EP2025/067317"
 
 
 def _session_id_suffix(success_url: str) -> str:
@@ -81,6 +82,14 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
 
     success_with_session = f"{success}{_session_id_suffix(success)}"
     line_items = _resolve_line_items()
+    meta_product = (os.getenv("STRIPE_INAUGURATION_PRODUCT_NAME") or "").strip() or _DEFAULT_PRODUCT_NAME
+    if line_items and "price_data" in line_items[0]:
+        meta_product = (
+            line_items[0]
+            .get("price_data", {})
+            .get("product_data", {})
+            .get("name", meta_product)
+        )
 
     try:
         session = stripe.checkout.Session.create(
@@ -88,6 +97,11 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
             line_items=line_items,
             success_url=success_with_session,
             cancel_url=cancel,
+            metadata={
+                "patent": _MANIFEST_PATENT,
+                "flow": "v10_2_inauguration",
+                "product_name": meta_product,
+            },
         )
         url = session.url
         if not url:

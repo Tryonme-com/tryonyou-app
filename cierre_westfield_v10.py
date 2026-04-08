@@ -2,19 +2,21 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN SELLADA ---
-SENDER_EMAIL = "admin@tryonyou.app"
-SENDER_PASSWORD = "zxjn nbai xifd ifbj" 
-REPLY_TO_EMAIL = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
+
 
 def enviar_cierre_westfield(destinatario, link_stripe, parte):
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"P.A.U. | IP Administration <{SENDER_EMAIL}>"
-        msg['To'] = destinatario
-        msg['Bcc'] = REPLY_TO_EMAIL
-        msg['Reply-To'] = REPLY_TO_EMAIL
-        msg['Subject'] = f"🔱 PROTOCOLE DE TRANSFERT IP V10 - WESTFIELD LA DÉFENSE [{parte}]"
+        msg["From"] = f"P.A.U. | IP Administration <{sender_email}>"
+        msg["To"] = destinatario
+        msg["Bcc"] = reply_to
+        msg["Reply-To"] = reply_to
+        msg["Subject"] = (
+            f"🔱 PROTOCOLE DE TRANSFERT IP V10 - WESTFIELD LA DÉFENSE [{parte}]"
+        )
 
         cuerpo = f"""
         À l'attention de la Direction Foncière,
@@ -32,18 +34,22 @@ def enviar_cierre_westfield(destinatario, link_stripe, parte):
         L'Architecte.
         TryOnYou-App | Sovereign Intelligence
         """
-        
-        msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
+
+        msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, [destinatario, REPLY_TO_EMAIL], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, [destinatario, reply_to], msg.as_string())
         server.quit()
         print(f"✅ PROTOCOLO IP {parte} ENVIADO A WESTFIELD.")
-        
+
     except Exception as e:
         print(f"❌ FALLO EN EL ENVÍO: {str(e)}")
 
+
 if __name__ == "__main__":
-    # DISPARO A LA DIRECCIÓN DE GESTIÓN DE WESTFIELD
-    enviar_cierre_westfield("asset-management@urw.com", "https://buy.stripe.com/live_tu_link_98250_p1", "1")
+    enviar_cierre_westfield(
+        "asset-management@urw.com",
+        "https://buy.stripe.com/live_tu_link_98250_p1",
+        "1",
+    )

@@ -7,6 +7,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+.env_security_lock
 
 # Frontend build (Vercel reconstruye en deploy)
 dist/

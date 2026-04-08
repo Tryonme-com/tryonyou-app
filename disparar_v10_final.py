@@ -2,23 +2,29 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN DE PODER ---
-SENDER_EMAIL = "admin@tryonyou-app.com"
-SENDER_PASSWORD = "fvvdddfykafqocyy"
-REPLY_TO_EMAIL = "rubensanzburo@gmail.com"
+from sovereign_script_env import require_smtp_credentials, reply_to_from_env
+
 
 def enviar_soberania():
-    destinatarios = ["nicolas.houze@lafayette.fr", "g.houze@lafayette.fr", "egandini@lafayette.fr"]
+    destinatarios = [
+        "nicolas.houze@lafayette.fr",
+        "g.houze@lafayette.fr",
+        "egandini@lafayette.fr",
+    ]
     link_mensual = "https://buy.stripe.com/live_tu_link_33200"
     link_anual = "https://buy.stripe.com/live_tu_link_98000"
 
     try:
+        sender_email, sender_password = require_smtp_credentials()
+        reply_to = reply_to_from_env(sender_email)
         msg = MIMEMultipart()
-        msg['From'] = f"Souveraineté V10 Administration <{SENDER_EMAIL}>"
-        msg['To'] = ", ".join(destinatarios)
-        msg['Reply-To'] = REPLY_TO_EMAIL
-        msg['Bcc'] = SENDER_EMAIL
-        msg['Subject'] = "⚠️ URGENT : RÉTABLISSEMENT DU SERVICE V10 - GALERIES LAFAYETTE"
+        msg["From"] = f"Souveraineté V10 Administration <{sender_email}>"
+        msg["To"] = ", ".join(destinatarios)
+        msg["Reply-To"] = reply_to
+        msg["Bcc"] = sender_email
+        msg["Subject"] = (
+            "⚠️ URGENT : RÉTABLISSEMENT DU SERVICE V10 - GALERIES LAFAYETTE"
+        )
 
         cuerpo = f"""
         Monsieur,
@@ -37,17 +43,18 @@ def enviar_soberania():
         L'Architecte.
         TryOnYou-App | Sovereign Intelligence
         """
-        msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
+        msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
 
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, destinatarios + [SENDER_EMAIL], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, destinatarios + [sender_email], msg.as_string())
         server.quit()
         print("✅ PROTOCOLO ENVIADO A LA DIRECTIVA. COPIA EN TU BANDEJA.")
 
     except Exception as e:
         print(f"❌ FALLO EN EL ENVÍO: {str(e)}")
+
 
 if __name__ == "__main__":
     enviar_soberania()

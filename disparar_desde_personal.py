@@ -2,21 +2,24 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- CONFIGURACIÓN YA TESTEADA ---
-SENDER_EMAIL = "rubensanzburo@gmail.com"
-SENDER_PASSWORD = "fvvdddfykafqocyy"
+from sovereign_script_env import require_smtp_credentials
+
 
 def enviar_soberania():
-    destinatarios = ["nicolas.houze@lafayette.fr", "g.houze@lafayette.fr", "egandini@lafayette.fr"]
-    # Links Reales
+    destinatarios = [
+        "nicolas.houze@lafayette.fr",
+        "g.houze@lafayette.fr",
+        "egandini@lafayette.fr",
+    ]
     link_mensual = "https://buy.stripe.com/live_33200_soberania_v10"
     link_anual = "https://buy.stripe.com/live_98000_anual_v10"
 
     try:
+        sender_email, sender_password = require_smtp_credentials()
         msg = MIMEMultipart()
-        msg['From'] = f"Rubén Sanz | Souveraineté V10 <{SENDER_EMAIL}>"
-        msg['To'] = ", ".join(destinatarios)
-        msg['Subject'] = "⚠️ URGENT : SUSPENSION DU SERVICE V10 - GALERIES LAFAYETTE"
+        msg["From"] = f"Rubén Sanz | Souveraineté V10 <{sender_email}>"
+        msg["To"] = ", ".join(destinatarios)
+        msg["Subject"] = "⚠️ URGENT : SUSPENSION DU SERVICE V10 - GALERIES LAFAYETTE"
 
         cuerpo = f"""
         Monsieur,
@@ -34,17 +37,18 @@ def enviar_soberania():
         Rubén Sanz.
         L'Architecte | TryOnYou
         """
-        msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
+        msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
 
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, destinatarios + [SENDER_EMAIL], msg.as_string())
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, destinatarios + [sender_email], msg.as_string())
         server.quit()
         print("✅ PROTOCOLO ENVIADO DESDE GMAIL PERSONAL. ÉXITO.")
 
     except Exception as e:
         print(f"❌ ERROR: {str(e)}")
+
 
 if __name__ == "__main__":
     enviar_soberania()
