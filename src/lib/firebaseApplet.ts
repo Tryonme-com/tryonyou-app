@@ -15,13 +15,9 @@ function mergedOptions(): FirebaseOptions {
     viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
   const projectId =
     viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
-  const storageBucketRaw =
+  const storageBucket =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
-    String(appletConfig.storageBucket ?? "").trim();
-  let storageBucket: string | undefined = normalizeFirebaseStorageBucket(storageBucketRaw);
-  if (!storageBucket && projectId) {
-    storageBucket = normalizeFirebaseStorageBucket(`${projectId}.appspot.com`);
-  }
+    appletConfig.storageBucket;
   const messagingSenderId =
     viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
     String(appletConfig.messagingSenderId ?? "").trim() ||
