@@ -44,8 +44,9 @@ function stripInvisibleAndEdgeSpaces(s: string): string {
 /**
  * Firebase `storageBucket` debe ser solo `proyecto.appspot.com` (sin `gs://` ni path).
  * Un `.env` con `gs://bucket/path` provoca mismatch con Storage y errores de acceso.
+ * Cadena vacía → `undefined` (contrato SDK: opcional, no string vacío).
  */
-export function normalizeFirebaseStorageBucket(raw: string): string {
+export function normalizeFirebaseStorageBucket(raw: string): string | undefined {
   let x = stripInvisibleAndEdgeSpaces(String(raw ?? ""));
   if (x.length >= 2) {
     const open = x[0];
