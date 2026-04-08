@@ -501,7 +501,7 @@ export default function App() {
               color: "#26201A",
             }}
           >
-            Sabrás si te queda bien, antes de comprarlo.
+            Vous saurez si ça vous va, avant de l'acheter.
           </h1>
           <p
             style={{
@@ -512,8 +512,8 @@ export default function App() {
               color: "#4a4034",
             }}
           >
-            Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
-            Solo la certeza de verte como eres antes de pagar un solo euro.
+            Miroir digital en taille réelle. Sans cabines cruelles, sans tailles qui blessent.
+            Juste la certitude de vous voir tel que vous êtes, avant de payer un seul euro.
           </p>
           <div
             style={{
@@ -530,7 +530,7 @@ export default function App() {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setEmailHero(e.target.value)
               }
-              placeholder="Tu email para probarla hoy"
+              placeholder="Votre email pour l'essayer aujourd'hui"
               style={{
                 flex: "1 1 220px",
                 minWidth: 0,
@@ -590,7 +590,7 @@ export default function App() {
                 boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
               }}
             >
-              PAGAR — 12.500 €
+              PAYER — 12 500 €
             </button>
             {pauInaugurationWhisper ? (
               <p
@@ -626,7 +626,7 @@ export default function App() {
                 cursor: "pointer",
               }}
             >
-              Contrato Lafayette (Stripe)
+              Contrat Lafayette (Stripe)
             </button>
           </div>
           <p
@@ -675,7 +675,7 @@ export default function App() {
                 cursor: "pointer",
               }}
             >
-              Únete a la beta
+              Rejoignez la bêta
             </button>
           }
         />

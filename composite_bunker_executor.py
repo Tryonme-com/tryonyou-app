@@ -1,14 +1,12 @@
 """
-Composite Bunker Executor — Divineo V9 / Omega (Agente 70).
+Composite Bunker Executor — VetosCore + Protocolo BPI 7 500 € + leads estratégicos.
 
-Unifica:
-  - Inferencia asíncrona VetosCore (umbral 0,92)
-  - Validación protocolo BPI 7 500 € (validate_revenue_stream)
-  - Captura de leads en dominios estratégicos (Inditex, Zara, Station F)
+No expone secretos en código:
+  - Umbral y lógica financiera: reutiliza VetosInferenceSystem (vetos_core_inference.py)
+  - Webhook Make.com: variable de entorno MAKE_WEBHOOK_URL (o específica de este flujo)
 
-Webhook Make: MAKE_WEBHOOK_URL_OMEGA o MAKE_WEBHOOK_URL (nunca hardcodear URLs).
-
-Patente: PCT/EP2025/067317 | SIREN (ref.): 943 610 196
+Patente (ref.): PCT/EP2025/067317
+SIREN (ref.): 943 610 196
 """
 
 from __future__ import annotations
@@ -21,8 +19,11 @@ from typing import Any, Iterable
 
 import requests
 
-from bunker_full_orchestrator import append_waitlist_json
 from vetos_core_inference import PaymentDelayError, VetosInferenceSystem
+from bunker_full_orchestrator import append_waitlist_json
+
+
+TARGET_DOMAINS: tuple[str, ...] = ("@inditex.com", "@zara.com", "@stationf.co", "@stationf.co.uk")
 
 
 def _truthy_env(name: str) -> bool:
@@ -30,10 +31,13 @@ def _truthy_env(name: str) -> bool:
 
 
 def _make_post_omega(payload: dict[str, Any]) -> bool:
+    """
+    Webhook Make — usa MAKE_WEBHOOK_URL_OMEGA si existe, si no MAKE_WEBHOOK_URL.
+    Contrato estable: email + source + tags de dominio y score.
+    """
     url = (
         os.getenv("MAKE_WEBHOOK_URL_OMEGA", "").strip()
         or os.getenv("MAKE_WEBHOOK_URL", "").strip()
-        or os.getenv("MAKE_ESPEJO_WEBHOOK_URL", "").strip()
     )
     if not url:
         return False
@@ -45,17 +49,10 @@ def _make_post_omega(payload: dict[str, Any]) -> bool:
 
 
 def _domain_tag(email: str) -> str | None:
-    """Detecta @inditex, @zara, @stationf y variantes corporativas."""
     e = (email or "").strip().lower()
-    if "@" not in e:
-        return None
-    domain = e.split("@", 1)[1]
-    if "inditex" in domain:
-        return "inditex"
-    if "zara" in domain:
-        return "zara"
-    if "stationf" in domain:
-        return "stationf"
+    for dom in TARGET_DOMAINS:
+        if dom in e:
+            return dom
     return None
 
 
@@ -85,8 +82,8 @@ class CompositeBunker:
     """
     Orquestador Omega:
       - Inferencia VetosCore (threshold 0.92)
-      - Validación Protocolo BPI (7 500 € + retraso)
-      - Lead estratégico vía Make + waitlist (append_waitlist_json)
+      - Validación Protocolo BPI (7 500 €)
+      - Lead estratégico vía Make + persistencia local
     """
 
     def __init__(self, *, threshold: float = 0.92) -> None:
@@ -100,12 +97,15 @@ class CompositeBunker:
         days_delay: int = 0,
         extra_tags: Iterable[str] | None = None,
     ) -> CompositeResult:
+        # 1) Validación financiera Bpifrance 7 500 €
+        bp_ok = False
         try:
             await self.system.validate_revenue_stream(revenue_eur, days_delay=days_delay)
             bp_ok = True
         except PaymentDelayError:
             bp_ok = False
 
+        # 2) Inferencia VetosCore
         payload = {
             "id": "composite_bunker_lead",
             "module": "VetosCore",
@@ -114,11 +114,11 @@ class CompositeBunker:
         }
         inference = await self.system.execute_inference(payload)
 
-        strategic = _domain_tag(email)
+        # 3) Lead estratégico (solo dominios objetivo)
+        tag = _domain_tag(email)
         tags = list(extra_tags or [])
-        if strategic:
-            tags.append(f"strategic:{strategic}")
-
+        if tag:
+            tags.append(tag)
         lead_payload = {
             "event": "omega_lead",
             "email": email,
@@ -151,16 +151,18 @@ class CompositeBunker:
 
 async def _demo() -> None:
     bunker = CompositeBunker()
-    sample_email = os.getenv("OMEGA_TEST_EMAIL", "pilot@stationf.co")
+    sample_email = os.getenv("OMEGA_TEST_EMAIL", "vip@stationf.co")
     res = await bunker.process_lead(email=sample_email)
     print(json.dumps(res.to_dict(), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
+    # Demo local: no envía nada si no hay webhook configurado y guarda en leads_empire/ o /tmp.
     if not _truthy_env("OMEGA_COMPOSITE_RUN"):
         print(
-            "Define OMEGA_COMPOSITE_RUN=1 para demo local "
-            "(OMEGA_TEST_EMAIL opcional; MAKE_WEBHOOK_URL en .env)."
+            "Define OMEGA_COMPOSITE_RUN=1 para ejecutar la demo local "
+            "(usa OMEGA_TEST_EMAIL para fijar el email de prueba)."
         )
     else:
         asyncio.run(_demo())
+
