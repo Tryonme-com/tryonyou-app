@@ -108,6 +108,49 @@ Architecte Souverain & Visionnaire
 """
 
 
+_SUBJECT_AUBENARD_V9 = (
+    "ESTRATEGIA LEGAL V9: PROPUESTA DE LICENCIAMIENTO Y ACUERDO AMIGABLE"
+)
+
+
+def cuerpo_aubenard_legal_v9() -> str:
+    return """\
+Estimado Me Aubenard,
+
+Como continuación al expediente enviado, deseo precisar la estrategia comercial y legal \
+a seguir con las 20 entidades infractoras detectadas:
+
+1. FASE INICIAL: ACUERDO AMIGABLE
+Antes de iniciar litigios agresivos, el objetivo es ofrecer una salida comercial. \
+Queremos que estas empresas tengan la oportunidad de regularizar su situación \
+adquiriendo los derechos de uso de la tecnología TryOnYou V9.
+
+2. PROPUESTA DE LICENCIAMIENTO:
+Solicito que el requerimiento inicial incluya una oferta formal para que estas entidades \
+puedan "hacerlo bien" mediante:
+- Compra de Licencias de Uso: Pago por el derecho a integrar la lógica de \
+'Snap-to-Look' y el 'Zero Size Engine'.
+- Regularización Tecnológica: Sustituir sus sistemas de estimación estadística por \
+nuestra biometría real para dejar de engañar al consumidor.
+- Adhesión al Sistema de Royalties V10: Integración en nuestro modelo de facturación \
+automatizada.
+
+3. ACCIÓN REQUERIDA:
+Prepare un modelo de comunicación que, aunque firme en la detección de la infracción, \
+invite a una mesa de negociación para la compra de derechos. El mensaje debe ser claro: \
+o adquieren la licencia oficial de TryOnYou o procederemos con la demanda por daños, \
+perjuicios y competencia desleal.
+
+Esta vía nos permite monetizar los activos de forma inmediata y consolidar nuestra \
+tecnología como el estándar del mercado de lujo.
+
+Atentamente,
+
+Rubén Espinar
+Fundador tryonyou-app
+"""
+
+
 def enviar_correo_soberano(
     destinatario: str,
     asunto: str,
@@ -176,9 +219,16 @@ def main() -> int:
     p.add_argument("--dry-run", action="store_true", help="No envía, solo muestra resumen")
     p.add_argument("--printemps", metavar="EMAIL", help="Destinatario Printemps 75009")
     p.add_argument("--bon-marche", metavar="EMAIL", help="Destinatario Le Bon Marché 75007")
+    p.add_argument(
+        "--aubenard",
+        metavar="EMAIL",
+        nargs="?",
+        const="Contact@aubenard.fr",
+        help="Destinatario Aubenard (defecto: Contact@aubenard.fr) — Estrategia Legal V9",
+    )
     args = p.parse_args()
 
-    if not args.printemps and not args.bon_marche:
+    if not args.printemps and not args.bon_marche and not args.aubenard:
         p.print_help()
         return 2
 
@@ -195,6 +245,13 @@ def main() -> int:
             args.bon_marche,
             "Alliance de Noblesse : Zero-Size Biometrics",
             cuerpo_bonmarche(),
+            dry_run=args.dry_run,
+        ) and ok
+    if args.aubenard:
+        ok = enviar_correo_soberano(
+            args.aubenard,
+            _SUBJECT_AUBENARD_V9,
+            cuerpo_aubenard_legal_v9(),
             dry_run=args.dry_run,
         ) and ok
     return 0 if ok else 1
