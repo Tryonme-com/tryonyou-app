@@ -25,8 +25,8 @@ from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import Gather, VoiceResponse
 
 try:
-    from voice_agent.personaplex_integration import personaplex_duplex_status
-except ImportError:  # ej. `uvicorn main:app` desde voice_agent/
+    from .personaplex_integration import personaplex_duplex_status
+except ImportError:
     from personaplex_integration import personaplex_duplex_status
 
 app = FastAPI(title="TryOnMe Voice Orchestrator", version="1.0.0")
@@ -92,12 +92,11 @@ def _respond_path() -> str:
 @app.get("/health")
 async def health() -> dict[str, Any]:
     ok = bool(_gemini_key())
-    duplex = personaplex_duplex_status()
     return {
         "ok": True,
         "gemini_configured": ok,
         "voice_webhook": _voice_path(),
-        "full_duplex_personaplex": duplex,
+        "personaplex": personaplex_duplex_status(),
     }
 
 
