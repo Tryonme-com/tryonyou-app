@@ -6,11 +6,6 @@ import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv
 
 let appSingleton: FirebaseApp | null = null;
 
-/**
- * Opciones Firebase (Vite sustituye `import.meta.env` en build; no hay carga async).
- * Este módulo no llama a `getStorage()`: cualquier Storage debe usar el mismo `FirebaseApp`
- * tras `initFirebaseApplet()`.
- */
 function mergedOptions(): FirebaseOptions {
   const apiKey =
     viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
@@ -20,13 +15,9 @@ function mergedOptions(): FirebaseOptions {
     viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
   const projectId =
     viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
-  const storageBucketRaw =
+  const storageBucket =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
-    String(appletConfig.storageBucket ?? "").trim();
-  let storageBucket = normalizeFirebaseStorageBucket(storageBucketRaw);
-  if (!storageBucket && projectId) {
-    storageBucket = normalizeFirebaseStorageBucket(`${projectId}.appspot.com`);
-  }
+    appletConfig.storageBucket;
   const messagingSenderId =
     viteFirebaseValue("VITE_FIREBASE_MESSAGING_SENDER_ID") ||
     String(appletConfig.messagingSenderId ?? "").trim() ||
