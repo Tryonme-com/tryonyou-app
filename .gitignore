@@ -44,3 +44,7 @@ logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
 logs/SISTEMA_SUSPENDIDO.jsonl
+
+# stripe_agent — respuestas de API en local (pueden contener IDs sensibles; nunca subir)
+stripe_agent_*.json
+stripe_agent_*.log
