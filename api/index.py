@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,9 +16,13 @@ from bunker_full_orchestrator import (
     orchestrate_mirror_shadow_dwell,
 )
 from mirror_digital_make import forward_mirror_event
+from peacock_core import IdempotencyGuard, verify_webhook_sha1_signature
 from stripe_inauguration import create_inauguration_checkout_session
 
 app = Flask(__name__)
+
+# Guardia de idempotencia compartida para prevenir procesamiento duplicado de eventos.
+_idempotency_guard = IdempotencyGuard()
 
 
 @app.route("/")
@@ -78,7 +83,29 @@ def mirror_digital_event_options():
 @app.route("/api/mirror_digital_event", methods=["POST"])
 @app.route("/mirror_digital_event", methods=["POST"])
 def mirror_digital_event():
-    body = request.get_json(force=True, silent=True) or {}
+    raw_body = request.get_data(cache=True)
+
+    # Verificación de firma HMAC-SHA1 cuando el secreto está configurado.
+    webhook_secret = os.environ.get("MAKE_WEBHOOK_SECRET", "").strip()
+    if webhook_secret:
+        sig = request.headers.get("X-Hub-Signature", "")
+        if not verify_webhook_sha1_signature(raw_body, sig, webhook_secret):
+            return _cors(jsonify({"status": "error", "message": "invalid_signature"})), 401
+
+    try:
+        body = json.loads(raw_body) if raw_body else {}
+        if not isinstance(body, dict):
+            body = {}
+    except (json.JSONDecodeError, ValueError):
+        body = {}
+
+    # Guardia de idempotencia: rechaza eventos ya procesados recientemente.
+    event_id = str(body.get("event_id") or "").strip()
+    if event_id:
+        if _idempotency_guard.is_duplicate(event_id):
+            return _cors(jsonify({"status": "ok", "duplicate": True, "skipped": True})), 200
+        _idempotency_guard.mark_seen(event_id)
+
     payload, code = forward_mirror_event(body)
     return _cors(jsonify(payload)), code
 
