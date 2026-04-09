@@ -26,6 +26,13 @@ import {
 } from "./lib/pauVoice";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
+import {
+  type AppLocale,
+  SALES_COPY,
+  type SalesCopy,
+  SUPPORTED_LOCALES,
+  formatEurAmount,
+} from "./locales/salesCopy";
 import "./index.css";
 import "./App.css";
 
@@ -181,8 +188,8 @@ async function postLead(intent: OfrendaKey): Promise<void> {
   }
 }
 
-async function postBetaWaitlist(): Promise<void> {
-  const email = window.prompt("Email (opcional) para la lista beta:", "") ?? "";
+async function postBetaWaitlist(copy: SalesCopy): Promise<void> {
+  const email = window.prompt(copy.betaPromptEmail, "") ?? "";
   const payload = {
     email: email.trim() || undefined,
     source: "app_v10",
@@ -200,22 +207,24 @@ async function postBetaWaitlist(): Promise<void> {
       make_ok?: boolean;
     };
     if (!r.ok) {
-      window.alert("Lista beta: error de API (revisa consola).");
+      window.alert(copy.betaApiError);
       return;
     }
+    const status = j.make_ok ? copy.betaWebhookStatusOk : copy.betaWebhookStatusFail;
+    const webhookMsg = copy.betaWebhookStatusTemplate.replace("{{status}}", status);
     window.alert(
       withPauSeal(
         j.waitlist_persisted
-          ? "Inscrito — Make + waitlist (leads_empire/waitlist.json o /tmp en Vercel)."
-          : `Webhook Make: ${j.make_ok ? "ok" : "no configurado / fallo"}. Persistencia limitada en serverless.`,
+          ? copy.betaWaitlistStored
+          : webhookMsg,
       ),
     );
   } catch {
-    window.alert("Sin conexión al bunker API.");
+    window.alert(copy.bunkerOffline);
   }
 }
 
-async function postPerfectCheckout(fabricSensation: string): Promise<void> {
+async function postPerfectCheckout(fabricSensation: string, copy: SalesCopy): Promise<void> {
   try {
     const r = await fetch("/api/v1/checkout/perfect-selection", {
       method: "POST",
@@ -245,11 +254,7 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     } else if (!j.emotional_seal) {
-      window.alert(
-        withPauSeal(
-          "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
-        ),
-      );
+      window.alert(withPauSeal(copy.perfectSelectionFallback));
     }
   } catch {
     /* silencieux */
@@ -264,6 +269,7 @@ export default function App() {
   }
 
   const [elasticLabel, setElasticLabel] = useState("—");
+  const [locale, setLocale] = useState<AppLocale>("fr");
   const [julesLane, setJulesLane] = useState<string>(
     "PAU · Orchestration Jules…",
   );
@@ -319,6 +325,7 @@ export default function App() {
 
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
+  const copy = SALES_COPY[locale];
 
   /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
   useEffect(() => {
@@ -368,7 +375,7 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
-      void postPerfectCheckout(elasticLabel);
+      void postPerfectCheckout(elasticLabel, copy);
       return;
     }
     if (key === "balmain") {
@@ -378,14 +385,14 @@ export default function App() {
       mirrorDigitalMiddleware.onReserveFittingClick(elasticLabel);
     }
     void postLead(key);
-    const copy: Record<Exclude<OfrendaKey, "selection">, string> = {
-      balmain: "Ligne Balmain — Espejo Digital notificado; poursuite sous protocole Zero-Size.",
-      reserve: "QR cabine VIP — Lafayette, essai en courtoisie Divineo.",
-      combo: "Lignes alternatives chargées — composition Zero-Size.",
-      save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
-      share: "Partage généré — métadonnées d’ajustage neutralisées.",
+    const ofrendaCopy: Record<Exclude<OfrendaKey, "selection">, string> = {
+      balmain: copy.ofrendaBalmain,
+      reserve: copy.ofrendaReserve,
+      combo: copy.ofrendaCombo,
+      save: copy.ofrendaSave,
+      share: copy.ofrendaShare,
     };
-    window.alert(withPauSeal(copy[key]));
+    window.alert(withPauSeal(ofrendaCopy[key]));
   };
 
   const theSnap = () => {
@@ -405,7 +412,7 @@ export default function App() {
   const onHeroSubmit = async () => {
     const email = emailHero.trim();
     const normalized =
-      email.length > 0 ? email : window.prompt("Email para probarla hoy:", "") ?? "";
+      email.length > 0 ? email : window.prompt(copy.heroEmailPrompt, "") ?? "";
     const finalEmail = normalized.trim();
     if (!finalEmail) return;
     const payload = {
@@ -425,27 +432,25 @@ export default function App() {
         make_ok?: boolean;
       };
       if (!r.ok) {
-        window.alert("No se ha podido registrar tu slot hoy. Prueba en unos minutos.");
+        window.alert(copy.heroSlotError);
         return;
       }
       window.alert(
         withPauSeal(
           j.waitlist_persisted || j.make_ok
-            ? "Slot reservado. Te contactaremos para probarla hoy."
-            : "Hemos recibido tu solicitud. El bunker te confirmará en breve.",
+            ? copy.heroSlotReserved
+            : copy.heroSlotReceived,
         ),
       );
     } catch {
-      window.alert("Sin conexión al bunker API.");
+      window.alert(copy.bunkerOffline);
     }
   };
 
   const onLafayetteStripeCharge = () => {
     const url = getLafayetteStripeCheckoutUrl();
     if (!url) {
-      window.alert(
-        "Contrato Lafayette: define VITE_LAFAYETTE_STRIPE_CHECKOUT_URL (Stripe Payment Link LIVE) en Vercel o .env local.",
-      );
+      window.alert(copy.lafayetteMissingCheckout);
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
@@ -455,9 +460,7 @@ export default function App() {
     const url =
       getInaugurationStripeEnvUrl() || getInaugurationStripeCheckoutUrl();
     if (!url) {
-      window.alert(
-        "Liquidez: configura VITE_INAUGURATION_STRIPE_CHECKOUT_URL (Payment Link LIVE 12.500 €) en Vercel / .env.",
-      );
+      window.alert(copy.inaugurationMissingCheckout);
       return;
     }
     // Prioridad env inaugural; sin alert posterior que bloquee el flujo ni validación Shopify/Firebase.
@@ -482,6 +485,25 @@ export default function App() {
             margin: "0 auto",
           }}
         >
+          <div className="hero-brand-row">
+            <img
+              src="/assets/logo_tryonyou_official.png"
+              alt="TryOnYou logo officiel"
+              className="hero-official-logo"
+            />
+            <div className="hero-locale-switch" role="group" aria-label={copy.localeLabel}>
+              {SUPPORTED_LOCALES.map((loc) => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => setLocale(loc)}
+                  data-active={locale === loc ? "1" : undefined}
+                >
+                  {loc.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
           <p
             style={{
               fontSize: 11,
@@ -491,7 +513,7 @@ export default function App() {
               marginBottom: 10,
             }}
           >
-            TRYONYOU · DIVINEO
+            {copy.badge}
           </p>
           <h1
             style={{
@@ -501,7 +523,7 @@ export default function App() {
               color: "#26201A",
             }}
           >
-            Sabrás si te queda bien, antes de comprarlo.
+            {copy.heroTitle}
           </h1>
           <p
             style={{
@@ -512,8 +534,7 @@ export default function App() {
               color: "#4a4034",
             }}
           >
-            Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
-            Solo la certeza de verte como eres antes de pagar un solo euro.
+            {copy.heroLead}
           </p>
           <div
             style={{
@@ -530,7 +551,7 @@ export default function App() {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setEmailHero(e.target.value)
               }
-              placeholder="Tu email para probarla hoy"
+              placeholder={copy.heroEmailPlaceholder}
               style={{
                 flex: "1 1 220px",
                 minWidth: 0,
@@ -559,8 +580,13 @@ export default function App() {
                 boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
               }}
             >
-              Pruébatela YA (5 slots hoy)
+              {copy.heroCta}
             </button>
+          </div>
+          <div className="hero-house-phrases">
+            {copy.housePhrases.map((phrase) => (
+              <p key={phrase}>« {phrase} »</p>
+            ))}
           </div>
           <div style={{ marginTop: 16 }}>
             <button
@@ -570,9 +596,9 @@ export default function App() {
               onFocus={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
               title={
                 pauInaugurationWhisper ||
-                "PAU — inauguración soberana LIVE; tu visión merece este sello."
+                copy.inaugurationTitle
               }
-              aria-label="PAU — PAGAR 12.500 euros inauguración LIVE (Stripe)"
+              aria-label={copy.inaugurationAriaLabel}
               style={{
                 width: "100%",
                 maxWidth: 440,
@@ -590,7 +616,7 @@ export default function App() {
                 boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
               }}
             >
-              PAGAR — 12.500 €
+              {copy.inaugurationCta}
             </button>
             {pauInaugurationWhisper ? (
               <p
@@ -626,8 +652,36 @@ export default function App() {
                 cursor: "pointer",
               }}
             >
-              Contrato Lafayette (Stripe)
+              {copy.lafayetteCta}
             </button>
+          </div>
+          <div className="hero-pricing-grid">
+            <article>
+              <h3>{copy.packStarterTitle}</h3>
+              <p className="hero-price">{formatEurAmount(12500, locale)}</p>
+              <p>{copy.packStarterBody}</p>
+            </article>
+            <article>
+              <h3>{copy.packMaisonTitle}</h3>
+              <p className="hero-price">{formatEurAmount(109900, locale)}</p>
+              <p>{copy.packMaisonBody}</p>
+            </article>
+          </div>
+          <div className="sales-video-row">
+            <article>
+              <h3>{copy.videoOneTitle}</h3>
+              <video controls preload="metadata" playsInline>
+                <source src="/videos/pau_sales_intro.mp4" type="video/mp4" />
+              </video>
+              <p>{copy.videoOneBody}</p>
+            </article>
+            <article>
+              <h3>{copy.videoTwoTitle}</h3>
+              <video controls preload="metadata" playsInline>
+                <source src="/videos/pau_sales_close.mp4" type="video/mp4" />
+              </video>
+              <p>{copy.videoTwoBody}</p>
+            </article>
           </div>
           <p
             style={{
@@ -650,7 +704,7 @@ export default function App() {
             >
               {SOVEREIGN_FIT_LABEL}
             </a>
-            <span style={{ opacity: 0.9 }}> · checkout Divineo V11 → abvetos.com</span>
+            <span style={{ opacity: 0.9 }}>{copy.checkoutHint}</span>
           </p>
         </section>
 
@@ -658,10 +712,11 @@ export default function App() {
           elasticLabel={elasticLabel}
           julesLane={julesLane}
           onOfrenda={onOfrenda}
+          locale={locale}
           headerExtra={
             <button
               type="button"
-              onClick={() => void postBetaWaitlist()}
+              onClick={() => void postBetaWaitlist(copy)}
               style={{
                 marginTop: 14,
                 padding: "8px 18px",
@@ -675,7 +730,7 @@ export default function App() {
                 cursor: "pointer",
               }}
             >
-              Únete a la beta
+              {copy.betaCta}
             </button>
           }
         />
