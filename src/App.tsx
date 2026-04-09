@@ -26,6 +26,7 @@ import {
   withPauSeal,
 } from "./lib/pauVoice";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { postMirrorOverlaySelect } from "./lib/mirrorOverlayClient";
 import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
 import "./index.css";
 import "./App.css";
@@ -416,13 +417,51 @@ export default function App() {
   const theSnap = () => {
     if (!pauStarted) return;
     void (async () => {
+      const w = window as Window & {
+        __TRYONYOU_OVERLAY_APPLY__?: (d: unknown) => void;
+      };
       const j = await postMirrorSnap(
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
       );
+      const overlay = await postMirrorOverlaySelect({
+        fabric_sensation: elasticLabel,
+        fabric_fit_verdict: elasticLabelToVerdict(elasticLabel),
+      });
+      if (overlay?.status === "ok") {
+        try {
+          const ww = window as Window & {
+            __TRYONYOU_GARMENT_OVERLAY__?: {
+              overlay: {
+                garment_id: string;
+                brand_line: string;
+                color_hint?: string;
+                alpha?: number;
+                label?: string;
+              } | null;
+              color: string;
+              lastUpdatedAt: number;
+            };
+          };
+          if (ww.__TRYONYOU_GARMENT_OVERLAY__) {
+            ww.__TRYONYOU_GARMENT_OVERLAY__.overlay = overlay.overlay ?? null;
+            ww.__TRYONYOU_GARMENT_OVERLAY__.color = overlay.overlay?.color_hint ?? "#d4af37";
+            ww.__TRYONYOU_GARMENT_OVERLAY__.lastUpdatedAt = Date.now();
+          }
+        } catch {
+          // fallback no-op
+        }
+        w.__TRYONYOU_OVERLAY_APPLY__?.(overlay);
+      }
+      const overlayLabel =
+        overlay?.selected_garment?.id && overlay?.selected_garment?.brand
+          ? `Overlay ${overlay.selected_garment.brand} · ${overlay.selected_garment.id}`
+          : "";
       const msg =
-        j?.jules_msg ??
-        "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
+        (j?.jules_msg
+          ? `${j.jules_msg}${overlayLabel ? ` | ${overlayLabel}` : ""}`
+          : "") ||
+        `The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.${overlayLabel ? ` ${overlayLabel}` : ""}`;
       window.alert(withPauSeal(msg));
     })();
   };

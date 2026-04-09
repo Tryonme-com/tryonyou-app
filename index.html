@@ -52,6 +52,35 @@
 <title>TRYONME × DIVINEO</title>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script type="module">
+import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
+window.__TRYONYOU_TASKS_READY__ = false;
+window.__TRYONYOU_TASKS_ERROR__ = "";
+window.__TRYONYOU_TASKS_INIT__ = (async function () {
+  try {
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
+    const landmarker = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
+      },
+      runningMode: "VIDEO",
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+      outputSegmentationMasks: false,
+    });
+    window.__TRYONYOU_TASKS_LANDMARKER__ = landmarker;
+    window.__TRYONYOU_TASKS_READY__ = true;
+  } catch (e) {
+    window.__TRYONYOU_TASKS_ERROR__ = String((e && e.message) || e || "tasks_init_failed");
+    window.__TRYONYOU_TASKS_READY__ = false;
+  }
+})();
+</script>
   <style>
 :root { --gold: #D4AF37; --black: #000; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -148,6 +177,8 @@ var FLOOR_ALPHA=0.15;
 var floorEma=1.0;
 var floorStableFrames=0;
 var floorCalibrated=false;
+var overlayState={selectedGarment:null,color:"#d4af37",alpha:0.36,lastFetchTs:0};
+var lastLandmarks=null;
 function dist2(a,b){var dx=a.x-b.x;var dy=a.y-b.y;return Math.hypot(dx,dy);}
 function computeElasticityRatio(lm){if(!lm||lm.length<25)return 0.5;var s=dist2(lm[11],lm[12]);var h=dist2(lm[23],lm[24]);return s/Math.max(h,1e-6);}
 function fabricFitComparator(e,b){b=b||[0.82,1.18];if(e>=b[0]&&e<=b[1])return "aligned";if(e<b[0])return "drape_bias";return "tension_bias";}
@@ -167,6 +198,104 @@ function floorPointY(lm){
   for(var j=1;j<ys.length;j++){if(ys[j]>maxY)maxY=ys[j];}
   return maxY;
 }
+function drawGarmentOverlay(ctx,lm,w,h,state){
+  if(!lm||lm.length<33)return;
+  var l=lm[11],r=lm[12],lh=lm[23],rh=lm[24];
+  if(!l||!r||!lh||!rh)return;
+  var sx=(l.x+r.x)*0.5*w;
+  var sy=(l.y+r.y)*0.5*h;
+  var hx=(lh.x+rh.x)*0.5*w;
+  var hy=(lh.y+rh.y)*0.5*h;
+  var shoulderDx=(r.x-l.x)*w;
+  var shoulderDy=(r.y-l.y)*h;
+  var shoulderW=Math.max(20,Math.hypot(shoulderDx,shoulderDy));
+  var torsoH=Math.max(40,hy-sy);
+  var cx=sx;
+  var cy=sy+torsoH*0.48;
+  var angle=Math.atan2(shoulderDy,shoulderDx);
+  var hasSel=!!(state&&state.selectedGarment&&state.selectedGarment.id);
+  var fill=state&&state.color?state.color:"#d4af37";
+  var alpha=state&&typeof state.alpha==="number"?Math.min(0.72,Math.max(0.18,state.alpha)):0.36;
+  var label=hasSel?(state.selectedGarment.brand+" · "+state.selectedGarment.id):"ROBERT OVERLAY";
+  if(!hasSel){
+    fill="#6e6e6e";
+    alpha=0.12;
+  }
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(angle);
+  var ow=shoulderW*1.58;
+  var oh=torsoH*1.34;
+  ctx.fillStyle=fill;
+  ctx.globalAlpha=alpha;
+  ctx.beginPath();
+  ctx.roundRect(-ow/2,-oh/2,ow,oh,Math.min(24,ow*0.08));
+  ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.lineWidth=2;
+  ctx.strokeStyle="#f6deb2";
+  ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  var ly=Math.max(24,cy-oh/2-8);
+  ctx.font="600 12px Inter, system-ui, sans-serif";
+  ctx.textAlign="center";
+  var tw=ctx.measureText(label).width+20;
+  ctx.fillStyle="rgba(0,0,0,0.58)";
+  ctx.fillRect(cx-tw/2,ly-16,tw,20);
+  ctx.strokeStyle="#f6deb2";
+  ctx.lineWidth=1;
+  ctx.strokeRect(cx-tw/2,ly-16,tw,20);
+  ctx.fillStyle="#fff5dc";
+  ctx.fillText(label,cx,ly-2);
+  ctx.restore();
+}
+function renderSelectedGarmentFrame(ctx,lm,w,h,state){
+  drawGarmentOverlay(ctx,lm,w,h,state);
+}
+function requestOverlaySelection(lm,w,h,verdict,label){
+  var now=Date.now();
+  if(now-overlayState.lastFetchTs<1800)return;
+  overlayState.lastFetchTs=now;
+  var shoulderW=Math.max(1,Math.hypot((lm[12].x-lm[11].x)*w,(lm[12].y-lm[11].y)*h));
+  var hipY=((lm[23].y+lm[24].y)*0.5)*h;
+  var payload={
+    shoulder_w_px:shoulderW,
+    hip_y_px:hipY,
+    shoulder_est:Math.max(30,Math.min(68,shoulderW/9.6)),
+    waist_est:Math.max(22,Math.min(58,shoulderW/13.2)),
+    fit_score_seed:92,
+    fabric_fit_verdict:verdict||"",
+    fabric_sensation:label||"",
+    frame_spec:{w:w,h:h}
+  };
+  fetch("/api/v1/mirror/overlay",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  }).then(function(r){if(!r.ok)return null;return r.json();}).then(function(data){
+    if(!data||data.status!=="ok")return;
+    var sel=data.selected_garment||{};
+    overlayState.selectedGarment={
+      id:String(sel.id||""),
+      brand:String(sel.brand||"BALMAIN")
+    };
+    overlayState.color=String(sel.color_hex||"#d4af37");
+    var oh=data.overlay_hint||{};
+    overlayState.alpha=typeof oh.alpha==="number"?oh.alpha:0.36;
+    try{window.dispatchEvent(new CustomEvent("tryonyou:overlay_selection",{detail:data}));}catch(e){}
+  }).catch(function(){});
+}
+window.__TRYONYOU_OVERLAY_APPLY__=function(data){
+  if(!data||typeof data!=="object")return;
+  var sel=data.selected_garment||{};
+  if(!sel.id)return;
+  overlayState.selectedGarment={id:String(sel.id||""),brand:String(sel.brand||"BALMAIN")};
+  overlayState.color=String(sel.color_hex||"#d4af37");
+  var oh=data.overlay_hint||{};
+  overlayState.alpha=typeof oh.alpha==="number"?oh.alpha:0.36;
+  overlayState.lastFetchTs=Date.now();
+};
 function drawConn(ctx,lm,pairs,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=2;for(var i=0;i<pairs.length;i++){var a=pairs[i][0],b=pairs[i][1];var pa=lm[a],pb=lm[b];if(!pa||!pb)continue;ctx.beginPath();ctx.moveTo(pa.x*w,pa.y*h);ctx.lineTo(pb.x*w,pb.y*h);ctx.stroke();}}
 function drawLm(ctx,lm,w,h,c){ctx.fillStyle=c;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.visibility!==undefined&&p.visibility<0.45)continue;ctx.beginPath();ctx.arc(p.x*w,p.y*h,2,0,Math.PI*2);ctx.fill();}}
 var videoElement=document.getElementById("input_video");
@@ -186,6 +315,7 @@ canvasCtx.save();
 canvasCtx.clearRect(0,0,w,h);
 if(results.image)canvasCtx.drawImage(results.image,0,0,w,h);
 if(results.poseLandmarks&&results.poseLandmarks.length>=33){
+lastLandmarks=results.poseLandmarks;
 var ratio=computeElasticityRatio(results.poseLandmarks);
 ema=ALPHA*ratio+(1-ALPHA)*ema;
 var v=fabricFitComparator(ema);
@@ -205,13 +335,27 @@ if(fp!==null){
 }
 drawConn(canvasCtx,results.poseLandmarks,POSE_CONNECTIONS,w,h,GOLD);
 drawLm(canvasCtx,results.poseLandmarks,w,h,GOLD);
+renderSelectedGarmentFrame(canvasCtx,results.poseLandmarks,w,h,overlayState);
+requestOverlaySelection(results.poseLandmarks,w,h,v,label);
 }
 canvasCtx.restore();
 }
 var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
 pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
 pose.onResults(onResults);
-var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
+var useTasks=!!(window.__TRYONYOU_TASKS_INIT__&&window.__TRYONYOU_TASKS_READY__);
+var camera=new CameraCtor(videoElement,{onFrame:async function(){
+  if(window.__TRYONYOU_TASKS_READY__&&window.__TRYONYOU_TASKS_LANDMARKER__){
+    try{
+      var ts=performance.now();
+      var out=window.__TRYONYOU_TASKS_LANDMARKER__.detectForVideo(videoElement,ts);
+      var lm=(out&&out.landmarks&&out.landmarks[0])?out.landmarks[0]:null;
+      onResults({image:videoElement,poseLandmarks:lm||[]});
+      return;
+    }catch(e){}
+  }
+  pose.send({image:videoElement});
+},width:1280,height:720});
 camera.start().catch(function(){});
         })();
     </script>
