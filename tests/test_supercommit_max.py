@@ -126,9 +126,12 @@ class TestStampValidation(unittest.TestCase):
         msg = "Título @CertezaAbsoluta @lo+erestu PCT/EP2025/067317 Bajo Protocolo de Soberanía V10"
         self._assert_missing_stamp_exits_1(msg, "missing «Founder: Rubén»")
 
-    def test_empty_message_exits_1(self) -> None:
+    def test_empty_message_uses_default_stamps(self) -> None:
+        # ${1:-default} in bash treats "" as empty → uses the built-in default.
+        # The default contains all stamps, so stamp validation must pass
+        # (exit code ≠ 1 means stamps were accepted).
         result = _run_script("")
-        self.assertEqual(result.returncode, 1, "Empty message should exit 1")
+        self.assertNotEqual(result.returncode, 1, "Empty-string arg should use default and pass stamp check")
 
     def test_missing_stamp_stderr_contains_hint(self) -> None:
         msg = "Sin sellos"
@@ -184,6 +187,14 @@ class TestCommitLogic(unittest.TestCase):
         import shutil
         self.script_copy = os.path.join(self.tmpdir, "supercommit_max.sh")
         shutil.copy2(_SCRIPT, self.script_copy)
+        # Commit the script copy immediately so git add -A won't pick it up again
+        subprocess.run(["git", "add", "supercommit_max.sh"], cwd=self.tmpdir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add script copy"],
+            cwd=self.tmpdir,
+            check=True,
+            capture_output=True,
+        )
 
     def tearDown(self) -> None:
         import shutil
