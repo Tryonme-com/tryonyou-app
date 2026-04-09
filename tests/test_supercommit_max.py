@@ -106,34 +106,58 @@ class TestRequiredStamps(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
 
+def _setup_isolated_repo() -> tempfile.TemporaryDirectory:
+    """Create a temp dir with an initialised git repo AND a copy of the script.
+
+    The script contains ``cd "$ROOT"`` (ROOT = dir of the script itself), so
+    placing the script inside the temp git repo makes both coincide.
+    """
+    tmp_obj = tempfile.TemporaryDirectory()
+    tmp = tmp_obj.name
+    _init_git_repo(tmp)
+    import shutil
+    shutil.copy2(_SCRIPT, os.path.join(tmp, "supercommit_max.sh"))
+    os.chmod(os.path.join(tmp, "supercommit_max.sh"), 0o755)
+    return tmp_obj
+
+
 class TestValidMessage(unittest.TestCase):
     """Con el mensaje correcto el script llega hasta la fase de push."""
 
     def test_accepts_valid_message_no_remote(self) -> None:
         """Script acepta mensaje válido; sin remote sale limpio (sin push)."""
-        with tempfile.TemporaryDirectory() as tmp:
-            _init_git_repo(tmp)
+        with _setup_isolated_repo() as tmp:
+            script = os.path.join(tmp, "supercommit_max.sh")
             # Crear un fichero para tener algo que commitear.
             open(os.path.join(tmp, "dummy.txt"), "w").close()
-            result = _run_script(tmp, [_VALID_MSG])
+            result = subprocess.run(
+                ["bash", script, _VALID_MSG],
+                cwd=tmp, capture_output=True, text=True,
+            )
         # Sin upstream configurado, el script no empuja y termina con éxito.
         self.assertEqual(result.returncode, 0,
                          f"stdout={result.stdout}\nstderr={result.stderr}")
 
     def test_no_changes_exits_cleanly(self) -> None:
         """Sin cambios pendientes el script sale con código 0 (nada que hacer)."""
-        with tempfile.TemporaryDirectory() as tmp:
-            _init_git_repo(tmp)
-            result = _run_script(tmp, [_VALID_MSG])
+        with _setup_isolated_repo() as tmp:
+            script = os.path.join(tmp, "supercommit_max.sh")
+            result = subprocess.run(
+                ["bash", script, _VALID_MSG],
+                cwd=tmp, capture_output=True, text=True,
+            )
         self.assertEqual(result.returncode, 0,
                          f"stdout={result.stdout}\nstderr={result.stderr}")
 
     def test_commit_uses_provided_message(self) -> None:
         """El commit creado debe contener el mensaje proporcionado."""
-        with tempfile.TemporaryDirectory() as tmp:
-            _init_git_repo(tmp)
+        with _setup_isolated_repo() as tmp:
+            script = os.path.join(tmp, "supercommit_max.sh")
             open(os.path.join(tmp, "file.txt"), "w").close()
-            _run_script(tmp, [_VALID_MSG])
+            subprocess.run(
+                ["bash", script, _VALID_MSG],
+                cwd=tmp, capture_output=True, text=True,
+            )
             log = subprocess.check_output(
                 ["git", "log", "--format=%s", "-1"], cwd=tmp, text=True
             ).strip()
