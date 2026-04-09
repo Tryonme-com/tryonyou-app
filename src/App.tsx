@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { motion } from "framer-motion";
+import { MirrorSnap } from "./components/MirrorSnap";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -653,6 +654,16 @@ export default function App() {
             <span style={{ opacity: 0.9 }}> · checkout Divineo V11 → abvetos.com</span>
           </p>
         </section>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "4px 20px 14px",
+          }}
+        >
+          <MirrorSnap enabled={pauStarted} district={activeDistrict} onSnap={theSnap} />
+        </div>
 
         <OfrendaOverlay
           elasticLabel={elasticLabel}

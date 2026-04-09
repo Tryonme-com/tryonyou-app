@@ -1,10 +1,10 @@
 {
-    "_manifest": "TryOnYou Firebase Web — proyecto gen-lang-client-0066102635. Rellena apiKey (SDK Web, Firebase Console) o define VITE_FIREBASE_API_KEY. NO reprovisionar scripts sin TRYONYOU_FIREBASE_REPROVISION=1. PCT/EP2025/067317.",
-    "apiKey": "",
-    "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
-    "projectId": "gen-lang-client-0066102635",
-    "storageBucket": "gen-lang-client-0066102635.appspot.com",
-    "messagingSenderId": "8800075004",
-    "appId": "1:8800075004:web:diamond",
-    "measurementId": ""
+  "_manifest": "TryOnYou Firebase Web — autocorrección desde entorno; projectId sellado para build/assert.",
+  "apiKey": "",
+  "authDomain": "gen-lang-client-0066102635.firebaseapp.com",
+  "projectId": "gen-lang-client-0066102635",
+  "storageBucket": "gen-lang-client-0066102635.appspot.com",
+  "messagingSenderId": "8800075004",
+  "appId": "1:8800075004:web:diamond",
+  "measurementId": ""
 }
