@@ -479,6 +479,7 @@ export default function App() {
 
       <div className="app-ui">
         <section
+          className="hero-section"
           style={{
             padding: "32px 20px 12px",
             maxWidth: 960,

@@ -85,7 +85,7 @@ header {
   font-weight: bold; text-align: center; padding: 25px; font-size: 0.8rem; cursor: pointer;
 }
 footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-size: 0.4rem; color: #555; z-index: 90; }
-#root { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+#root { position: fixed; inset: 0; z-index: 220; pointer-events: none; }
 #root .app-ui { pointer-events: none; }
 #root .app-ui > * { pointer-events: auto; }
   </style>
@@ -180,7 +180,12 @@ canvasCtx.restore();
 var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
 pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
 pose.onResults(onResults);
-var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
+var camera=new CameraCtor(videoElement,{
+  onFrame:function(){pose.send({image:videoElement});},
+  onError:function(err){console.warn("Camera feed unavailable in this environment.", err);},
+  width:1280,
+  height:720
+});
 camera.start().catch(function(){});
         })();
     </script>

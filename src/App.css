@@ -68,6 +68,10 @@
   color: #17120a;
 }
 
+.hero-top-overlay-spacer {
+  pointer-events: none;
+}
+
 .hero-house-phrases {
   margin-top: 12px;
   display: grid;
