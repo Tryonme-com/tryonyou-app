@@ -21,7 +21,7 @@ for _p in (_ROOT, _API):
 from franchise_contract import DEFAULT_FIXED_FEE, DEFAULT_VARIABLE_RATE, FranchiseContract
 from robert_engine import RobertEngine, UserAnchors
 from shopify_bridge import ShopifyBridge
-from sovereign_sale import execute_sovereign_sale
+from sovereign_sale import execute_sovereign_sale, generate_sovereignty_report
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +246,64 @@ class TestExecuteSovereignSale(unittest.TestCase):
             contract, self.shopify, self.user_anchors, "BALMAIN-WHITE-SNAP"
         )
         self.assertAlmostEqual(result["franchise_commission"], 800.0, places=2)
+
+
+# ---------------------------------------------------------------------------
+# generate_sovereignty_report
+# ---------------------------------------------------------------------------
+
+class TestGenerateSovereigntyReport(unittest.TestCase):
+    def _capture_report(self) -> str:
+        import io
+        buf = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = buf
+        try:
+            generate_sovereignty_report()
+        finally:
+            sys.stdout = old_stdout
+        return buf.getvalue()
+
+    def test_output_contains_header(self) -> None:
+        output = self._capture_report()
+        self.assertIn("GENERANDO REPORTE DE SOBERANÍA V10", output)
+
+    def test_output_contains_patente(self) -> None:
+        output = self._capture_report()
+        self.assertIn("PCT/EP2025/067317", output)
+
+    def test_output_contains_conversion_metric(self) -> None:
+        output = self._capture_report()
+        self.assertIn("+34.2%", output)
+
+    def test_output_contains_reduction_metric(self) -> None:
+        output = self._capture_report()
+        self.assertIn("-67%", output)
+
+    def test_output_contains_financial_impact(self) -> None:
+        output = self._capture_report()
+        self.assertIn("98.000,00 € NETOS (Inbound)", output)
+
+    def test_output_contains_vivido_footer(self) -> None:
+        output = self._capture_report()
+        self.assertIn("VÍVIDO", output)
+        self.assertIn("Lafayette", output)
+
+    def test_keys_have_underscores_replaced(self) -> None:
+        output = self._capture_report()
+        self.assertNotIn("Métrica_Conversión", output)
+        self.assertIn("Métrica Conversión", output)
+
+    def test_returns_none(self) -> None:
+        import io
+        buf = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = buf
+        try:
+            result = generate_sovereignty_report()
+        finally:
+            sys.stdout = old_stdout
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":
