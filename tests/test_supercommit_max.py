@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -106,14 +107,16 @@ class TestRequiredStamps(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
 
-def _setup_isolated_repo() -> tempfile.TemporaryDirectory:
+def _setup_isolated_repo() -> "tempfile.TemporaryDirectory[str]":
     """Create a temp dir with an initialised git repo AND a copy of the script
     already committed so it doesn't appear as a pending change.
 
     The script contains ``cd "$ROOT"`` (ROOT = dir of the script itself), so
     placing the script inside the temp git repo makes both coincide.
+
+    Use as a context manager: ``with _setup_isolated_repo() as tmp:``
+    where *tmp* is the path string yielded by TemporaryDirectory.__enter__.
     """
-    import shutil
     tmp_obj = tempfile.TemporaryDirectory()
     tmp = tmp_obj.name
     subprocess.check_call(["git", "init", "-b", "main", tmp],
