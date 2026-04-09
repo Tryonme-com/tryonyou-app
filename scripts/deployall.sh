@@ -43,8 +43,9 @@ pip install -q -r requirements.txt
 ok "Python dependencies ready"
 
 step "Running Python tests"
-python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1
-ok "141 Python tests passed"
+_test_out=$(python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1) || { echo "$_test_out"; fail "Python tests failed"; }
+TEST_COUNT=$(echo "$_test_out" | grep -oP 'Ran \K[0-9]+' || echo "all")
+ok "${TEST_COUNT} Python tests passed"
 
 step "Firebase applet assertion (prebuild)"
 node scripts/assert-firebase-applet.mjs
