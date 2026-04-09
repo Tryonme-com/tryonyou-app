@@ -40,8 +40,12 @@ else
 fi
 
 if [ "$did_commit" -eq 1 ]; then
-  echo "Commit creado: git push."
-  git push
+  if git rev-parse --verify "@{u}" >/dev/null 2>&1; then
+    echo "Commit creado: git push."
+    git push
+  else
+    echo "Commit creado. Sin push: no hay upstream (@{u}). Configura tracking (git push -u) o empuja a mano."
+  fi
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || true)"
   ahead="${ahead:-0}"
