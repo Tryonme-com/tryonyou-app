@@ -144,10 +144,29 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
 var GOLD="#D4AF37";
 var ALPHA=0.22;
 var ema=0.5;
+var FLOOR_ALPHA=0.15;
+var floorEma=1.0;
+var floorStableFrames=0;
+var floorCalibrated=false;
 function dist2(a,b){var dx=a.x-b.x;var dy=a.y-b.y;return Math.hypot(dx,dy);}
 function computeElasticityRatio(lm){if(!lm||lm.length<25)return 0.5;var s=dist2(lm[11],lm[12]);var h=dist2(lm[23],lm[24]);return s/Math.max(h,1e-6);}
 function fabricFitComparator(e,b){b=b||[0.82,1.18];if(e>=b[0]&&e<=b[1])return "aligned";if(e<b[0])return "drape_bias";return "tension_bias";}
 function verdictToUiLabel(v){if(v==="aligned")return "Cohérence drape — tenue";if(v==="drape_bias")return "Préférence drapé";if(v==="tension_bias")return "Préférence tenue";return "Analyse en cours";}
+function floorPointY(lm){
+  if(!lm||lm.length<33)return null;
+  var ids=[27,28,29,30,31,32];
+  var ys=[];
+  for(var i=0;i<ids.length;i++){
+    var p=lm[ids[i]];
+    if(!p)continue;
+    if(p.visibility!==undefined&&p.visibility<0.35)continue;
+    ys.push(p.y);
+  }
+  if(!ys.length)return null;
+  var maxY=ys[0];
+  for(var j=1;j<ys.length;j++){if(ys[j]>maxY)maxY=ys[j];}
+  return maxY;
+}
 function drawConn(ctx,lm,pairs,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=2;for(var i=0;i<pairs.length;i++){var a=pairs[i][0],b=pairs[i][1];var pa=lm[a],pb=lm[b];if(!pa||!pb)continue;ctx.beginPath();ctx.moveTo(pa.x*w,pa.y*h);ctx.lineTo(pb.x*w,pb.y*h);ctx.stroke();}}
 function drawLm(ctx,lm,w,h,c){ctx.fillStyle=c;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.visibility!==undefined&&p.visibility<0.45)continue;ctx.beginPath();ctx.arc(p.x*w,p.y*h,2,0,Math.PI*2);ctx.fill();}}
 var videoElement=document.getElementById("input_video");
@@ -172,6 +191,18 @@ ema=ALPHA*ratio+(1-ALPHA)*ema;
 var v=fabricFitComparator(ema);
 var label=verdictToUiLabel(v);
 try{window.dispatchEvent(new CustomEvent("tryonyou:fit",{detail:{label:label}}));}catch(e){}
+var fp=floorPointY(results.poseLandmarks);
+if(fp!==null){
+  floorEma=FLOOR_ALPHA*fp+(1-FLOOR_ALPHA)*floorEma;
+  floorStableFrames=Math.min(120,floorStableFrames+1);
+  if(!floorCalibrated&&floorStableFrames>=10){
+    floorCalibrated=true;
+    try{
+      window.__TRYONYOU_FLOOR_POINT__=floorEma;
+      window.dispatchEvent(new CustomEvent("tryonyou:floor",{detail:{status:"calibrated",floorY:floorEma,source:"pose_auto_floor"}}));
+    }catch(e){}
+  }
+}
 drawConn(canvasCtx,results.poseLandmarks,POSE_CONNECTIONS,w,h,GOLD);
 drawLm(canvasCtx,results.poseLandmarks,w,h,GOLD);
 }
@@ -183,6 +214,36 @@ pose.onResults(onResults);
 var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
 camera.start().catch(function(){});
         })();
+    </script>
+    <script>
+(function () {
+  /**
+   * Evita UX con números para calibrar altura si entra un widget externo:
+   * oculta el input numérico y marca autocalibración por punto de suelo.
+   */
+  function patchNumericCalibrationUi() {
+    var inputs=document.querySelectorAll('input[type="number"],input[inputmode="numeric"],input[pattern*="\\\\d"]');
+    for(var i=0;i<inputs.length;i++){
+      var el=inputs[i];
+      var host=el.closest("form,section,article,aside,div")||el.parentElement;
+      var txt=((host&&host.textContent)||"").toLowerCase();
+      if(txt.indexOf("calibr")===-1&&txt.indexOf("height")===-1&&txt.indexOf("cm")===-1)continue;
+      el.setAttribute("type","hidden");
+      el.style.display="none";
+      if(host){
+        var hints=host.querySelectorAll("small,p,span,label");
+        for(var j=0;j<hints.length;j++){
+          var t=(hints[j].textContent||"").toLowerCase();
+          if(t.indexOf("calibr")!==-1||t.indexOf("height")!==-1||t.indexOf("cm")!==-1){
+            hints[j].textContent="Auto-calibrated from floor point.";
+          }
+        }
+      }
+    }
+  }
+  patchNumericCalibrationUi();
+  setInterval(patchNumericCalibrationUi,800);
+})();
     </script>
 <script type="module" src="/src/main.tsx"></script>
     </body>

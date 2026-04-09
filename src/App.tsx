@@ -367,6 +367,30 @@ export default function App() {
     return () => window.removeEventListener("tryonyou:fit", onFit);
   }, []);
 
+  /**
+   * Guard de soberanía UI:
+   * si un widget externo inyecta calibración por números (cm/height),
+   * la desactiva para priorizar calibración automática por punto de suelo.
+   */
+  useEffect(() => {
+    const blockNumericCalibrator = () => {
+      const suspicious = Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[type="number"], input[inputmode="decimal"]'),
+      );
+      for (const el of suspicious) {
+        const text = ((el.placeholder || "") + " " + (el.getAttribute("aria-label") || "")).toLowerCase();
+        if (text.includes("height") || text.includes("cm") || text.includes("calibr")) {
+          const box = (el.closest("form") || el.parentElement) as HTMLElement | null;
+          if (box) box.style.display = "none";
+        }
+      }
+    };
+    const obs = new MutationObserver(() => blockNumericCalibrator());
+    obs.observe(document.body, { subtree: true, childList: true, attributes: true });
+    blockNumericCalibrator();
+    return () => obs.disconnect();
+  }, []);
+
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
       void postPerfectCheckout(elasticLabel);
