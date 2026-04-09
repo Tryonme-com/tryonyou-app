@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "deployall": "bash scripts/deployall.sh",
-    "deployall:dry": "bash scripts/deployall.sh --dry"
+    "deployall:dry": "bash scripts/deployall.sh --dry",
+    "supercommit": "bash supercommit_max.sh",
+    "supercommit:fast": "bash supercommit_max.sh --fast",
+    "supercommit:deploy": "bash supercommit_max.sh --deploy"
   },
   "dependencies": {
     "@stripe/stripe-js": "^5.5.0",
