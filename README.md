@@ -10,6 +10,13 @@
 * **Robert Engine:** Procesamiento biométrico MediaPipe (Latencia < 150ms).
 * **Jules Finance:** Gestión de tesorería y liquidez Bpifrance.
 * **Zero-Size Protocol:** Interfaz sin complejos, basada en gemelo digital.
+* **Omega Divineo Deploy:** Inyección soberana por nodos (`python3 deploy_divineo.py`).
+
+### Ejecución rápida de inyección soberana
+```bash
+python3 deploy_divineo.py
+python3 deploy_divineo.py --delay 0
+```
 
 ---
 *Este repositorio es la fuente de verdad única para el piloto comercial en Galeries Lafayette.*

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SALES_COPY, type AppLocale } from "../locales/salesCopy";
 
 const GOLD = "#C5A46D";
 
@@ -26,6 +27,7 @@ type Props = {
   julesLane: string;
   onOfrenda: (key: OfrendaKey) => void;
   headerExtra?: ReactNode;
+  locale: AppLocale;
 };
 
 export function OfrendaOverlay({
@@ -33,7 +35,21 @@ export function OfrendaOverlay({
   julesLane,
   onOfrenda,
   headerExtra,
+  locale,
 }: Props) {
+  const copy = SALES_COPY[locale];
+  const reserveLabel = copy.overlayReserve;
+  const combosLabel = copy.overlayCombos;
+  const museumLabel = copy.overlayMuseum;
+  const shareLabel = copy.overlayShare;
+
+  const dynamicBottom = OFRENDA_BOTTOM.map((item) => {
+    if (item.key === "reserve") return { ...item, label: reserveLabel };
+    if (item.key === "combo") return { ...item, label: combosLabel };
+    if (item.key === "save") return { ...item, label: museumLabel };
+    return item;
+  });
+
   return (
     <div className="ofrenda-overlay">
       <div className="ofrenda-header">
@@ -97,11 +113,11 @@ export function OfrendaOverlay({
             aria-label="Share My VIP Look"
             onClick={() => onOfrenda("share")}
           >
-            Share My VIP Look
+            {shareLabel}
           </button>
         </div>
         <div className="ofrenda-bottom-row">
-          {OFRENDA_BOTTOM.map((b) => (
+          {dynamicBottom.map((b) => (
             <button
               type="button"
               key={b.key}

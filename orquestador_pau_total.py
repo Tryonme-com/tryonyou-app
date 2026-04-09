@@ -96,9 +96,9 @@ def _run_mirror_paloma() -> None:
 
 
 def _run_divineo() -> None:
-    from divineo_justicia_v10 import Divineo_Justicia_V10
+    from deploy_divineo import deploy_divineo
 
-    Divineo_Justicia_V10().servir_bandeja_plata()
+    deploy_divineo()
 
 
 def _run_jules_monetizador() -> None:
