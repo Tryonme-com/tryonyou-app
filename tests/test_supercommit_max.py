@@ -107,17 +107,35 @@ class TestRequiredStamps(unittest.TestCase):
 
 
 def _setup_isolated_repo() -> tempfile.TemporaryDirectory:
-    """Create a temp dir with an initialised git repo AND a copy of the script.
+    """Create a temp dir with an initialised git repo AND a copy of the script
+    already committed so it doesn't appear as a pending change.
 
     The script contains ``cd "$ROOT"`` (ROOT = dir of the script itself), so
     placing the script inside the temp git repo makes both coincide.
     """
+    import shutil
     tmp_obj = tempfile.TemporaryDirectory()
     tmp = tmp_obj.name
-    _init_git_repo(tmp)
-    import shutil
+    subprocess.check_call(["git", "init", "-b", "main", tmp],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for cmd in (
+        ["git", "config", "user.email", "test@tryonyou.app"],
+        ["git", "config", "user.name", "TryOnYou Test"],
+    ):
+        subprocess.check_call(cmd, cwd=tmp,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Copy the script and commit it so it is already tracked.
     shutil.copy2(_SCRIPT, os.path.join(tmp, "supercommit_max.sh"))
     os.chmod(os.path.join(tmp, "supercommit_max.sh"), 0o755)
+    subprocess.check_call(
+        ["git", "add", "supercommit_max.sh"], cwd=tmp,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "commit", "-m", "add supercommit_max.sh"],
+        cwd=tmp,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
     return tmp_obj
 
 
