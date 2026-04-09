@@ -85,7 +85,7 @@ export function OfrendaOverlay({
         <div className="ofrenda-share-row">
           <button
             type="button"
-            className="ofrenda-share-btn"
+            className="ofrenda-share-btn ofrenda-share-btn--balmain"
             aria-label="Balmain — Espejo Digital"
             onClick={() => onOfrenda("balmain")}
           >

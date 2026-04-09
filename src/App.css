@@ -66,6 +66,45 @@
   font-family: inherit;
 }
 
+.ofrenda-share-btn--balmain {
+  position: relative;
+  z-index: 9999;
+}
+
+.mirror-snap-launcher {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  gap: 3px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--gold);
+  background: linear-gradient(145deg, rgba(19, 19, 19, 0.84), rgba(52, 38, 18, 0.86));
+  color: #fff8e9;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+.mirror-snap-launcher:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.mirror-snap-launcher__title {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.mirror-snap-launcher__subtitle {
+  font-size: 10px;
+  opacity: 0.86;
+  letter-spacing: 0.08em;
+}
+
 .ofrenda-bottom-row {
   display: flex;
   justify-content: space-around;

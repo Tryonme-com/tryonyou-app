@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { motion } from "framer-motion";
+import { MirrorSnap } from "./components/MirrorSnap";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -25,6 +26,7 @@ import {
   withPauSeal,
 } from "./lib/pauVoice";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { postMirrorOverlaySelect } from "./lib/mirrorOverlayClient";
 import { mirrorDigitalMiddleware } from "./lib/mirrorDigitalMiddleware";
 import "./index.css";
 import "./App.css";
@@ -366,6 +368,30 @@ export default function App() {
     return () => window.removeEventListener("tryonyou:fit", onFit);
   }, []);
 
+  /**
+   * Guard de soberanía UI:
+   * si un widget externo inyecta calibración por números (cm/height),
+   * la desactiva para priorizar calibración automática por punto de suelo.
+   */
+  useEffect(() => {
+    const blockNumericCalibrator = () => {
+      const suspicious = Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[type="number"], input[inputmode="decimal"]'),
+      );
+      for (const el of suspicious) {
+        const text = ((el.placeholder || "") + " " + (el.getAttribute("aria-label") || "")).toLowerCase();
+        if (text.includes("height") || text.includes("cm") || text.includes("calibr")) {
+          const box = (el.closest("form") || el.parentElement) as HTMLElement | null;
+          if (box) box.style.display = "none";
+        }
+      }
+    };
+    const obs = new MutationObserver(() => blockNumericCalibrator());
+    obs.observe(document.body, { subtree: true, childList: true, attributes: true });
+    blockNumericCalibrator();
+    return () => obs.disconnect();
+  }, []);
+
   const onOfrenda = (key: OfrendaKey) => {
     if (key === "selection") {
       void postPerfectCheckout(elasticLabel);
@@ -391,13 +417,51 @@ export default function App() {
   const theSnap = () => {
     if (!pauStarted) return;
     void (async () => {
+      const w = window as Window & {
+        __TRYONYOU_OVERLAY_APPLY__?: (d: unknown) => void;
+      };
       const j = await postMirrorSnap(
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
       );
+      const overlay = await postMirrorOverlaySelect({
+        fabric_sensation: elasticLabel,
+        fabric_fit_verdict: elasticLabelToVerdict(elasticLabel),
+      });
+      if (overlay?.status === "ok") {
+        try {
+          const ww = window as Window & {
+            __TRYONYOU_GARMENT_OVERLAY__?: {
+              overlay: {
+                garment_id: string;
+                brand_line: string;
+                color_hint?: string;
+                alpha?: number;
+                label?: string;
+              } | null;
+              color: string;
+              lastUpdatedAt: number;
+            };
+          };
+          if (ww.__TRYONYOU_GARMENT_OVERLAY__) {
+            ww.__TRYONYOU_GARMENT_OVERLAY__.overlay = overlay.overlay ?? null;
+            ww.__TRYONYOU_GARMENT_OVERLAY__.color = overlay.overlay?.color_hint ?? "#d4af37";
+            ww.__TRYONYOU_GARMENT_OVERLAY__.lastUpdatedAt = Date.now();
+          }
+        } catch {
+          // fallback no-op
+        }
+        w.__TRYONYOU_OVERLAY_APPLY__?.(overlay);
+      }
+      const overlayLabel =
+        overlay?.selected_garment?.id && overlay?.selected_garment?.brand
+          ? `Overlay ${overlay.selected_garment.brand} · ${overlay.selected_garment.id}`
+          : "";
       const msg =
-        j?.jules_msg ??
-        "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
+        (j?.jules_msg
+          ? `${j.jules_msg}${overlayLabel ? ` | ${overlayLabel}` : ""}`
+          : "") ||
+        `The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.${overlayLabel ? ` ${overlayLabel}` : ""}`;
       window.alert(withPauSeal(msg));
     })();
   };
@@ -653,6 +717,16 @@ export default function App() {
             <span style={{ opacity: 0.9 }}> · checkout Divineo V11 → abvetos.com</span>
           </p>
         </section>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "4px 20px 14px",
+          }}
+        >
+          <MirrorSnap enabled={pauStarted} district={activeDistrict} onSnap={theSnap} />
+        </div>
 
         <OfrendaOverlay
           elasticLabel={elasticLabel}

@@ -76,3 +76,62 @@ export async function postMirrorSnap(
     return null;
   }
 }
+
+export type MirrorOverlayPayload = {
+  shoulder_w_px?: number;
+  hip_y_px?: number;
+  shoulder_est?: number;
+  waist_est?: number;
+  fit_score_seed?: number;
+  fabric_fit_verdict?: string;
+  fabric_sensation?: string;
+  frame_spec?: {
+    w?: number;
+    h?: number;
+  };
+};
+
+export type MirrorOverlayResult = {
+  status?: string;
+  protocol?: string;
+  patente?: string;
+  selected_garment?: {
+    id?: string;
+    brand?: string;
+    name?: string;
+    image_url?: string;
+    color_hex?: string;
+    confidence?: number;
+  };
+  fit_report?: {
+    fit_score?: number;
+    verdict?: string;
+  };
+  inventory_match?: {
+    garment_id?: string;
+    brand_line?: string;
+    message?: string;
+  };
+  overlay_hint?: {
+    mode?: string;
+    alpha?: number;
+    top_offset_ratio?: number;
+    bottom_extension_ratio?: number;
+  };
+};
+
+export async function postMirrorOverlaySelect(
+  payload: MirrorOverlayPayload,
+): Promise<MirrorOverlayResult | null> {
+  try {
+    const r = await fetch("/api/v1/mirror/overlay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) return null;
+    return (await r.json()) as MirrorOverlayResult;
+  } catch {
+    return null;
+  }
+}

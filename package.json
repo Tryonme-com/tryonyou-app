@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/assert-firebase-applet.mjs",
+    "prebuild": "node scripts/autocorrect-firebase-credentials.mjs && node scripts/assert-firebase-applet.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

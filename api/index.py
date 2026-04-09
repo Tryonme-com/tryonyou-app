@@ -15,6 +15,7 @@ from bunker_full_orchestrator import (
     orchestrate_mirror_shadow_dwell,
 )
 from mirror_digital_make import forward_mirror_event
+from mirror_overlay import build_mirror_overlay_payload
 from stripe_inauguration import create_inauguration_checkout_session
 
 app = Flask(__name__)
@@ -81,6 +82,54 @@ def mirror_digital_event():
     body = request.get_json(force=True, silent=True) or {}
     payload, code = forward_mirror_event(body)
     return _cors(jsonify(payload)), code
+
+
+@app.route("/api/v1/mirror/overlay", methods=["OPTIONS"])
+@app.route("/v1/mirror/overlay", methods=["OPTIONS"])
+def mirror_overlay_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/mirror/overlay", methods=["POST"])
+@app.route("/v1/mirror/overlay", methods=["POST"])
+def mirror_overlay():
+    body = request.get_json(force=True, silent=True) or {}
+    payload, code = build_mirror_overlay_payload(body)
+    return _cors(jsonify(payload)), code
+
+
+@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
+@app.route("/v1/mirror/snap", methods=["OPTIONS"])
+def mirror_snap_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/mirror/snap", methods=["POST"])
+@app.route("/v1/mirror/snap", methods=["POST"])
+def mirror_snap():
+    body = request.get_json(force=True, silent=True) or {}
+    payload, code = build_mirror_overlay_payload(body)
+    if code != 200:
+        return _cors(jsonify(payload)), code
+    garment = payload.get("selected_garment", {}) if isinstance(payload, dict) else {}
+    inv = payload.get("inventory_match", {}) if isinstance(payload, dict) else {}
+    gid = str(garment.get("id", "")).strip()
+    brand = str(garment.get("brand", "")).strip()
+    msg = (
+        f"Overlay prêt: {gid or 'UNKNOWN'} · {brand or 'UNKNOWN'}."
+        " Robert Engine + inventaire validés."
+    )
+    out = {
+        "status": "ok",
+        "jules_msg": msg,
+        "inventory_match": inv,
+        "overlay": payload.get("overlay_hint", {}),
+        "fit_report": payload.get("fit_report", {}),
+        "selected_garment": garment,
+        "protocol": payload.get("protocol", "zero_size"),
+        "patente": payload.get("patente", "PCT/EP2025/067317"),
+    }
+    return _cors(jsonify(out)), 200
 
 
 @app.route("/api/mirror_shadow_log", methods=["POST"])
