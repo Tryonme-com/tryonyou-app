@@ -7,7 +7,10 @@
     "dev": "vite",
     "prebuild": "node scripts/assert-firebase-applet.mjs",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "deployall": "bash scripts/deployall.sh",
+    "deployall:dry": "bash scripts/deployall.sh --dry"
   },
   "dependencies": {
     "@stripe/stripe-js": "^5.5.0",
