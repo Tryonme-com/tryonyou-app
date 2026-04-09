@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from bunker_full_orchestrator import (
 )
 from mirror_digital_make import forward_mirror_event
 from stripe_inauguration import create_inauguration_checkout_session
+from stripe_webhook import handle_webhook
 
 app = Flask(__name__)
 
@@ -99,3 +101,40 @@ def mirror_shadow_log():
         return _cors(jsonify({"status": "ok", **result})), 200
     except Exception as e:
         return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/api/webhook", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+    result, code = handle_webhook(payload, sig_header)
+    return jsonify(result), code
+
+
+@app.route("/api/health", methods=["GET"])
+@app.route("/health", methods=["GET"])
+def health():
+    stripe_secret = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    stripe_link_4_5m = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("STRIPE_LINK_4_5M_EUR")
+        or ""
+    ).strip()
+    stripe_link_98k = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("STRIPE_LINK_98K_EUR")
+        or ""
+    ).strip()
+    webhook_secret = (os.getenv("STRIPE_WEBHOOK_SECRET") or "").strip()
+
+    return jsonify({
+        "status": "ok",
+        "version": "V10.4_Lafayette",
+        "stripe_configured": bool(stripe_secret),
+        "stripe_4_5m_set": bool(stripe_link_4_5m),
+        "stripe_98k_set": bool(stripe_link_98k),
+        "webhook_secret_set": bool(webhook_secret),
+    }), 200
