@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -184,7 +185,6 @@ class TestCommitLogic(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
         _init_git_repo(self.tmpdir)
         # Copy the script so it runs with its ROOT set to tmpdir
-        import shutil
         self.script_copy = os.path.join(self.tmpdir, "supercommit_max.sh")
         shutil.copy2(_SCRIPT, self.script_copy)
         # Commit the script copy immediately so git add -A won't pick it up again
@@ -197,7 +197,6 @@ class TestCommitLogic(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        import shutil
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _run(self, *args: str) -> subprocess.CompletedProcess:
