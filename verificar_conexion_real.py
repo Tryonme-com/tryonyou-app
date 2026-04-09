@@ -1,5 +1,7 @@
 """
 Comprueba que hay claves Stripe en el entorno (pk + sk) y si pk es live o test.
+También verifica intentos de pago distinguiendo transferencias bancarias externas
+(Bancario_Externo) de pagos que deben pasar por Stripe.
 
 Acepta los mismos alias que inject_keys: VITE_STRIPE_PUBLIC_KEY, INJECT_*, E50_*.
 
@@ -12,6 +14,7 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import Any
 
 
 def _g(*names: str) -> str:
@@ -54,6 +57,26 @@ def verificar_conexion_real() -> bool:
         print("ℹ️  Secret key presente; prefijo no estándar.")
 
     return True
+
+
+def verificar_intentos_pago(intentos_pago: list[dict[str, Any]]) -> None:
+    """Verifica una lista de intentos de pago e informa sobre su ruta de procesamiento.
+
+    Los pagos con status ``"Bancario_Externo"`` son transferencias corporativas
+    directas al IBAN que no pasan por Stripe.  Cualquier otro status indica un
+    pago bloqueado por falta de verificación.
+
+    Args:
+        intentos_pago: Lista de dicts con al menos las claves ``"status"``,
+            ``"emisor"`` y ``"monto"``.
+    """
+    print("--- [VERIFICACIÓN DE CONEXIÓN] ---")
+    for pago in intentos_pago:
+        if pago["status"] == "Bancario_Externo":
+            print(f"AVISO: El pago de {pago['emisor']} NO pasará por la App de Stripe.")
+            print(f"MOTIVO: Transferencia corporativa directa al IBAN.")
+        else:
+            print(f"ERROR: Pago de {pago['monto']}€ bloqueado por falta de verificación.")
 
 
 if __name__ == "__main__":
