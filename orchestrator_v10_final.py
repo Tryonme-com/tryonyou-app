@@ -45,6 +45,7 @@ Subcomandos:
   gcs-core          desplegar_v10_core_gcs
   sacmuseum         sacmuseum_empire — soberanía económica (kill-switch + eventos)
   auditoria         auditoria_impacto_matinal — clearing bancario Lafayette/LVMH
+  liquidez          auditoria_impacto_matinal --liquidez (monitor SEPA en tiempo real)
 """
 
 
@@ -96,6 +97,10 @@ def main() -> int:
     s.add_parser(
         "auditoria",
         help="auditoria_impacto_matinal: clearing bancario Lafayette/LVMH",
+    )
+    s.add_parser(
+        "liquidez",
+        help="auditoria_impacto_matinal --liquidez: monitor SEPA en tiempo real",
     )
 
     args = p.parse_args()
@@ -198,6 +203,10 @@ def main() -> int:
         from auditoria_impacto_matinal import main as m
 
         return m()
+    if args.cmd == "liquidez":
+        from auditoria_impacto_matinal import main as m
+
+        return m(["--liquidez"])
 
     return 2
 

@@ -1,7 +1,12 @@
 """
 Auditoría de impacto matinal V10 — verificación de clearing bancario (Lafayette / LVMH).
 
-  python3 auditoria_impacto_matinal.py
+Incluye dos flujos complementarios:
+  - check_bank_impact()          → auditoría de ingresos esperados (resumen diario).
+  - check_immediate_liquidity()  → monitor de liquidez SEPA en tiempo real (minuto a minuto).
+
+  python3 auditoria_impacto_matinal.py             # auditoría completa (ambos flujos)
+  python3 auditoria_impacto_matinal.py --liquidez   # solo monitor de liquidez SEPA
 
   # Envío al centinela Telegram:
   export AUDIT_SEND_TELEGRAM=1
@@ -14,6 +19,7 @@ Patente: PCT/EP2025/067317
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from datetime import datetime
@@ -69,6 +75,67 @@ def check_bank_impact(*, now: datetime | None = None) -> dict:
         "ingresos": INGRESOS_ESPERADOS,
         "timestamp": ahora.isoformat(),
     }
+
+
+SEPA_SWEEP_MARGIN_MINUTES = 15
+
+
+def check_immediate_liquidity(*, now: datetime | None = None) -> dict:
+    """Real-time SEPA liquidity monitor relative to the 09:00 clearing window.
+
+    Parameters
+    ----------
+    now : datetime, optional
+        Override for the current timestamp (useful for testing).
+
+    Returns
+    -------
+    dict with keys:
+        status          – human-readable status line
+        sweep_started   – True once the SEPA sweep hour has passed
+        minutes_left    – minutes until sweep (0 when sweep_started is True)
+        timestamp       – ISO-formatted monitor time
+    """
+    ahora = now or datetime.now()
+    target_time = ahora.replace(hour=CLEARING_HOUR, minute=0, second=0, microsecond=0)
+
+    if ahora < target_time:
+        faltan = int((target_time - ahora).total_seconds() / 60)
+        estado = (
+            f"ESTADO: EN TRÁNSITO. Faltan {faltan} minutos "
+            "para el barrido bancario SEPA."
+        )
+        return {
+            "status": estado,
+            "sweep_started": False,
+            "minutes_left": faltan,
+            "timestamp": ahora.isoformat(),
+        }
+
+    estado = (
+        "ESTADO: BARRIDO INICIADO. "
+        f"Revisa tu banca online en los próximos {SEPA_SWEEP_MARGIN_MINUTES} minutos."
+    )
+    return {
+        "status": estado,
+        "sweep_started": True,
+        "minutes_left": 0,
+        "timestamp": ahora.isoformat(),
+    }
+
+
+def formato_liquidez(result: dict) -> str:
+    """Pretty-print the liquidity monitor result for terminal / Telegram."""
+    lineas = [
+        f"--- [MONITOR DE LIQUIDEZ: {result['timestamp']}] ---",
+        "",
+        result["status"],
+        "",
+        f"SIREN: {SIREN_REF}",
+        "Patente: PCT/EP2025/067317",
+        "Bajo Protocolo de Soberanía V10 - Founder: Rubén",
+    ]
+    return "\n".join(lineas)
 
 
 def formato_consola(result: dict) -> str:
@@ -127,9 +194,29 @@ def _enviar_telegram(texto: str) -> bool:
     return False
 
 
-def main() -> int:
-    result = check_bank_impact()
-    texto = formato_consola(result)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Auditoría de impacto matinal V10 — clearing bancario Lafayette/LVMH.",
+    )
+    parser.add_argument(
+        "--liquidez",
+        action="store_true",
+        help="Solo muestra el monitor de liquidez SEPA (sin auditoría completa).",
+    )
+    args = parser.parse_args(argv)
+
+    bloques: list[str] = []
+
+    if args.liquidez:
+        liq = check_immediate_liquidity()
+        bloques.append(formato_liquidez(liq))
+    else:
+        result = check_bank_impact()
+        bloques.append(formato_consola(result))
+        liq = check_immediate_liquidity()
+        bloques.append(formato_liquidez(liq))
+
+    texto = "\n\n".join(bloques)
     print(texto)
 
     if os.environ.get("AUDIT_SEND_TELEGRAM", "").strip() in ("1", "true", "yes"):
