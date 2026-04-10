@@ -15,7 +15,12 @@ for _p in (_ROOT, _API):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from stripe_webhook import _dispatch, _on_checkout_session_completed, handle_webhook
+from stripe_webhook import (
+    _dispatch,
+    _on_checkout_session_completed,
+    _reset_runtime_state_for_tests,
+    handle_webhook,
+)
 
 
 class TestHandleWebhookMissingSecret(unittest.TestCase):
@@ -132,6 +137,122 @@ class TestHandleWebhookCheckoutSessionCompleted(unittest.TestCase):
         self.assertEqual(result["status"], "ok")
         self.assertFalse(result["handled"])
         self.assertEqual(result["event"], "payment_intent.created")
+
+
+class TestHandleWebhookPayoutCreated(unittest.TestCase):
+    """Evento payout.created dispara fase de saneamiento de servicios."""
+
+    def setUp(self) -> None:
+        os.environ["STRIPE_WEBHOOK_SECRET"] = "whsec_test_secret"
+        os.environ["MAKE_SERVICE_SANITATION_WEBHOOK_URL"] = "https://hook.make.test/stripe"
+        os.environ.pop("SERVICE_SANITATION_APPLE_AMOUNT_EUR", None)
+        _reset_runtime_state_for_tests()
+
+    def tearDown(self) -> None:
+        os.environ.pop("STRIPE_WEBHOOK_SECRET", None)
+        os.environ.pop("MAKE_SERVICE_SANITATION_WEBHOOK_URL", None)
+        os.environ.pop("SERVICE_SANITATION_APPLE_AMOUNT_EUR", None)
+        _reset_runtime_state_for_tests()
+
+    @patch("stripe_webhook.requests.post")
+    def test_dispatches_pending_wix_and_apple_payments(self, mock_post: MagicMock) -> None:
+        mock_post.return_value.ok = True
+        event = {
+            "id": "evt_payout_001",
+            "type": "payout.created",
+            "data": {
+                "object": {
+                    "id": "po_123",
+                    "amount": 100000,
+                    "currency": "eur",
+                }
+            },
+        }
+
+        result, code = _dispatch(event)
+
+        self.assertEqual(code, 200)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["event"], "payout.created")
+        self.assertTrue(result["handled"])
+        self.assertTrue(result["triggered"])
+        self.assertEqual(result["event_id"], "evt_payout_001")
+        self.assertEqual(len(result["payments"]), 2)
+        self.assertEqual(result["payments"][0]["service"], "Wix")
+        self.assertEqual(result["payments"][0]["amount_eur"], 489.0)
+        self.assertEqual(result["payments"][1]["service"], "Apple")
+        self.assertIn("amount_status", result["payments"][1])
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("stripe_webhook.requests.post")
+    def test_returns_502_if_service_webhook_not_configured(self, mock_post: MagicMock) -> None:
+        os.environ.pop("MAKE_SERVICE_SANITATION_WEBHOOK_URL", None)
+        os.environ.pop("MAKE_WEBHOOK_URL", None)
+        event = {
+            "id": "evt_payout_002",
+            "type": "payout.created",
+            "data": {"object": {"id": "po_456"}},
+        }
+
+        result, code = _dispatch(event)
+
+        self.assertEqual(code, 502)
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["event"], "payout.created")
+        self.assertEqual(mock_post.call_count, 0)
+
+    @patch("stripe_webhook.requests.post")
+    def test_returns_502_if_make_webhook_fails(self, mock_post: MagicMock) -> None:
+        mock_post.return_value.ok = False
+        mock_post.return_value.status_code = 500
+        event = {
+            "id": "evt_payout_003",
+            "type": "payout.created",
+            "data": {"object": {"id": "po_789"}},
+        }
+
+        result, code = _dispatch(event)
+
+        self.assertEqual(code, 502)
+        self.assertEqual(result["status"], "error")
+        self.assertIn("service_sanitation_http_500", result["message"])
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("stripe_webhook.requests.post")
+    def test_duplicate_event_id_is_idempotent(self, mock_post: MagicMock) -> None:
+        mock_post.return_value.ok = True
+        event = {
+            "id": "evt_payout_dup",
+            "type": "payout.created",
+            "data": {"object": {"id": "po_dup"}},
+        }
+
+        first_result, first_code = _dispatch(event)
+        second_result, second_code = _dispatch(event)
+
+        self.assertEqual(first_code, 200)
+        self.assertEqual(second_code, 200)
+        self.assertTrue(first_result["triggered"])
+        self.assertFalse(second_result["triggered"])
+        self.assertTrue(second_result["duplicate"])
+        self.assertEqual(mock_post.call_count, 1)
+
+    @patch("stripe_webhook.requests.post")
+    def test_apple_amount_from_env(self, mock_post: MagicMock) -> None:
+        os.environ["SERVICE_SANITATION_APPLE_AMOUNT_EUR"] = "39,99"
+        mock_post.return_value.ok = True
+        event = {
+            "id": "evt_payout_apple_env",
+            "type": "payout.created",
+            "data": {"object": {"id": "po_apple"}},
+        }
+
+        result, code = _dispatch(event)
+
+        self.assertEqual(code, 200)
+        self.assertEqual(result["payments"][1]["service"], "Apple")
+        self.assertAlmostEqual(result["payments"][1]["amount_eur"], 39.99, places=2)
+        self.assertNotIn("amount_status", result["payments"][1])
 
 
 class TestOnCheckoutSessionCompleted(unittest.TestCase):
