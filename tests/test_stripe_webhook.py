@@ -15,7 +15,13 @@ for _p in (_ROOT, _API):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from stripe_webhook import _dispatch, _on_checkout_session_completed, handle_webhook
+from stripe_webhook import (
+    _dispatch,
+    _on_checkout_session_completed,
+    _on_invoice_paid,
+    _on_payment_intent_succeeded,
+    handle_webhook,
+)
 
 
 class TestHandleWebhookMissingSecret(unittest.TestCase):
@@ -114,6 +120,7 @@ class TestHandleWebhookCheckoutSessionCompleted(unittest.TestCase):
         self.assertTrue(result["handled"])
         self.assertEqual(result["event"], "checkout.session.completed")
         self.assertEqual(result["session_id"], "cs_test_123")
+        self.assertEqual(result["invoice_status"], "SUCCEEDED")
         self.assertEqual(result["customer_email"], "test@example.com")
         self.assertEqual(result["amount_total"], 12500)
         self.assertEqual(result["currency"], "eur")
@@ -175,6 +182,103 @@ class TestOnCheckoutSessionCompleted(unittest.TestCase):
         result, _ = _on_checkout_session_completed(session)
         self.assertEqual(result["event"], "checkout.session.completed")
         self.assertTrue(result["handled"])
+
+    @patch("stripe_webhook.LOGGER.info")
+    def test_logs_status_transition_to_succeeded(self, mock_info: MagicMock) -> None:
+        session = {
+            "id": "cs_log",
+            "customer_details": {"email": "log@example.com"},
+            "amount_total": 4200,
+            "currency": "eur",
+        }
+        _on_checkout_session_completed(session)
+        mock_info.assert_called_once()
+        args = mock_info.call_args[0]
+        self.assertIn("status=SUCCEEDED", args[0])
+        self.assertEqual(args[1], "checkout.session.completed")
+        self.assertEqual(args[2], "cs_log")
+
+
+class TestDispatchSucceededEvents(unittest.TestCase):
+    """Pruebas para eventos de Stripe que implican SUCCEEDED."""
+
+    def _make_event(self, event_type: str, object_data: dict) -> MagicMock:
+        mock_event = MagicMock()
+        mock_event.get.side_effect = lambda key, default=None: (
+            event_type if key == "type" else default
+        )
+        mock_event.__getitem__ = lambda self, key: (
+            {"object": object_data} if key == "data" else None
+        )
+        return mock_event
+
+    def test_dispatch_handles_invoice_paid(self) -> None:
+        invoice = {
+            "id": "in_123",
+            "customer_email": "buyer@example.com",
+            "amount_paid": 15000,
+            "currency": "eur",
+        }
+        event = self._make_event("invoice.paid", invoice)
+        result, code = _dispatch(event)
+        self.assertEqual(code, 200)
+        self.assertTrue(result["handled"])
+        self.assertEqual(result["invoice_status"], "SUCCEEDED")
+        self.assertEqual(result["event"], "invoice.paid")
+
+    def test_dispatch_handles_payment_intent_succeeded(self) -> None:
+        payment_intent = {
+            "id": "pi_123",
+            "invoice": "in_999",
+            "receipt_email": "paid@example.com",
+            "amount_received": 23000,
+            "currency": "usd",
+        }
+        event = self._make_event("payment_intent.succeeded", payment_intent)
+        result, code = _dispatch(event)
+        self.assertEqual(code, 200)
+        self.assertTrue(result["handled"])
+        self.assertEqual(result["invoice_status"], "SUCCEEDED")
+        self.assertEqual(result["event"], "payment_intent.succeeded")
+        self.assertEqual(result["invoice_id"], "in_999")
+
+
+class TestSucceededHandlers(unittest.TestCase):
+    """Tests unitarios directos de handlers SUCCEEDED."""
+
+    @patch("stripe_webhook.LOGGER.info")
+    def test_on_invoice_paid_logs_succeeded(self, mock_info: MagicMock) -> None:
+        invoice = {
+            "id": "in_log",
+            "customer_email": "invoice@example.com",
+            "amount_paid": 7600,
+            "currency": "eur",
+        }
+        result, code = _on_invoice_paid(invoice)
+        self.assertEqual(code, 200)
+        self.assertEqual(result["invoice_status"], "SUCCEEDED")
+        mock_info.assert_called_once()
+        args = mock_info.call_args[0]
+        self.assertEqual(args[1], "invoice.paid")
+        self.assertEqual(args[2], "in_log")
+
+    @patch("stripe_webhook.LOGGER.info")
+    def test_on_payment_intent_succeeded_logs_succeeded(self, mock_info: MagicMock) -> None:
+        payment_intent = {
+            "id": "pi_log",
+            "invoice": "in_from_pi",
+            "receipt_email": "pi@example.com",
+            "amount_received": 8200,
+            "currency": "eur",
+        }
+        result, code = _on_payment_intent_succeeded(payment_intent)
+        self.assertEqual(code, 200)
+        self.assertEqual(result["invoice_status"], "SUCCEEDED")
+        self.assertEqual(result["invoice_id"], "in_from_pi")
+        mock_info.assert_called_once()
+        args = mock_info.call_args[0]
+        self.assertEqual(args[1], "payment_intent.succeeded")
+        self.assertEqual(args[2], "in_from_pi")
 
 
 if __name__ == "__main__":
