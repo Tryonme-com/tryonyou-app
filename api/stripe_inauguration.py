@@ -1,6 +1,9 @@
 """
 Checkout inaugural 12.500 € — sesión Stripe con price_id LIVE únicamente.
 Nunca uses sk_test_ aquí en producción: el handler lo rechaza.
+
+Includes SIREN 943 610 196 in session metadata for legal traceability
+(Stripe Support / Isabella).
 """
 
 from __future__ import annotations
@@ -9,6 +12,9 @@ import os
 from urllib.parse import urlparse
 
 import stripe
+
+SIREN = "943 610 196"
+PATENT = "PCT/EP2025/067317"
 
 
 def _session_id_suffix(success_url: str) -> str:
@@ -67,6 +73,20 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
             line_items=[{"price": price_id, "quantity": 1}],
             success_url=success_with_session,
             cancel_url=cancel,
+            metadata={
+                "siren": SIREN,
+                "patent": PATENT,
+                "platform": "TryOnYou_V10",
+                "flow": "inauguration",
+            },
+            payment_intent_data={
+                "metadata": {
+                    "siren": SIREN,
+                    "patent": PATENT,
+                    "platform": "TryOnYou_V10",
+                    "flow": "inauguration",
+                },
+            },
         )
         url = session.url
         if not url:
