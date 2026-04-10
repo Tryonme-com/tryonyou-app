@@ -44,6 +44,7 @@ Subcomandos:
   gcs-contrato      despliegue_gcs_soberano_v10
   gcs-core          desplegar_v10_core_gcs
   sacmuseum         sacmuseum_empire — soberanía económica (kill-switch + eventos)
+  auditoria         auditoria_impacto_matinal — clearing bancario Lafayette/LVMH
 """
 
 
@@ -91,6 +92,10 @@ def main() -> int:
     s.add_parser(
         "sacmuseum",
         help="sacmuseum_empire: kill-switch Lafayette, nodos CP, RelicValue, log fiestas",
+    )
+    s.add_parser(
+        "auditoria",
+        help="auditoria_impacto_matinal: clearing bancario Lafayette/LVMH",
     )
 
     args = p.parse_args()
@@ -189,6 +194,10 @@ def main() -> int:
 
         run_sacmuseum_sovereignty()
         return 0
+    if args.cmd == "auditoria":
+        from auditoria_impacto_matinal import main as m
+
+        return m()
 
     return 2
 
