@@ -8,13 +8,19 @@ from contextlib import redirect_stdout
 from datetime import datetime
 
 from auditoria_impacto_matinal import (
+    APP_LATENCY_MINUTES,
     CLEARING_HOUR,
     INGRESOS_ESPERADOS,
+    MONTO_LIQUIDACION,
     OBJETIVO_TOTAL,
     SEPA_SWEEP_MARGIN_MINUTES,
+    SETTLEMENT_REFLECT_HOUR,
+    SETTLEMENT_REFLECT_MINUTE,
     check_bank_impact,
     check_immediate_liquidity,
+    check_instant_settlement,
     formato_consola,
+    formato_liquidacion,
     formato_liquidez,
     main,
 )
@@ -138,6 +144,76 @@ class TestFormatoLiquidez(unittest.TestCase):
         self.assertIn("Protocolo de Soberanía V10", text)
 
 
+class TestCheckInstantSettlement(unittest.TestCase):
+    def test_before_reflect_window(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 8, 0))
+        self.assertFalse(result["settled"])
+        self.assertEqual(result["minutes_to_reflect"], 90)
+        self.assertIn("puerta", result["status"])
+        self.assertIn("09:30", result["status"])
+
+    def test_after_reflect_window(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 10, 0))
+        self.assertTrue(result["settled"])
+        self.assertEqual(result["minutes_to_reflect"], 0)
+        self.assertIn("VENTANA DE REFLEJO ALCANZADA", result["status"])
+
+    def test_at_exactly_nine_thirty(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 9, 30))
+        self.assertTrue(result["settled"])
+
+    def test_one_minute_before_reflect(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 9, 29))
+        self.assertFalse(result["settled"])
+        self.assertEqual(result["minutes_to_reflect"], 1)
+
+    def test_at_midnight(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 0, 0))
+        self.assertFalse(result["settled"])
+        self.assertEqual(result["minutes_to_reflect"], 570)
+
+    def test_monto_matches_constant(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 12, 0))
+        self.assertEqual(result["monto_esperado"], MONTO_LIQUIDACION)
+
+    def test_result_has_expected_keys(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 12, 0))
+        for key in ("status", "monto_esperado", "settled", "minutes_to_reflect", "timestamp"):
+            self.assertIn(key, result)
+
+    def test_timestamp_is_iso(self) -> None:
+        ts = datetime(2026, 4, 10, 7, 15)
+        result = check_instant_settlement(now=ts)
+        self.assertEqual(result["timestamp"], ts.isoformat())
+
+    def test_afternoon_is_settled(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 15, 0))
+        self.assertTrue(result["settled"])
+
+
+class TestFormatoLiquidacion(unittest.TestCase):
+    def test_contains_header(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 8, 0))
+        text = formato_liquidacion(result)
+        self.assertIn("MONITOR DE LIQUIDACIÓN", text)
+
+    def test_contains_monto(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 8, 0))
+        text = formato_liquidacion(result)
+        self.assertIn("51,988.50", text)
+
+    def test_contains_latency(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 8, 0))
+        text = formato_liquidacion(result)
+        self.assertIn(str(APP_LATENCY_MINUTES), text)
+
+    def test_contains_patent(self) -> None:
+        result = check_instant_settlement(now=datetime(2026, 4, 10, 10, 0))
+        text = formato_liquidacion(result)
+        self.assertIn("PCT/EP2025/067317", text)
+        self.assertIn("Protocolo de Soberanía V10", text)
+
+
 class TestMain(unittest.TestCase):
     def test_main_returns_zero(self) -> None:
         buf = io.StringIO()
@@ -147,6 +223,7 @@ class TestMain(unittest.TestCase):
         output = buf.getvalue()
         self.assertIn("AUDITORÍA DE IMPACTO MATINAL", output)
         self.assertIn("MONITOR DE LIQUIDEZ", output)
+        self.assertIn("MONITOR DE LIQUIDACIÓN", output)
 
     def test_main_liquidez_only(self) -> None:
         buf = io.StringIO()
@@ -156,6 +233,17 @@ class TestMain(unittest.TestCase):
         output = buf.getvalue()
         self.assertNotIn("AUDITORÍA DE IMPACTO MATINAL", output)
         self.assertIn("MONITOR DE LIQUIDEZ", output)
+        self.assertNotIn("MONITOR DE LIQUIDACIÓN", output)
+
+    def test_main_liquidacion_only(self) -> None:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["--liquidacion"])
+        self.assertEqual(rc, 0)
+        output = buf.getvalue()
+        self.assertNotIn("AUDITORÍA DE IMPACTO MATINAL", output)
+        self.assertNotIn("MONITOR DE LIQUIDEZ", output)
+        self.assertIn("MONITOR DE LIQUIDACIÓN", output)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,14 @@
 """
 Auditoría de impacto matinal V10 — verificación de clearing bancario (Lafayette / LVMH).
 
-Incluye dos flujos complementarios:
+Incluye tres flujos complementarios:
   - check_bank_impact()          → auditoría de ingresos esperados (resumen diario).
   - check_immediate_liquidity()  → monitor de liquidez SEPA en tiempo real (minuto a minuto).
+  - check_instant_settlement()   → monitor de liquidación instantánea (reflejo en App bancaria).
 
-  python3 auditoria_impacto_matinal.py             # auditoría completa (ambos flujos)
-  python3 auditoria_impacto_matinal.py --liquidez   # solo monitor de liquidez SEPA
+  python3 auditoria_impacto_matinal.py               # auditoría completa (los tres flujos)
+  python3 auditoria_impacto_matinal.py --liquidez     # solo monitor de liquidez SEPA
+  python3 auditoria_impacto_matinal.py --liquidacion  # solo monitor de liquidación instantánea
 
   # Envío al centinela Telegram:
   export AUDIT_SEND_TELEGRAM=1
@@ -28,6 +30,10 @@ from typing import Dict, List
 SIREN_REF = "943 610 196"
 CLEARING_HOUR = 9
 OBJETIVO_TOTAL = 405_680.00
+MONTO_LIQUIDACION = 51_988.50
+SETTLEMENT_REFLECT_HOUR = 9
+SETTLEMENT_REFLECT_MINUTE = 30
+APP_LATENCY_MINUTES = 30
 
 INGRESOS_ESPERADOS: List[Dict[str, object]] = [
     {"origen": "Lafayette", "importe": 27_500.00},
@@ -124,10 +130,85 @@ def check_immediate_liquidity(*, now: datetime | None = None) -> dict:
     }
 
 
+def check_instant_settlement(*, now: datetime | None = None) -> dict:
+    """Monitor for instant settlement reflection in the banking app.
+
+    Tracks whether the expected settlement amount is likely to have been
+    reflected in the banking app, based on the 09:00 SEPA sweep plus a
+    typical 15-30 min app-reflection latency window.
+
+    Parameters
+    ----------
+    now : datetime, optional
+        Override for the current timestamp (useful for testing).
+
+    Returns
+    -------
+    dict with keys:
+        status            – human-readable status line
+        monto_esperado    – expected settlement amount in EUR
+        settled           – True once the reflection window (09:30) has passed
+        minutes_to_reflect – minutes until the app is expected to reflect the entry
+                             (0 when settled is True)
+        timestamp         – ISO-formatted monitor time
+    """
+    ahora = now or datetime.now()
+    reflect_time = ahora.replace(
+        hour=SETTLEMENT_REFLECT_HOUR,
+        minute=SETTLEMENT_REFLECT_MINUTE,
+        second=0,
+        microsecond=0,
+    )
+
+    if ahora < reflect_time:
+        faltan = int((reflect_time - ahora).total_seconds() / 60)
+        estado = (
+            "ESTADO: El dinero está en la 'puerta' contable del banco. "
+            f"Revisa de nuevo a las {SETTLEMENT_REFLECT_HOUR:02d}:"
+            f"{SETTLEMENT_REFLECT_MINUTE:02d}."
+        )
+        return {
+            "status": estado,
+            "monto_esperado": MONTO_LIQUIDACION,
+            "settled": False,
+            "minutes_to_reflect": faltan,
+            "timestamp": ahora.isoformat(),
+        }
+
+    estado = (
+        "ESTADO: VENTANA DE REFLEJO ALCANZADA. "
+        "Verifica la entrada en tu App Bancaria AHORA."
+    )
+    return {
+        "status": estado,
+        "monto_esperado": MONTO_LIQUIDACION,
+        "settled": True,
+        "minutes_to_reflect": 0,
+        "timestamp": ahora.isoformat(),
+    }
+
+
 def formato_liquidez(result: dict) -> str:
     """Pretty-print the liquidity monitor result for terminal / Telegram."""
     lineas = [
         f"--- [MONITOR DE LIQUIDEZ: {result['timestamp']}] ---",
+        "",
+        result["status"],
+        "",
+        f"SIREN: {SIREN_REF}",
+        "Patente: PCT/EP2025/067317",
+        "Bajo Protocolo de Soberanía V10 - Founder: Rubén",
+    ]
+    return "\n".join(lineas)
+
+
+def formato_liquidacion(result: dict) -> str:
+    """Pretty-print the instant settlement monitor result for terminal / Telegram."""
+    lineas = [
+        f"--- [MONITOR DE LIQUIDACIÓN: {result['timestamp']}] ---",
+        "",
+        f"💰 Esperando confirmación de entrada: {result['monto_esperado']:,.2f} €",
+        f"⏱️  Latencia típica de reflejo en App: {APP_LATENCY_MINUTES} min tras el barrido",
         "",
         result["status"],
         "",
@@ -203,6 +284,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Solo muestra el monitor de liquidez SEPA (sin auditoría completa).",
     )
+    parser.add_argument(
+        "--liquidacion",
+        action="store_true",
+        help="Solo muestra el monitor de liquidación instantánea (reflejo App bancaria).",
+    )
     args = parser.parse_args(argv)
 
     bloques: list[str] = []
@@ -210,11 +296,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.liquidez:
         liq = check_immediate_liquidity()
         bloques.append(formato_liquidez(liq))
+    elif args.liquidacion:
+        sett = check_instant_settlement()
+        bloques.append(formato_liquidacion(sett))
     else:
         result = check_bank_impact()
         bloques.append(formato_consola(result))
         liq = check_immediate_liquidity()
         bloques.append(formato_liquidez(liq))
+        sett = check_instant_settlement()
+        bloques.append(formato_liquidacion(sett))
 
     texto = "\n\n".join(bloques)
     print(texto)

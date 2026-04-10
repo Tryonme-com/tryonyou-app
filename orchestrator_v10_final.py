@@ -46,6 +46,7 @@ Subcomandos:
   sacmuseum         sacmuseum_empire — soberanía económica (kill-switch + eventos)
   auditoria         auditoria_impacto_matinal — clearing bancario Lafayette/LVMH
   liquidez          auditoria_impacto_matinal --liquidez (monitor SEPA en tiempo real)
+  liquidacion       auditoria_impacto_matinal --liquidacion (monitor liquidación instantánea)
 """
 
 
@@ -101,6 +102,10 @@ def main() -> int:
     s.add_parser(
         "liquidez",
         help="auditoria_impacto_matinal --liquidez: monitor SEPA en tiempo real",
+    )
+    s.add_parser(
+        "liquidacion",
+        help="auditoria_impacto_matinal --liquidacion: monitor liquidación instantánea",
     )
 
     args = p.parse_args()
@@ -207,6 +212,10 @@ def main() -> int:
         from auditoria_impacto_matinal import main as m
 
         return m(["--liquidez"])
+    if args.cmd == "liquidacion":
+        from auditoria_impacto_matinal import main as m
+
+        return m(["--liquidacion"])
 
     return 2
 
