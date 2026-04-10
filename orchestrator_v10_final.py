@@ -46,6 +46,7 @@ Subcomandos:
   sacmuseum         sacmuseum_empire — soberanía económica (kill-switch + eventos)
   auditoria         auditoria_impacto_matinal — clearing bancario Lafayette/LVMH
   liquidez          auditoria_impacto_matinal --liquidez (monitor SEPA en tiempo real)
+  reconciliar       auditoria_impacto_matinal --reconciliar-agresivo (retry invoices)
 """
 
 
@@ -101,6 +102,13 @@ def main() -> int:
     s.add_parser(
         "liquidez",
         help="auditoria_impacto_matinal --liquidez: monitor SEPA en tiempo real",
+    )
+    s.add_parser(
+        "reconciliar",
+        help=(
+            "auditoria_impacto_matinal --reconciliar-agresivo: "
+            "retry inmediato invoices objetivo"
+        ),
     )
 
     args = p.parse_args()
@@ -207,6 +215,10 @@ def main() -> int:
         from auditoria_impacto_matinal import main as m
 
         return m(["--liquidez"])
+    if args.cmd == "reconciliar":
+        from auditoria_impacto_matinal import main as m
+
+        return m(["--reconciliar-agresivo"])
 
     return 2
 
