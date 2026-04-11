@@ -17,6 +17,11 @@ import os
 import sys
 from datetime import datetime
 
+try:
+    import requests
+except ImportError:
+    requests = None  # type: ignore[assignment]
+
 SIREN_REF = "943 610 196"
 NETO_REF = "98.000,00"
 
@@ -64,9 +69,7 @@ def enviar_al_centinela(titulo: str, mensaje: str) -> bool:
             file=sys.stderr,
         )
         return False
-    try:
-        import requests
-    except ImportError:
+    if requests is None:
         print("❌ pip install requests", file=sys.stderr)
         return False
 
@@ -88,6 +91,67 @@ def enviar_al_centinela(titulo: str, mensaje: str) -> bool:
     except Exception as e:
         print(f"❌ Telegram: {e}", file=sys.stderr)
     return False
+
+
+class DailyManagerV10:
+    """Daily status reporter for Soberanía V10 — sends an Empire Mode summary via Telegram."""
+
+    DEFAULT_CHAT_ID = "7868120279"
+
+    def __init__(self) -> None:
+        self.today = datetime.now().strftime("%d/%m/%Y")
+        self.siren = SIREN_REF
+
+    def get_status_report(self) -> str:
+        return (
+            f"🦅 *DAILY REPORT: SOBERANÍA V10* - {self.today}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🛡️ *Estado:* EMPIRE MODE ACTIVE\n"
+            f"🆔 *SIREN:* {self.siren}\n\n"
+            f"🎯 *HITOS DEL DÍA:*\n"
+            f"• *P0:* Monitorizar liquidación Jalon 2 ({NETO_REF}€).\n"
+            f"• *P0:* Verificar Purga Jules (Zero Legacy).\n"
+            f"• *P1:* Test de 'The Snap' (PAU Emotion SDK).\n\n"
+            f"🚀 *Sincronización:* supercommit_max ejecutado.\n"
+            f"💰 *Día D:* 9 de mayo (INNEGOCIABLE).\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"✨ _'Bien divina, cero etiquetas.'_"
+        )
+
+    def send_update(self) -> bool:
+        chat_id = (
+            os.environ.get("TELEGRAM_CHAT_ID", "").strip() or self.DEFAULT_CHAT_ID
+        )
+        titulo = "DAILY REPORT"
+        mensaje = self.get_status_report()
+        token = (
+            os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+            or os.environ.get("TELEGRAM_TOKEN", "").strip()
+        )
+        if not token:
+            print(
+                "❌ Falta TELEGRAM_BOT_TOKEN (o TELEGRAM_TOKEN).",
+                file=sys.stderr,
+            )
+            return False
+        if requests is None:
+            print("❌ pip install requests", file=sys.stderr)
+            return False
+
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        texto = f"*{titulo}*\n\n{mensaje}"
+        try:
+            r = requests.post(
+                url,
+                json={"chat_id": chat_id, "text": texto, "parse_mode": "Markdown"},
+                timeout=30,
+            )
+            if r.status_code == 200:
+                return True
+            print(f"❌ Telegram HTTP {r.status_code}: {r.text[:400]}", file=sys.stderr)
+        except Exception as e:
+            print(f"❌ Telegram: {e}", file=sys.stderr)
+        return False
 
 
 def main() -> int:
