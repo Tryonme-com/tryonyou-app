@@ -16,6 +16,7 @@ from bunker_full_orchestrator import (
     orchestrate_mirror_shadow_dwell,
 )
 from mirror_digital_make import forward_mirror_event
+from stripe_handler import create_financial_connections_session
 from stripe_inauguration import create_inauguration_checkout_session
 from stripe_webhook import handle_webhook
 
@@ -75,6 +76,32 @@ def stripe_inauguration_checkout():
 @app.route("/mirror_digital_event", methods=["OPTIONS"])
 def mirror_digital_event_options():
     return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_financial_connections_session", methods=["OPTIONS"])
+@app.route("/stripe_financial_connections_session", methods=["OPTIONS"])
+def stripe_financial_connections_session_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_financial_connections_session", methods=["POST"])
+@app.route("/stripe_financial_connections_session", methods=["POST"])
+def stripe_financial_connections_session():
+    body = request.get_json(force=True, silent=True) or {}
+    verified_account = body.get("verified_account") or {}
+    return_url = body.get("return_url") or ""
+    permissions = body.get("permissions")
+    countries = body.get("countries")
+    prefetch = body.get("prefetch")
+
+    payload, code = create_financial_connections_session(
+        verified_account=verified_account,
+        return_url=return_url,
+        permissions=permissions,
+        countries=countries,
+        prefetch=prefetch,
+    )
+    return _cors(jsonify(payload)), code
 
 
 @app.route("/api/mirror_digital_event", methods=["POST"])
