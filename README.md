@@ -18,5 +18,9 @@ python3 deploy_divineo.py
 python3 deploy_divineo.py --delay 0
 ```
 
+### Repositorio
+
+**GitHub:** https://github.com/Tryonme-com/tryonyou-app
+
 ---
 *Este repositorio es la fuente de verdad única para el piloto comercial en Galeries Lafayette.*
