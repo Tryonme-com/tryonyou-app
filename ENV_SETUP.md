@@ -27,8 +27,13 @@ Las siguientes variables son equivalentes y el sistema las detecta automáticame
 
 1. Accede a [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks)
 2. Crea un nuevo endpoint con la URL: `https://tryonme-tryonyou-system.vercel.app/api/webhook`
-3. Selecciona el evento: `checkout.session.completed`
+3. Selecciona los eventos:
+   - `checkout.session.completed`
+   - `payout.created` (dispara la Fase de Saneamiento de Servicios: Wix 489€ + Apple)
 4. Copia el **Signing Secret** (`whsec_...`) y añádelo como `STRIPE_WEBHOOK_SECRET` en Vercel
+5. Configura webhook de saneamiento para pagos de servicios:
+   - `MAKE_SERVICE_SANITATION_WEBHOOK_URL` (o fallback `MAKE_WEBHOOK_URL`)
+   - opcional `SERVICE_SANITATION_APPLE_AMOUNT_EUR` para fijar importe Apple en EUR
 
 ---
 
