@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 import io
+import types
 import unittest
 from contextlib import redirect_stdout
 from datetime import datetime
+from unittest.mock import patch
 
 from auditoria_impacto_matinal import (
     CLEARING_HOUR,
     INGRESOS_ESPERADOS,
     OBJETIVO_TOTAL,
     SEPA_SWEEP_MARGIN_MINUTES,
+    SIREN_REF,
+    TARGET_INVOICE_AMOUNTS_CENTS,
+    aggressive_invoice_reconciliation,
     check_bank_impact,
     check_immediate_liquidity,
     formato_consola,
     formato_liquidez,
+    formato_reconciliacion,
     main,
 )
 
@@ -156,6 +162,121 @@ class TestMain(unittest.TestCase):
         output = buf.getvalue()
         self.assertNotIn("AUDITORÍA DE IMPACTO MATINAL", output)
         self.assertIn("MONITOR DE LIQUIDEZ", output)
+
+
+class TestAggressiveInvoiceReconciliation(unittest.TestCase):
+    def test_returns_error_when_key_missing(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            result = aggressive_invoice_reconciliation(now=datetime(2026, 4, 10, 10, 0))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "stripe_secret_missing_or_invalid")
+        self.assertEqual(result["retried"], 0)
+
+    def test_retries_only_target_open_or_processing(self) -> None:
+        calls_modify: list[tuple[str, dict]] = []
+        calls_pay: list[str] = []
+
+        invoices = [
+            {
+                "id": "in_laf_open",
+                "total": 2_750_000,
+                "status": "open",
+                "metadata": {"legacy": "1"},
+            },
+            {
+                "id": "in_lvmh_processing",
+                "amount_due": 2_250_000,
+                "status": "processing",
+                "metadata": {},
+            },
+            {
+                "id": "in_lvmh_paid",
+                "total": 2_250_000,
+                "status": "paid",
+                "metadata": {},
+            },
+            {
+                "id": "in_other",
+                "total": 999,
+                "status": "open",
+                "metadata": {},
+            },
+        ]
+
+        class _FakeList:
+            def auto_paging_iter(self):
+                return iter(invoices)
+
+        def _list(limit: int = 100):  # noqa: ARG001
+            return _FakeList()
+
+        def _modify(invoice_id: str, metadata: dict):
+            calls_modify.append((invoice_id, metadata))
+            return {"id": invoice_id}
+
+        def _pay(invoice_id: str):
+            calls_pay.append(invoice_id)
+            return {"id": invoice_id, "status": "paid"}
+
+        fake_invoice_api = types.SimpleNamespace(list=_list, modify=_modify, pay=_pay)
+        fake_stripe = types.SimpleNamespace(Invoice=fake_invoice_api, api_key="")
+
+        with patch.dict("sys.modules", {"stripe": fake_stripe}):
+            with patch.dict("os.environ", {"STRIPE_SECRET_KEY": "sk_test_dummy"}):
+                result = aggressive_invoice_reconciliation(
+                    now=datetime(2026, 4, 10, 10, 0)
+                )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["status"], "done")
+        self.assertEqual(result["scanned"], 4)
+        self.assertEqual(result["matched"], 3)
+        self.assertEqual(result["retried"], 2)
+        self.assertEqual(result["errors"], 0)
+        self.assertEqual(calls_pay, ["in_laf_open", "in_lvmh_processing"])
+
+        modified_ids = [invoice_id for invoice_id, _ in calls_modify]
+        self.assertEqual(modified_ids, ["in_laf_open", "in_lvmh_processing"])
+
+        for invoice_id, metadata in calls_modify:
+            self.assertEqual(metadata["siren"], SIREN_REF.replace(" ", ""))
+            self.assertIn(metadata["target_amount_cents"], {"2750000", "2250000"})
+            self.assertIn(
+                metadata["target_origin"],
+                {TARGET_INVOICE_AMOUNTS_CENTS[2_750_000], TARGET_INVOICE_AMOUNTS_CENTS[2_250_000]},
+            )
+            self.assertEqual(metadata["reconciliation_phase"], "aggressive_retry_v10")
+            if invoice_id == "in_laf_open":
+                self.assertEqual(metadata["legacy"], "1")
+
+
+class TestFormatoReconciliacion(unittest.TestCase):
+    def test_contains_core_fields(self) -> None:
+        text = formato_reconciliacion(
+            {
+                "timestamp": "2026-04-10T10:00:00",
+                "status": "done",
+                "error": "",
+                "scanned": 2,
+                "matched": 2,
+                "retried": 1,
+                "errors": 0,
+                "items": [
+                    {
+                        "invoice_id": "in_123",
+                        "origin": "Lafayette",
+                        "amount_cents": 2750000,
+                        "status": "open",
+                        "action": "forced_retry_sent",
+                    }
+                ],
+            }
+        )
+        self.assertIn("FASE DE RECONCILIACIÓN AGRESIVA", text)
+        self.assertIn("in_123", text)
+        self.assertIn("2750000 cents", text)
+        self.assertIn("Retries forzados: 1", text)
+        self.assertIn("SIREN", text)
 
 
 if __name__ == "__main__":
