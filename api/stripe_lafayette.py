@@ -2,6 +2,9 @@
 Lafayette pilot — crea un PaymentIntent Stripe vinculado al piloto.
 La clave secreta se lee de la variable de entorno STRIPE_SECRET_KEY
 y debe ser sk_live_… (modo producción).
+
+Every PaymentIntent includes SIREN 943 610 196 in metadata for legal
+traceability (Stripe Support / Isabella).
 """
 
 from __future__ import annotations
@@ -9,6 +12,9 @@ from __future__ import annotations
 import os
 
 import stripe
+
+SIREN = "943 610 196"
+PATENT = "PCT/EP2025/067317"
 
 
 def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
@@ -38,6 +44,9 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
                 "session_id": session_id,
                 "project": "TryOnYou_Lafayette_Pilot",
                 "status": "V10_Production",
+                "siren": SIREN,
+                "patent": PATENT,
+                "platform": "TryOnYou_V10",
             },
             description=f"TryOnYou - Mirror Session {session_id}",
         )

@@ -8,7 +8,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
-from deploy_divineo import PATENT, SOVEREIGN_PROTOCOL, deploy_divineo
+from deploy_divineo import PATENT, SIREN, SOVEREIGN_PROTOCOL, deploy_divineo
 
 
 class TestDeployDivineo(unittest.TestCase):
@@ -119,6 +119,33 @@ class TestDeployDivineo(unittest.TestCase):
         self.assertIn(PATENT, output)
         self.assertIn(SOVEREIGN_PROTOCOL, output)
         self.assertTrue(result["deploy"])
+
+    def test_sync_full_balance_flag(self) -> None:
+        """Simulates: python3 deploy_divineo.py --force --sync-full-balance"""
+        env = {"STRIPE_SECRET_KEY": "sk_test_balance"}
+        buffer = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=False):
+            with redirect_stdout(buffer):
+                result = deploy_divineo(
+                    nodes=("Core",), delay_seconds=0.0,
+                    force=True, sync_full_balance=True,
+                )
+        output = buffer.getvalue()
+        self.assertIn("STRIPE SYNC", output)
+        self.assertIn("payout_sync", output)
+        self.assertIn("accumulated payout processing", output)
+        self.assertIn(SIREN, output)
+        self.assertTrue(result["deploy"])
+        stripe_info = result["stripe"]
+        self.assertTrue(stripe_info["ok"])
+        self.assertIn("payout_sync", stripe_info["details"])
+
+    def test_siren_printed_on_deploy(self) -> None:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            deploy_divineo(nodes=("Core",), delay_seconds=0.0)
+        output = buffer.getvalue()
+        self.assertIn(SIREN, output)
 
 
 if __name__ == "__main__":
