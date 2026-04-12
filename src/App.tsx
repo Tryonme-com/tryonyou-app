@@ -7,6 +7,7 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { PreScanHook } from "./components/PreScanHook";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import {
@@ -275,6 +276,11 @@ export default function App() {
   );
   const [emailHero, setEmailHero] = useState<string>("");
   const [pauInaugurationWhisper, setPauInaugurationWhisper] = useState("");
+
+  /** Pre-scan hook — shown once per session until dismissed or auto-timeout. */
+  const [preScanVisible, setPreScanVisible] = useState(
+    () => sessionStorage.getItem("tryonyou_prescan_done") !== "1",
+  );
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -794,6 +800,14 @@ export default function App() {
           </button>
         </motion.div>
       </div>
+
+      <PreScanHook
+        visible={preScanVisible}
+        onDismiss={() => {
+          sessionStorage.setItem("tryonyou_prescan_done", "1");
+          setPreScanVisible(false);
+        }}
+      />
     </div>
   );
 }
