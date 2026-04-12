@@ -52,6 +52,35 @@ ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
 fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
 
+NOTIFY_BOT_TOKEN="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+NOTIFY_CHAT_ID="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-@tryonyou_deploy_bot}}"
+
+_notify_success() {
+  local stage="$1"
+  local detail="${2:-OK}"
+  local ts text
+
+  [[ -n "$NOTIFY_BOT_TOKEN" && -n "$NOTIFY_CHAT_ID" ]] || return 0
+
+  ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+  text="✅ TRYONYOU SUPERCOMMIT MAX
+Etapa: ${stage}
+Detalle: ${detail}
+Bot: @tryonyou_deploy_bot
+Timestamp UTC: ${ts}
+Patente: PCT/EP2025/067317"
+
+  if command -v curl >/dev/null 2>&1; then
+    if ! curl -fsS -X POST "https://api.telegram.org/bot${NOTIFY_BOT_TOKEN}/sendMessage" \
+      -d "chat_id=${NOTIFY_CHAT_ID}" \
+      --data-urlencode "text=${text}" >/dev/null; then
+      warn "Notificación Telegram fallida en etapa: ${stage}"
+    fi
+  else
+    warn "curl no disponible: no se pudo notificar ${stage}"
+  fi
+}
+
 # ── Parseo de argumentos ────────────────────────────────────────
 MODE_DEPLOY=false
 MODE_FAST=false
@@ -130,12 +159,21 @@ if errors:
     sys.exit(1)
 print('  ✓ Vault y manifest alineados (patente + SIRET)')
 " || fail "Vault cross-validation failed"
+
+  _notify_success "VaultCrossValidation" "vault+manifest alineados"
 }
 
 # ══════════════════════════════════════════════════════════════════
 #  MAIN
 # ══════════════════════════════════════════════════════════════════
 _banner
+
+if [[ -z "$NOTIFY_BOT_TOKEN" || -z "$NOTIFY_CHAT_ID" ]]; then
+  warn "Telegram no configurado (TRYONYOU_DEPLOY_BOT_TOKEN/TRYONYOU_DEPLOY_CHAT_ID). Continúo sin notificaciones."
+else
+  ok "Notificaciones activadas vía @tryonyou_deploy_bot"
+  _notify_success "Bootstrap" "supercommit_max iniciado"
+fi
 
 _stamps_ok "$COMMIT_MSG" || fail "Mensaje de commit sin sellos requeridos."
 
@@ -149,14 +187,17 @@ if [[ "$MODE_FAST" == false ]]; then
   command -v npm     >/dev/null 2>&1 || fail "npm no encontrado"
   command -v python3 >/dev/null 2>&1 || fail "python3 no encontrado"
   ok "node $(node -v), npm $(npm -v), python3 $(python3 --version 2>&1 | awk '{print $2}')"
+  _notify_success "Prerequisites" "runtime listo"
 
   step "Instalando dependencias npm"
   npm ci --ignore-scripts 2>/dev/null || npm install --no-fund --no-audit
   ok "npm dependencies ready"
+  _notify_success "NpmInstall" "dependencias npm listas"
 
   step "Instalando dependencias Python"
   pip install -q -r requirements.txt 2>/dev/null || true
   ok "Python dependencies ready"
+  _notify_success "PipInstall" "dependencias python listas"
 
   step "Ejecutando Python tests"
   TEST_OUTPUT=$(python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1) || {
@@ -165,18 +206,22 @@ if [[ "$MODE_FAST" == false ]]; then
   }
   TEST_COUNT=$(echo "$TEST_OUTPUT" | grep -oP 'Ran \K[0-9]+' || echo "?")
   ok "${TEST_COUNT} Python tests pasados"
+  _notify_success "UnitTests" "${TEST_COUNT} tests Python OK"
 
   step "Firebase applet assertion"
   node scripts/assert-firebase-applet.mjs
   ok "firebase-applet-config.json validado"
+  _notify_success "FirebaseAppletAssert" "firebase applet validado"
 
   step "TypeScript type-check"
   npx tsc --noEmit
   ok "Type-check limpio"
+  _notify_success "TypeCheck" "tsc --noEmit limpio"
 
   step "Vite production build"
   npx vite build
   ok "dist/ construido"
+  _notify_success "ViteBuild" "build de producción generado"
 
 fi
 
@@ -192,12 +237,14 @@ else
   git commit -m "$COMMIT_MSG"
   did_commit=1
   ok "Commit creado"
+  _notify_success "GitCommit" "commit soberano generado"
 fi
 
 if [[ "$did_commit" -eq 1 ]]; then
   step "🚀 Lanzando proyectil al servidor..."
   git push
   ok "Push completado"
+  _notify_success "GitPush" "push completado tras commit"
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
   ahead="${ahead:-0}"
@@ -206,6 +253,7 @@ elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
     step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
     git push
     ok "Push completado"
+    _notify_success "GitPushAhead" "push de commits adelantados completado"
   else
     warn "Sin push: la rama está al día con el remoto."
   fi
@@ -222,6 +270,7 @@ if [[ "$MODE_DEPLOY" == true ]]; then
   command -v vercel >/dev/null 2>&1 || { step "Instalando Vercel CLI"; npm i -g vercel@latest; }
   vercel --token "$VERCEL_TOKEN" --prod --yes
   ok "Vercel production deploy completado"
+  _notify_success "VercelDeploy" "deploy de producción completado"
 fi
 
 # ── Resultado final ─────────────────────────────────────────────
@@ -232,3 +281,5 @@ printf "  ✨ STATUS: LINEAL | PODERÍO: 100%% | DIVINEO: MÁXIMO\n"
 printf "  🔱 Patente PCT/EP2025/067317 — Soberanía V10 — VIVOS\n"
 printf "  ════════════════════════════════════════════════════════════\n"
 printf "${NC}\n"
+
+_notify_success "PipelineComplete" "imperio online y blindado"
