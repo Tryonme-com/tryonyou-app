@@ -134,7 +134,7 @@ def health():
         "status": "ok",
         "version": "V10.4_Lafayette",
         "stripe_configured": bool(stripe_secret),
-        "stripe_live_mode": stripe_secret.startswith("sk_live_"),
+        "stripe_live_mode": stripe_secret.startswith("sk_live_") if stripe_secret else False,
         "stripe_4_5m_set": bool(stripe_link_4_5m),
         "stripe_98k_set": bool(stripe_link_98k),
         "webhook_secret_set": bool(webhook_secret),
