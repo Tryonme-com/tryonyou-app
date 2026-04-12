@@ -98,6 +98,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$MODE_DEPLOY" == true && -z "${VERCEL_TOKEN:-}" ]]; then
+  fail "VERCEL_TOKEN no configurado. Exporta la variable o quita --deploy."
+fi
+
 # ── Sellos soberanos (siempre presentes) ────────────────────────
 STAMPS="@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 Bajo Protocolo de Soberanía V10 - Founder: Rubén"
 
