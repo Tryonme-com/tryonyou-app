@@ -277,8 +277,10 @@ export default function App() {
   const [emailHero, setEmailHero] = useState<string>("");
   const [pauInaugurationWhisper, setPauInaugurationWhisper] = useState("");
 
-  /** Pre-scan hook — shown once on mount until dismissed or auto-timeout. */
-  const [preScanVisible, setPreScanVisible] = useState(true);
+  /** Pre-scan hook — shown once per session until dismissed or auto-timeout. */
+  const [preScanVisible, setPreScanVisible] = useState(
+    () => sessionStorage.getItem("tryonyou_prescan_done") !== "1",
+  );
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -801,7 +803,10 @@ export default function App() {
 
       <PreScanHook
         visible={preScanVisible}
-        onDismiss={() => setPreScanVisible(false)}
+        onDismiss={() => {
+          sessionStorage.setItem("tryonyou_prescan_done", "1");
+          setPreScanVisible(false);
+        }}
       />
     </div>
   );

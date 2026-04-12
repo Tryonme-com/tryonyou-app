@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Props = {
@@ -16,18 +16,33 @@ const AUTO_DISMISS_MS = 7000;
 
 /**
  * PreScanHook — full-screen luxury teaser shown once before the scan begins.
- * Dismisses automatically after AUTO_DISMISS_MS, or immediately on user action.
+ * Dismisses automatically after AUTO_DISMISS_MS, on button click, or on Escape key.
  */
 export function PreScanHook({ visible, onDismiss }: Props) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Keep a stable ref so timers / event listeners don't need onDismiss as a dep.
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  });
 
+  const dismiss = useCallback(() => onDismissRef.current(), []);
+
+  // Auto-dismiss timer.
   useEffect(() => {
     if (!visible) return;
-    timerRef.current = setTimeout(onDismiss, AUTO_DISMISS_MS);
-    return () => {
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    const id = setTimeout(dismiss, AUTO_DISMISS_MS);
+    return () => clearTimeout(id);
+  }, [visible, dismiss]);
+
+  // Escape key to dismiss.
+  useEffect(() => {
+    if (!visible) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") dismiss();
     };
-  }, [visible, onDismiss]);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [visible, dismiss]);
 
   return (
     <AnimatePresence>
@@ -66,7 +81,7 @@ export function PreScanHook({ visible, onDismiss }: Props) {
             <motion.button
               type="button"
               className="pre-scan-hook__cta"
-              onClick={onDismiss}
+              onClick={dismiss}
               aria-label="Commencer le scan"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
