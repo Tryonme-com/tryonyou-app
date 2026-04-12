@@ -52,6 +52,13 @@ ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
 fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
 
+_is_true() {
+  case "${1:-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 NOTIFY_BOT_TOKEN="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
 NOTIFY_CHAT_ID="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-@tryonyou_deploy_bot}}"
 
@@ -100,6 +107,11 @@ done
 
 if [[ "$MODE_DEPLOY" == true && -z "${VERCEL_TOKEN:-}" ]]; then
   fail "VERCEL_TOKEN no configurado. Exporta la variable o quita --deploy."
+fi
+
+SKIP_GIT=false
+if _is_true "${SUPERCOMMIT_SKIP_GIT:-}"; then
+  SKIP_GIT=true
 fi
 
 # ── Sellos soberanos (siempre presentes) ────────────────────────
@@ -232,37 +244,42 @@ fi
 # ── Fase 2: Git commit + push ──────────────────────────────────
 step "💎 Consolidación Git"
 
-git add -A
-
-did_commit=0
-if git diff --cached --quiet; then
-  warn "Nada nuevo en el índice (sin commit en esta pasada)."
+if [[ "$SKIP_GIT" == true ]]; then
+  warn "SUPERCOMMIT_SKIP_GIT activo: se omite commit/push."
+  _notify_success "GitPhaseSkipped" "commit/push omitidos por SUPERCOMMIT_SKIP_GIT"
 else
-  git commit -m "$COMMIT_MSG"
-  did_commit=1
-  ok "Commit creado"
-  _notify_success "GitCommit" "commit soberano generado"
-fi
+  git add -A
 
-if [[ "$did_commit" -eq 1 ]]; then
-  step "🚀 Lanzando proyectil al servidor..."
-  git push
-  ok "Push completado"
-  _notify_success "GitPush" "push completado tras commit"
-elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
-  ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
-  ahead="${ahead:-0}"
-  case "$ahead" in *[!0-9]*) ahead=0 ;; esac
-  if [[ "$ahead" -gt 0 ]]; then
-    step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
+  did_commit=0
+  if git diff --cached --quiet; then
+    warn "Nada nuevo en el índice (sin commit en esta pasada)."
+  else
+    git commit -m "$COMMIT_MSG"
+    did_commit=1
+    ok "Commit creado"
+    _notify_success "GitCommit" "commit soberano generado"
+  fi
+
+  if [[ "$did_commit" -eq 1 ]]; then
+    step "🚀 Lanzando proyectil al servidor..."
     git push
     ok "Push completado"
-    _notify_success "GitPushAhead" "push de commits adelantados completado"
+    _notify_success "GitPush" "push completado tras commit"
+  elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
+    ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
+    ahead="${ahead:-0}"
+    case "$ahead" in *[!0-9]*) ahead=0 ;; esac
+    if [[ "$ahead" -gt 0 ]]; then
+      step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
+      git push
+      ok "Push completado"
+      _notify_success "GitPushAhead" "push de commits adelantados completado"
+    else
+      warn "Sin push: la rama está al día con el remoto."
+    fi
   else
-    warn "Sin push: la rama está al día con el remoto."
+    warn "Sin push: no hay upstream configurado. Usa git push -u origin <branch>."
   fi
-else
-  warn "Sin push: no hay upstream configurado. Usa git push -u origin <branch>."
 fi
 
 # ── Fase 3: Deploy (solo con --deploy) ─────────────────────────
