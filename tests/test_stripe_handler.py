@@ -54,7 +54,7 @@ class TestResolveCustomerFromSession(unittest.TestCase):
 
 class TestRecordBillingMeterEvent(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
@@ -110,7 +110,7 @@ class TestRecordBillingMeterEvent(unittest.TestCase):
 
 class TestCreatePaymentIntent(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
@@ -157,7 +157,7 @@ class TestCreatePaymentIntent(unittest.TestCase):
 
 class TestCreateInvoice(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)

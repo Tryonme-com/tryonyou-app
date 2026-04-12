@@ -32,11 +32,16 @@ _REQUIRED_METER_FIELDS = ("customer", "event_name")
 
 
 def _init_stripe() -> None:
-    """Set the module-level Stripe API key from the environment."""
+    """Set the module-level Stripe API key from the environment.
+
+    Only Live keys (sk_live_…) are accepted.  Test keys are rejected so that
+    real payment flows are never silently downgraded to sandbox mode.
+    """
     sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
-    if not sk.startswith(("sk_live_", "sk_test_")):
+    if not sk.startswith("sk_live_"):
         raise EnvironmentError(
-            "STRIPE_SECRET_KEY must be set and start with sk_live_ or sk_test_"
+            "STRIPE_SECRET_KEY must be set and start with sk_live_ "
+            "(Test keys are not accepted in production)"
         )
     stripe.api_key = sk
 
