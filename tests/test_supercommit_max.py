@@ -115,19 +115,54 @@ class TestStampValidation(unittest.TestCase):
 class TestModeFlags(unittest.TestCase):
     """Verify that --fast, --deploy, --msg are accepted."""
 
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.mkdtemp()
+        _init_git_repo(self.tmpdir)
+        self.script_copy = os.path.join(self.tmpdir, "supercommit_max.sh")
+        shutil.copy2(_SCRIPT, self.script_copy)
+        subprocess.run(
+            ["git", "add", "supercommit_max.sh"],
+            cwd=self.tmpdir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add script copy"],
+            cwd=self.tmpdir,
+            check=True,
+            capture_output=True,
+        )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _run(self, *args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+        cmd = ["bash", self.script_copy] + list(args)
+        run_env = {**os.environ, "HOME": self.tmpdir}
+        if env:
+            run_env.update(env)
+        return subprocess.run(
+            cmd,
+            cwd=self.tmpdir,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=run_env,
+        )
+
     def test_fast_mode_skips_build(self) -> None:
-        result = _run_script("--fast")
+        result = self._run("--fast")
         self.assertNotIn("Vite production build", result.stdout)
         self.assertNotIn("Python tests", result.stdout)
 
     def test_deploy_mode_without_token_fails(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "VERCEL_TOKEN"}
         env["VERCEL_TOKEN"] = ""
-        result = _run_script("--fast", "--deploy", env=env)
+        result = self._run("--fast", "--deploy", env=env)
         self.assertNotEqual(result.returncode, 0)
 
     def test_msg_flag_sets_custom_message(self) -> None:
-        result = _run_script("--fast", "--msg", "Hola mundo custom")
+        result = self._run("--fast", "--msg", "Hola mundo custom")
         self.assertNotIn("Falta", result.stderr)
 
 
