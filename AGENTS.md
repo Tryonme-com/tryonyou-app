@@ -22,3 +22,4 @@
 - El prebuild (`scripts/assert-firebase-applet.mjs`) valida que `firebase-applet-config.json` exista con `projectId = gen-lang-client-0066102635`. No modificar ese archivo.
 - Los voice agents (`tryonme-voice-agent/`, `voice_agent/`) y el backend omega (`backend/`) son servicios independientes con sus propios `requirements.txt`. No son necesarios para la app web principal.
 - Flask se instala vía `pip install --user`, por lo que el binario queda en `~/.local/bin`. Asegúrate de que esté en `PATH`.
+- Al abrir la app en un entorno sin webcam (como Cloud Agent), aparecerán alertas `"Failed to acquire camera feed: NotFoundError"`. Esto es esperado y no impide el uso general de la app; solo afecta a las funciones biométricas de MediaPipe.
