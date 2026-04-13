@@ -1,4 +1,4 @@
-/** Checkout Divineo V11: base abvetos.com + VITE_SHOP_VARIANT. */
+/** Checkout Divineo V11: base abvetos.com + VITE_SHOP_VARIANT. Pagos: EUR / cuenta Stripe Paris (VITE_STRIPE_PUBLIC_KEY_FR). */
 
 /** Variante Shopify LIVE en abvetos.com (SKU real soberano). */
 export const ABVETOS_LIVE_SHOP_VARIANT_ID = "53412065182103" as const;

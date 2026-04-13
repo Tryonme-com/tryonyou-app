@@ -34,7 +34,7 @@ REQUIRED_KEYS = [
     "GOOGLE_API_KEY",
     "EMAIL_USER",
     "EMAIL_PASS",
-    "STRIPE_SECRET_KEY",
+    "STRIPE_SECRET_KEY_FR",
 ]
 
 
@@ -55,9 +55,14 @@ def _key_ok(name: str) -> bool:
         return True
     if name == "GOOGLE_API_KEY" and os.environ.get("GOOGLE_AI_API_KEY", "").strip():
         return True
-    if name == "STRIPE_SECRET_KEY":
+    if name == "STRIPE_SECRET_KEY_FR":
         return bool(
-            os.environ.get("INJECT_STRIPE_SECRET_KEY", "").strip()
+            os.environ.get("STRIPE_SECRET_KEY_FR", "").strip()
+            or os.environ.get("STRIPE_SECRET_KEY_NUEVA", "").strip()
+            or os.environ.get("STRIPE_SECRET_KEY", "").strip()
+            or os.environ.get("INJECT_STRIPE_SECRET_KEY_FR", "").strip()
+            or os.environ.get("INJECT_STRIPE_SECRET_KEY", "").strip()
+            or os.environ.get("E50_STRIPE_SECRET_KEY_FR", "").strip()
             or os.environ.get("E50_STRIPE_SECRET_KEY", "").strip()
         )
     if name == "EMAIL_USER":

@@ -4,15 +4,23 @@ Checkout inaugural 12.500 € — stripe.checkout.Session (modo payment).
 1) Si STRIPE_INAUGURATION_PRICE_ID (o alias) es price_… → line_items con ese precio.
 2) Si no → pago único vía price_data: EUR, nombre por defecto «Inauguración V10.2 Lafayette».
 
-STRIPE_SECRET_KEY: obligatoria (sk_live_… en producción inaugural).
+STRIPE_SECRET_KEY_FR: obligatoria (sk_live_… cuenta Paris; ver stripe_fr_resolve).
+Opcional: STRIPE_CONNECT_ACCOUNT_ID_FR=acct_… para cobro directo Connect en cuenta conectada FR.
 """
 
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 from urllib.parse import urlparse
 
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import stripe
+from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 
 _DEFAULT_PRODUCT_NAME = "Inauguración V10.2 Lafayette"
 _DEFAULT_AMOUNT_CENTS = 1_250_000  # 12.500,00 €
@@ -51,12 +59,12 @@ def _resolve_line_items() -> list[dict]:
 
 
 def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dict, int]:
-    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    sk = resolve_stripe_secret_fr()
     if not sk.startswith("sk_live_"):
         return {
             "status": "error",
             "message": "stripe_live_secret_required",
-            "hint": "STRIPE_SECRET_KEY debe ser sk_live_… (modo prueba no permitido para inauguración).",
+            "hint": "STRIPE_SECRET_KEY_FR (o legado STRIPE_SECRET_KEY) debe ser sk_live_… de la cuenta Paris.",
         }, 503
 
     stripe.api_key = sk
@@ -91,17 +99,23 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
             .get("name", meta_product)
         )
 
+    connect_kw = stripe_api_call_kwargs()
     try:
         session = stripe.checkout.Session.create(
             mode="payment",
             line_items=line_items,
             success_url=success_with_session,
             cancel_url=cancel,
+            locale="fr",
+            billing_address_collection="required",
+            phone_number_collection={"enabled": True},
             metadata={
                 "patent": _MANIFEST_PATENT,
                 "flow": "v10_2_inauguration",
                 "product_name": meta_product,
+                "billing_country_default": "FR",
             },
+            **connect_kw,
         )
         url = session.url
         if not url:

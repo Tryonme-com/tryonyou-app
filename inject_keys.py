@@ -8,12 +8,11 @@ ROOT = os.path.abspath(
     os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
 )
 
-TS = """// inject_keys.py — no commitees claves; VITE_* en .env / Vercel
+TS = """// inject_keys.py — no commitees claves; VITE_* en .env / Vercel (Paris: *_FR)
 export const PLAN_100_PRICE_ID = import.meta.env.VITE_PLAN_100_ID ?? '';
-export const STRIPE_PUBLISHABLE_READY = Boolean(
-  import.meta.env.VITE_STRIPE_PUBLIC_KEY &&
-  String(import.meta.env.VITE_STRIPE_PUBLIC_KEY).length > 0,
-);
+const _pk =
+  import.meta.env.VITE_STRIPE_PUBLIC_KEY_FR || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+export const STRIPE_PUBLISHABLE_READY = Boolean(_pk && String(_pk).length > 0);
 """
 
 
@@ -56,12 +55,26 @@ def inject_keys() -> int:
     os.makedirs(ROOT, exist_ok=True)
     os.chdir(ROOT)
     u: dict[str, str] = {}
-    x = _g("VITE_STRIPE_PUBLIC_KEY", "INJECT_VITE_STRIPE_PUBLIC_KEY", "E50_VITE_STRIPE_PUBLIC_KEY")
+    x = _g(
+        "VITE_STRIPE_PUBLIC_KEY_FR",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY_FR",
+        "E50_VITE_STRIPE_PUBLIC_KEY_FR",
+        "VITE_STRIPE_PUBLIC_KEY",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY",
+        "E50_VITE_STRIPE_PUBLIC_KEY",
+    )
     if x:
-        u["VITE_STRIPE_PUBLIC_KEY"] = x
-    x = _g("STRIPE_SECRET_KEY", "INJECT_STRIPE_SECRET_KEY", "E50_STRIPE_SECRET_KEY")
+        u["VITE_STRIPE_PUBLIC_KEY_FR"] = x
+    x = _g(
+        "STRIPE_SECRET_KEY_FR",
+        "INJECT_STRIPE_SECRET_KEY_FR",
+        "E50_STRIPE_SECRET_KEY_FR",
+        "STRIPE_SECRET_KEY",
+        "INJECT_STRIPE_SECRET_KEY",
+        "E50_STRIPE_SECRET_KEY",
+    )
     if x:
-        u["STRIPE_SECRET_KEY"] = x
+        u["STRIPE_SECRET_KEY_FR"] = x
     x = _g("VITE_PLAN_100_ID", "INJECT_VITE_PLAN_100_ID", "E50_VITE_PLAN_100_ID")
     if x:
         u["VITE_PLAN_100_ID"] = x

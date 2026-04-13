@@ -22,10 +22,14 @@
             "product_name_default": "Inauguración V10.2 Lafayette",
             "api_routes": [
                 "/api/stripe_inauguration_checkout",
-                "/stripe_inauguration_checkout"
+                "/stripe_inauguration_checkout",
+                "/api/stripe_webhook_fr",
+                "/stripe_webhook_fr"
             ],
             "server_env_keys": [
-                "STRIPE_SECRET_KEY",
+                "STRIPE_SECRET_KEY_FR",
+                "STRIPE_CONNECT_ACCOUNT_ID_FR",
+                "STRIPE_WEBHOOK_SECRET_FR",
                 "STRIPE_INAUGURATION_PRICE_ID",
                 "STRIPE_PRICE_INAUGURATION_12500",
                 "STRIPE_INAUGURATION_PRODUCT_NAME",

@@ -3,7 +3,8 @@ Verifica clave Stripe desde el entorno (sin git automático; nunca pegar claves 
 
 Orden de resolución (modo por defecto):
   1) STRIPE_RESTRICTED_KEY (rk_live_… / rk_test_) — permisos según Dashboard
-  2) STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY
+  2) STRIPE_SECRET_KEY_FR → STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY
+ (prioridad Paris / EUR; no usar cuenta EE.UU. bloqueada)
 
 Modo `--funding` / `forzar_flujo_dinero()`:
   Solo STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY (tubo banco / sk_live), ignora rk_*.
@@ -29,7 +30,8 @@ import sys
 
 def resolve_stripe_secret() -> str:
     return (
-        os.environ.get("STRIPE_SECRET_KEY_NUEVA", "").strip()
+        os.environ.get("STRIPE_SECRET_KEY_FR", "").strip()
+        or os.environ.get("STRIPE_SECRET_KEY_NUEVA", "").strip()
         or os.environ.get("STRIPE_SECRET_KEY", "").strip()
     )
 
@@ -77,7 +79,7 @@ def main() -> int:
     key, kind = resolve_api_key()
     if not key:
         print(
-            "Define STRIPE_RESTRICTED_KEY, o STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
+            "Define STRIPE_RESTRICTED_KEY, o STRIPE_SECRET_KEY_FR / STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
             file=sys.stderr,
         )
         return 1
@@ -100,7 +102,7 @@ def forzar_flujo_dinero() -> int:
     sk = resolve_stripe_secret()
     if not sk:
         print(
-            "Define STRIPE_SECRET_KEY o STRIPE_SECRET_KEY_NUEVA en el entorno.",
+            "Define STRIPE_SECRET_KEY_FR (Paris) o STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
             file=sys.stderr,
         )
         return 1

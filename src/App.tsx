@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import {
@@ -581,28 +582,11 @@ export default function App() {
               cursor: pauStarted ? "pointer" : "not-allowed",
             }}
           >
-            <video
-              key={isMaraisNode ? "marais" : "lafayette"}
-              id={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="auto"
-            >
-              {isMaraisNode ? (
-                <>
-                  <source src="/assets/marais_pau_v10.mp4" type="video/mp4" />
-                  <source src="/videos/pau_transparent.webm" type="video/webm" />
-                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
-                </>
-              ) : (
-                <>
-                  <source src="/videos/pau_transparent.webm" type="video/webm" />
-                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
-                </>
-              )}
-            </video>
+            <RealTimeAvatar
+              variant={isMaraisNode ? "marais" : "lafayette"}
+              disabled={!pauStarted}
+              videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+            />
           </button>
         </motion.div>
       </div>

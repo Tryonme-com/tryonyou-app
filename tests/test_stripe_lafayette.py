@@ -21,35 +21,37 @@ class TestCreateLafayetteCheckoutNoKey(unittest.TestCase):
 
     def setUp(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
 
     def test_returns_none_when_key_missing(self) -> None:
         result = create_lafayette_checkout("LAF-001", 175.50)
         self.assertIsNone(result)
 
     def test_returns_none_when_key_is_test_key(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_abc123"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_abc123"
         try:
             result = create_lafayette_checkout("LAF-001", 175.50)
             self.assertIsNone(result)
         finally:
-            os.environ.pop("STRIPE_SECRET_KEY", None)
+            os.environ.pop("STRIPE_SECRET_KEY_FR", None)
 
     def test_returns_none_when_key_is_empty(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = ""
+        os.environ["STRIPE_SECRET_KEY_FR"] = ""
         try:
             result = create_lafayette_checkout("LAF-001", 175.50)
             self.assertIsNone(result)
         finally:
-            os.environ.pop("STRIPE_SECRET_KEY", None)
+            os.environ.pop("STRIPE_SECRET_KEY_FR", None)
 
 
 class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
     """Con una clave sk_live_ válida (usando mock de Stripe)."""
 
     def _set_live_key(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_live_testfakekey123"
 
     def tearDown(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
         os.environ.pop("STRIPE_SECRET_KEY", None)
 
     def test_returns_client_secret_on_success(self) -> None:

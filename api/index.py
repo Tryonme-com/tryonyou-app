@@ -16,6 +16,8 @@ from bunker_full_orchestrator import (
 )
 from mirror_digital_make import forward_mirror_event
 from stripe_inauguration import create_inauguration_checkout_session
+from stripe_webhook_fr import handle_stripe_webhook_fr
+from fit_ai_assistant import fit_ai_assistant_health
 
 app = Flask(__name__)
 
@@ -27,7 +29,7 @@ def home():
 
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return resp
 
@@ -55,6 +57,19 @@ def mirror_shadow_options():
     return _cors(Response(status=204))
 
 
+@app.route("/api/fit_ai_health", methods=["OPTIONS"])
+@app.route("/fit_ai_health", methods=["OPTIONS"])
+def fit_ai_health_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/fit_ai_health", methods=["GET"])
+@app.route("/fit_ai_health", methods=["GET"])
+def fit_ai_health():
+    payload = {"agent": "AGENTE70", **fit_ai_assistant_health()}
+    return _cors(jsonify(payload)), 200
+
+
 @app.route("/api/stripe_inauguration_checkout", methods=["OPTIONS"])
 @app.route("/stripe_inauguration_checkout", methods=["OPTIONS"])
 def stripe_inauguration_checkout_options():
@@ -67,6 +82,15 @@ def stripe_inauguration_checkout():
     origin = request.headers.get("Origin") or ""
     payload, code = create_inauguration_checkout_session(origin or None)
     return _cors(jsonify(payload)), code
+
+
+@app.route("/api/stripe_webhook_fr", methods=["POST"])
+@app.route("/stripe_webhook_fr", methods=["POST"])
+def stripe_webhook_fr():
+    raw = request.get_data(cache=False)
+    sig = request.headers.get("Stripe-Signature")
+    payload, code = handle_stripe_webhook_fr(raw, sig)
+    return jsonify(payload), code
 
 
 @app.route("/api/mirror_digital_event", methods=["OPTIONS"])

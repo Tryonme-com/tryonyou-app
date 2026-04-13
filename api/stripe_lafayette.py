@@ -1,14 +1,21 @@
 """
 Lafayette pilot — crea un PaymentIntent Stripe vinculado al piloto.
-La clave secreta se lee de la variable de entorno STRIPE_SECRET_KEY
-y debe ser sk_live_… (modo producción).
+La clave secreta se lee de STRIPE_SECRET_KEY_FR (Paris) vía stripe_fr_resolve.
+Cobro directo Connect: STRIPE_CONNECT_ACCOUNT_ID_FR=acct_…
 """
 
 from __future__ import annotations
 
-import os
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 import stripe
+
+from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 
 
 def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
@@ -22,12 +29,13 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
     Returns:
         client_secret del PaymentIntent, o None si ocurre un error.
     """
-    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    sk = resolve_stripe_secret_fr()
 
     if not sk.startswith("sk_live_"):
         return None
 
     stripe.api_key = sk
+    connect_kw = stripe_api_call_kwargs()
 
     try:
         payment_intent = stripe.PaymentIntent.create(
@@ -38,8 +46,10 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
                 "session_id": session_id,
                 "project": "TryOnYou_Lafayette_Pilot",
                 "status": "V10_Production",
+                "billing_country_default": "FR",
             },
             description=f"TryOnYou - Mirror Session {session_id}",
+            **connect_kw,
         )
         return payment_intent.client_secret
     except stripe.error.StripeError:

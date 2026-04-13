@@ -58,8 +58,10 @@ class AgenteBunkerPR2266:
     def validar_stripe(self):
         """Comprueba la API de Stripe con la clave secreta (sin shell, sin loguear la clave)."""
         key = (
-            os.getenv("STRIPE_SECRET_KEY", "").strip()
+            os.getenv("STRIPE_SECRET_KEY_FR", "").strip()
+            or os.getenv("STRIPE_SECRET_KEY", "").strip()
             or os.getenv("E50_STRIPE_SECRET_KEY", "").strip()
+            or os.getenv("INJECT_STRIPE_SECRET_KEY_FR", "").strip()
             or os.getenv("INJECT_STRIPE_SECRET_KEY", "").strip()
         )
         if not key:

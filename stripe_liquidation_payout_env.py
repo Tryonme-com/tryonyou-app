@@ -1,10 +1,10 @@
 """
-Liquidación Stripe → payout al banco (solo LIVE, STRIPE_SECRET_KEY en entorno).
+Liquidación Stripe → payout al banco (solo LIVE, STRIPE_SECRET_KEY_FR / resolve en entorno).
 
 ⚠️ Mueve fondos reales: por defecto solo MUESTRA balance y el importe que se enviaría.
 Para ejecutar payout: STRIPE_PAYOUT_CONFIRM=1
 
-  export STRIPE_SECRET_KEY=sk_live_...
+  export STRIPE_SECRET_KEY_FR=sk_live_...
   python3 stripe_liquidation_payout_env.py              # dry-run (solo lectura + plan)
   STRIPE_PAYOUT_CONFIRM=1 python3 stripe_liquidation_payout_env.py
 
@@ -48,7 +48,10 @@ def _pick_available_eur(balance: object) -> tuple[int, str]:
 def liquidacion_inmediata(*, dry_run: bool | None = None) -> int:
     sk = resolve_stripe_secret()
     if not sk:
-        print("Define STRIPE_SECRET_KEY o STRIPE_SECRET_KEY_NUEVA.", file=sys.stderr)
+        print(
+            "Define STRIPE_SECRET_KEY_FR (Paris) o STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
+            file=sys.stderr,
+        )
         return 1
     if not sk.startswith("sk_live_"):
         print(

@@ -2,7 +2,7 @@
 """
 Imprime la URL de Checkout inaugural (API local / mismas vars que Vercel).
 
-  export STRIPE_SECRET_KEY=sk_live_...
+  export STRIPE_SECRET_KEY_FR=sk_live_...
   python3 scripts/print_inauguration_checkout_url.py
 
 Patente PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu

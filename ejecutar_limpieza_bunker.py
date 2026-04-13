@@ -47,8 +47,15 @@ def _check_env() -> list[str]:
         missing.append("EMAIL_USER")
     if not _g("EMAIL_PASS", "E50_SMTP_PASS"):
         missing.append("EMAIL_PASS")
-    if not _g("STRIPE_SECRET_KEY", "INJECT_STRIPE_SECRET_KEY", "E50_STRIPE_SECRET_KEY"):
-        missing.append("STRIPE_SECRET_KEY")
+    if not _g(
+        "STRIPE_SECRET_KEY_FR",
+        "INJECT_STRIPE_SECRET_KEY_FR",
+        "E50_STRIPE_SECRET_KEY_FR",
+        "STRIPE_SECRET_KEY",
+        "INJECT_STRIPE_SECRET_KEY",
+        "E50_STRIPE_SECRET_KEY",
+    ):
+        missing.append("STRIPE_SECRET_KEY_FR")
     return missing
 
 
@@ -92,7 +99,7 @@ def ejecutar_limpieza_bunker() -> int:
     time.sleep(0.3)
 
     missing = _check_env()
-    for key in ("EMAIL_USER", "EMAIL_PASS", "STRIPE_SECRET_KEY"):
+    for key in ("EMAIL_USER", "EMAIL_PASS", "STRIPE_SECRET_KEY_FR"):
         if key in missing:
             logging.warning("Variable %s: no detectada", key)
         else:

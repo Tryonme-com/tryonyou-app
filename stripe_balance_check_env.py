@@ -1,12 +1,12 @@
 """
-Lectura del balance Stripe (disponible / pending) con STRIPE_SECRET_KEY del entorno.
+Lectura del balance Stripe (disponible / pending) con STRIPE_SECRET_KEY_FR (Paris) o resolve legado.
 Sin git: nunca `git add .` desde un script de cobro.
 
 Uso:
-  export STRIPE_SECRET_KEY=sk_live_...
+  export STRIPE_SECRET_KEY_FR=sk_live_...
   python3 stripe_balance_check_env.py
 
-Orden de clave: STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY (mismo criterio que stripe_verify_secret_env).
+Orden de clave: STRIPE_SECRET_KEY_FR → STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
@@ -37,7 +37,7 @@ def main() -> int:
     sk = resolve_stripe_secret()
     if not sk:
         print(
-            "Define STRIPE_SECRET_KEY o STRIPE_SECRET_KEY_NUEVA.",
+            "Define STRIPE_SECRET_KEY_FR (Paris) o STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
             file=sys.stderr,
         )
         return 1

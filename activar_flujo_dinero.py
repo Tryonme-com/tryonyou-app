@@ -3,8 +3,8 @@ Activa el flujo de cobro (plan 100€): comprueba vars en entorno, merge seguro 
 
 - Raíz: E50_PROJECT_ROOT (por defecto ~/Projects/22TRYONYOU).
 - Plan ID: exporta INJECT_VITE_PLAN_100_ID o E50_VITE_PLAN_100_ID (nunca hardcodees price_* en código).
-- Claves Stripe: comprueba VITE_STRIPE_PUBLIC_KEY / INJECT_VITE_STRIPE_PUBLIC_KEY y STRIPE_SECRET_KEY / INJECT_*.
-- Tubo verificado: si hay STRIPE_SECRET_KEY (o alias), valida cuenta vía stripe.Account.retrieve() antes del git.
+- Claves Stripe (Paris): VITE_STRIPE_PUBLIC_KEY_FR o VITE_STRIPE_PUBLIC_KEY / INJECT_*; STRIPE_SECRET_KEY_FR o STRIPE_SECRET_KEY / INJECT_*.
+- Tubo verificado: si hay secreto (FR o alias), valida cuenta vía stripe.Account.retrieve() antes del git.
 - Temporales: antes de git se eliminan __pycache__, .pytest_cache, .mypy_cache (sin tocar node_modules/.git).
 - .env: solo merge local; nunca se hace git add de .env.
 - Git: E50_GIT_PUSH=1; rutas explícitas; --force solo con E50_FORCE_PUSH=1.
@@ -114,7 +114,7 @@ def _stripe_tubo_cuenta_verificada(sk: str) -> bool:
         import stripe
     except ImportError:
         print(
-            "⚠️  pip install stripe necesario para verificar STRIPE_SECRET_KEY contra la API."
+            "⚠️  pip install stripe necesario para verificar STRIPE_SECRET_KEY_FR contra la API."
         )
         return True
     stripe.api_key = sk
@@ -125,7 +125,7 @@ def _stripe_tubo_cuenta_verificada(sk: str) -> bool:
         print(f"✅ Tubo Stripe: cuenta {aid} charges_enabled={ch!r}")
         return True
     except Exception as e:
-        print(f"❌ STRIPE_SECRET_KEY no valida la cuenta: {e}")
+        print(f"❌ STRIPE_SECRET_KEY_FR (o alias) no valida la cuenta: {e}")
         return False
 
 
@@ -135,14 +135,28 @@ def activar_flujo_dinero() -> int:
     os.makedirs(ROOT, exist_ok=True)
     os.chdir(ROOT)
 
-    pk = _get("VITE_STRIPE_PUBLIC_KEY", "INJECT_VITE_STRIPE_PUBLIC_KEY", "E50_VITE_STRIPE_PUBLIC_KEY")
-    sk = _get("STRIPE_SECRET_KEY", "INJECT_STRIPE_SECRET_KEY", "E50_STRIPE_SECRET_KEY")
+    pk = _get(
+        "VITE_STRIPE_PUBLIC_KEY_FR",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY_FR",
+        "E50_VITE_STRIPE_PUBLIC_KEY_FR",
+        "VITE_STRIPE_PUBLIC_KEY",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY",
+        "E50_VITE_STRIPE_PUBLIC_KEY",
+    )
+    sk = _get(
+        "STRIPE_SECRET_KEY_FR",
+        "INJECT_STRIPE_SECRET_KEY_FR",
+        "E50_STRIPE_SECRET_KEY_FR",
+        "STRIPE_SECRET_KEY",
+        "INJECT_STRIPE_SECRET_KEY",
+        "E50_STRIPE_SECRET_KEY",
+    )
     plan = _get("VITE_PLAN_100_ID", "INJECT_VITE_PLAN_100_ID", "E50_VITE_PLAN_100_ID")
 
     if pk:
         print("✅ Clave publicable Stripe: presente en entorno.")
     else:
-        print("⚠️  Falta clave publicable (VITE_STRIPE_PUBLIC_KEY o INJECT_VITE_STRIPE_PUBLIC_KEY).")
+        print("⚠️  Falta clave publicable (VITE_STRIPE_PUBLIC_KEY_FR o VITE_STRIPE_PUBLIC_KEY / INJECT_*).")
 
     if sk:
         print("✅ Secreto Stripe: presente en entorno (solo servidor / Vercel).")
@@ -151,7 +165,7 @@ def activar_flujo_dinero() -> int:
         elif not _stripe_tubo_cuenta_verificada(sk):
             return 3
     else:
-        print("⚠️  Falta STRIPE_SECRET_KEY en entorno local (puede estar solo en Vercel).")
+        print("⚠️  Falta STRIPE_SECRET_KEY_FR en entorno local (puede estar solo en Vercel).")
 
     if not plan:
         print(
@@ -164,9 +178,9 @@ def activar_flujo_dinero() -> int:
 
     updates = {"VITE_PLAN_100_ID": plan}
     if pk:
-        updates["VITE_STRIPE_PUBLIC_KEY"] = pk
+        updates["VITE_STRIPE_PUBLIC_KEY_FR"] = pk
     if sk:
-        updates["STRIPE_SECRET_KEY"] = sk
+        updates["STRIPE_SECRET_KEY_FR"] = sk
 
     env_path = os.path.join(ROOT, ".env")
     _merge_dotenv(env_path, updates)
@@ -178,7 +192,7 @@ def activar_flujo_dinero() -> int:
         "publishable_in_env": bool(pk),
         "secret_in_env": bool(sk),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "reminder": "Replica VITE_* y STRIPE_SECRET_KEY en Vercel; no subas .env.",
+        "reminder": "Replica VITE_STRIPE_PUBLIC_KEY_FR y STRIPE_SECRET_KEY_FR en Vercel; no subas .env.",
     }
     out_json = os.path.join(ROOT, "MONEY_FLOW_ACTIVATION.json")
     with open(out_json, "w", encoding="utf-8") as f:

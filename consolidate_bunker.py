@@ -1,4 +1,3 @@
-consolidate_bunker.py
 import os
 
 # --- CONFIGURACIÓN DE LA STIRPE ---

@@ -1,13 +1,25 @@
 /**
- * Utilidades Stripe + alineación checkout Shopify (abvetos.com).
+ * Utilidades Stripe + alineación checkout Shopify (abvetos.com / LiveitFashion → Paris EUR).
  * Prioridad enlaces Stripe: inauguración → Lafayette → soberanía legada.
  */
 import {
   ABVETOS_LIVE_SHOP_VARIANT_ID,
   getDivineoCheckoutUrl,
 } from "../divineo/envBootstrap";
+import {
+  STRIPE_DEFAULT_COUNTRY,
+  STRIPE_DEFAULT_CURRENCY,
+  STRIPE_DEFAULT_LOCALE,
+  getStripePublishableKeyParis,
+} from "../services/stripeParisConfig";
 
 export { ABVETOS_LIVE_SHOP_VARIANT_ID };
+export {
+  STRIPE_DEFAULT_COUNTRY,
+  STRIPE_DEFAULT_CURRENCY,
+  STRIPE_DEFAULT_LOCALE,
+  getStripePublishableKeyParis,
+};
 
 export function getLafayetteStripeCheckoutUrl(): string {
   const e = import.meta.env;

@@ -6,23 +6,24 @@ Handles:
 - Product creation, retrieval, listing, and archival
 - Price creation, retrieval, listing, and deactivation
 
-Requires env var: STRIPE_SECRET_KEY (sk_live_… or sk_test_…)
+Requires env var: STRIPE_SECRET_KEY_FR (Paris) o legado STRIPE_SECRET_KEY (sk_live_… / sk_test_…).
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import stripe
 
+from stripe_fr_resolve import resolve_stripe_secret_fr
+
 
 def _get_stripe_client() -> str:
-    """Return validated Stripe secret key from environment."""
-    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    """Return validated Stripe secret key from environment (cuenta Paris prioritaria)."""
+    sk = resolve_stripe_secret_fr()
     if not sk.startswith(("sk_live_", "sk_test_")):
         raise EnvironmentError(
-            "STRIPE_SECRET_KEY must be set and start with sk_live_ or sk_test_"
+            "STRIPE_SECRET_KEY_FR (o STRIPE_SECRET_KEY) must be set and start with sk_live_ or sk_test_"
         )
     return sk
 
