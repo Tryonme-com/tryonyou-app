@@ -4,7 +4,16 @@
  */
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { loadPauMasterModel } from "../divineo/pauV11";
+import { applyMasterBeautyLook, loadPauMasterModel } from "../divineo/pauV11";
+import {
+  applySovereignPixelRatio,
+  lightenTheLoad,
+  sovereignWebGLOptions,
+} from "../divineo/lightenTheLoad";
+import {
+  createDivineoPerspectiveCamera,
+  resizeDivineoPerspectiveCamera,
+} from "../divineo/setupDivineoCamera";
 
 type Variant = "lafayette" | "marais";
 
@@ -56,16 +65,12 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
 
     const mount = glHostRef.current;
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-    camera.position.set(0, 0.05, 2.1);
+    const size0 = Math.max(mount.clientWidth, 1);
+    const camera = createDivineoPerspectiveCamera(size0, size0);
 
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer(sovereignWebGLOptions());
     const size = Math.max(mount.clientWidth, 1);
+    applySovereignPixelRatio(renderer, size);
     renderer.setSize(size, size);
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
@@ -91,8 +96,9 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
       raf = requestAnimationFrame(tick);
     };
 
+    const beautyCtx = variant === "marais" ? "POOL_EXIT" : "MASTER_LOOK";
     void loadPauMasterModel(scene)
-      .then((g) => {
+      .then(async (g) => {
         if (!alive) return;
         model = g;
         const box = new THREE.Box3().setFromObject(g);
@@ -101,6 +107,12 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
         g.position.sub(ctr);
         const maxDim = Math.max(sz.x, sz.y, sz.z, 0.001);
         g.scale.setScalar(1.35 / maxDim);
+        try {
+          await applyMasterBeautyLook(g, beautyCtx);
+        } catch {
+          /* look opcional: no bloquea el visor */
+        }
+        if (!alive) return;
         setGlbReady(true);
         tick();
       })
@@ -108,8 +120,7 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
         if (!alive) return;
         setGlbReady(false);
         cancelAnimationFrame(raf);
-        scene.clear();
-        renderer.dispose();
+        lightenTheLoad(scene, renderer);
         if (renderer.domElement.parentNode === mount) {
           mount.removeChild(renderer.domElement);
         }
@@ -118,9 +129,9 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
     const ro = new ResizeObserver(() => {
       const el = containerRef.current;
       const s = el ? Math.max(el.clientWidth, 1) : Math.max(mount.clientWidth, 1);
+      applySovereignPixelRatio(renderer, s);
       renderer.setSize(s, s);
-      camera.aspect = 1;
-      camera.updateProjectionMatrix();
+      resizeDivineoPerspectiveCamera(camera, s, s);
     });
     ro.observe(containerRef.current ?? mount);
 
@@ -128,8 +139,7 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
       alive = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
-      scene.clear();
-      renderer.dispose();
+      lightenTheLoad(scene, renderer);
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
       }
