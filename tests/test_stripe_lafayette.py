@@ -93,6 +93,18 @@ class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
             self.assertEqual(call_kwargs["metadata"]["session_id"], "LAF-099")
             self.assertEqual(call_kwargs["metadata"]["project"], "TryOnYou_Lafayette_Pilot")
 
+    def test_metadata_contains_siren(self) -> None:
+        self._set_live_key()
+        mock_intent = MagicMock()
+        mock_intent.client_secret = "pi_fake_secret_xyz"
+
+        with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent) as mock_create:
+            create_lafayette_checkout("LAF-SIREN", 100.00)
+            call_kwargs = mock_create.call_args[1]
+            self.assertEqual(call_kwargs["metadata"]["siren"], "943 610 196")
+            self.assertEqual(call_kwargs["metadata"]["patent"], "PCT/EP2025/067317")
+            self.assertEqual(call_kwargs["metadata"]["platform"], "TryOnYou_V10")
+
     def test_description_contains_session_id(self) -> None:
         self._set_live_key()
         mock_intent = MagicMock()

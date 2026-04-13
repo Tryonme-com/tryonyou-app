@@ -53,41 +53,29 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <style>
-:root { --gold: #D4AF37; --black: #000; }
+:root { --gold: #D4AF37; --black: #0c0d10; --anthracite: #141619; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--black); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-#container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+body { background: var(--anthracite); color: white; font-family: 'Inter', 'Cinzel', Georgia, serif; overflow-x: hidden; overflow-y: auto; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+#container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 #container video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-#container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+#container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; }
 header {
-  position: fixed; top: 0; width: 100%; z-index: 100; padding: 30px;
-  text-align: center; background: linear-gradient(to bottom, black, transparent);
+  position: fixed; top: 0; width: 100%; z-index: 5; padding: 18px 30px;
+  text-align: center; background: linear-gradient(to bottom, var(--black), transparent);
+  pointer-events: none; opacity: 0;
 }
-.brands { display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); }
+.brands { display: flex; justify-content: center; gap: 24px; margin-top: 12px; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); font-family: 'Cinzel', Georgia, serif; }
 .hero {
-  position: absolute; top: 25%; width: 100%; text-align: center; z-index: 10; pointer-events: none;
+  position: fixed; top: 22%; width: 100%; text-align: center; z-index: 2; pointer-events: none; opacity: 0;
 }
-.hero h1 { font-size: 2rem; letter-spacing: 10px; text-transform: uppercase; font-weight: 100; }
+.hero h1 { font-size: 2rem; letter-spacing: 12px; text-transform: uppercase; font-weight: 100; color: rgba(255,255,255,0.08); }
 .nav-bottom {
-  position: fixed; bottom: 0; width: 100%; z-index: 100;
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+  display: none;
 }
-.btn {
-  position: relative; z-index: 100;
-  padding: 20px 10px; border: 0.5px solid #222; color: white;
-  font-size: 0.6rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
-}
-.btn:hover { background: var(--gold); color: black; }
-.pay-bar {
-  position: relative; z-index: 100;
-  grid-column: span 3; background: var(--gold); color: black;
-  font-weight: bold; text-align: center; padding: 25px; font-size: 0.8rem; cursor: pointer;
-}
-footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-size: 0.4rem; color: #555; z-index: 90; }
-#root { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
-#root .app-ui { pointer-events: none; }
-#root .app-ui > * { pointer-events: auto; }
+.btn { display: none; }
+.pay-bar { display: none; }
+footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.45rem; color: rgba(212,175,55,0.3); z-index: 4; pointer-events: none; letter-spacing: 2px; }
+#root { position: relative; z-index: 10; min-height: 100vh; }
   </style>
 </head>
 <body>
@@ -180,7 +168,12 @@ canvasCtx.restore();
 var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
 pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
 pose.onResults(onResults);
-var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
+var camera=new CameraCtor(videoElement,{
+  onFrame:function(){pose.send({image:videoElement});},
+  onError:function(err){console.warn("Camera feed unavailable in this environment.", err);},
+  width:1280,
+  height:720
+});
 camera.start().catch(function(){});
         })();
     </script>
