@@ -794,8 +794,128 @@ export default function App() {
           </p>
         </section>
 
+          {/* ─── Impact Section: The 0sizes Era ──────── */}
+        <section
+          style={{
+            padding: "48px 20px",
+            maxWidth: 960,
+            margin: "0 auto",
+            textAlign: "center",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "clamp(22px, 3.5vw, 34px)",
+              fontFamily: "'Cinzel', Georgia, serif",
+              letterSpacing: 4,
+              color: "#ece4d8",
+              marginBottom: 8,
+            }}
+          >
+            Le fin des tailles et des retours
+          </h2>
+          <p
+            style={{
+              fontSize: "clamp(16px, 2.5vw, 24px)",
+              fontFamily: "'Cinzel', Georgia, serif",
+              letterSpacing: 6,
+              color: ORO_DIVINEO,
+              marginBottom: 32,
+              fontWeight: 700,
+            }}
+          >
+            THE 0SIZES ERA
+          </p>
+          {/* Video Inauguration */}
+          <div style={{ marginBottom: 32 }}>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: "100%",
+                maxWidth: 800,
+                borderRadius: 12,
+                boxShadow: `0 12px 48px rgba(0,0,0,0.4)`,
+              }}
+            >
+              <source src="/assets/videos/inauguration_theatre.mp4" type="video/mp4" />
+            </video>
+          </div>
+          {/* Metrics Grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: 20,
+              marginBottom: 32,
+            }}
+          >
+            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
+              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>-85%</p>
+              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>RETOURS ÉLIMINÉS</p>
+            </div>
+            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
+              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>+25%</p>
+              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>CONVERSION VENTES</p>
+            </div>
+            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
+              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>99.7%</p>
+              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>PRÉCISION BIOMÉTRIQUE</p>
+            </div>
+            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
+              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>10K</p>
+              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>UTILISATEURS SIMULTANÉS</p>
+            </div>
+          </div>
+          {/* Patent & Certification */}
+          <div
+            style={{
+              padding: "24px 28px",
+              background: "rgba(0,0,0,0.3)",
+              borderRadius: 12,
+              border: `1px solid ${ORO_DIVINEO}33`,
+              marginBottom: 32,
+            }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: 3, color: ORO_DIVINEO, marginBottom: 8 }}>PROPRIÉTÉ INTELLECTUELLE PROTÉGÉE</p>
+            <p style={{ fontSize: 16, color: "#ece4d8", fontFamily: "'Cinzel', Georgia, serif" }}>Brevet International PCT/EP2025/067317</p>
+            <p style={{ fontSize: 12, color: "#ece4d8aa", marginTop: 8 }}>8 Super-Claims · Valorisation 17M€ — 26M€ · The Snap™ · Génération Adaptative d'Avatars</p>
+          </div>
+          {/* Contract Info */}
+          <div
+            style={{
+              padding: "20px 24px",
+              background: "rgba(212,175,55,0.06)",
+              borderRadius: 12,
+              border: `1px solid ${ORO_DIVINEO}22`,
+              textAlign: "left",
+            }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: 3, color: ORO_DIVINEO, marginBottom: 12 }}>CONTRAT DE LICENCE — GALERIES LAFAYETTE</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Setup Fee</p>
+                <p style={{ fontSize: 18, color: "#ece4d8", fontWeight: 700, margin: "4px 0" }}>12 500 €</p>
+              </div>
+              <div>
+                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Exclusivité Territoriale</p>
+                <p style={{ fontSize: 18, color: "#ece4d8", fontWeight: 700, margin: "4px 0" }}>15 000 €</p>
+              </div>
+              <div>
+                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Royalties sur Ventes</p>
+                <p style={{ fontSize: 18, color: ORO_DIVINEO, fontWeight: 700, margin: "4px 0" }}>8%</p>
+              </div>
+              <div>
+                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Total Immédiat</p>
+                <p style={{ fontSize: 18, color: ORO_DIVINEO, fontWeight: 700, margin: "4px 0" }}>27 500 €</p>
+              </div>
+            </div>
+          </div>
+        </section>
         {/* ─── Ofrenda Overlay ──────────────────────────── */}
-        <OfrendaOverlay
+        <OfrendaOverlayay
           elasticLabel={elasticLabel}
           julesLane={julesLane}
           onOfrenda={onOfrenda}
