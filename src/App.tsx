@@ -473,31 +473,59 @@ export default function App() {
     openInaugurationStripeLiquidity();
   };
 
+  const BRANDS_MAESTROS = ["BALMAIN", "DIOR", "PRADA", "CHANEL", "YSL"] as const;
+
   return (
     <div
       className="app-root"
       style={{
-        background: "linear-gradient(145deg, #F5F5DC 0%, #FFFFFF 38%, #D3B26A 100%)",
-        color: "#111111",
+        background: "linear-gradient(165deg, #0c0d10 0%, #141619 40%, #1a1b20 70%, #0c0d10 100%)",
+        color: "#f5efe6",
       }}
     >
       <div className="app-stage" aria-hidden />
 
       <div className="app-ui">
+        {/* ─── Hero Section ──────────────────────────────── */}
         <section
           className="hero-section"
           style={{
-            padding: "32px 20px 12px",
+            padding: "40px 24px 20px",
             maxWidth: 960,
             margin: "0 auto",
           }}
         >
           <div className="hero-brand-row">
-            <img
-              src="/assets/logo_tryonyou_official.png"
-              alt="TryOnYou logo officiel"
-              className="hero-official-logo"
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  border: `1px solid ${ORO_DIVINEO}33`,
+                  background: "rgba(212,175,55,0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: ORO_DIVINEO,
+                  letterSpacing: 2,
+                  boxShadow: `0 4px 20px rgba(212,175,55,0.12)`,
+                }}
+              >
+                TY
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 16, letterSpacing: 6, color: "#f5efe6", fontWeight: 500 }}>
+                  TRYONYOU
+                </div>
+                <div style={{ fontSize: 9, letterSpacing: 3, color: ORO_DIVINEO, marginTop: 2, textTransform: "uppercase" }}>
+                  Maison Digitale
+                </div>
+              </div>
+            </div>
             <div className="hero-locale-switch" role="group" aria-label={copy.localeLabel}>
               {SUPPORTED_LOCALES.map((loc) => (
                 <button
@@ -511,44 +539,77 @@ export default function App() {
               ))}
             </div>
           </div>
+
+          {/* Brands row */}
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 24,
+            marginTop: 24,
+            marginBottom: 28,
+          }}>
+            {BRANDS_MAESTROS.map((brand) => (
+              <span
+                key={brand}
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontSize: 10,
+                  letterSpacing: 4,
+                  color: `${ORO_DIVINEO}88`,
+                  textTransform: "uppercase",
+                  cursor: "default",
+                }}
+              >
+                {brand}
+              </span>
+            ))}
+          </div>
+
           <p
             style={{
-              fontSize: 11,
+              fontSize: 10,
               letterSpacing: 6,
               textTransform: "uppercase",
-              color: "#6b5b3a",
-              marginBottom: 10,
+              color: ORO_DIVINEO,
+              marginBottom: 12,
+              fontWeight: 500,
             }}
           >
             {copy.badge}
           </p>
           <h1
             style={{
-              fontSize: "clamp(26px, 4vw, 38px)",
-              lineHeight: 1.15,
+              fontFamily: "'Cinzel', Georgia, serif",
+              fontSize: "clamp(28px, 4.5vw, 42px)",
+              lineHeight: 1.2,
               margin: 0,
-              color: "#26201A",
+              color: "#f5efe6",
+              fontWeight: 400,
+              letterSpacing: 1,
             }}
           >
             {copy.heroTitle}
           </h1>
           <p
             style={{
-              marginTop: 14,
-              maxWidth: 520,
-              fontSize: 14,
-              lineHeight: 1.7,
-              color: "#4a4034",
+              marginTop: 16,
+              maxWidth: 540,
+              fontSize: 14.5,
+              lineHeight: 1.75,
+              color: "#ece4d8",
+              opacity: 0.85,
             }}
           >
             {copy.heroLead}
           </p>
+
+          {/* Email capture */}
           <div
             style={{
               display: "flex",
               flexWrap: "wrap",
               gap: 10,
-              marginTop: 18,
+              marginTop: 24,
               alignItems: "center",
             }}
           >
@@ -562,11 +623,14 @@ export default function App() {
               style={{
                 flex: "1 1 220px",
                 minWidth: 0,
-                padding: "10px 14px",
+                padding: "12px 18px",
                 borderRadius: 999,
-                border: "1px solid rgba(0,0,0,0.18)",
+                border: `1px solid ${ORO_DIVINEO}33`,
                 fontSize: 13,
-                backgroundColor: "rgba(255,255,255,0.9)",
+                backgroundColor: "rgba(20,22,25,0.8)",
+                color: "#f5efe6",
+                outline: "none",
+                backdropFilter: "blur(12px)",
               }}
             />
             <button
@@ -574,17 +638,18 @@ export default function App() {
               onClick={onHeroSubmit}
               style={{
                 flex: "0 0 auto",
-                padding: "11px 22px",
+                padding: "13px 28px",
                 borderRadius: 999,
                 border: "none",
-                backgroundColor: "#D3B26A",
-                color: "#111111",
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: 2,
+                background: `linear-gradient(135deg, ${ORO_DIVINEO}, #c5a46d)`,
+                color: "#0c0d10",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 3,
                 textTransform: "uppercase",
                 cursor: "pointer",
-                boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                boxShadow: `0 8px 28px rgba(212,175,55,0.25)`,
+                fontFamily: "'Cinzel', Georgia, serif",
               }}
             >
               {copy.heroCta}
@@ -595,7 +660,9 @@ export default function App() {
               <p key={phrase}>« {phrase} »</p>
             ))}
           </div>
-          <div style={{ marginTop: 16 }}>
+
+          {/* Inauguration CTA */}
+          <div style={{ marginTop: 24 }}>
             <button
               type="button"
               onClick={onInaugurationStripeCharge}
@@ -608,19 +675,20 @@ export default function App() {
               aria-label={copy.inaugurationAriaLabel}
               style={{
                 width: "100%",
-                maxWidth: 440,
-                padding: "14px 22px",
+                maxWidth: 480,
+                padding: "16px 24px",
                 borderRadius: 12,
-                border: `2px solid ${ORO_DIVINEO}`,
-                background:
-                  "linear-gradient(145deg, #4a148c 0%, #6a1b9a 40%, #311b92 100%)",
-                color: "#fff",
+                border: `1px solid ${ORO_DIVINEO}`,
+                background: "linear-gradient(145deg, #141619 0%, #1a1b20 50%, #0c0d10 100%)",
+                color: ORO_DIVINEO,
+                fontFamily: "'Cinzel', Georgia, serif",
                 fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: 3,
+                fontWeight: 600,
+                letterSpacing: 4,
                 textTransform: "uppercase",
                 cursor: "pointer",
-                boxShadow: `0 8px 28px ${ORO_DIVINEO}44`,
+                boxShadow: `0 8px 32px rgba(212,175,55,0.2), inset 0 1px 0 rgba(212,175,55,0.15)`,
+                transition: "all 0.3s ease",
               }}
             >
               {copy.inaugurationCta}
@@ -628,40 +696,46 @@ export default function App() {
             {pauInaugurationWhisper ? (
               <p
                 style={{
-                  marginTop: 10,
-                  maxWidth: 440,
+                  marginTop: 12,
+                  maxWidth: 480,
                   fontSize: 13,
-                  lineHeight: 1.55,
+                  lineHeight: 1.6,
                   fontStyle: "italic",
-                  color: "#4a3428",
+                  color: `${ORO_DIVINEO}cc`,
                 }}
               >
                 PAU · {pauInaugurationWhisper}
               </p>
             ) : null}
           </div>
-          <div style={{ marginTop: 10 }}>
+
+          {/* Lafayette CTA */}
+          <div style={{ marginTop: 12 }}>
             <button
               type="button"
               onClick={onLafayetteStripeCharge}
               style={{
                 width: "100%",
-                maxWidth: 440,
-                padding: "10px 18px",
+                maxWidth: 480,
+                padding: "12px 20px",
                 borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.2)",
-                background: "rgba(255,255,255,0.75)",
-                color: "#26201A",
+                border: `1px solid ${ORO_DIVINEO}22`,
+                background: "rgba(212,175,55,0.06)",
+                color: "#ece4d8",
                 fontSize: 11,
                 fontWeight: 600,
-                letterSpacing: 2,
+                letterSpacing: 2.5,
                 textTransform: "uppercase",
                 cursor: "pointer",
+                fontFamily: "'Cinzel', Georgia, serif",
+                transition: "all 0.3s ease",
               }}
             >
               {copy.lafayetteCta}
             </button>
           </div>
+
+          {/* Pricing grid */}
           <div className="hero-pricing-grid">
             <article>
               <h3>{copy.packStarterTitle}</h3>
@@ -674,6 +748,8 @@ export default function App() {
               <p>{copy.packMaisonBody}</p>
             </article>
           </div>
+
+          {/* Sales videos */}
           <div className="sales-video-row">
             <article>
               <h3>{copy.videoOneTitle}</h3>
@@ -690,12 +766,14 @@ export default function App() {
               <p>{copy.videoTwoBody}</p>
             </article>
           </div>
+
+          {/* Checkout link */}
           <p
             style={{
-              marginTop: 14,
+              marginTop: 18,
               fontSize: 12,
-              letterSpacing: 1,
-              color: "#5c4f3d",
+              letterSpacing: 1.5,
+              color: `${ORO_DIVINEO}99`,
             }}
           >
             <a
@@ -706,15 +784,17 @@ export default function App() {
                 color: ORO_DIVINEO,
                 fontWeight: 600,
                 textDecoration: "none",
-                borderBottom: `1px solid ${ORO_DIVINEO}`,
+                borderBottom: `1px solid ${ORO_DIVINEO}66`,
+                paddingBottom: 1,
               }}
             >
               {SOVEREIGN_FIT_LABEL}
             </a>
-            <span style={{ opacity: 0.9 }}>{copy.checkoutHint}</span>
+            <span style={{ opacity: 0.7 }}>{copy.checkoutHint}</span>
           </p>
         </section>
 
+        {/* ─── Ofrenda Overlay ──────────────────────────── */}
         <OfrendaOverlay
           elasticLabel={elasticLabel}
           julesLane={julesLane}
@@ -725,16 +805,18 @@ export default function App() {
               type="button"
               onClick={() => void postBetaWaitlist(copy)}
               style={{
-                marginTop: 14,
-                padding: "8px 18px",
+                marginTop: 16,
+                padding: "10px 22px",
                 fontSize: 10,
-                letterSpacing: 2,
+                letterSpacing: 3,
                 textTransform: "uppercase",
-                color: "#C5A46D",
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid #C5A46D",
+                color: ORO_DIVINEO,
+                background: "rgba(212,175,55,0.08)",
+                border: `1px solid ${ORO_DIVINEO}44`,
                 borderRadius: 999,
                 cursor: "pointer",
+                fontFamily: "'Cinzel', Georgia, serif",
+                transition: "all 0.3s ease",
               }}
             >
               {copy.betaCta}
@@ -742,16 +824,17 @@ export default function App() {
           }
         />
 
+        {/* ─── P.A.U. Avatar ───────────────────────────── */}
         <motion.div
           className="app-pau-row"
           animate={{
             boxShadow: [
-              `0 0 0 1px ${ORO_DIVINEO}33`,
-              `0 0 28px ${ORO_DIVINEO}55`,
-              `0 0 0 1px ${ORO_DIVINEO}33`,
+              `0 0 0 1px ${ORO_DIVINEO}22`,
+              `0 0 32px ${ORO_DIVINEO}44`,
+              `0 0 0 1px ${ORO_DIVINEO}22`,
             ],
           }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
         >
           <button
             type="button"
@@ -799,6 +882,11 @@ export default function App() {
             </video>
           </button>
         </motion.div>
+
+        {/* ─── Footer ──────────────────────────────────── */}
+        <div className="app-legal">
+          SIRET 94361019600017 · PCT/EP2025/067317 · TRYONYOU V11 SOVEREIGN
+        </div>
       </div>
 
       <PreScanHook
