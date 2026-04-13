@@ -49,9 +49,9 @@
         }
     },
     "firebase_web": {
-        "project_id": "gen-lang-client-0066102635",
-        "auth_domain_default": "gen-lang-client-0066102635.firebaseapp.com",
-        "storage_bucket_default": "gen-lang-client-0066102635.appspot.com",
+        "project_id": "tryonyou-app",
+        "auth_domain_default": "tryonyou-app.firebaseapp.com",
+        "storage_bucket_default": "tryonyou-app.appspot.com",
         "client_env_prefix": "VITE_FIREBASE_",
         "notes": "storageBucket vacío en .env se omite en el SDK; authDomain cae a {projectId}.firebaseapp.com si falta."
     },

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import LandingLVT from "./components/LandingLVT";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
