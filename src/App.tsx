@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { motion } from "framer-motion";
+import { MacbookSection } from "./components/MacbookSection";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { PreScanHook } from "./components/PreScanHook";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
@@ -808,6 +809,8 @@ export default function App() {
           setPreScanVisible(false);
         }}
       />
+
+      <MacbookSection />
     </div>
   );
 }
