@@ -14,6 +14,7 @@ import {
   createDivineoPerspectiveCamera,
   resizeDivineoPerspectiveCamera,
 } from "../divineo/setupDivineoCamera";
+import { applyVerticalMirrorVersaceCalibration } from "../divineo/mirrorCalibrationVersace";
 
 type Variant = "lafayette" | "marais";
 
@@ -21,9 +22,15 @@ type Props = {
   variant: Variant;
   disabled?: boolean;
   videoId: string;
+  /** Espejo vertical >2 m — calibración Versace (FOV, pitch, aspect retrato). */
+  verticalVersaceMirror?: boolean;
 };
 
-function PauVideoFallback({ variant, videoId }: Pick<Props, "variant" | "videoId">) {
+function PauVideoFallback({
+  variant,
+  videoId,
+  verticalVersaceMirror,
+}: Pick<Props, "variant" | "videoId" | "verticalVersaceMirror">) {
   return (
     <video
       key={variant}
@@ -37,6 +44,7 @@ function PauVideoFallback({ variant, videoId }: Pick<Props, "variant" | "videoId
         width: "100%",
         height: "100%",
         objectFit: "cover",
+        objectPosition: verticalVersaceMirror ? "center 28%" : "center center",
       }}
     >
       {variant === "marais" ? (
@@ -55,7 +63,12 @@ function PauVideoFallback({ variant, videoId }: Pick<Props, "variant" | "videoId
   );
 }
 
-export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
+export default function RealTimeAvatar({
+  variant,
+  disabled,
+  videoId,
+  verticalVersaceMirror = false,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const glHostRef = useRef<HTMLDivElement>(null);
   const [glbReady, setGlbReady] = useState(false);
@@ -65,13 +78,20 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
 
     const mount = glHostRef.current;
     const scene = new THREE.Scene();
-    const size0 = Math.max(mount.clientWidth, 1);
-    const camera = createDivineoPerspectiveCamera(size0, size0);
+    const rw0 = Math.max(mount.clientWidth, 1);
+    const rh0 = Math.max(mount.clientHeight, 1);
+    const size0 = rw0;
+    const camW = verticalVersaceMirror ? rw0 : size0;
+    const camH = verticalVersaceMirror ? rh0 : size0;
+    const camera = createDivineoPerspectiveCamera(camW, camH);
+    if (verticalVersaceMirror) {
+      applyVerticalMirrorVersaceCalibration(camera, camW, camH);
+    }
 
     const renderer = new THREE.WebGLRenderer(sovereignWebGLOptions());
     const size = Math.max(mount.clientWidth, 1);
     applySovereignPixelRatio(renderer, size);
-    renderer.setSize(size, size);
+    renderer.setSize(rw0, rh0);
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
@@ -128,10 +148,16 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
 
     const ro = new ResizeObserver(() => {
       const el = containerRef.current;
-      const s = el ? Math.max(el.clientWidth, 1) : Math.max(mount.clientWidth, 1);
+      const w = Math.max(mount.clientWidth, 1);
+      const h = Math.max(mount.clientHeight, 1);
+      const s = el ? Math.max(el.clientWidth, 1) : w;
       applySovereignPixelRatio(renderer, s);
-      renderer.setSize(s, s);
-      resizeDivineoPerspectiveCamera(camera, s, s);
+      renderer.setSize(w, h);
+      if (verticalVersaceMirror) {
+        applyVerticalMirrorVersaceCalibration(camera, w, h);
+      } else {
+        resizeDivineoPerspectiveCamera(camera, w, w);
+      }
     });
     ro.observe(containerRef.current ?? mount);
 
@@ -145,12 +171,16 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
       }
       setGlbReady(false);
     };
-  }, [disabled, variant]);
+  }, [disabled, variant, verticalVersaceMirror]);
 
   if (disabled) {
     return (
       <div style={{ width: "100%", height: "100%" }}>
-        <PauVideoFallback variant={variant} videoId={videoId} />
+        <PauVideoFallback
+          variant={variant}
+          videoId={videoId}
+          verticalVersaceMirror={verticalVersaceMirror}
+        />
       </div>
     );
   }
@@ -175,7 +205,11 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
           zIndex: 0,
         }}
       >
-        <PauVideoFallback variant={variant} videoId={videoId} />
+        <PauVideoFallback
+          variant={variant}
+          videoId={videoId}
+          verticalVersaceMirror={verticalVersaceMirror}
+        />
       </div>
       <div
         ref={glHostRef}
