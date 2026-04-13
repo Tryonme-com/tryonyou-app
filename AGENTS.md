@@ -24,5 +24,5 @@ TryOnYou is a React + Vite + Tailwind virtual try-on fashion-tech SPA with Pytho
 - **`firebase-applet-config.json` prebuild check.** The `npm run build` (and `npm run prebuild`) runs `scripts/assert-firebase-applet.mjs`, which validates that `projectId` in `firebase-applet-config.json` equals `gen-lang-client-0066102635`. Do not change that file unless re-provisioning Firebase.
 - **Vite proxies `/api` to `http://127.0.0.1:8000`.** If you need API endpoints locally, first install the backend-specific Python dependencies with `pip install -r backend/requirements.txt`, then start the FastAPI backend with `uvicorn backend.omega_core:app --reload --port 8000`. The frontend renders independently without the backend.
 - **Environment variables are optional for dev.** Firebase, Stripe, ElevenLabs, and other SaaS integrations require env vars (see `.env.example`), but the frontend loads and renders without them. Firebase init gracefully degrades when keys are missing.
-- **202 Python tests pass** with zero external dependencies beyond `requirements.txt`.
+- **Python tests pass** with zero external dependencies beyond `requirements.txt`.
 - **Commit messages** must include `@CertezaAbsoluta`, `@lo+erestu`, `PCT/EP2025/067317`, and `Bajo Protocolo de Soberanía V10 - Founder: Rubén` (see `.cursor/rules/agente-pau-tryonyou.mdc`).
