@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initTryOnYouAnimation } from "../lib/tryOnYouAnimation";
 
 const LOOKS = [
@@ -12,6 +13,9 @@ const LOOKS = [
 export function MacbookSection() {
   useEffect(() => {
     initTryOnYouAnimation();
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    };
   }, []);
 
   return (
