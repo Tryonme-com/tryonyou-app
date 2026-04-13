@@ -17,10 +17,14 @@ SECURITY_LEDGER="${SECURITY_LEDGER:-$ROOT/logs/capital_inflows.json}"
 
 notify_success() {
   local message="$1"
-  python3 "$ROOT/scripts/tryonyou_deploy_bot_notify.py" \
+  if python3 "$ROOT/scripts/tryonyou_deploy_bot_notify.py" \
     --bot-token "$BOT_TOKEN" \
     --chat-id "$CHAT_ID" \
-    --message "$message"
+    --message "$message"; then
+    return 0
+  fi
+  echo "⚠️ No se pudo reportar éxito al bot @tryonyou_deploy_bot (se continúa sin romper pipeline)."
+  return 0
 }
 
 require_bot() {
