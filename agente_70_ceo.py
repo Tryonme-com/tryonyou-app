@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 
 QUALITY_THRESHOLD = 0.95
-PAYOUT_OPEN_HOUR = 9
-PAYOUT_CLOSE_HOUR = 4
+# Vault locked window: [LOCKED_WINDOW_START, LOCKED_WINDOW_END) → 04:00–08:59
+LOCKED_WINDOW_START = 4
+LOCKED_WINDOW_END = 9
 
 
 class Agente70CEO:
@@ -24,9 +25,16 @@ class Agente70CEO:
         return True
 
     def authorize_payout(self, amount: float) -> bool:
-        """Autorización final de fondos. Solo el CEO puede disparar el Payout."""
+        """Autorización final de fondos. Solo el CEO puede disparar el Payout.
+
+        El búnker está bloqueado durante la ventana [LOCKED_WINDOW_START, LOCKED_WINDOW_END),
+        es decir de 04:00 a 08:59. Fuera de ese intervalo la liquidación se aprueba.
+
+        Returns:
+            True si el payout está autorizado, False si la ventana está bloqueada.
+        """
         now = datetime.now().hour
-        if now >= PAYOUT_OPEN_HOUR or now < PAYOUT_CLOSE_HOUR:
+        if now >= LOCKED_WINDOW_END or now < LOCKED_WINDOW_START:
             print(f"💰 [AUTH] {self.identity}: Liquidación de {amount}€ aprobada.")
             return True
         print(f"⏳ [WAIT] {self.identity}: Esperando apertura de mercados (09:00 AM).")

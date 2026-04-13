@@ -13,7 +13,7 @@ _ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from agente_70_ceo import PAYOUT_CLOSE_HOUR, PAYOUT_OPEN_HOUR, QUALITY_THRESHOLD, Agente70CEO
+from agente_70_ceo import LOCKED_WINDOW_END, LOCKED_WINDOW_START, QUALITY_THRESHOLD, Agente70CEO
 
 
 class TestAgente70CEOInit(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestAuthorizePayout(unittest.TestCase):
 
     def test_authorized_at_open_hour(self) -> None:
         with patch("agente_70_ceo.datetime") as mock_dt:
-            mock_dt.now.return_value.hour = PAYOUT_OPEN_HOUR
+            mock_dt.now.return_value.hour = LOCKED_WINDOW_END
             self.assertTrue(self.ceo.authorize_payout(1000.0))
 
     def test_authorized_after_open_hour(self) -> None:
@@ -89,9 +89,9 @@ class TestAuthorizePayout(unittest.TestCase):
             mock_dt.now.return_value.hour = 5
             self.assertFalse(self.ceo.authorize_payout(999.0))
 
-    def test_not_authorized_at_close_boundary(self) -> None:
+    def test_not_authorized_at_locked_window_start(self) -> None:
         with patch("agente_70_ceo.datetime") as mock_dt:
-            mock_dt.now.return_value.hour = PAYOUT_CLOSE_HOUR
+            mock_dt.now.return_value.hour = LOCKED_WINDOW_START
             self.assertFalse(self.ceo.authorize_payout(100.0))
 
     def test_authorized_prints_amount(self) -> None:
