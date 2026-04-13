@@ -111,9 +111,14 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
   <div class="btn" onclick="location.reload()">Solidaire</div>
   <div class="btn" onclick="location.reload()">Intelligent</div>
   <div class="btn" onclick="location.reload()">Museum</div>
-  <div class="pay-bar" onclick="window.location.href='https://buy.stripe.com/test_soberania_4_5'">
+  <div    class="pay-bar"
+    id="tryonyou-pay-inauguration"
+    role="button"
+    tabindex="0"
+    data-stripe-href="%VITE_INAUGURATION_STRIPE_CHECKOUT_URL%"
+  >
     SOUVERAINETÉ : 12.500 € (PAYER)
-      </div>
+  </div>
     </div>
 <div id="root"></div>
     <script>
@@ -140,6 +145,39 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
     });
   }
   document.querySelectorAll("[data-mirror-event]").forEach(wire);
+
+  var pay = document.getElementById("tryonyou-pay-inauguration");
+  if (pay) {
+    pay.addEventListener("click", function () {
+      var href = (pay.getAttribute("data-stripe-href") || "").trim();
+      void postMirror("inauguration_pay_click", {
+        label: "SOUVERAINETE_12500",
+        payment_link: href ? "vite_env" : "api_checkout",
+      });
+      if (href) {
+        window.location.href = href;
+        return;
+      }
+      fetch("/api/stripe_inauguration_checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (d) {
+          if (d && d.url) window.location.href = d.url;
+        })
+        .catch(function () {});
+    });
+    pay.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        pay.click();
+      }
+    });
+  }
 })();
     </script>
     <script>

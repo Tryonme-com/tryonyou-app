@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../theme/divineo_v11.css";
 
 :root {
   /* Oro Divineo V11 — protocolo UI */
