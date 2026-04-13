@@ -50,7 +50,7 @@
   ],
   "headers": [
     {
-      "source": "/docs/(.*\\.(pdf|csv|md|zip))",
+      "source": "/docs/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" },
         { "key": "Content-Disposition", "value": "inline" }
