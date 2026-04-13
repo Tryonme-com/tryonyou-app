@@ -4,7 +4,7 @@
 
 ### Project overview
 
-TryOnYou is a React + Vite + Tailwind virtual try-on fashion-tech SPA with a Flask/FastAPI Python backend (serverless on Vercel). See `README.md` and the `.cursor/rules/` files for full product context.
+TryOnYou is a React + Vite + Tailwind virtual try-on fashion-tech SPA with Python backend components: Flask handlers under `api/` run serverlessly on Vercel, while the FastAPI app under `backend/` is used for local/demo development. See `README.md` and the `.cursor/rules/` files for full product context.
 
 ### Quick reference
 
