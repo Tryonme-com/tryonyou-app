@@ -1,5 +1,6 @@
 import {
   type ChangeEvent,
+  type MouseEvent,
   useEffect,
   useMemo,
   useRef,
@@ -686,6 +687,101 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
 
 const lafayetteCollection = lafayetteCollectionRaw as LafayetteGarment[];
 
+const AMBIENT_PARTICLES = Array.from({ length: 18 }, (_, index) => ({
+  id: `ambient-particle-${index}`,
+  left: `${4 + ((index * 5.2) % 92)}%`,
+  size: `${2 + (index % 3)}px`,
+  opacity: 0.12 + (index % 5) * 0.06,
+  delay: `${(index % 6) * 1.15}s`,
+  duration: `${12 + (index % 5) * 2.8}s`,
+  drift: `${index % 2 === 0 ? 16 + (index % 4) * 6 : -14 - (index % 4) * 7}px`,
+}));
+
+function useScrollReveal<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || visible) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: [0, 0.15, 0.3, 0.5],
+      },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [visible]);
+
+  return { ref, visible };
+}
+
+type AnimatedMetricProps = {
+  value: number;
+  label: string;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+  visible: boolean;
+};
+
+function AnimatedMetric({
+  value,
+  label,
+  prefix = "",
+  suffix = "",
+  decimals = 0,
+  visible,
+}: AnimatedMetricProps) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    let frame = 0;
+    const duration = 1500;
+    const startedAt = performance.now();
+    const easeOutCubic = (progress: number) => 1 - Math.pow(1 - progress, 3);
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      const eased = easeOutCubic(progress);
+      setDisplayValue(value * eased);
+
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(animate);
+      }
+    };
+
+    setDisplayValue(0);
+    frame = window.requestAnimationFrame(animate);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [value, visible]);
+
+  const formattedValue = decimals > 0 ? displayValue.toFixed(decimals) : String(Math.round(displayValue));
+
+  return (
+    <article className="metric-card">
+      <strong>
+        {prefix}
+        {formattedValue}
+        {suffix}
+      </strong>
+      <span>{label}</span>
+    </article>
+  );
+}
+
 export default function App() {
   const pauSovereignBoot = useRef(false);
   if (!pauSovereignBoot.current) {
@@ -700,6 +796,16 @@ export default function App() {
   );
   const [emailHero, setEmailHero] = useState<string>("");
   const [pauInaugurationWhisper, setPauInaugurationWhisper] = useState("");
+  const [navScrolled, setNavScrolled] = useState(false);
+
+  const heroSectionRef = useRef<HTMLElement | null>(null);
+  const heroReveal = useScrollReveal<HTMLElement>();
+  const manifestoReveal = useScrollReveal<HTMLElement>();
+  const technologyReveal = useScrollReveal<HTMLElement>();
+  const collectionReveal = useScrollReveal<HTMLElement>();
+  const patentReveal = useScrollReveal<HTMLElement>();
+  const pricingReveal = useScrollReveal<HTMLElement>();
+  const pauReveal = useScrollReveal<HTMLElement>();
 
   /** Pre-scan hook — shown once per session until dismissed or auto-timeout. */
   const [preScanVisible, setPreScanVisible] = useState(
@@ -916,6 +1022,46 @@ export default function App() {
         ? "Galeries Lafayette · 75009"
         : "Paris pilot";
 
+  const handleAnchorClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (!href.startsWith("#")) return;
+    const target = document.querySelector<HTMLElement>(href);
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", href);
+  };
+
+  const heroMetrics = [
+    { value: 85, prefix: "-", suffix: "%", label: pageCopy.metricLabels[0] },
+    { value: 25, prefix: "+", suffix: "%", label: pageCopy.metricLabels[1] },
+    { value: 99.7, suffix: "%", decimals: 1, label: pageCopy.metricLabels[2] },
+    { value: 10, suffix: "K", label: pageCopy.metricLabels[3] },
+  ] as const;
+
+  const bindHeroSection = (node: HTMLElement | null) => {
+    heroSectionRef.current = node;
+    heroReveal.ref.current = node;
+  };
+
+  useEffect(() => {
+    const updateNavbarState = () => {
+      const heroHeight = heroSectionRef.current?.offsetHeight ?? window.innerHeight * 0.8;
+      setNavScrolled(window.scrollY > heroHeight * 0.55);
+    };
+
+    updateNavbarState();
+    window.addEventListener("scroll", updateNavbarState, { passive: true });
+    window.addEventListener("resize", updateNavbarState);
+
+    return () => {
+      window.removeEventListener("scroll", updateNavbarState);
+      window.removeEventListener("resize", updateNavbarState);
+    };
+  }, []);
+
   return (
     <div
       className="app-root"
@@ -925,12 +1071,35 @@ export default function App() {
         color: "#f5efe6",
       }}
     >
-      <div className="app-stage" aria-hidden />
+      <div className="app-stage" aria-hidden>
+        <div className="app-stage__particles">
+          {AMBIENT_PARTICLES.map((particle) => (
+            <span
+              key={particle.id}
+              className="ambient-particle"
+              style={{
+                left: particle.left,
+                width: particle.size,
+                height: particle.size,
+                opacity: particle.opacity,
+                animationDelay: particle.delay,
+                animationDuration: particle.duration,
+                ["--particle-drift" as const]: particle.drift,
+              }}
+            />
+          ))}
+        </div>
+      </div>
 
       <div className="app-ui">
-        <header className="site-nav">
+        <header className="site-nav" data-scrolled={navScrolled ? "1" : undefined}>
           <div className="site-nav__inner">
-            <a className="site-nav__brand" href="#hero" aria-label="TryOnYou home">
+            <a
+              className="site-nav__brand"
+              href="#hero"
+              aria-label="TryOnYou home"
+              onClick={(event) => handleAnchorClick(event, "#hero")}
+            >
               <span className="site-nav__monogram">TY</span>
               <span>
                 <strong>TRYONYOU</strong>
@@ -940,7 +1109,7 @@ export default function App() {
 
             <nav className="site-nav__links" aria-label="Primary">
               {pageCopy.navLinks.map((item) => (
-                <a key={item.href} href={item.href}>
+                <a key={item.href} href={item.href} onClick={(event) => handleAnchorClick(event, item.href)}>
                   {item.label}
                 </a>
               ))}
@@ -962,7 +1131,12 @@ export default function App() {
         </header>
 
         <main className="landing-main">
-          <section id="hero" className="landing-section hero-section">
+          <section
+            id="hero"
+            ref={bindHeroSection}
+            className="landing-section hero-section"
+            data-visible={heroReveal.visible ? "1" : undefined}
+          >
             <div className="hero-layout">
               <div className="hero-copy-col">
                 <div className="hero-brand-row">
@@ -1089,7 +1263,12 @@ export default function App() {
             </div>
           </section>
 
-          <section id="manifesto" className="landing-section manifesto-section">
+          <section
+            id="manifesto"
+            ref={manifestoReveal.ref}
+            className="landing-section manifesto-section"
+            data-visible={manifestoReveal.visible ? "1" : undefined}
+          >
             <div className="section-heading section-heading--centered">
               <p className="section-tag">{copy.manifestoTag}</p>
               <h2>{copy.manifestoTitle}</h2>
@@ -1097,17 +1276,29 @@ export default function App() {
             </div>
 
             <div className="manifesto-grid">
-              <article className="manifesto-panel manifesto-panel--lead">
+              <article
+                className="manifesto-panel manifesto-panel--lead"
+                style={{ ["--manifesto-delay" as const]: "0.08s" }}
+              >
                 <span className="manifesto-panel__label">{pageCopy.manifestoQuoteLabel}</span>
                 <blockquote>{copy.manifestoBody}</blockquote>
               </article>
-              <article className="manifesto-panel">
+              <article
+                className="manifesto-panel"
+                style={{ ["--manifesto-delay" as const]: "0.16s" }}
+              >
                 <p>{copy.manifestoAccumulation}</p>
               </article>
-              <article className="manifesto-panel">
+              <article
+                className="manifesto-panel"
+                style={{ ["--manifesto-delay" as const]: "0.24s" }}
+              >
                 <p>{copy.manifestoColor}</p>
               </article>
-              <article className="manifesto-panel manifesto-panel--accent">
+              <article
+                className="manifesto-panel manifesto-panel--accent"
+                style={{ ["--manifesto-delay" as const]: "0.32s" }}
+              >
                 <p>{copy.manifestoIdentity}</p>
               </article>
             </div>
@@ -1122,7 +1313,12 @@ export default function App() {
             </div>
           </section>
 
-          <section id="technology" className="landing-section technology-section">
+          <section
+            id="technology"
+            ref={technologyReveal.ref}
+            className="landing-section technology-section"
+            data-visible={technologyReveal.visible ? "1" : undefined}
+          >
             <div className="section-heading">
               <p className="section-tag">{pageCopy.technologyTag}</p>
               <h2>{pageCopy.technologyTitle}</h2>
@@ -1141,22 +1337,27 @@ export default function App() {
               </div>
 
               <div className="metrics-grid">
-                {[
-                  { value: "-85%", label: pageCopy.metricLabels[0] },
-                  { value: "+25%", label: pageCopy.metricLabels[1] },
-                  { value: "99.7%", label: pageCopy.metricLabels[2] },
-                  { value: "10K", label: pageCopy.metricLabels[3] },
-                ].map((metric) => (
-                  <article key={metric.label} className="metric-card">
-                    <strong>{metric.value}</strong>
-                    <span>{metric.label}</span>
-                  </article>
+                {heroMetrics.map((metric) => (
+                  <AnimatedMetric
+                    key={metric.label}
+                    value={metric.value}
+                    label={metric.label}
+                    prefix={metric.prefix}
+                    suffix={metric.suffix}
+                    decimals={metric.decimals}
+                    visible={technologyReveal.visible}
+                  />
                 ))}
               </div>
             </div>
           </section>
 
-          <section id="collection" className="landing-section collection-section">
+          <section
+            id="collection"
+            ref={collectionReveal.ref}
+            className="landing-section collection-section"
+            data-visible={collectionReveal.visible ? "1" : undefined}
+          >
             <div className="section-heading section-heading--centered">
               <p className="section-tag">{pageCopy.collectionTag}</p>
               <h2>{pageCopy.collectionTitle}</h2>
@@ -1203,7 +1404,12 @@ export default function App() {
             </div>
           </section>
 
-          <section id="patent-contract" className="landing-section patent-section">
+          <section
+            id="patent-contract"
+            ref={patentReveal.ref}
+            className="landing-section patent-section"
+            data-visible={patentReveal.visible ? "1" : undefined}
+          >
             <div className="patent-layout">
               <article className="patent-card">
                 <p className="section-tag">{pageCopy.patentTag}</p>
@@ -1242,7 +1448,12 @@ export default function App() {
             </div>
           </section>
 
-          <section id="pricing" className="landing-section pricing-section">
+          <section
+            id="pricing"
+            ref={pricingReveal.ref}
+            className="landing-section pricing-section"
+            data-visible={pricingReveal.visible ? "1" : undefined}
+          >
             <div className="section-heading section-heading--centered">
               <p className="section-tag">{pageCopy.pricingTag}</p>
               <h2>{pageCopy.pricingTitle}</h2>
@@ -1276,7 +1487,12 @@ export default function App() {
             </div>
           </section>
 
-          <section id="pau" className="landing-section pau-section">
+          <section
+            id="pau"
+            ref={pauReveal.ref}
+            className="landing-section pau-section"
+            data-visible={pauReveal.visible ? "1" : undefined}
+          >
             <div className="pau-layout">
               <div className="pau-visual-card">
                 <p className="section-tag">{pageCopy.pauTag}</p>
@@ -1402,6 +1618,7 @@ export default function App() {
             <div>
               <strong>TRYONYOU</strong>
               <p>{pageCopy.footerLine}</p>
+              <p className="app-footer__tagline">PA, PA, PA. LET'S BE THE TENDENCY.</p>
             </div>
             <div className="app-footer__links">
               <a href="mailto:info@tryonyou.app">info@tryonyou.app</a>

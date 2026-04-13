@@ -89,17 +89,25 @@ export function PauFloatingGuide({ locale }: PauFloatingGuideProps) {
   };
 
   return (
-    <div className="pau-guide-shell" aria-live="polite">
+    <div
+      className="pau-guide-shell"
+      aria-live="polite"
+      data-open={isOpen ? "1" : undefined}
+      data-step={step}
+    >
       <AnimatePresence>
         {isOpen ? (
-          <motion.aside
-            key="pau-guide-panel"
-            className="pau-guide-panel"
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            <motion.aside
+              key="pau-guide-panel"
+              className="pau-guide-panel"
+              data-step={step}
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.96 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
+            <span className="pau-guide-panel__shimmer" aria-hidden="true" />
             <div className="pau-guide-panel__header">
               <div className="pau-guide-panel__identity">
                 <div className="pau-guide-avatar pau-guide-avatar--panel">
@@ -175,11 +183,14 @@ export function PauFloatingGuide({ locale }: PauFloatingGuideProps) {
       <motion.button
         type="button"
         className="pau-guide-trigger"
+        data-open={isOpen ? "1" : undefined}
         onClick={handleToggle}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.98 }}
         aria-label="Ouvrir l'assistant flottant P.A.U."
+        aria-pressed={isOpen}
       >
+        <span className="pau-guide-trigger__pulse" aria-hidden="true" />
         <span className="pau-guide-trigger__ring" />
         <span className="pau-guide-avatar">
           <video autoPlay loop muted playsInline preload="auto">
