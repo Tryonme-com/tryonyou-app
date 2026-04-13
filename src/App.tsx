@@ -1,5 +1,6 @@
 import {
   type ChangeEvent,
+  type FormEvent,
   type MouseEvent,
   useEffect,
   useMemo,
@@ -153,45 +154,40 @@ type LafayetteGarment = {
 
 type LocalizedLandingContent = {
   navLinks: readonly { label: string; href: string }[];
-  heroMeta: string;
-  heroPanelLabel: string;
-  heroPanelTitle: string;
-  heroPanelBody: string;
-  heroSecondaryCta: string;
-  heroContractKicker: string;
-  heroContractBody: string;
-  manifestoIntro: string;
-  manifestoQuoteLabel: string;
+  navCta: string;
+  heroHeadline: string;
+  heroSubheadline: string;
+  heroTrust: string;
+  problemTitle: string;
+  problemBody: string;
+  solutionTitle: string;
+  solutionBody: string;
+  resultTitle: string;
+  resultBody: string;
+  howItWorksTag: string;
+  howItWorksTitle: string;
+  howItWorksSteps: readonly string[];
   technologyTag: string;
   technologyTitle: string;
   technologyLead: string;
   technologyNarrative: string;
   metricLabels: readonly string[];
-  collectionTag: string;
-  collectionTitle: string;
-  collectionLead: string;
-  collectionPrecisionLabel: string;
-  collectionFabricLabel: string;
-  collectionProfilesLabel: string;
-  patentTag: string;
-  patentTitle: string;
-  patentBody: string;
-  contractTag: string;
-  contractTitle: string;
-  contractBody: string;
-  contractLabels: readonly string[];
-  pricingTag: string;
-  pricingTitle: string;
-  pricingLead: string;
-  pricingCards: readonly {
+  demoTag: string;
+  demoTitle: string;
+  demoLead: string;
+  demoFields: {
+    name: string;
+    company: string;
+    email: string;
+    role: string;
+    catalog: string;
+    message: string;
+  };
+  catalogOptions: readonly string[];
+  trustTitle: string;
+  trustCards: readonly {
     title: string;
-    price: string;
-    badge: string;
-    description: string;
-    features: readonly string[];
-    cta: string;
-    action: "pilot" | "pro" | "enterprise";
-    highlight?: boolean;
+    body: string;
   }[];
   pauTag: string;
   pauTitle: string;
@@ -203,7 +199,11 @@ type LocalizedLandingContent = {
   pauSnapCta: string;
   pauStatusReady: string;
   pauStatusLocked: string;
-  footerLine: string;
+  manifestoIntro: string;
+  manifestoQuoteLabel: string;
+  footerDescription: string;
+  footerPrivacyLabel: string;
+  footerTermsLabel: string;
 };
 
 async function syncLeadsToBunker(
@@ -340,348 +340,288 @@ const BRANDS_MAESTROS = ["BALMAIN", "DIOR", "PRADA", "CHANEL", "YSL"] as const;
 const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
   fr: {
     navLinks: [
-      { label: "Manifeste", href: "#manifesto" },
       { label: "Technologie", href: "#technology" },
-      { label: "Collection", href: "#collection" },
-      { label: "Tarifs", href: "#pricing" },
-      { label: "P.A.U.", href: "#pau" },
+      { label: "Solution", href: "#solution" },
+      { label: "Démo", href: "#demo" },
+      { label: "Contact", href: "#contact" },
     ],
-    heroMeta: "Paris · Galeries Lafayette · Maison Digitale",
-    heroPanelLabel: "Lancement 2026",
-    heroPanelTitle: "La mode sans friction, avec certitude souveraine.",
-    heroPanelBody:
-      "Une expérience premium pensée pour la vente assistée, l’essayage sans tailles classiques et l’activation immédiate des maisons de luxe en boutique.",
-    heroSecondaryCta: "Rejoindre la bêta privée",
-    heroContractKicker: "Cadre commercial actif",
-    heroContractBody: "Pilotage boutique, activation inauguration, orchestration P.A.U. et lien de paiement live prêts pour la conversion.",
-    manifestoIntro: "La vision fondatrice de Rubén, pensée comme un cri de guerre pour Paris 2026.",
-    manifestoQuoteLabel: "War cry",
-    technologyTag: "LA PREUVE OPÉRATIONNELLE",
-    technologyTitle: "The 0sizes Era commence dans le théâtre de vente.",
+    navCta: "Demander une démo",
+    heroHeadline: "Réduisez les retours mode de 85% grâce à l'IA qui prédit le fit parfait",
+    heroSubheadline:
+      "TryOnYou crée un jumeau numérique de chaque client pour simuler l'ajustement réel des vêtements — avant l'achat.",
+    heroTrust:
+      "Pilotes en cours avec retailers européens · Technologie brevetée · RGPD compliant",
+    problemTitle: "Le problème",
+    problemBody:
+      "Les retours en e-commerce mode coûtent 550Mds€/an. 52% sont liés à un mauvais ajustement. Chaque retour érode la marge et la confiance client.",
+    solutionTitle: "La solution",
+    solutionBody:
+      "Un jumeau numérique du client + simulation textile IA = certitude d'ajustement avant l'achat. Zéro taille classique, zéro friction.",
+    resultTitle: "Le résultat",
+    resultBody: "-85% retours · +25% conversion · 99,7% précision biométrique",
+    howItWorksTag: "COMMENT ÇA MARCHE",
+    howItWorksTitle: "Une expérience simple pour le client, un impact mesurable pour le retailer",
+    howItWorksSteps: [
+      "Le client se place devant le miroir ou la caméra",
+      "Notre IA crée un jumeau numérique et simule les vêtements en temps réel",
+      "Le client voit le résultat, choisit et achète avec certitude",
+    ],
+    technologyTag: "TECHNOLOGIE",
+    technologyTitle: "IA de simulation textile, pas un filtre photo",
     technologyLead:
-      "TryOnYou transforme l’essayage en un moment éditorial, mesurable et immédiatement monétisable pour les maisons, les corners premium et les investisseurs retail-tech.",
+      "TryOnYou combine jumeau numérique, biométrie et simulation textile pour prédire l'ajustement réel avant l'achat.",
     technologyNarrative:
-      "Du miroir biométrique à la logistique hôtel-boutique, chaque interaction réduit le retour, augmente la conversion et maintient la désirabilité intacte.",
+      "Conçu pour réduire les retours, augmenter la conversion et supporter des déploiements retail à grande échelle.",
     metricLabels: [
-      "Retours éliminés",
-      "Conversion ventes",
+      "Retours réduits",
+      "Conversion augmentée",
       "Précision biométrique",
       "Utilisateurs simultanés",
     ],
-    collectionTag: "APERÇU CURATÉ",
-    collectionTitle: "Une garde-robe Lafayette, sélectionnée pour la démonstration premium.",
-    collectionLead:
-      "Huit pièces iconiques montrent comment Divineo met en scène la matière, la couleur et la précision de coupe sans exposer la taille.",
-    collectionPrecisionLabel: "Précision",
-    collectionFabricLabel: "Matière",
-    collectionProfilesLabel: "Profil d’ajustage",
-    patentTag: "PROPRIÉTÉ INTELLECTUELLE",
-    patentTitle: "Un actif protégé, lisible pour le marché et défendable pour l’investisseur.",
-    patentBody:
-      "Brevet international PCT/EP2025/067317. Huit super-claims. The Snap™, génération adaptative d’avatars, orchestration boutique et signalement de valeur opérationnelle déjà intégrés dans l’expérience commerciale.",
-    contractTag: "CADRE LAFAYETTE",
-    contractTitle: "Une proposition de licence claire, premium et immédiatement négociable.",
-    contractBody:
-      "Le dispositif financier combine activation, exclusivité territoriale et royalties pour rendre la décision simple côté retail tout en préservant la marge haute valeur de TryOnYou.",
-    contractLabels: [
-      "Setup fee",
-      "Exclusivité territoriale",
-      "Royalties sur ventes",
-      "Total immédiat",
-    ],
-    pricingTag: "OFFRE COMMERCIALE",
-    pricingTitle: "Trois portes d’entrée, une même signature de luxe digital.",
-    pricingLead:
-      "De la validation terrain au déploiement multi-site, la structure tarifaire conserve la désirabilité du produit tout en facilitant l’adoption B2B.",
-    pricingCards: [
+    demoTag: "DÉMO",
+    demoTitle: "Demandez une démo enterprise",
+    demoLead:
+      "Parlez-nous de votre catalogue, de vos objectifs et de votre équipe. Nous revenons vers vous avec un plan de démonstration adapté à votre activité.",
+    demoFields: {
+      name: "Nom",
+      company: "Entreprise",
+      email: "Email professionnel",
+      role: "Poste",
+      catalog: "Taille du catalogue",
+      message: "Message",
+    },
+    catalogOptions: ["<1000", "1000-10000", "10000-50000", "50000+"],
+    trustTitle: "Pourquoi les retailers nous font confiance",
+    trustCards: [
       {
-        title: "Pilote Gratuit",
-        price: "1 mois offert",
-        badge: "Découverte",
-        description: "Un mois pour prouver le taux de conversion, affiner le rituel d’essayage et former les équipes boutique.",
-        features: [
-          "1 miroir Divineo en test",
-          "Support onboarding maison",
-          "Mesures conversion & retour",
-        ],
-        cta: "Activer le pilote",
-        action: "pilot",
+        title: "Technologie brevetée",
+        body: "PCT/EP2025/067317",
       },
       {
-        title: "Divineo Pro",
-        price: "299€/mo",
-        badge: "Recommandé",
-        description: "Le format parfait pour un corner premium qui veut vendre plus sans surcharger l’espace ni l’expérience client.",
-        features: [
-          "Assistant P.A.U. orchestré",
-          "Checkout souverain en EUR",
-          "Support commercial prioritaire",
-        ],
-        cta: "Parler au commercial",
-        action: "pro",
-        highlight: true,
+        title: "RGPD compliant",
+        body: "Données biométriques chiffrées et éphémères",
       },
       {
-        title: "Divineo Enterprise",
-        price: "Sur mesure",
-        badge: "Maison & groupe",
-        description: "Pour les réseaux luxe, les grands magasins et les déploiements internationaux avec gouvernance sur mesure.",
-        features: [
-          "Déploiement multi-sites",
-          "Intégration CRM / data room",
-          "Conditions exclusives investisseurs",
-        ],
-        cta: "Ouvrir un mandat",
-        action: "enterprise",
+        title: "Pilotes en cours",
+        body: "Avec retailers européens de premier plan",
+      },
+      {
+        title: "ROI mesurable",
+        body: "Réduction retours prouvée dès le premier mois",
       },
     ],
-    pauTag: "ASSISTANT MAISON",
-    pauTitle: "P.A.U., la présence digitale qui guide, rassure et déclenche l’achat.",
+    pauTag: "P.A.U.",
+    pauTitle: "Votre assistant IA d'essayage pour guider l'expérience client",
     pauLead:
-      "Pensé comme un concierge couture dopé à l’IA, P.A.U. traduit la biométrie en langage désir, puis pousse l’essayage vers le moment décisif: The Snap.",
+      "P.A.U. accompagne le client à chaque étape pour fluidifier l'essayage virtuel et rassurer avant achat.",
     pauBody:
-      "Le guide accompagne la cliente, structure le rituel et transforme l’instant d’hésitation en certitude souveraine sans jamais rompre l’esthétique maison.",
-    pauCapabilityTitle: "Rituel guidé",
+      "Pensé pour le retail mode, P.A.U. aide à capturer les données nécessaires, explique le résultat et accélère la décision d'achat sans friction.",
+    pauCapabilityTitle: "Ce que P.A.U. orchestre",
     pauCapabilities: [
-      "Accueil et préparation émotionnelle",
-      "Scan silhouette avec précision biométrique",
-      "Révélation instantanée d’un nouveau look",
+      "Guidage client pendant le scan",
+      "Assistance pendant la simulation de fit",
+      "Aide à la décision avant achat",
     ],
     pauLiveLabel: "Statut live",
-    pauSnapCta: "Déclencher The Snap",
+    pauSnapCta: "Lancer la démonstration",
     pauStatusReady: "P.A.U. autorisé et prêt à opérer.",
     pauStatusLocked: "P.A.U. attend un nœud autorisé ou un UserCheck actif.",
-    footerLine: "Contact maison: info@tryonyou.app · Paris · Galeries Lafayette · Investor-ready experience",
+    manifestoIntro:
+      "Une vision fondatrice, désormais ramenée à l'essentiel: remplacer l'incertitude de taille par une certitude de fit exploitable pour le retail.",
+    manifestoQuoteLabel: "Vision",
+    footerDescription: "Essayage virtuel IA pour le retail mode",
+    footerPrivacyLabel: "Privacy Policy",
+    footerTermsLabel: "Terms",
   },
   en: {
     navLinks: [
-      { label: "Manifesto", href: "#manifesto" },
       { label: "Technology", href: "#technology" },
-      { label: "Collection", href: "#collection" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "P.A.U.", href: "#pau" },
+      { label: "Solution", href: "#solution" },
+      { label: "Demo", href: "#demo" },
+      { label: "Contact", href: "#contact" },
     ],
-    heroMeta: "Paris · Galeries Lafayette · Digital Maison",
-    heroPanelLabel: "2026 launch",
-    heroPanelTitle: "Frictionless fashion with sovereign fit certainty.",
-    heroPanelBody:
-      "A premium experience designed for assisted selling, hanger-free fitting and immediate activation for luxury maisons in-store.",
-    heroSecondaryCta: "Join the private beta",
-    heroContractKicker: "Commercial framework live",
-    heroContractBody: "Boutique pilot, inauguration activation, P.A.U. orchestration and live payment links are ready for conversion.",
-    manifestoIntro: "Rubén’s founding vision, written as a war cry for Paris 2026.",
-    manifestoQuoteLabel: "War cry",
-    technologyTag: "OPERATIONAL PROOF",
-    technologyTitle: "The 0sizes Era begins inside the selling theatre.",
+    navCta: "Request a demo",
+    heroHeadline: "Reduce fashion returns by 85% with AI that predicts perfect fit",
+    heroSubheadline:
+      "TryOnYou creates a digital twin of each customer to simulate real garment fit — before purchase.",
+    heroTrust:
+      "Pilots underway with European retailers · Patented technology · GDPR compliant",
+    problemTitle: "The problem",
+    problemBody:
+      "Fashion e-commerce returns cost €550B/year. 52% are fit-related. Each return erodes margin and customer trust.",
+    solutionTitle: "The solution",
+    solutionBody:
+      "A digital twin of the customer + AI textile simulation = fit certainty before purchase. Zero classic sizing, zero friction.",
+    resultTitle: "The result",
+    resultBody: "-85% returns · +25% conversion · 99.7% biometric precision",
+    howItWorksTag: "HOW IT WORKS",
+    howItWorksTitle: "Simple for the customer, commercially measurable for the retailer",
+    howItWorksSteps: [
+      "The customer stands in front of the mirror or camera",
+      "Our AI creates a digital twin and simulates garments in real time",
+      "The customer sees the result, chooses and buys with certainty",
+    ],
+    technologyTag: "TECHNOLOGY",
+    technologyTitle: "Textile simulation AI, not a photo filter",
     technologyLead:
-      "TryOnYou turns fitting into an editorial, measurable and instantly monetisable moment for maisons, premium corners and retail-tech investors.",
+      "TryOnYou combines digital twin creation, biometrics and textile simulation to predict real garment fit before purchase.",
     technologyNarrative:
-      "From biometric mirror to hotel-boutique logistics, every interaction cuts returns, lifts conversion and preserves desirability.",
+      "Built to cut returns, increase conversion and support enterprise-scale retail deployments.",
     metricLabels: [
       "Returns reduced",
-      "Sales conversion",
+      "Conversion increased",
       "Biometric precision",
       "Concurrent users",
     ],
-    collectionTag: "CURATED PREVIEW",
-    collectionTitle: "A Lafayette wardrobe selected for premium demonstration.",
-    collectionLead:
-      "Eight iconic pieces show how Divineo stages fabric, colour and precision tailoring without exposing size.",
-    collectionPrecisionLabel: "Precision",
-    collectionFabricLabel: "Fabric",
-    collectionProfilesLabel: "Fit profile",
-    patentTag: "INTELLECTUAL PROPERTY",
-    patentTitle: "A protected asset that is market-readable and investor-defensible.",
-    patentBody:
-      "International patent PCT/EP2025/067317. Eight super-claims. The Snap™, adaptive avatar generation, in-store orchestration and operational value signalling are already integrated into the commercial experience.",
-    contractTag: "LAFAYETTE FRAMEWORK",
-    contractTitle: "A licensing proposal that is clear, premium and immediately negotiable.",
-    contractBody:
-      "The financial setup combines activation, territorial exclusivity and royalties to simplify retail decision-making while preserving TryOnYou’s high-value margin.",
-    contractLabels: [
-      "Setup fee",
-      "Territorial exclusivity",
-      "Sales royalties",
-      "Immediate total",
-    ],
-    pricingTag: "COMMERCIAL OFFER",
-    pricingTitle: "Three entry points, one luxury digital signature.",
-    pricingLead:
-      "From field validation to multi-site deployment, pricing preserves product desirability while making B2B adoption easier.",
-    pricingCards: [
+    demoTag: "DEMO",
+    demoTitle: "Request an enterprise demo",
+    demoLead:
+      "Tell us about your catalog, business goals and team. We will come back with a demo plan tailored to your retail environment.",
+    demoFields: {
+      name: "Name",
+      company: "Company",
+      email: "Professional email",
+      role: "Role",
+      catalog: "Catalog size",
+      message: "Message",
+    },
+    catalogOptions: ["<1000", "1000-10000", "10000-50000", "50000+"],
+    trustTitle: "Why retailers trust us",
+    trustCards: [
       {
-        title: "Pilote Gratuit",
-        price: "1 month free",
-        badge: "Discovery",
-        description: "One month to prove conversion uplift, refine the fitting ritual and train boutique teams.",
-        features: [
-          "1 Divineo mirror in test mode",
-          "Maison onboarding support",
-          "Conversion & return metrics",
-        ],
-        cta: "Activate pilot",
-        action: "pilot",
+        title: "Patented technology",
+        body: "PCT/EP2025/067317",
       },
       {
-        title: "Divineo Pro",
-        price: "299€/mo",
-        badge: "Recommended",
-        description: "The ideal format for a premium corner that wants to sell more without cluttering space or experience.",
-        features: [
-          "Orchestrated P.A.U. assistant",
-          "Sovereign checkout in EUR",
-          "Priority commercial support",
-        ],
-        cta: "Talk to sales",
-        action: "pro",
-        highlight: true,
+        title: "GDPR compliant",
+        body: "Encrypted and ephemeral biometric data",
       },
       {
-        title: "Divineo Enterprise",
-        price: "Custom",
-        badge: "Maison & group",
-        description: "For luxury networks, department stores and international rollouts with bespoke governance.",
-        features: [
-          "Multi-site deployment",
-          "CRM / data room integration",
-          "Exclusive investor terms",
-        ],
-        cta: "Open mandate",
-        action: "enterprise",
+        title: "Pilots underway",
+        body: "With leading European retailers",
+      },
+      {
+        title: "Measurable ROI",
+        body: "Return reduction proven from month one",
       },
     ],
-    pauTag: "MAISON ASSISTANT",
-    pauTitle: "P.A.U., the digital presence that guides, reassures and closes the sale.",
+    pauTag: "P.A.U.",
+    pauTitle: "Your AI fitting assistant that guides customers through the try-on experience",
     pauLead:
-      "Designed like an AI couture concierge, P.A.U. translates biometrics into desire and drives fitting toward the decisive moment: The Snap.",
+      "P.A.U. supports each step of the journey to make virtual try-on clearer, faster and more reassuring before purchase.",
     pauBody:
-      "The guide accompanies the client, structures the ritual and turns hesitation into sovereign certainty without ever breaking the maison aesthetic.",
-    pauCapabilityTitle: "Guided ritual",
+      "Built for fashion retail, P.A.U. helps capture the right inputs, explain the result and accelerate purchase decisions with less friction.",
+    pauCapabilityTitle: "What P.A.U. orchestrates",
     pauCapabilities: [
-      "Welcome and emotional priming",
-      "Silhouette scan with biometric precision",
-      "Instant reveal of a new look",
+      "Customer guidance during scan",
+      "Assistance during fit simulation",
+      "Purchase confidence before checkout",
     ],
     pauLiveLabel: "Live status",
-    pauSnapCta: "Trigger The Snap",
+    pauSnapCta: "Launch the demo",
     pauStatusReady: "P.A.U. is authorised and ready to operate.",
     pauStatusLocked: "P.A.U. is waiting for an authorised node or an active UserCheck.",
-    footerLine: "Maison contact: info@tryonyou.app · Paris · Galeries Lafayette · Investor-ready experience",
+    manifestoIntro:
+      "A founding vision, now distilled to what matters most: replacing size uncertainty with fit certainty retailers can use.",
+    manifestoQuoteLabel: "Vision",
+    footerDescription: "AI-powered virtual try-on for fashion retail",
+    footerPrivacyLabel: "Privacy Policy",
+    footerTermsLabel: "Terms",
   },
   es: {
     navLinks: [
-      { label: "Manifiesto", href: "#manifesto" },
       { label: "Tecnología", href: "#technology" },
-      { label: "Colección", href: "#collection" },
-      { label: "Precios", href: "#pricing" },
-      { label: "P.A.U.", href: "#pau" },
+      { label: "Solución", href: "#solution" },
+      { label: "Demo", href: "#demo" },
+      { label: "Contacto", href: "#contact" },
     ],
-    heroMeta: "París · Galeries Lafayette · Maison Digitale",
-    heroPanelLabel: "Lanzamiento 2026",
-    heroPanelTitle: "Moda sin fricción con certeza soberana de ajuste.",
-    heroPanelBody:
-      "Una experiencia premium pensada para venta asistida, prueba sin perchas ni tallas clásicas y activación inmediata para casas de lujo en tienda.",
-    heroSecondaryCta: "Unirme a la beta privada",
-    heroContractKicker: "Marco comercial activo",
-    heroContractBody: "Piloto boutique, activación inaugural, orquestación P.A.U. y enlaces de pago live listos para convertir.",
-    manifestoIntro: "La visión fundacional de Rubén, escrita como un grito de guerra para París 2026.",
-    manifestoQuoteLabel: "War cry",
-    technologyTag: "PRUEBA OPERATIVA",
-    technologyTitle: "La era 0sizes empieza dentro del teatro de venta.",
+    navCta: "Solicitar una demo",
+    heroHeadline: "Reduce devoluciones en moda un 85% con IA que predice el fit perfecto",
+    heroSubheadline:
+      "TryOnYou crea un gemelo digital de cada cliente para simular el ajuste real de las prendas — antes de la compra.",
+    heroTrust:
+      "Pilotos en curso con retailers europeos · Tecnología patentada · RGPD compliant",
+    problemTitle: "El problema",
+    problemBody:
+      "Las devoluciones en e-commerce moda cuestan 550.000M€/año. El 52% son por mal ajuste. Cada devolución erosiona el margen y la confianza del cliente.",
+    solutionTitle: "La solución",
+    solutionBody:
+      "Un gemelo digital del cliente + simulación textil IA = certeza de ajuste antes de la compra. Cero talla clásica, cero fricción.",
+    resultTitle: "El resultado",
+    resultBody: "-85% devoluciones · +25% conversión · 99,7% precisión biométrica",
+    howItWorksTag: "CÓMO FUNCIONA",
+    howItWorksTitle: "Simple para el cliente, medible para el retailer",
+    howItWorksSteps: [
+      "El cliente se coloca frente al espejo o cámara",
+      "Nuestra IA crea un gemelo digital y simula las prendas en tiempo real",
+      "El cliente ve el resultado, elige y compra con certeza",
+    ],
+    technologyTag: "TECNOLOGÍA",
+    technologyTitle: "IA de simulación textil, no un filtro de foto",
     technologyLead:
-      "TryOnYou convierte la prueba en un momento editorial, medible y monetizable al instante para maisons, corners premium e inversores retail-tech.",
+      "TryOnYou combina gemelo digital, biometría y simulación textil para predecir el ajuste real antes de la compra.",
     technologyNarrative:
-      "Del espejo biométrico a la logística hotel-boutique, cada interacción reduce devoluciones, eleva la conversión y mantiene intacto el deseo.",
+      "Pensado para reducir devoluciones, elevar conversión y soportar despliegues retail a escala enterprise.",
     metricLabels: [
       "Devoluciones reducidas",
-      "Conversión de ventas",
+      "Conversión aumentada",
       "Precisión biométrica",
-      "Usuarios simultáneos",
+      "Usuarios concurrentes",
     ],
-    collectionTag: "SELECCIÓN CURADA",
-    collectionTitle: "Un armario Lafayette seleccionado para una demostración premium.",
-    collectionLead:
-      "Ocho piezas icónicas muestran cómo Divineo pone en escena tejido, color y precisión de patronaje sin exponer la talla.",
-    collectionPrecisionLabel: "Precisión",
-    collectionFabricLabel: "Tejido",
-    collectionProfilesLabel: "Perfil de ajuste",
-    patentTag: "PROPIEDAD INTELECTUAL",
-    patentTitle: "Un activo protegido, legible para el mercado y defendible para el inversor.",
-    patentBody:
-      "Patente internacional PCT/EP2025/067317. Ocho super-claims. The Snap™, generación adaptativa de avatares, orquestación boutique y señal operativa de valor ya integrados en la experiencia comercial.",
-    contractTag: "MARCO LAFAYETTE",
-    contractTitle: "Una propuesta de licencia clara, premium e inmediatamente negociable.",
-    contractBody:
-      "La estructura financiera combina activación, exclusividad territorial y royalties para simplificar la decisión del retail preservando el margen de alto valor de TryOnYou.",
-    contractLabels: [
-      "Setup fee",
-      "Exclusividad territorial",
-      "Royalties sobre ventas",
-      "Total inmediato",
-    ],
-    pricingTag: "OFERTA COMERCIAL",
-    pricingTitle: "Tres puertas de entrada, una misma firma de lujo digital.",
-    pricingLead:
-      "Desde la validación en tienda hasta el despliegue multi-site, el pricing mantiene la deseabilidad del producto y facilita la adopción B2B.",
-    pricingCards: [
+    demoTag: "DEMO",
+    demoTitle: "Solicita una demo enterprise",
+    demoLead:
+      "Cuéntanos tu catálogo, tus objetivos y tu equipo. Volveremos con un plan de demo adaptado a tu operación retail.",
+    demoFields: {
+      name: "Nombre",
+      company: "Empresa",
+      email: "Email profesional",
+      role: "Cargo",
+      catalog: "Tamaño del catálogo",
+      message: "Mensaje",
+    },
+    catalogOptions: ["<1000", "1000-10000", "10000-50000", "50000+"],
+    trustTitle: "Por qué los retailers confían en nosotros",
+    trustCards: [
       {
-        title: "Pilote Gratuit",
-        price: "1 mes gratis",
-        badge: "Descubrimiento",
-        description: "Un mes para demostrar la subida de conversión, afinar el ritual de prueba y formar a los equipos de tienda.",
-        features: [
-          "1 espejo Divineo en test",
-          "Soporte de onboarding maison",
-          "Métricas de conversión y devolución",
-        ],
-        cta: "Activar piloto",
-        action: "pilot",
+        title: "Tecnología patentada",
+        body: "PCT/EP2025/067317",
       },
       {
-        title: "Divineo Pro",
-        price: "299€/mo",
-        badge: "Recomendado",
-        description: "El formato ideal para un corner premium que quiere vender más sin saturar el espacio ni la experiencia.",
-        features: [
-          "Asistente P.A.U. orquestado",
-          "Checkout soberano en EUR",
-          "Soporte comercial prioritario",
-        ],
-        cta: "Hablar con ventas",
-        action: "pro",
-        highlight: true,
+        title: "RGPD compliant",
+        body: "Datos biométricos cifrados y efímeros",
       },
       {
-        title: "Divineo Enterprise",
-        price: "A medida",
-        badge: "Maison & grupo",
-        description: "Para redes de lujo, grandes almacenes y despliegues internacionales con gobernanza a medida.",
-        features: [
-          "Despliegue multi-site",
-          "Integración CRM / data room",
-          "Condiciones exclusivas para inversores",
-        ],
-        cta: "Abrir mandato",
-        action: "enterprise",
+        title: "Pilotos en curso",
+        body: "Con retailers europeos de primer nivel",
+      },
+      {
+        title: "ROI medible",
+        body: "Reducción de devoluciones probada desde el primer mes",
       },
     ],
-    pauTag: "ASISTENTE MAISON",
-    pauTitle: "P.A.U., la presencia digital que guía, tranquiliza y cierra la venta.",
+    pauTag: "P.A.U.",
+    pauTitle: "Your AI fitting assistant that guides customers through the try-on experience",
     pauLead:
-      "Pensado como un concierge couture impulsado por IA, P.A.U. traduce la biometría en deseo y lleva la prueba al momento decisivo: The Snap.",
+      "P.A.U. acompaña cada paso para hacer la prueba virtual más clara, rápida y confiable antes de comprar.",
     pauBody:
-      "La guía acompaña a la clienta, estructura el ritual y transforma la duda en certeza soberana sin romper jamás la estética de la maison.",
-    pauCapabilityTitle: "Ritual guiado",
+      "Diseñado para retail moda, P.A.U. ayuda a capturar los datos necesarios, explicar el resultado y acelerar la decisión de compra con menos fricción.",
+    pauCapabilityTitle: "Qué orquesta P.A.U.",
     pauCapabilities: [
-      "Bienvenida y preparación emocional",
-      "Escaneo de silueta con precisión biométrica",
-      "Revelación instantánea de un nuevo look",
+      "Guía al cliente durante el escaneo",
+      "Asistencia durante la simulación del fit",
+      "Certeza antes del checkout",
     ],
-    pauLiveLabel: "Estado live",
-    pauSnapCta: "Disparar The Snap",
-    pauStatusReady: "P.A.U. está autorizado y listo para operar.",
+    pauLiveLabel: "Estado en vivo",
+    pauSnapCta: "Lanzar la demo",
+    pauStatusReady: "P.A.U. autorizado y listo para operar.",
     pauStatusLocked: "P.A.U. espera un nodo autorizado o un UserCheck activo.",
-    footerLine: "Contacto maison: info@tryonyou.app · París · Galeries Lafayette · Investor-ready experience",
+    manifestoIntro:
+      "Una visión fundacional, ahora llevada a lo esencial: sustituir la incertidumbre de talla por certeza de fit utilizable para retail.",
+    manifestoQuoteLabel: "Visión",
+    footerDescription: "Virtual try-on con IA para retail moda",
+    footerPrivacyLabel: "Privacy Policy",
+    footerTermsLabel: "Terms",
   },
 };
 
@@ -782,6 +722,15 @@ function AnimatedMetric({
   );
 }
 
+type DemoFormState = {
+  name: string;
+  company: string;
+  email: string;
+  role: string;
+  catalogSize: string;
+  message: string;
+};
+
 export default function App() {
   const pauSovereignBoot = useRef(false);
   if (!pauSovereignBoot.current) {
@@ -797,15 +746,24 @@ export default function App() {
   const [emailHero, setEmailHero] = useState<string>("");
   const [pauInaugurationWhisper, setPauInaugurationWhisper] = useState("");
   const [navScrolled, setNavScrolled] = useState(false);
+  const [demoForm, setDemoForm] = useState<DemoFormState>({
+    name: "",
+    company: "",
+    email: "",
+    role: "",
+    catalogSize: "",
+    message: "",
+  });
+  const [demoStatus, setDemoStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const heroReveal = useScrollReveal<HTMLElement>();
-  const manifestoReveal = useScrollReveal<HTMLElement>();
+  const solutionReveal = useScrollReveal<HTMLElement>();
   const technologyReveal = useScrollReveal<HTMLElement>();
-  const collectionReveal = useScrollReveal<HTMLElement>();
-  const patentReveal = useScrollReveal<HTMLElement>();
-  const pricingReveal = useScrollReveal<HTMLElement>();
+  const demoReveal = useScrollReveal<HTMLElement>();
+  const trustReveal = useScrollReveal<HTMLElement>();
   const pauReveal = useScrollReveal<HTMLElement>();
+  const manifestoReveal = useScrollReveal<HTMLElement>();
 
   /** Pre-scan hook — shown once per session until dismissed or auto-timeout. */
   const [preScanVisible, setPreScanVisible] = useState(
@@ -1022,6 +980,13 @@ export default function App() {
         ? "Galeries Lafayette · 75009"
         : "Paris pilot";
 
+  const scrollToSelector = (selector: string) => {
+    const target = document.querySelector<HTMLElement>(selector);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", selector);
+  };
+
   const handleAnchorClick = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -1049,7 +1014,7 @@ export default function App() {
   useEffect(() => {
     const updateNavbarState = () => {
       const heroHeight = heroSectionRef.current?.offsetHeight ?? window.innerHeight * 0.8;
-      setNavScrolled(window.scrollY > heroHeight * 0.55);
+      setNavScrolled(window.scrollY > heroHeight * 0.35);
     };
 
     updateNavbarState();
@@ -1061,6 +1026,55 @@ export default function App() {
       window.removeEventListener("resize", updateNavbarState);
     };
   }, []);
+
+  const handleDemoInput = (
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = event.target;
+    setDemoForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleDemoSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setDemoStatus("submitting");
+
+    try {
+      const response = await fetch("/api/demo-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: demoForm.name.trim(),
+          company: demoForm.company.trim(),
+          email: demoForm.email.trim(),
+          role: demoForm.role.trim(),
+          catalog_size: demoForm.catalogSize.trim() || undefined,
+          message: demoForm.message.trim() || undefined,
+          source: "landing_demo_form",
+          locale,
+          ts: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("demo-request-failed");
+      }
+
+      setDemoStatus("success");
+      setDemoForm({
+        name: "",
+        company: "",
+        email: "",
+        role: "",
+        catalogSize: "",
+        message: "",
+      });
+    } catch {
+      setDemoStatus("error");
+    }
+  };
 
   return (
     <div
@@ -1103,7 +1117,6 @@ export default function App() {
               <span className="site-nav__monogram">TY</span>
               <span>
                 <strong>TRYONYOU</strong>
-                <em>Maison Digitale</em>
               </span>
             </a>
 
@@ -1115,17 +1128,23 @@ export default function App() {
               ))}
             </nav>
 
-            <div className="hero-locale-switch" role="group" aria-label={copy.localeLabel}>
-              {SUPPORTED_LOCALES.map((loc) => (
-                <button
-                  key={loc}
-                  type="button"
-                  onClick={() => setLocale(loc)}
-                  data-active={locale === loc ? "1" : undefined}
-                >
-                  {loc.toUpperCase()}
-                </button>
-              ))}
+            <div className="site-nav__actions">
+              <div className="hero-locale-switch" role="group" aria-label={copy.localeLabel}>
+                {SUPPORTED_LOCALES.map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLocale(loc)}
+                    data-active={locale === loc ? "1" : undefined}
+                  >
+                    {loc.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <button type="button" className="btn-primary site-nav__cta" onClick={() => scrollToSelector("#demo")}>
+                {pageCopy.navCta}
+              </button>
             </div>
           </div>
         </header>
@@ -1137,178 +1156,64 @@ export default function App() {
             className="landing-section hero-section"
             data-visible={heroReveal.visible ? "1" : undefined}
           >
-            <div className="hero-layout">
-              <div className="hero-copy-col">
-                <div className="hero-brand-row">
-                  <div className="hero-brand-lockup">
-                    {BRANDS_MAESTROS.map((brand) => (
-                      <span key={brand}>{brand}</span>
-                    ))}
-                  </div>
-                  <span className="hero-meta-chip">{pageCopy.heroMeta}</span>
-                </div>
-
-                <p className="section-tag">{copy.badge}</p>
-                <h1 className="hero-title">{copy.heroTitle}</h1>
-                <p className="hero-lead">{copy.heroLead}</p>
-
-                <div className="hero-capture-row">
-                  <input
-                    type="email"
-                    value={emailHero}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setEmailHero(e.target.value)
-                    }
-                    placeholder={copy.heroEmailPlaceholder}
-                    className="hero-email-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void onHeroSubmit()}
-                    className="btn-primary"
-                  >
-                    {copy.heroCta}
-                  </button>
-                </div>
-
-                <div className="hero-action-row">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onMouseEnter={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
-                    onFocus={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
-                    onClick={onInaugurationStripeCharge}
-                    aria-label={copy.inaugurationAriaLabel}
-                    title={pauInaugurationWhisper || copy.inaugurationTitle}
-                  >
-                    {copy.inaugurationCta}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-tertiary"
-                    onClick={() => void postBetaWaitlist(copy)}
-                  >
-                    {pageCopy.heroSecondaryCta}
-                  </button>
-                </div>
-
-                {pauInaugurationWhisper ? (
-                  <p className="hero-whisper">PAU · {pauInaugurationWhisper}</p>
-                ) : null}
-
-                <div className="hero-house-phrases">
-                  {copy.housePhrases.map((phrase) => (
-                    <p key={phrase}>« {phrase} »</p>
-                  ))}
-                </div>
-
-                <div className="hero-link-row">
-                  <a
-                    href={getDivineoCheckoutUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hero-inline-link"
-                  >
-                    {SOVEREIGN_FIT_LABEL}
-                  </a>
-                  <span>{copy.checkoutHint}</span>
-                </div>
-              </div>
-
-              <motion.div
-                className="hero-feature-card"
-                initial={{ opacity: 0, y: 26 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                <span className="hero-feature-card__label">{pageCopy.heroPanelLabel}</span>
-                <h2>{pageCopy.heroPanelTitle}</h2>
-                <p>{pageCopy.heroPanelBody}</p>
-
-                <div className="hero-status-grid">
-                  <article>
-                    <span>{pageCopy.heroContractKicker}</span>
-                    <strong>{pauDistrictLabel}</strong>
-                    <p>{pageCopy.heroContractBody}</p>
-                  </article>
-                  <article>
-                    <span>Jules lane</span>
-                    <strong>{julesLane}</strong>
-                    <p>{copy.manifestoLafayette}</p>
-                  </article>
-                  <article>
-                    <span>Elastic signal</span>
-                    <strong>{elasticLabel}</strong>
-                    <p>{pauStarted ? pageCopy.pauStatusReady : pageCopy.pauStatusLocked}</p>
-                  </article>
-                </div>
-
-                <div className="hero-media-grid">
-                  <article>
-                    <h3>{copy.videoOneTitle}</h3>
-                    <video controls preload="metadata" playsInline>
-                      <source src="/videos/pau_sales_intro.mp4" type="video/mp4" />
-                    </video>
-                    <p>{copy.videoOneBody}</p>
-                  </article>
-                  <article>
-                    <h3>{copy.videoTwoTitle}</h3>
-                    <video controls preload="metadata" playsInline>
-                      <source src="/videos/pau_sales_close.mp4" type="video/mp4" />
-                    </video>
-                    <p>{copy.videoTwoBody}</p>
-                  </article>
-                </div>
-              </motion.div>
-            </div>
+            <motion.div
+              className="hero-card"
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut" }}
+            >
+              <h1 className="hero-title">{pageCopy.heroHeadline}</h1>
+              <p className="hero-lead">{pageCopy.heroSubheadline}</p>
+              <button type="button" className="btn-primary btn-primary--hero" onClick={() => scrollToSelector("#demo")}>
+                {pageCopy.navCta}
+              </button>
+              <p className="hero-trust-line">{pageCopy.heroTrust}</p>
+            </motion.div>
           </section>
 
           <section
-            id="manifesto"
-            ref={manifestoReveal.ref}
-            className="landing-section manifesto-section"
-            data-visible={manifestoReveal.visible ? "1" : undefined}
+            id="solution"
+            ref={solutionReveal.ref}
+            className="landing-section solution-section"
+            data-visible={solutionReveal.visible ? "1" : undefined}
           >
-            <div className="section-heading section-heading--centered">
-              <p className="section-tag">{copy.manifestoTag}</p>
-              <h2>{copy.manifestoTitle}</h2>
-              <p>{pageCopy.manifestoIntro}</p>
-            </div>
-
-            <div className="manifesto-grid">
-              <article
-                className="manifesto-panel manifesto-panel--lead"
-                style={{ ["--manifesto-delay" as const]: "0.08s" }}
-              >
-                <span className="manifesto-panel__label">{pageCopy.manifestoQuoteLabel}</span>
-                <blockquote>{copy.manifestoBody}</blockquote>
+            <div className="psr-grid">
+              <article className="info-card info-card--problem">
+                <span className="info-card__eyebrow">01</span>
+                <h2>{pageCopy.problemTitle}</h2>
+                <p>{pageCopy.problemBody}</p>
               </article>
-              <article
-                className="manifesto-panel"
-                style={{ ["--manifesto-delay" as const]: "0.16s" }}
-              >
-                <p>{copy.manifestoAccumulation}</p>
+              <article className="info-card info-card--solution">
+                <span className="info-card__eyebrow">02</span>
+                <h2>{pageCopy.solutionTitle}</h2>
+                <p>{pageCopy.solutionBody}</p>
               </article>
-              <article
-                className="manifesto-panel"
-                style={{ ["--manifesto-delay" as const]: "0.24s" }}
-              >
-                <p>{copy.manifestoColor}</p>
-              </article>
-              <article
-                className="manifesto-panel manifesto-panel--accent"
-                style={{ ["--manifesto-delay" as const]: "0.32s" }}
-              >
-                <p>{copy.manifestoIdentity}</p>
+              <article className="info-card info-card--result">
+                <span className="info-card__eyebrow">03</span>
+                <h2>{pageCopy.resultTitle}</h2>
+                <p>{pageCopy.resultBody}</p>
               </article>
             </div>
 
-            <div className="manifesto-slogan-wrap">
-              <p className="manifesto-cta">{copy.manifestoCta}</p>
-              <p className="manifesto-slogan">{copy.manifestoSlogan}</p>
-              <div className="manifesto-meta">
-                <span>{copy.manifestoHashtags}</span>
-                <span>{copy.manifestoLafayette}</span>
+            <div className="how-it-works-card">
+              <div className="section-heading section-heading--centered">
+                <p className="section-tag">{pageCopy.howItWorksTag}</p>
+                <h2>{pageCopy.howItWorksTitle}</h2>
+              </div>
+
+              <div className="steps-grid">
+                {pageCopy.howItWorksSteps.map((step, index) => (
+                  <article key={step} className="step-card">
+                    <span className="step-card__number">0{index + 1}</span>
+                    <p>{step}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="section-cta-center">
+                <button type="button" className="btn-primary" onClick={() => scrollToSelector("#demo")}>
+                  {pageCopy.navCta}
+                </button>
               </div>
             </div>
           </section>
@@ -1331,7 +1236,7 @@ export default function App() {
                   <source src="/assets/videos/inauguration_theatre.mp4" type="video/mp4" />
                 </video>
                 <div className="technology-video-card__caption">
-                  <strong>THE 0SIZES ERA</strong>
+                  <strong>ZERO-SIZE PROTOCOL</strong>
                   <span>{pageCopy.technologyNarrative}</span>
                 </div>
               </div>
@@ -1353,137 +1258,143 @@ export default function App() {
           </section>
 
           <section
-            id="collection"
-            ref={collectionReveal.ref}
-            className="landing-section collection-section"
-            data-visible={collectionReveal.visible ? "1" : undefined}
+            id="demo"
+            ref={demoReveal.ref}
+            className="landing-section demo-section"
+            data-visible={demoReveal.visible ? "1" : undefined}
           >
-            <div className="section-heading section-heading--centered">
-              <p className="section-tag">{pageCopy.collectionTag}</p>
-              <h2>{pageCopy.collectionTitle}</h2>
-              <p>{pageCopy.collectionLead}</p>
-            </div>
+            <div className="demo-layout">
+              <div className="section-heading">
+                <p className="section-tag">{pageCopy.demoTag}</p>
+                <h2>{pageCopy.demoTitle}</h2>
+                <p>{pageCopy.demoLead}</p>
+              </div>
 
-            <div className="collection-grid">
-              {lafayetteCollection.map((garment) => (
-                <article key={garment.id} className="collection-card">
-                  <div className="collection-card__media">
-                    <img src={garment.image} alt={`${garment.brand} ${garment.name}`} loading="lazy" />
-                    <span className="collection-card__tag">{garment.tag}</span>
-                  </div>
-                  <div className="collection-card__body">
-                    <div className="collection-card__topline">
-                      <span>{garment.brand}</span>
-                      <strong>{formatEurAmount(garment.price, locale)}</strong>
-                    </div>
-                    <h3>{garment.name}</h3>
-                    <p>{garment.category}</p>
-                    <div className="collection-card__meta">
-                      <span>{pageCopy.collectionFabricLabel}</span>
-                      <strong>{garment.fabric}</strong>
-                    </div>
-                    <div className="collection-card__meta">
-                      <span>{pageCopy.collectionPrecisionLabel}</span>
-                      <strong>{garment.precision.toFixed(1)}%</strong>
-                    </div>
-                    <div className="collection-card__swatch-row">
-                      <span className="collection-card__swatch" style={{ backgroundColor: garment.color }} />
-                      <span>{garment.color_name}</span>
-                    </div>
-                    <div className="collection-card__profiles">
-                      <span>{pageCopy.collectionProfilesLabel}</span>
-                      <ul>
-                        {garment.fit_profile.map((profile) => (
-                          <li key={profile}>{profile}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+              <form className="demo-form-card" onSubmit={handleDemoSubmit}>
+                <div className="demo-form-grid">
+                  <label className="form-field">
+                    <span>{pageCopy.demoFields.name}</span>
+                    <input
+                      type="text"
+                      name="name"
+                      value={demoForm.name}
+                      onChange={handleDemoInput}
+                      required
+                    />
+                  </label>
 
-          <section
-            id="patent-contract"
-            ref={patentReveal.ref}
-            className="landing-section patent-section"
-            data-visible={patentReveal.visible ? "1" : undefined}
-          >
-            <div className="patent-layout">
-              <article className="patent-card">
-                <p className="section-tag">{pageCopy.patentTag}</p>
-                <h2>{pageCopy.patentTitle}</h2>
-                <p>{pageCopy.patentBody}</p>
-                <div className="patent-card__chips">
-                  <span>PCT/EP2025/067317</span>
-                  <span>8 Super-Claims</span>
-                  <span>17M€ — 26M€</span>
-                </div>
-              </article>
+                  <label className="form-field">
+                    <span>{pageCopy.demoFields.company}</span>
+                    <input
+                      type="text"
+                      name="company"
+                      value={demoForm.company}
+                      onChange={handleDemoInput}
+                      required
+                    />
+                  </label>
 
-              <article className="contract-card">
-                <p className="section-tag">{pageCopy.contractTag}</p>
-                <h2>{pageCopy.contractTitle}</h2>
-                <p>{pageCopy.contractBody}</p>
+                  <label className="form-field">
+                    <span>{pageCopy.demoFields.email}</span>
+                    <input
+                      type="email"
+                      name="email"
+                      value={demoForm.email}
+                      onChange={handleDemoInput}
+                      required
+                    />
+                  </label>
 
-                <div className="contract-grid">
-                  {[
-                    { label: pageCopy.contractLabels[0], value: formatEurAmount(12500, locale) },
-                    { label: pageCopy.contractLabels[1], value: formatEurAmount(15000, locale) },
-                    { label: pageCopy.contractLabels[2], value: "8%" },
-                    { label: pageCopy.contractLabels[3], value: formatEurAmount(27500, locale) },
-                  ].map((item) => (
-                    <div key={item.label} className="contract-metric">
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
-                    </div>
-                  ))}
+                  <label className="form-field">
+                    <span>{pageCopy.demoFields.role}</span>
+                    <input
+                      type="text"
+                      name="role"
+                      value={demoForm.role}
+                      onChange={handleDemoInput}
+                      required
+                    />
+                  </label>
+
+                  <label className="form-field">
+                    <span>{pageCopy.demoFields.catalog}</span>
+                    <select
+                      name="catalogSize"
+                      value={demoForm.catalogSize}
+                      onChange={handleDemoInput}
+                    >
+                      <option value="">{copy.demoFormCatalogPlaceholder}</option>
+                      {pageCopy.catalogOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="form-field form-field--full">
+                    <span>{pageCopy.demoFields.message}</span>
+                    <textarea
+                      name="message"
+                      value={demoForm.message}
+                      onChange={handleDemoInput}
+                      rows={5}
+                    />
+                  </label>
                 </div>
 
-                <button type="button" className="btn-secondary btn-secondary--full" onClick={onLafayetteStripeCharge}>
-                  {copy.lafayetteCta}
-                </button>
-              </article>
-            </div>
-          </section>
-
-          <section
-            id="pricing"
-            ref={pricingReveal.ref}
-            className="landing-section pricing-section"
-            data-visible={pricingReveal.visible ? "1" : undefined}
-          >
-            <div className="section-heading section-heading--centered">
-              <p className="section-tag">{pageCopy.pricingTag}</p>
-              <h2>{pageCopy.pricingTitle}</h2>
-              <p>{pageCopy.pricingLead}</p>
-            </div>
-
-            <div className="pricing-grid">
-              {pageCopy.pricingCards.map((card) => (
-                <article
-                  key={card.title}
-                  className={`pricing-card${card.highlight ? " pricing-card--highlight" : ""}`}
-                >
-                  <span className="pricing-card__badge">{card.badge}</span>
-                  <h3>{card.title}</h3>
-                  <p className="pricing-card__price">{card.price}</p>
-                  <p className="pricing-card__description">{card.description}</p>
-                  <ul className="pricing-card__features">
-                    {card.features.map((feature) => (
-                      <li key={feature}>{feature}</li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    className={card.highlight ? "btn-primary btn-primary--full" : "btn-secondary btn-secondary--full"}
-                    onClick={() => handlePricingAction(card.action)}
-                  >
-                    {card.cta}
+                <div className="demo-form-footer">
+                  <button type="submit" className="btn-primary btn-primary--full" disabled={demoStatus === "submitting"}>
+                    {demoStatus === "submitting" ? copy.demoFormSubmitting : pageCopy.navCta}
                   </button>
-                </article>
+
+                  {demoStatus === "success" ? (
+                    <div className="demo-form-message demo-form-message--success" role="status">
+                      <strong>{copy.demoFormSuccessTitle}</strong>
+                      <p>{copy.demoFormSuccessBody}</p>
+                    </div>
+                  ) : null}
+
+                  {demoStatus === "error" ? (
+                    <div className="demo-form-message demo-form-message--error" role="alert">
+                      <strong>{copy.demoFormError}</strong>
+                      <p>{copy.demoFormRetry}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section
+            id="trust"
+            ref={trustReveal.ref}
+            className="landing-section trust-section"
+            data-visible={trustReveal.visible ? "1" : undefined}
+          >
+            <div className="section-heading section-heading--centered">
+              <h2>{pageCopy.trustTitle}</h2>
+            </div>
+
+            <div className="trust-grid">
+              {pageCopy.trustCards.map((card, index) => (
+                <motion.article
+                  key={card.title}
+                  className="trust-card"
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={trustReveal.visible ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.45, delay: index * 0.08 }}
+                >
+                  <h3>{card.title}</h3>
+                  <p>{card.body}</p>
+                </motion.article>
               ))}
+            </div>
+
+            <div className="section-cta-center">
+              <button type="button" className="btn-primary" onClick={() => scrollToSelector("#demo")}>
+                {pageCopy.navCta}
+              </button>
             </div>
           </section>
 
@@ -1545,7 +1456,7 @@ export default function App() {
                 <div className="pau-visual-card__status">
                   <span>{pageCopy.pauLiveLabel}</span>
                   <strong>{pauStarted ? pageCopy.pauStatusReady : pageCopy.pauStatusLocked}</strong>
-                  <p>{julesLane}</p>
+                  <p>{pauDistrictLabel}</p>
                 </div>
               </div>
 
@@ -1575,10 +1486,49 @@ export default function App() {
                   <button type="button" className="btn-primary" onClick={theSnap} disabled={!pauStarted}>
                     {pageCopy.pauSnapCta}
                   </button>
-                  <button type="button" className="btn-tertiary" onClick={() => void postBetaWaitlist(copy)}>
-                    {copy.betaCta}
+                  <button type="button" className="btn-secondary" onClick={() => scrollToSelector("#demo")}>
+                    {pageCopy.navCta}
                   </button>
                 </div>
+                <p className="pau-copy-card__meta">{julesLane}</p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="manifesto"
+            ref={manifestoReveal.ref}
+            className="landing-section manifesto-section manifesto-section--subtle"
+            data-visible={manifestoReveal.visible ? "1" : undefined}
+          >
+            <div className="section-heading section-heading--centered">
+              <p className="section-tag">{copy.manifestoTag}</p>
+              <h2>{copy.manifestoTitle}</h2>
+              <p>{pageCopy.manifestoIntro}</p>
+            </div>
+
+            <div className="manifesto-grid manifesto-grid--compact">
+              <article className="manifesto-panel manifesto-panel--lead">
+                <span className="manifesto-panel__label">{pageCopy.manifestoQuoteLabel}</span>
+                <blockquote>{copy.manifestoBody}</blockquote>
+              </article>
+              <article className="manifesto-panel">
+                <p>{copy.manifestoAccumulation}</p>
+              </article>
+              <article className="manifesto-panel">
+                <p>{copy.manifestoColor}</p>
+              </article>
+              <article className="manifesto-panel manifesto-panel--accent">
+                <p>{copy.manifestoIdentity}</p>
+              </article>
+            </div>
+
+            <div className="manifesto-slogan-wrap">
+              <p className="manifesto-cta">{copy.manifestoCta}</p>
+              <p className="manifesto-slogan">{copy.manifestoSlogan}</p>
+              <div className="manifesto-meta">
+                <span>{copy.manifestoHashtags}</span>
+                <span>{copy.manifestoLafayette}</span>
               </div>
             </div>
           </section>
@@ -1592,7 +1542,7 @@ export default function App() {
           headerExtra={
             <button
               type="button"
-              onClick={() => void postBetaWaitlist(copy)}
+              onClick={() => scrollToSelector("#demo")}
               style={{
                 marginTop: 16,
                 padding: "10px 22px",
@@ -1608,30 +1558,29 @@ export default function App() {
                 transition: "all 0.3s ease",
               }}
             >
-              {copy.betaCta}
+              {pageCopy.navCta}
             </button>
           }
         />
 
-        <footer className="app-footer">
+        <footer id="contact" className="app-footer">
           <div className="app-footer__top">
             <div>
               <strong>TRYONYOU</strong>
-              <p>{pageCopy.footerLine}</p>
+              <p>{pageCopy.footerDescription}</p>
               <p className="app-footer__tagline">PA, PA, PA. LET'S BE THE TENDENCY.</p>
             </div>
             <div className="app-footer__links">
               <a href="mailto:info@tryonyou.app">info@tryonyou.app</a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.linkedin.com/company/tryonyou" target="_blank" rel="noopener noreferrer">
                 LinkedIn
               </a>
-              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
-                Instagram
-              </a>
+              <a href="/privacy-policy">{pageCopy.footerPrivacyLabel}</a>
+              <a href="/terms">{pageCopy.footerTermsLabel}</a>
             </div>
           </div>
           <div className="app-legal">
-            SIRET 94361019600017 · PCT/EP2025/067317 · TRYONYOU V11 SOVEREIGN
+            SIRET 94361019600017 · PCT/EP2025/067317
           </div>
         </footer>
       </div>

@@ -37,6 +37,69 @@ def _cors(resp):
     return resp
 
 
+def _append_demo_request(body):
+    target = Path("/tmp/tryonyou_demo_requests.jsonl")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(body, ensure_ascii=False) + "\n")
+
+
+@app.route("/api/demo-request", methods=["OPTIONS"])
+@app.route("/demo-request", methods=["OPTIONS"])
+def demo_request_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/demo-request", methods=["POST"])
+@app.route("/demo-request", methods=["POST"])
+def demo_request():
+    body = request.get_json(force=True, silent=True) or {}
+    normalized = {
+        "name": str(body.get("name", "")).strip(),
+        "company": str(body.get("company", "")).strip(),
+        "email": str(body.get("email", "")).strip(),
+        "role": str(body.get("role", "")).strip(),
+        "catalog_size": str(body.get("catalog_size", "")).strip(),
+        "message": str(body.get("message", "")).strip(),
+        "source": str(body.get("source", "landing_demo_form")).strip() or "landing_demo_form",
+        "locale": str(body.get("locale", "fr")).strip() or "fr",
+        "ts": str(body.get("ts", "")).strip(),
+        "intent": "demo_request",
+        "protocol": "zero_size",
+        "siret": "94361019600017",
+        "patent": "PCT/EP2025/067317",
+    }
+
+    required = [normalized["name"], normalized["company"], normalized["email"], normalized["role"]]
+    if not all(required):
+        return _cors(jsonify({
+            "status": "error",
+            "message": "missing_required_fields",
+        })), 400
+
+    orchestration = False
+    orchestration_error = ""
+
+    try:
+        _append_demo_request(normalized)
+        try:
+            orchestrate_beta_waitlist(normalized)
+            orchestration = True
+        except Exception as exc:
+            orchestration_error = str(exc)
+        return _cors(jsonify({
+            "status": "ok",
+            "demo_request_saved": True,
+            "orchestration": orchestration,
+            "orchestration_error": orchestration_error,
+        })), 200
+    except Exception as exc:
+        return _cors(jsonify({
+            "status": "error",
+            "message": str(exc),
+        })), 500
+
+
 @app.route("/api/waitlist_beta", methods=["OPTIONS"])
 @app.route("/waitlist_beta", methods=["OPTIONS"])
 def waitlist_beta_options():
