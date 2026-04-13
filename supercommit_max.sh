@@ -178,6 +178,11 @@ _banner
 
 _stamps_ok "$COMMIT_MSG" || fail "Mensaje de commit sin sellos requeridos."
 
+# Si hay intención de deploy, valida token al inicio para no bloquear flujos --fast.
+if [[ "$MODE_DEPLOY" == true && -z "${VERCEL_TOKEN:-}" ]]; then
+  fail "VERCEL_TOKEN no configurado. Exporta la variable o quita --deploy."
+fi
+
 # ── Fase 1: Validaciones & Build (salvo --fast) ────────────────
 if [[ "$MODE_FAST" == false ]]; then
 
