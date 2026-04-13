@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 
-import requests  # noqa: F401  # reserved for future task-sync HTTP calls
 from dotenv import load_dotenv
 
 load_dotenv()
