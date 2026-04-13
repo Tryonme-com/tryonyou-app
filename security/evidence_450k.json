@@ -1,0 +1,8 @@
+{
+    "amount_eur": 0,
+    "currency": "EUR",
+    "status": "pending",
+    "transaction_id": "",
+    "updated_at": "",
+    "source": "pending_external_confirmation"
+}

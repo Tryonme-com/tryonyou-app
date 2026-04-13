@@ -52,6 +52,45 @@ ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
 fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
 
+_notify_telegram() {
+  local msg="$1"
+  local token="${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}"
+  local chat="${TELEGRAM_CHAT_ID:-}"
+  local bot_handle="${TELEGRAM_BOT_HANDLE:-@tryonyou_deploy_bot}"
+
+  if [[ -z "$token" || -z "$chat" ]]; then
+    warn "Telegram skip: define TELEGRAM_BOT_TOKEN/TELEGRAM_TOKEN y TELEGRAM_CHAT_ID."
+    return 0
+  fi
+
+  if ! python3 - "$token" "$chat" "$bot_handle" "$msg" <<'PY'
+import json
+import sys
+import urllib.error
+import urllib.request
+
+token, chat, bot_handle, body = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+text = f"{bot_handle} {body}"
+url = f"https://api.telegram.org/bot{token}/sendMessage"
+payload = json.dumps({"chat_id": chat, "text": text}).encode("utf-8")
+req = urllib.request.Request(
+    url,
+    data=payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+with urllib.request.urlopen(req, timeout=20) as resp:
+    if resp.status != 200:
+        raise RuntimeError(f"HTTP {resp.status}")
+PY
+  then
+    warn "Telegram notificación no entregada."
+    return 0
+  fi
+
+  ok "Notificación Telegram enviada"
+}
+
 # ── Parseo de argumentos ────────────────────────────────────────
 MODE_DEPLOY=false
 MODE_FAST=false
@@ -184,6 +223,10 @@ fi
 step "💎 Consolidación Git"
 
 git add -A
+current_branch="$(git branch --show-current 2>/dev/null || true)"
+if [[ -z "$current_branch" ]]; then
+  fail "No se pudo resolver la rama actual para push."
+fi
 
 did_commit=0
 if git diff --cached --quiet; then
@@ -196,7 +239,7 @@ fi
 
 if [[ "$did_commit" -eq 1 ]]; then
   step "🚀 Lanzando proyectil al servidor..."
-  git push
+  git push -u origin "$current_branch"
   ok "Push completado"
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
@@ -204,7 +247,7 @@ elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   case "$ahead" in *[!0-9]*) ahead=0 ;; esac
   if [[ "$ahead" -gt 0 ]]; then
     step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
-    git push
+    git push -u origin "$current_branch"
     ok "Push completado"
   else
     warn "Sin push: la rama está al día con el remoto."
@@ -232,3 +275,6 @@ printf "  ✨ STATUS: LINEAL | PODERÍO: 100%% | DIVINEO: MÁXIMO\n"
 printf "  🔱 Patente PCT/EP2025/067317 — Soberanía V10 — VIVOS\n"
 printf "  ════════════════════════════════════════════════════════════\n"
 printf "${NC}\n"
+
+summary="✅ SUPERCOMMIT_MAX OK | rama=${current_branch} | deploy=${MODE_DEPLOY} | fast=${MODE_FAST}"
+_notify_telegram "$summary"
