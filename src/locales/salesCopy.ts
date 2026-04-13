@@ -50,6 +50,20 @@ export type SalesCopy = {
   bridgeConfigured: string;
   bridgeLimited: string;
   perfectSelectionFallback: string;
+  manifestoTag: string;
+  manifestoTitle: string;
+  manifestoBody: string;
+  manifestoAccumulation: string;
+  manifestoColor: string;
+  manifestoIdentity: string;
+  manifestoCta: string;
+  manifestoSlogan: string;
+  manifestoHashtags: string;
+  manifestoLafayette: string;
+  pauGuideGreeting: string;
+  pauGuideScan: string;
+  pauGuideSnap: string;
+  pauGuideNext: string;
 };
 
 export const SALES_COPY: Record<AppLocale, SalesCopy> = {
@@ -113,6 +127,27 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
     perfectSelectionFallback:
       "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
+    manifestoTag: "MANIFESTE · PARIS 2026",
+    manifestoTitle: "LE LUXE ET LE NON-SENS",
+    manifestoBody:
+      "Parlons de luxe. Mais du vrai luxe : une boutique divine sans cintres. Un claquement de doigts et vous essayez la dernière collection de vos créateurs préférés ; que la vente arrive directement à votre hôtel et que vous ne vous concentriez que sur une chose : promener ce look et ce sac chez Lafayette.",
+    manifestoAccumulation:
+      "L'accumulation n'est ni belle ni élégante. Tu finis par être la pire de la boutique avec tes trois tailles emmêlées dans un clapier de 30 m². C'est absurde. Donne ces fringues à ceux qui en ont besoin ; si tu as le cash, achète-t'en une, porte-la avec panache et quand tu en as marre, passe à la suivante.",
+    manifestoColor:
+      "Pourquoi ne pourrais-tu pas te sentir « rouge » un jour ? Mon invention est pour nous identifier, pour nous exprimer plus artistiquement et pour que nous soyons PLUS LIBRES.",
+    manifestoIdentity:
+      "Toi qui peux te le payer, cherche-toi et identifie-toi. Marque à nouveau la tendance en tant que citoyenne de Paris, la capitale de la mode. Rends-toi divine, montre-toi, ne laisse pas les autres te le raconter : vis-le.",
+    manifestoCta: "QUE PARIS SE ROMPE AVEC TA COULEUR !",
+    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
+    manifestoHashtags: "#TryOnYou #Paris2026 #FashionTech",
+    manifestoLafayette:
+      "L'innovation est désormais une réalité aux Galeries Lafayette avec notre miroir « Divineo ».",
+    pauGuideGreeting:
+      "Bonjour ! Je suis P.A.U., votre guide personnel. Prête pour une expérience unique ?",
+    pauGuideScan:
+      "Regardez la caméra… je mesure votre silhouette avec précision biométrique.",
+    pauGuideSnap: "✨ Claquement ! Voici votre look parfait.",
+    pauGuideNext: "Un autre claquement… et un nouveau look apparaît !",
   },
   en: {
     localeLabel: "House language",
@@ -173,6 +208,27 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       "Journey saved — merchant bridges become active once server config is completed (Zero-Size).",
     perfectSelectionFallback:
       "Journey saved — merchant bridges become active once server config is completed (Zero-Size).",
+    manifestoTag: "MANIFESTO · PARIS 2026",
+    manifestoTitle: "LUXURY AND NONSENSE",
+    manifestoBody:
+      "Let's talk luxury. Real luxury: a divine boutique with no hangers. A snap of the fingers and you try on the latest collection from your favourite designers; the purchase arrives at your hotel and you focus on one thing only: walking that look and that bag at Lafayette.",
+    manifestoAccumulation:
+      "Accumulation is neither beautiful nor elegant. You end up being the worst in the boutique with three tangled sizes in a 30 m² hutch. It's absurd. Give those clothes to those who need them; if you have the cash, buy one, wear it with panache and when you're tired of it, move on.",
+    manifestoColor:
+      "Why couldn't you feel 'red' today? My invention is to identify ourselves, to express ourselves more artistically and to be MORE FREE.",
+    manifestoIdentity:
+      "You who can afford it: find yourself and identify yourself. Set the trend again as a citizen of Paris, the fashion capital. Make yourself divine, show yourself, don't let others tell you about it: LIVE IT.",
+    manifestoCta: "LET PARIS BREAK WITH YOUR COLOUR!",
+    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
+    manifestoHashtags: "#TryOnYou #Paris2026 #FashionTech",
+    manifestoLafayette:
+      "Innovation is now a reality at Galeries Lafayette with our 'Divineo' mirror.",
+    pauGuideGreeting:
+      "Hello! I'm P.A.U., your personal guide. Ready for a unique experience?",
+    pauGuideScan:
+      "Look at the camera… I'm measuring your silhouette with biometric precision.",
+    pauGuideSnap: "✨ Snap! Here's your perfect look.",
+    pauGuideNext: "Another snap… and a new look appears!",
   },
   es: {
     localeLabel: "Idioma de la casa",
@@ -232,6 +288,27 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       "Recorrido registrado — los puentes de venta se activarán al completar configuración de servidor (Zero-Size).",
     perfectSelectionFallback:
       "Recorrido registrado — los puentes de venta se activarán al completar configuración de servidor (Zero-Size).",
+    manifestoTag: "MANIFIESTO · PARÍS 2026",
+    manifestoTitle: "EL LUJO Y EL SINSENTIDO",
+    manifestoBody:
+      "Hablemos de lujo. Pero del verdadero lujo: una boutique divina sin perchas. Un chasquido de dedos y te pruebas la última colección de tus creadores favoritos; que la venta llegue directamente a tu hotel y que solo te concentres en una cosa: pasear ese look y ese bolso en Lafayette.",
+    manifestoAccumulation:
+      "La acumulación no es bella ni elegante. Acabas siendo la peor de la boutique con tus tres tallas enredadas en un cuchitril de 30 m². Es absurdo. Da esa ropa a quien la necesite; si tienes el cash, cómprate una, llévala con garbo y cuando te canses, pasa a la siguiente.",
+    manifestoColor:
+      "¿Por qué no podrías sentirte « rojo » hoy? Mi invención es para identificarnos, para expresarnos más artísticamente y para que seamos MÁS LIBRES.",
+    manifestoIdentity:
+      "Tú, que puedes pagarlo: búscate e identifícate. Marca de nuevo la tendencia como ciudadana de la capital de la moda. Ponte divina, muéstrate y no dejes que otros te lo cuenten: VÍVELO.",
+    manifestoCta: "¡QUE PARÍS SE ROMPA CON TU COLOR!",
+    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
+    manifestoHashtags: "#TryOnYou #Paris2026 #FashionTech",
+    manifestoLafayette:
+      "La innovación es ya una realidad en las Galeries Lafayette con nuestro espejo « Divineo ».",
+    pauGuideGreeting:
+      "¡Hola! Soy P.A.U., tu guía personal. ¿Lista para una experiencia única?",
+    pauGuideScan:
+      "Mira a la cámara… estoy midiendo tu silueta con precisión biométrica.",
+    pauGuideSnap: "✨ ¡Chasquido! Aquí está tu look perfecto.",
+    pauGuideNext: "¡Otro chasquido… y aparece un nuevo look!",
   },
 };
 

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
+import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -34,6 +35,7 @@ import {
   SUPPORTED_LOCALES,
   formatEurAmount,
 } from "./locales/salesCopy";
+import lafayetteCollectionRaw from "./data/lafayette_collection.json";
 import "./index.css";
 import "./App.css";
 
@@ -132,6 +134,76 @@ function elasticLabelToVerdict(label: string): string {
 type BunkerSyncResult =
   | { ok: true; data: unknown }
   | { ok: false; error: unknown };
+
+type LafayetteGarment = {
+  id: string;
+  brand: string;
+  name: string;
+  category: string;
+  fabric: string;
+  color: string;
+  color_name: string;
+  price: number;
+  precision: number;
+  fit_profile: string[];
+  image: string;
+  tag: string;
+};
+
+type LocalizedLandingContent = {
+  navLinks: readonly { label: string; href: string }[];
+  heroMeta: string;
+  heroPanelLabel: string;
+  heroPanelTitle: string;
+  heroPanelBody: string;
+  heroSecondaryCta: string;
+  heroContractKicker: string;
+  heroContractBody: string;
+  manifestoIntro: string;
+  manifestoQuoteLabel: string;
+  technologyTag: string;
+  technologyTitle: string;
+  technologyLead: string;
+  technologyNarrative: string;
+  metricLabels: readonly string[];
+  collectionTag: string;
+  collectionTitle: string;
+  collectionLead: string;
+  collectionPrecisionLabel: string;
+  collectionFabricLabel: string;
+  collectionProfilesLabel: string;
+  patentTag: string;
+  patentTitle: string;
+  patentBody: string;
+  contractTag: string;
+  contractTitle: string;
+  contractBody: string;
+  contractLabels: readonly string[];
+  pricingTag: string;
+  pricingTitle: string;
+  pricingLead: string;
+  pricingCards: readonly {
+    title: string;
+    price: string;
+    badge: string;
+    description: string;
+    features: readonly string[];
+    cta: string;
+    action: "pilot" | "pro" | "enterprise";
+    highlight?: boolean;
+  }[];
+  pauTag: string;
+  pauTitle: string;
+  pauLead: string;
+  pauBody: string;
+  pauCapabilityTitle: string;
+  pauCapabilities: readonly string[];
+  pauLiveLabel: string;
+  pauSnapCta: string;
+  pauStatusReady: string;
+  pauStatusLocked: string;
+  footerLine: string;
+};
 
 async function syncLeadsToBunker(
   payload: Record<string, unknown>,
@@ -262,6 +334,358 @@ async function postPerfectCheckout(fabricSensation: string, copy: SalesCopy): Pr
   }
 }
 
+const BRANDS_MAESTROS = ["BALMAIN", "DIOR", "PRADA", "CHANEL", "YSL"] as const;
+
+const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
+  fr: {
+    navLinks: [
+      { label: "Manifeste", href: "#manifesto" },
+      { label: "Technologie", href: "#technology" },
+      { label: "Collection", href: "#collection" },
+      { label: "Tarifs", href: "#pricing" },
+      { label: "P.A.U.", href: "#pau" },
+    ],
+    heroMeta: "Paris · Galeries Lafayette · Maison Digitale",
+    heroPanelLabel: "Lancement 2026",
+    heroPanelTitle: "La mode sans friction, avec certitude souveraine.",
+    heroPanelBody:
+      "Une expérience premium pensée pour la vente assistée, l’essayage sans tailles classiques et l’activation immédiate des maisons de luxe en boutique.",
+    heroSecondaryCta: "Rejoindre la bêta privée",
+    heroContractKicker: "Cadre commercial actif",
+    heroContractBody: "Pilotage boutique, activation inauguration, orchestration P.A.U. et lien de paiement live prêts pour la conversion.",
+    manifestoIntro: "La vision fondatrice de Rubén, pensée comme un cri de guerre pour Paris 2026.",
+    manifestoQuoteLabel: "War cry",
+    technologyTag: "LA PREUVE OPÉRATIONNELLE",
+    technologyTitle: "The 0sizes Era commence dans le théâtre de vente.",
+    technologyLead:
+      "TryOnYou transforme l’essayage en un moment éditorial, mesurable et immédiatement monétisable pour les maisons, les corners premium et les investisseurs retail-tech.",
+    technologyNarrative:
+      "Du miroir biométrique à la logistique hôtel-boutique, chaque interaction réduit le retour, augmente la conversion et maintient la désirabilité intacte.",
+    metricLabels: [
+      "Retours éliminés",
+      "Conversion ventes",
+      "Précision biométrique",
+      "Utilisateurs simultanés",
+    ],
+    collectionTag: "APERÇU CURATÉ",
+    collectionTitle: "Une garde-robe Lafayette, sélectionnée pour la démonstration premium.",
+    collectionLead:
+      "Huit pièces iconiques montrent comment Divineo met en scène la matière, la couleur et la précision de coupe sans exposer la taille.",
+    collectionPrecisionLabel: "Précision",
+    collectionFabricLabel: "Matière",
+    collectionProfilesLabel: "Profil d’ajustage",
+    patentTag: "PROPRIÉTÉ INTELLECTUELLE",
+    patentTitle: "Un actif protégé, lisible pour le marché et défendable pour l’investisseur.",
+    patentBody:
+      "Brevet international PCT/EP2025/067317. Huit super-claims. The Snap™, génération adaptative d’avatars, orchestration boutique et signalement de valeur opérationnelle déjà intégrés dans l’expérience commerciale.",
+    contractTag: "CADRE LAFAYETTE",
+    contractTitle: "Une proposition de licence claire, premium et immédiatement négociable.",
+    contractBody:
+      "Le dispositif financier combine activation, exclusivité territoriale et royalties pour rendre la décision simple côté retail tout en préservant la marge haute valeur de TryOnYou.",
+    contractLabels: [
+      "Setup fee",
+      "Exclusivité territoriale",
+      "Royalties sur ventes",
+      "Total immédiat",
+    ],
+    pricingTag: "OFFRE COMMERCIALE",
+    pricingTitle: "Trois portes d’entrée, une même signature de luxe digital.",
+    pricingLead:
+      "De la validation terrain au déploiement multi-site, la structure tarifaire conserve la désirabilité du produit tout en facilitant l’adoption B2B.",
+    pricingCards: [
+      {
+        title: "Pilote Gratuit",
+        price: "1 mois offert",
+        badge: "Découverte",
+        description: "Un mois pour prouver le taux de conversion, affiner le rituel d’essayage et former les équipes boutique.",
+        features: [
+          "1 miroir Divineo en test",
+          "Support onboarding maison",
+          "Mesures conversion & retour",
+        ],
+        cta: "Activer le pilote",
+        action: "pilot",
+      },
+      {
+        title: "Divineo Pro",
+        price: "299€/mo",
+        badge: "Recommandé",
+        description: "Le format parfait pour un corner premium qui veut vendre plus sans surcharger l’espace ni l’expérience client.",
+        features: [
+          "Assistant P.A.U. orchestré",
+          "Checkout souverain en EUR",
+          "Support commercial prioritaire",
+        ],
+        cta: "Parler au commercial",
+        action: "pro",
+        highlight: true,
+      },
+      {
+        title: "Divineo Enterprise",
+        price: "Sur mesure",
+        badge: "Maison & groupe",
+        description: "Pour les réseaux luxe, les grands magasins et les déploiements internationaux avec gouvernance sur mesure.",
+        features: [
+          "Déploiement multi-sites",
+          "Intégration CRM / data room",
+          "Conditions exclusives investisseurs",
+        ],
+        cta: "Ouvrir un mandat",
+        action: "enterprise",
+      },
+    ],
+    pauTag: "ASSISTANT MAISON",
+    pauTitle: "P.A.U., la présence digitale qui guide, rassure et déclenche l’achat.",
+    pauLead:
+      "Pensé comme un concierge couture dopé à l’IA, P.A.U. traduit la biométrie en langage désir, puis pousse l’essayage vers le moment décisif: The Snap.",
+    pauBody:
+      "Le guide accompagne la cliente, structure le rituel et transforme l’instant d’hésitation en certitude souveraine sans jamais rompre l’esthétique maison.",
+    pauCapabilityTitle: "Rituel guidé",
+    pauCapabilities: [
+      "Accueil et préparation émotionnelle",
+      "Scan silhouette avec précision biométrique",
+      "Révélation instantanée d’un nouveau look",
+    ],
+    pauLiveLabel: "Statut live",
+    pauSnapCta: "Déclencher The Snap",
+    pauStatusReady: "P.A.U. autorisé et prêt à opérer.",
+    pauStatusLocked: "P.A.U. attend un nœud autorisé ou un UserCheck actif.",
+    footerLine: "Contact maison: info@tryonyou.app · Paris · Galeries Lafayette · Investor-ready experience",
+  },
+  en: {
+    navLinks: [
+      { label: "Manifesto", href: "#manifesto" },
+      { label: "Technology", href: "#technology" },
+      { label: "Collection", href: "#collection" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "P.A.U.", href: "#pau" },
+    ],
+    heroMeta: "Paris · Galeries Lafayette · Digital Maison",
+    heroPanelLabel: "2026 launch",
+    heroPanelTitle: "Frictionless fashion with sovereign fit certainty.",
+    heroPanelBody:
+      "A premium experience designed for assisted selling, hanger-free fitting and immediate activation for luxury maisons in-store.",
+    heroSecondaryCta: "Join the private beta",
+    heroContractKicker: "Commercial framework live",
+    heroContractBody: "Boutique pilot, inauguration activation, P.A.U. orchestration and live payment links are ready for conversion.",
+    manifestoIntro: "Rubén’s founding vision, written as a war cry for Paris 2026.",
+    manifestoQuoteLabel: "War cry",
+    technologyTag: "OPERATIONAL PROOF",
+    technologyTitle: "The 0sizes Era begins inside the selling theatre.",
+    technologyLead:
+      "TryOnYou turns fitting into an editorial, measurable and instantly monetisable moment for maisons, premium corners and retail-tech investors.",
+    technologyNarrative:
+      "From biometric mirror to hotel-boutique logistics, every interaction cuts returns, lifts conversion and preserves desirability.",
+    metricLabels: [
+      "Returns reduced",
+      "Sales conversion",
+      "Biometric precision",
+      "Concurrent users",
+    ],
+    collectionTag: "CURATED PREVIEW",
+    collectionTitle: "A Lafayette wardrobe selected for premium demonstration.",
+    collectionLead:
+      "Eight iconic pieces show how Divineo stages fabric, colour and precision tailoring without exposing size.",
+    collectionPrecisionLabel: "Precision",
+    collectionFabricLabel: "Fabric",
+    collectionProfilesLabel: "Fit profile",
+    patentTag: "INTELLECTUAL PROPERTY",
+    patentTitle: "A protected asset that is market-readable and investor-defensible.",
+    patentBody:
+      "International patent PCT/EP2025/067317. Eight super-claims. The Snap™, adaptive avatar generation, in-store orchestration and operational value signalling are already integrated into the commercial experience.",
+    contractTag: "LAFAYETTE FRAMEWORK",
+    contractTitle: "A licensing proposal that is clear, premium and immediately negotiable.",
+    contractBody:
+      "The financial setup combines activation, territorial exclusivity and royalties to simplify retail decision-making while preserving TryOnYou’s high-value margin.",
+    contractLabels: [
+      "Setup fee",
+      "Territorial exclusivity",
+      "Sales royalties",
+      "Immediate total",
+    ],
+    pricingTag: "COMMERCIAL OFFER",
+    pricingTitle: "Three entry points, one luxury digital signature.",
+    pricingLead:
+      "From field validation to multi-site deployment, pricing preserves product desirability while making B2B adoption easier.",
+    pricingCards: [
+      {
+        title: "Pilote Gratuit",
+        price: "1 month free",
+        badge: "Discovery",
+        description: "One month to prove conversion uplift, refine the fitting ritual and train boutique teams.",
+        features: [
+          "1 Divineo mirror in test mode",
+          "Maison onboarding support",
+          "Conversion & return metrics",
+        ],
+        cta: "Activate pilot",
+        action: "pilot",
+      },
+      {
+        title: "Divineo Pro",
+        price: "299€/mo",
+        badge: "Recommended",
+        description: "The ideal format for a premium corner that wants to sell more without cluttering space or experience.",
+        features: [
+          "Orchestrated P.A.U. assistant",
+          "Sovereign checkout in EUR",
+          "Priority commercial support",
+        ],
+        cta: "Talk to sales",
+        action: "pro",
+        highlight: true,
+      },
+      {
+        title: "Divineo Enterprise",
+        price: "Custom",
+        badge: "Maison & group",
+        description: "For luxury networks, department stores and international rollouts with bespoke governance.",
+        features: [
+          "Multi-site deployment",
+          "CRM / data room integration",
+          "Exclusive investor terms",
+        ],
+        cta: "Open mandate",
+        action: "enterprise",
+      },
+    ],
+    pauTag: "MAISON ASSISTANT",
+    pauTitle: "P.A.U., the digital presence that guides, reassures and closes the sale.",
+    pauLead:
+      "Designed like an AI couture concierge, P.A.U. translates biometrics into desire and drives fitting toward the decisive moment: The Snap.",
+    pauBody:
+      "The guide accompanies the client, structures the ritual and turns hesitation into sovereign certainty without ever breaking the maison aesthetic.",
+    pauCapabilityTitle: "Guided ritual",
+    pauCapabilities: [
+      "Welcome and emotional priming",
+      "Silhouette scan with biometric precision",
+      "Instant reveal of a new look",
+    ],
+    pauLiveLabel: "Live status",
+    pauSnapCta: "Trigger The Snap",
+    pauStatusReady: "P.A.U. is authorised and ready to operate.",
+    pauStatusLocked: "P.A.U. is waiting for an authorised node or an active UserCheck.",
+    footerLine: "Maison contact: info@tryonyou.app · Paris · Galeries Lafayette · Investor-ready experience",
+  },
+  es: {
+    navLinks: [
+      { label: "Manifiesto", href: "#manifesto" },
+      { label: "Tecnología", href: "#technology" },
+      { label: "Colección", href: "#collection" },
+      { label: "Precios", href: "#pricing" },
+      { label: "P.A.U.", href: "#pau" },
+    ],
+    heroMeta: "París · Galeries Lafayette · Maison Digitale",
+    heroPanelLabel: "Lanzamiento 2026",
+    heroPanelTitle: "Moda sin fricción con certeza soberana de ajuste.",
+    heroPanelBody:
+      "Una experiencia premium pensada para venta asistida, prueba sin perchas ni tallas clásicas y activación inmediata para casas de lujo en tienda.",
+    heroSecondaryCta: "Unirme a la beta privada",
+    heroContractKicker: "Marco comercial activo",
+    heroContractBody: "Piloto boutique, activación inaugural, orquestación P.A.U. y enlaces de pago live listos para convertir.",
+    manifestoIntro: "La visión fundacional de Rubén, escrita como un grito de guerra para París 2026.",
+    manifestoQuoteLabel: "War cry",
+    technologyTag: "PRUEBA OPERATIVA",
+    technologyTitle: "La era 0sizes empieza dentro del teatro de venta.",
+    technologyLead:
+      "TryOnYou convierte la prueba en un momento editorial, medible y monetizable al instante para maisons, corners premium e inversores retail-tech.",
+    technologyNarrative:
+      "Del espejo biométrico a la logística hotel-boutique, cada interacción reduce devoluciones, eleva la conversión y mantiene intacto el deseo.",
+    metricLabels: [
+      "Devoluciones reducidas",
+      "Conversión de ventas",
+      "Precisión biométrica",
+      "Usuarios simultáneos",
+    ],
+    collectionTag: "SELECCIÓN CURADA",
+    collectionTitle: "Un armario Lafayette seleccionado para una demostración premium.",
+    collectionLead:
+      "Ocho piezas icónicas muestran cómo Divineo pone en escena tejido, color y precisión de patronaje sin exponer la talla.",
+    collectionPrecisionLabel: "Precisión",
+    collectionFabricLabel: "Tejido",
+    collectionProfilesLabel: "Perfil de ajuste",
+    patentTag: "PROPIEDAD INTELECTUAL",
+    patentTitle: "Un activo protegido, legible para el mercado y defendible para el inversor.",
+    patentBody:
+      "Patente internacional PCT/EP2025/067317. Ocho super-claims. The Snap™, generación adaptativa de avatares, orquestación boutique y señal operativa de valor ya integrados en la experiencia comercial.",
+    contractTag: "MARCO LAFAYETTE",
+    contractTitle: "Una propuesta de licencia clara, premium e inmediatamente negociable.",
+    contractBody:
+      "La estructura financiera combina activación, exclusividad territorial y royalties para simplificar la decisión del retail preservando el margen de alto valor de TryOnYou.",
+    contractLabels: [
+      "Setup fee",
+      "Exclusividad territorial",
+      "Royalties sobre ventas",
+      "Total inmediato",
+    ],
+    pricingTag: "OFERTA COMERCIAL",
+    pricingTitle: "Tres puertas de entrada, una misma firma de lujo digital.",
+    pricingLead:
+      "Desde la validación en tienda hasta el despliegue multi-site, el pricing mantiene la deseabilidad del producto y facilita la adopción B2B.",
+    pricingCards: [
+      {
+        title: "Pilote Gratuit",
+        price: "1 mes gratis",
+        badge: "Descubrimiento",
+        description: "Un mes para demostrar la subida de conversión, afinar el ritual de prueba y formar a los equipos de tienda.",
+        features: [
+          "1 espejo Divineo en test",
+          "Soporte de onboarding maison",
+          "Métricas de conversión y devolución",
+        ],
+        cta: "Activar piloto",
+        action: "pilot",
+      },
+      {
+        title: "Divineo Pro",
+        price: "299€/mo",
+        badge: "Recomendado",
+        description: "El formato ideal para un corner premium que quiere vender más sin saturar el espacio ni la experiencia.",
+        features: [
+          "Asistente P.A.U. orquestado",
+          "Checkout soberano en EUR",
+          "Soporte comercial prioritario",
+        ],
+        cta: "Hablar con ventas",
+        action: "pro",
+        highlight: true,
+      },
+      {
+        title: "Divineo Enterprise",
+        price: "A medida",
+        badge: "Maison & grupo",
+        description: "Para redes de lujo, grandes almacenes y despliegues internacionales con gobernanza a medida.",
+        features: [
+          "Despliegue multi-site",
+          "Integración CRM / data room",
+          "Condiciones exclusivas para inversores",
+        ],
+        cta: "Abrir mandato",
+        action: "enterprise",
+      },
+    ],
+    pauTag: "ASISTENTE MAISON",
+    pauTitle: "P.A.U., la presencia digital que guía, tranquiliza y cierra la venta.",
+    pauLead:
+      "Pensado como un concierge couture impulsado por IA, P.A.U. traduce la biometría en deseo y lleva la prueba al momento decisivo: The Snap.",
+    pauBody:
+      "La guía acompaña a la clienta, estructura el ritual y transforma la duda en certeza soberana sin romper jamás la estética de la maison.",
+    pauCapabilityTitle: "Ritual guiado",
+    pauCapabilities: [
+      "Bienvenida y preparación emocional",
+      "Escaneo de silueta con precisión biométrica",
+      "Revelación instantánea de un nuevo look",
+    ],
+    pauLiveLabel: "Estado live",
+    pauSnapCta: "Disparar The Snap",
+    pauStatusReady: "P.A.U. está autorizado y listo para operar.",
+    pauStatusLocked: "P.A.U. espera un nodo autorizado o un UserCheck activo.",
+    footerLine: "Contacto maison: info@tryonyou.app · París · Galeries Lafayette · Investor-ready experience",
+  },
+};
+
+const lafayetteCollection = lafayetteCollectionRaw as LafayetteGarment[];
+
 export default function App() {
   const pauSovereignBoot = useRef(false);
   if (!pauSovereignBoot.current) {
@@ -332,6 +756,7 @@ export default function App() {
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
   const copy = SALES_COPY[locale];
+  const pageCopy = LANDING_CONTENT[locale];
 
   /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
   useEffect(() => {
@@ -469,63 +894,58 @@ export default function App() {
       window.alert(copy.inaugurationMissingCheckout);
       return;
     }
-    // Prioridad env inaugural; sin alert posterior que bloquee el flujo ni validación Shopify/Firebase.
     openInaugurationStripeLiquidity();
   };
 
-  const BRANDS_MAESTROS = ["BALMAIN", "DIOR", "PRADA", "CHANEL", "YSL"] as const;
+  const handlePricingAction = (action: "pilot" | "pro" | "enterprise") => {
+    if (action === "pilot") {
+      void onHeroSubmit();
+      return;
+    }
+    if (action === "pro") {
+      onInaugurationStripeCharge();
+      return;
+    }
+    onLafayetteStripeCharge();
+  };
+
+  const pauDistrictLabel =
+    activeDistrict === "75004"
+      ? "BHV Marais · 75004"
+      : activeDistrict === "75009"
+        ? "Galeries Lafayette · 75009"
+        : "Paris pilot";
 
   return (
     <div
       className="app-root"
       style={{
-        background: "linear-gradient(165deg, #0c0d10 0%, #141619 40%, #1a1b20 70%, #0c0d10 100%)",
+        background:
+          "radial-gradient(circle at top, rgba(212,175,55,0.08), transparent 24%), linear-gradient(165deg, #0c0d10 0%, #141619 40%, #1a1b20 70%, #0c0d10 100%)",
         color: "#f5efe6",
       }}
     >
       <div className="app-stage" aria-hidden />
 
       <div className="app-ui">
-        {/* ─── Hero Section ──────────────────────────────── */}
-        <section
-          className="hero-section"
-          style={{
-            padding: "40px 24px 20px",
-            maxWidth: 960,
-            margin: "0 auto",
-          }}
-        >
-          <div className="hero-brand-row">
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 14,
-                  border: `1px solid ${ORO_DIVINEO}33`,
-                  background: "rgba(212,175,55,0.06)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "'Cinzel', Georgia, serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: ORO_DIVINEO,
-                  letterSpacing: 2,
-                  boxShadow: `0 4px 20px rgba(212,175,55,0.12)`,
-                }}
-              >
-                TY
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 16, letterSpacing: 6, color: "#f5efe6", fontWeight: 500 }}>
-                  TRYONYOU
-                </div>
-                <div style={{ fontSize: 9, letterSpacing: 3, color: ORO_DIVINEO, marginTop: 2, textTransform: "uppercase" }}>
-                  Maison Digitale
-                </div>
-              </div>
-            </div>
+        <header className="site-nav">
+          <div className="site-nav__inner">
+            <a className="site-nav__brand" href="#hero" aria-label="TryOnYou home">
+              <span className="site-nav__monogram">TY</span>
+              <span>
+                <strong>TRYONYOU</strong>
+                <em>Maison Digitale</em>
+              </span>
+            </a>
+
+            <nav className="site-nav__links" aria-label="Primary">
+              {pageCopy.navLinks.map((item) => (
+                <a key={item.href} href={item.href}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+
             <div className="hero-locale-switch" role="group" aria-label={copy.localeLabel}>
               {SUPPORTED_LOCALES.map((loc) => (
                 <button
@@ -539,383 +959,416 @@ export default function App() {
               ))}
             </div>
           </div>
+        </header>
 
-          {/* Brands row */}
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 24,
-            marginTop: 24,
-            marginBottom: 28,
-          }}>
-            {BRANDS_MAESTROS.map((brand) => (
-              <span
-                key={brand}
-                style={{
-                  fontFamily: "'Cinzel', Georgia, serif",
-                  fontSize: 10,
-                  letterSpacing: 4,
-                  color: `${ORO_DIVINEO}88`,
-                  textTransform: "uppercase",
-                  cursor: "default",
-                }}
+        <main className="landing-main">
+          <section id="hero" className="landing-section hero-section">
+            <div className="hero-layout">
+              <div className="hero-copy-col">
+                <div className="hero-brand-row">
+                  <div className="hero-brand-lockup">
+                    {BRANDS_MAESTROS.map((brand) => (
+                      <span key={brand}>{brand}</span>
+                    ))}
+                  </div>
+                  <span className="hero-meta-chip">{pageCopy.heroMeta}</span>
+                </div>
+
+                <p className="section-tag">{copy.badge}</p>
+                <h1 className="hero-title">{copy.heroTitle}</h1>
+                <p className="hero-lead">{copy.heroLead}</p>
+
+                <div className="hero-capture-row">
+                  <input
+                    type="email"
+                    value={emailHero}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setEmailHero(e.target.value)
+                    }
+                    placeholder={copy.heroEmailPlaceholder}
+                    className="hero-email-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void onHeroSubmit()}
+                    className="btn-primary"
+                  >
+                    {copy.heroCta}
+                  </button>
+                </div>
+
+                <div className="hero-action-row">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onMouseEnter={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
+                    onFocus={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
+                    onClick={onInaugurationStripeCharge}
+                    aria-label={copy.inaugurationAriaLabel}
+                    title={pauInaugurationWhisper || copy.inaugurationTitle}
+                  >
+                    {copy.inaugurationCta}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-tertiary"
+                    onClick={() => void postBetaWaitlist(copy)}
+                  >
+                    {pageCopy.heroSecondaryCta}
+                  </button>
+                </div>
+
+                {pauInaugurationWhisper ? (
+                  <p className="hero-whisper">PAU · {pauInaugurationWhisper}</p>
+                ) : null}
+
+                <div className="hero-house-phrases">
+                  {copy.housePhrases.map((phrase) => (
+                    <p key={phrase}>« {phrase} »</p>
+                  ))}
+                </div>
+
+                <div className="hero-link-row">
+                  <a
+                    href={getDivineoCheckoutUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hero-inline-link"
+                  >
+                    {SOVEREIGN_FIT_LABEL}
+                  </a>
+                  <span>{copy.checkoutHint}</span>
+                </div>
+              </div>
+
+              <motion.div
+                className="hero-feature-card"
+                initial={{ opacity: 0, y: 26 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                {brand}
-              </span>
-            ))}
-          </div>
+                <span className="hero-feature-card__label">{pageCopy.heroPanelLabel}</span>
+                <h2>{pageCopy.heroPanelTitle}</h2>
+                <p>{pageCopy.heroPanelBody}</p>
 
-          <p
-            style={{
-              fontSize: 10,
-              letterSpacing: 6,
-              textTransform: "uppercase",
-              color: ORO_DIVINEO,
-              marginBottom: 12,
-              fontWeight: 500,
-            }}
-          >
-            {copy.badge}
-          </p>
-          <h1
-            style={{
-              fontFamily: "'Cinzel', Georgia, serif",
-              fontSize: "clamp(28px, 4.5vw, 42px)",
-              lineHeight: 1.2,
-              margin: 0,
-              color: "#f5efe6",
-              fontWeight: 400,
-              letterSpacing: 1,
-            }}
-          >
-            {copy.heroTitle}
-          </h1>
-          <p
-            style={{
-              marginTop: 16,
-              maxWidth: 540,
-              fontSize: 14.5,
-              lineHeight: 1.75,
-              color: "#ece4d8",
-              opacity: 0.85,
-            }}
-          >
-            {copy.heroLead}
-          </p>
+                <div className="hero-status-grid">
+                  <article>
+                    <span>{pageCopy.heroContractKicker}</span>
+                    <strong>{pauDistrictLabel}</strong>
+                    <p>{pageCopy.heroContractBody}</p>
+                  </article>
+                  <article>
+                    <span>Jules lane</span>
+                    <strong>{julesLane}</strong>
+                    <p>{copy.manifestoLafayette}</p>
+                  </article>
+                  <article>
+                    <span>Elastic signal</span>
+                    <strong>{elasticLabel}</strong>
+                    <p>{pauStarted ? pageCopy.pauStatusReady : pageCopy.pauStatusLocked}</p>
+                  </article>
+                </div>
 
-          {/* Email capture */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 24,
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="email"
-              value={emailHero}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setEmailHero(e.target.value)
-              }
-              placeholder={copy.heroEmailPlaceholder}
-              style={{
-                flex: "1 1 220px",
-                minWidth: 0,
-                padding: "12px 18px",
-                borderRadius: 999,
-                border: `1px solid ${ORO_DIVINEO}33`,
-                fontSize: 13,
-                backgroundColor: "rgba(20,22,25,0.8)",
-                color: "#f5efe6",
-                outline: "none",
-                backdropFilter: "blur(12px)",
-              }}
-            />
-            <button
-              type="button"
-              onClick={onHeroSubmit}
-              style={{
-                flex: "0 0 auto",
-                padding: "13px 28px",
-                borderRadius: 999,
-                border: "none",
-                background: `linear-gradient(135deg, ${ORO_DIVINEO}, #c5a46d)`,
-                color: "#0c0d10",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 3,
-                textTransform: "uppercase",
-                cursor: "pointer",
-                boxShadow: `0 8px 28px rgba(212,175,55,0.25)`,
-                fontFamily: "'Cinzel', Georgia, serif",
-              }}
-            >
-              {copy.heroCta}
-            </button>
-          </div>
-          <div className="hero-house-phrases">
-            {copy.housePhrases.map((phrase) => (
-              <p key={phrase}>« {phrase} »</p>
-            ))}
-          </div>
-
-          {/* Inauguration CTA */}
-          <div style={{ marginTop: 24 }}>
-            <button
-              type="button"
-              onClick={onInaugurationStripeCharge}
-              onMouseEnter={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
-              onFocus={() => setPauInaugurationWhisper(pauInaugurationCompliment())}
-              title={
-                pauInaugurationWhisper ||
-                copy.inaugurationTitle
-              }
-              aria-label={copy.inaugurationAriaLabel}
-              style={{
-                width: "100%",
-                maxWidth: 480,
-                padding: "16px 24px",
-                borderRadius: 12,
-                border: `1px solid ${ORO_DIVINEO}`,
-                background: "linear-gradient(145deg, #141619 0%, #1a1b20 50%, #0c0d10 100%)",
-                color: ORO_DIVINEO,
-                fontFamily: "'Cinzel', Georgia, serif",
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: 4,
-                textTransform: "uppercase",
-                cursor: "pointer",
-                boxShadow: `0 8px 32px rgba(212,175,55,0.2), inset 0 1px 0 rgba(212,175,55,0.15)`,
-                transition: "all 0.3s ease",
-              }}
-            >
-              {copy.inaugurationCta}
-            </button>
-            {pauInaugurationWhisper ? (
-              <p
-                style={{
-                  marginTop: 12,
-                  maxWidth: 480,
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  fontStyle: "italic",
-                  color: `${ORO_DIVINEO}cc`,
-                }}
-              >
-                PAU · {pauInaugurationWhisper}
-              </p>
-            ) : null}
-          </div>
-
-          {/* Lafayette CTA */}
-          <div style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              onClick={onLafayetteStripeCharge}
-              style={{
-                width: "100%",
-                maxWidth: 480,
-                padding: "12px 20px",
-                borderRadius: 10,
-                border: `1px solid ${ORO_DIVINEO}22`,
-                background: "rgba(212,175,55,0.06)",
-                color: "#ece4d8",
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: 2.5,
-                textTransform: "uppercase",
-                cursor: "pointer",
-                fontFamily: "'Cinzel', Georgia, serif",
-                transition: "all 0.3s ease",
-              }}
-            >
-              {copy.lafayetteCta}
-            </button>
-          </div>
-
-          {/* Pricing grid */}
-          <div className="hero-pricing-grid">
-            <article>
-              <h3>{copy.packStarterTitle}</h3>
-              <p className="hero-price">{formatEurAmount(12500, locale)}</p>
-              <p>{copy.packStarterBody}</p>
-            </article>
-            <article>
-              <h3>{copy.packMaisonTitle}</h3>
-              <p className="hero-price">{formatEurAmount(109900, locale)}</p>
-              <p>{copy.packMaisonBody}</p>
-            </article>
-          </div>
-
-          {/* Sales videos */}
-          <div className="sales-video-row">
-            <article>
-              <h3>{copy.videoOneTitle}</h3>
-              <video controls preload="metadata" playsInline>
-                <source src="/videos/pau_sales_intro.mp4" type="video/mp4" />
-              </video>
-              <p>{copy.videoOneBody}</p>
-            </article>
-            <article>
-              <h3>{copy.videoTwoTitle}</h3>
-              <video controls preload="metadata" playsInline>
-                <source src="/videos/pau_sales_close.mp4" type="video/mp4" />
-              </video>
-              <p>{copy.videoTwoBody}</p>
-            </article>
-          </div>
-
-          {/* Checkout link */}
-          <p
-            style={{
-              marginTop: 18,
-              fontSize: 12,
-              letterSpacing: 1.5,
-              color: `${ORO_DIVINEO}99`,
-            }}
-          >
-            <a
-              href={getDivineoCheckoutUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: ORO_DIVINEO,
-                fontWeight: 600,
-                textDecoration: "none",
-                borderBottom: `1px solid ${ORO_DIVINEO}66`,
-                paddingBottom: 1,
-              }}
-            >
-              {SOVEREIGN_FIT_LABEL}
-            </a>
-            <span style={{ opacity: 0.7 }}>{copy.checkoutHint}</span>
-          </p>
-        </section>
-
-          {/* ─── Impact Section: The 0sizes Era ──────── */}
-        <section
-          style={{
-            padding: "48px 20px",
-            maxWidth: 960,
-            margin: "0 auto",
-            textAlign: "center",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "clamp(22px, 3.5vw, 34px)",
-              fontFamily: "'Cinzel', Georgia, serif",
-              letterSpacing: 4,
-              color: "#ece4d8",
-              marginBottom: 8,
-            }}
-          >
-            Le fin des tailles et des retours
-          </h2>
-          <p
-            style={{
-              fontSize: "clamp(16px, 2.5vw, 24px)",
-              fontFamily: "'Cinzel', Georgia, serif",
-              letterSpacing: 6,
-              color: ORO_DIVINEO,
-              marginBottom: 32,
-              fontWeight: 700,
-            }}
-          >
-            THE 0SIZES ERA
-          </p>
-          {/* Video Inauguration */}
-          <div style={{ marginBottom: 32 }}>
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{
-                width: "100%",
-                maxWidth: 800,
-                borderRadius: 12,
-                boxShadow: `0 12px 48px rgba(0,0,0,0.4)`,
-              }}
-            >
-              <source src="/assets/videos/inauguration_theatre.mp4" type="video/mp4" />
-            </video>
-          </div>
-          {/* Metrics Grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 20,
-              marginBottom: 32,
-            }}
-          >
-            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
-              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>-85%</p>
-              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>RETOURS ÉLIMINÉS</p>
+                <div className="hero-media-grid">
+                  <article>
+                    <h3>{copy.videoOneTitle}</h3>
+                    <video controls preload="metadata" playsInline>
+                      <source src="/videos/pau_sales_intro.mp4" type="video/mp4" />
+                    </video>
+                    <p>{copy.videoOneBody}</p>
+                  </article>
+                  <article>
+                    <h3>{copy.videoTwoTitle}</h3>
+                    <video controls preload="metadata" playsInline>
+                      <source src="/videos/pau_sales_close.mp4" type="video/mp4" />
+                    </video>
+                    <p>{copy.videoTwoBody}</p>
+                  </article>
+                </div>
+              </motion.div>
             </div>
-            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
-              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>+25%</p>
-              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>CONVERSION VENTES</p>
+          </section>
+
+          <section id="manifesto" className="landing-section manifesto-section">
+            <div className="section-heading section-heading--centered">
+              <p className="section-tag">{copy.manifestoTag}</p>
+              <h2>{copy.manifestoTitle}</h2>
+              <p>{pageCopy.manifestoIntro}</p>
             </div>
-            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
-              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>99.7%</p>
-              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>PRÉCISION BIOMÉTRIQUE</p>
+
+            <div className="manifesto-grid">
+              <article className="manifesto-panel manifesto-panel--lead">
+                <span className="manifesto-panel__label">{pageCopy.manifestoQuoteLabel}</span>
+                <blockquote>{copy.manifestoBody}</blockquote>
+              </article>
+              <article className="manifesto-panel">
+                <p>{copy.manifestoAccumulation}</p>
+              </article>
+              <article className="manifesto-panel">
+                <p>{copy.manifestoColor}</p>
+              </article>
+              <article className="manifesto-panel manifesto-panel--accent">
+                <p>{copy.manifestoIdentity}</p>
+              </article>
             </div>
-            <div style={{ padding: 20, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: `1px solid ${ORO_DIVINEO}22` }}>
-              <p style={{ fontSize: 32, fontWeight: 700, color: ORO_DIVINEO, margin: 0 }}>10K</p>
-              <p style={{ fontSize: 12, letterSpacing: 2, color: "#ece4d8", marginTop: 6 }}>UTILISATEURS SIMULTANÉS</p>
-            </div>
-          </div>
-          {/* Patent & Certification */}
-          <div
-            style={{
-              padding: "24px 28px",
-              background: "rgba(0,0,0,0.3)",
-              borderRadius: 12,
-              border: `1px solid ${ORO_DIVINEO}33`,
-              marginBottom: 32,
-            }}
-          >
-            <p style={{ fontSize: 11, letterSpacing: 3, color: ORO_DIVINEO, marginBottom: 8 }}>PROPRIÉTÉ INTELLECTUELLE PROTÉGÉE</p>
-            <p style={{ fontSize: 16, color: "#ece4d8", fontFamily: "'Cinzel', Georgia, serif" }}>Brevet International PCT/EP2025/067317</p>
-            <p style={{ fontSize: 12, color: "#ece4d8aa", marginTop: 8 }}>8 Super-Claims · Valorisation 17M€ — 26M€ · The Snap™ · Génération Adaptative d'Avatars</p>
-          </div>
-          {/* Contract Info */}
-          <div
-            style={{
-              padding: "20px 24px",
-              background: "rgba(212,175,55,0.06)",
-              borderRadius: 12,
-              border: `1px solid ${ORO_DIVINEO}22`,
-              textAlign: "left",
-            }}
-          >
-            <p style={{ fontSize: 11, letterSpacing: 3, color: ORO_DIVINEO, marginBottom: 12 }}>CONTRAT DE LICENCE — GALERIES LAFAYETTE</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Setup Fee</p>
-                <p style={{ fontSize: 18, color: "#ece4d8", fontWeight: 700, margin: "4px 0" }}>12 500 €</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Exclusivité Territoriale</p>
-                <p style={{ fontSize: 18, color: "#ece4d8", fontWeight: 700, margin: "4px 0" }}>15 000 €</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Royalties sur Ventes</p>
-                <p style={{ fontSize: 18, color: ORO_DIVINEO, fontWeight: 700, margin: "4px 0" }}>8%</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: "#ece4d8aa", margin: 0 }}>Total Immédiat</p>
-                <p style={{ fontSize: 18, color: ORO_DIVINEO, fontWeight: 700, margin: "4px 0" }}>27 500 €</p>
+
+            <div className="manifesto-slogan-wrap">
+              <p className="manifesto-cta">{copy.manifestoCta}</p>
+              <p className="manifesto-slogan">{copy.manifestoSlogan}</p>
+              <div className="manifesto-meta">
+                <span>{copy.manifestoHashtags}</span>
+                <span>{copy.manifestoLafayette}</span>
               </div>
             </div>
-          </div>
-        </section>
-        {/* ─── Ofrenda Overlay ──────────────────────────── */}
-        <OfrendaOverlayay
+          </section>
+
+          <section id="technology" className="landing-section technology-section">
+            <div className="section-heading">
+              <p className="section-tag">{pageCopy.technologyTag}</p>
+              <h2>{pageCopy.technologyTitle}</h2>
+              <p>{pageCopy.technologyLead}</p>
+            </div>
+
+            <div className="technology-layout">
+              <div className="technology-video-card">
+                <video autoPlay loop muted playsInline>
+                  <source src="/assets/videos/inauguration_theatre.mp4" type="video/mp4" />
+                </video>
+                <div className="technology-video-card__caption">
+                  <strong>THE 0SIZES ERA</strong>
+                  <span>{pageCopy.technologyNarrative}</span>
+                </div>
+              </div>
+
+              <div className="metrics-grid">
+                {[
+                  { value: "-85%", label: pageCopy.metricLabels[0] },
+                  { value: "+25%", label: pageCopy.metricLabels[1] },
+                  { value: "99.7%", label: pageCopy.metricLabels[2] },
+                  { value: "10K", label: pageCopy.metricLabels[3] },
+                ].map((metric) => (
+                  <article key={metric.label} className="metric-card">
+                    <strong>{metric.value}</strong>
+                    <span>{metric.label}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section id="collection" className="landing-section collection-section">
+            <div className="section-heading section-heading--centered">
+              <p className="section-tag">{pageCopy.collectionTag}</p>
+              <h2>{pageCopy.collectionTitle}</h2>
+              <p>{pageCopy.collectionLead}</p>
+            </div>
+
+            <div className="collection-grid">
+              {lafayetteCollection.map((garment) => (
+                <article key={garment.id} className="collection-card">
+                  <div className="collection-card__media">
+                    <img src={garment.image} alt={`${garment.brand} ${garment.name}`} loading="lazy" />
+                    <span className="collection-card__tag">{garment.tag}</span>
+                  </div>
+                  <div className="collection-card__body">
+                    <div className="collection-card__topline">
+                      <span>{garment.brand}</span>
+                      <strong>{formatEurAmount(garment.price, locale)}</strong>
+                    </div>
+                    <h3>{garment.name}</h3>
+                    <p>{garment.category}</p>
+                    <div className="collection-card__meta">
+                      <span>{pageCopy.collectionFabricLabel}</span>
+                      <strong>{garment.fabric}</strong>
+                    </div>
+                    <div className="collection-card__meta">
+                      <span>{pageCopy.collectionPrecisionLabel}</span>
+                      <strong>{garment.precision.toFixed(1)}%</strong>
+                    </div>
+                    <div className="collection-card__swatch-row">
+                      <span className="collection-card__swatch" style={{ backgroundColor: garment.color }} />
+                      <span>{garment.color_name}</span>
+                    </div>
+                    <div className="collection-card__profiles">
+                      <span>{pageCopy.collectionProfilesLabel}</span>
+                      <ul>
+                        {garment.fit_profile.map((profile) => (
+                          <li key={profile}>{profile}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section id="patent-contract" className="landing-section patent-section">
+            <div className="patent-layout">
+              <article className="patent-card">
+                <p className="section-tag">{pageCopy.patentTag}</p>
+                <h2>{pageCopy.patentTitle}</h2>
+                <p>{pageCopy.patentBody}</p>
+                <div className="patent-card__chips">
+                  <span>PCT/EP2025/067317</span>
+                  <span>8 Super-Claims</span>
+                  <span>17M€ — 26M€</span>
+                </div>
+              </article>
+
+              <article className="contract-card">
+                <p className="section-tag">{pageCopy.contractTag}</p>
+                <h2>{pageCopy.contractTitle}</h2>
+                <p>{pageCopy.contractBody}</p>
+
+                <div className="contract-grid">
+                  {[
+                    { label: pageCopy.contractLabels[0], value: formatEurAmount(12500, locale) },
+                    { label: pageCopy.contractLabels[1], value: formatEurAmount(15000, locale) },
+                    { label: pageCopy.contractLabels[2], value: "8%" },
+                    { label: pageCopy.contractLabels[3], value: formatEurAmount(27500, locale) },
+                  ].map((item) => (
+                    <div key={item.label} className="contract-metric">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                <button type="button" className="btn-secondary btn-secondary--full" onClick={onLafayetteStripeCharge}>
+                  {copy.lafayetteCta}
+                </button>
+              </article>
+            </div>
+          </section>
+
+          <section id="pricing" className="landing-section pricing-section">
+            <div className="section-heading section-heading--centered">
+              <p className="section-tag">{pageCopy.pricingTag}</p>
+              <h2>{pageCopy.pricingTitle}</h2>
+              <p>{pageCopy.pricingLead}</p>
+            </div>
+
+            <div className="pricing-grid">
+              {pageCopy.pricingCards.map((card) => (
+                <article
+                  key={card.title}
+                  className={`pricing-card${card.highlight ? " pricing-card--highlight" : ""}`}
+                >
+                  <span className="pricing-card__badge">{card.badge}</span>
+                  <h3>{card.title}</h3>
+                  <p className="pricing-card__price">{card.price}</p>
+                  <p className="pricing-card__description">{card.description}</p>
+                  <ul className="pricing-card__features">
+                    {card.features.map((feature) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className={card.highlight ? "btn-primary btn-primary--full" : "btn-secondary btn-secondary--full"}
+                    onClick={() => handlePricingAction(card.action)}
+                  >
+                    {card.cta}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section id="pau" className="landing-section pau-section">
+            <div className="pau-layout">
+              <div className="pau-visual-card">
+                <p className="section-tag">{pageCopy.pauTag}</p>
+                <button
+                  type="button"
+                  className={
+                    isMaraisNode && pauStarted ? "app-pau app-pau--marais pau-section__orb" : "app-pau app-pau--lafayette pau-section__orb"
+                  }
+                  disabled={!pauStarted}
+                  onClick={theSnap}
+                  title={
+                    pauStarted
+                      ? isMaraisNode
+                        ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+                        : activeDistrict === "75009"
+                          ? "P.A.U. — Lafayette 75009"
+                          : "P.A.U. — Lafayette / Marais (UserCheck)"
+                      : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+                  }
+                  aria-label="P.A.U. — snap et orchestration Jules"
+                  style={{
+                    opacity: pauStarted ? 1 : 0.55,
+                    cursor: pauStarted ? "pointer" : "not-allowed",
+                  }}
+                >
+                  <video
+                    key={isMaraisNode ? "marais" : "lafayette"}
+                    id={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                  >
+                    {isMaraisNode ? (
+                      <>
+                        <source src="/assets/marais_pau_v10.mp4" type="video/mp4" />
+                        <source src="/videos/pau_transparent.webm" type="video/webm" />
+                        <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+                      </>
+                    ) : (
+                      <>
+                        <source src="/videos/pau_transparent.webm" type="video/webm" />
+                        <source src="/videos/pau_transparent.mp4" type="video/mp4" />
+                      </>
+                    )}
+                  </video>
+                </button>
+
+                <div className="pau-visual-card__status">
+                  <span>{pageCopy.pauLiveLabel}</span>
+                  <strong>{pauStarted ? pageCopy.pauStatusReady : pageCopy.pauStatusLocked}</strong>
+                  <p>{julesLane}</p>
+                </div>
+              </div>
+
+              <div className="pau-copy-card">
+                <h2>{pageCopy.pauTitle}</h2>
+                <p className="pau-copy-card__lead">{pageCopy.pauLead}</p>
+                <p>{pageCopy.pauBody}</p>
+
+                <div className="pau-script-card">
+                  <h3>{pageCopy.pauCapabilityTitle}</h3>
+                  <ul>
+                    {pageCopy.pauCapabilities.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="pau-message-stack">
+                  {[copy.pauGuideGreeting, copy.pauGuideScan, copy.pauGuideSnap, copy.pauGuideNext].map((line) => (
+                    <div key={line} className="pau-message-bubble">
+                      {line}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pau-cta-row">
+                  <button type="button" className="btn-primary" onClick={theSnap} disabled={!pauStarted}>
+                    {pageCopy.pauSnapCta}
+                  </button>
+                  <button type="button" className="btn-tertiary" onClick={() => void postBetaWaitlist(copy)}>
+                    {copy.betaCta}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <OfrendaOverlay
           elasticLabel={elasticLabel}
           julesLane={julesLane}
           onOfrenda={onOfrenda}
@@ -944,69 +1397,26 @@ export default function App() {
           }
         />
 
-        {/* ─── P.A.U. Avatar ───────────────────────────── */}
-        <motion.div
-          className="app-pau-row"
-          animate={{
-            boxShadow: [
-              `0 0 0 1px ${ORO_DIVINEO}22`,
-              `0 0 32px ${ORO_DIVINEO}44`,
-              `0 0 0 1px ${ORO_DIVINEO}22`,
-            ],
-          }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <button
-            type="button"
-            className={
-              isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
-            }
-            disabled={!pauStarted}
-            onClick={theSnap}
-            title={
-              pauStarted
-                ? isMaraisNode
-                  ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                  : activeDistrict === "75009"
-                    ? "P.A.U. — Lafayette 75009"
-                    : "P.A.U. — Lafayette / Marais (UserCheck)"
-                : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
-            }
-            aria-label="P.A.U. — snap et orchestration Jules"
-            style={{
-              opacity: pauStarted ? 1 : 0.55,
-              cursor: pauStarted ? "pointer" : "not-allowed",
-            }}
-          >
-            <video
-              key={isMaraisNode ? "marais" : "lafayette"}
-              id={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="auto"
-            >
-              {isMaraisNode ? (
-                <>
-                  <source src="/assets/marais_pau_v10.mp4" type="video/mp4" />
-                  <source src="/videos/pau_transparent.webm" type="video/webm" />
-                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
-                </>
-              ) : (
-                <>
-                  <source src="/videos/pau_transparent.webm" type="video/webm" />
-                  <source src="/videos/pau_transparent.mp4" type="video/mp4" />
-                </>
-              )}
-            </video>
-          </button>
-        </motion.div>
-
-        {/* ─── Footer ──────────────────────────────────── */}
-        <div className="app-legal">
-          SIRET 94361019600017 · PCT/EP2025/067317 · TRYONYOU V11 SOVEREIGN
-        </div>
+        <footer className="app-footer">
+          <div className="app-footer__top">
+            <div>
+              <strong>TRYONYOU</strong>
+              <p>{pageCopy.footerLine}</p>
+            </div>
+            <div className="app-footer__links">
+              <a href="mailto:info@tryonyou.app">info@tryonyou.app</a>
+              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
+                LinkedIn
+              </a>
+              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+                Instagram
+              </a>
+            </div>
+          </div>
+          <div className="app-legal">
+            SIRET 94361019600017 · PCT/EP2025/067317 · TRYONYOU V11 SOVEREIGN
+          </div>
+        </footer>
       </div>
 
       <PreScanHook
@@ -1016,6 +1426,7 @@ export default function App() {
           setPreScanVisible(false);
         }}
       />
+      <PauFloatingGuide locale={locale} />
     </div>
   );
 }
