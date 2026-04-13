@@ -15,7 +15,12 @@ class AbvetosTaskRunner:
     SIREN = "943610196"
 
     def verify_firebase_integrity(self) -> str:
-        """Comprueba que la API Key no sea nula y tenga el formato correcto."""
+        """Comprueba que la API Key no sea nula y tenga el formato correcto.
+
+        Returns:
+            str: Mensaje de éxito (empieza con ✅) si la clave es válida,
+                 o mensaje de error (empieza con ❌) si falta o tiene formato incorrecto.
+        """
         api_key = os.environ.get("VITE_FIREBASE_API_KEY") or os.environ.get(
             "FIREBASE_API_KEY"
         )
@@ -29,7 +34,11 @@ class AbvetosTaskRunner:
         return "✅ INTEGRIDAD DE KEY: Validada."
 
     def sync_task_status(self) -> None:
-        """Verifica la integridad de la Firebase API Key e imprime el resultado."""
+        """Verifica la integridad de la Firebase API Key e imprime el resultado.
+
+        Imprime mensajes de progreso y el estado de la verificación en stdout.
+        No devuelve ningún valor.
+        """
         print(f"📡 Sincronizando tarea {self.TASK_ID}...")
         status = self.verify_firebase_integrity()
         print(status)
