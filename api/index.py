@@ -18,6 +18,9 @@ from bunker_full_orchestrator import (
 from mirror_digital_make import forward_mirror_event
 from stripe_inauguration import create_inauguration_checkout_session
 from stripe_webhook import handle_webhook
+from inventory_engine import inventory_match_payload
+from shopify_bridge import resolve_shopify_checkout_url
+from amazon_bridge import resolve_amazon_checkout_url
 
 app = Flask(__name__)
 
@@ -29,7 +32,7 @@ def home():
 
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return resp
 
@@ -112,6 +115,104 @@ def stripe_webhook():
     return jsonify(result), code
 
 
+# ── V1 Routes: Perfect Selection + Leads + Mirror Snap ─────────────
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])
+def perfect_selection_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["POST"])
+def perfect_selection():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric = str(body.get("fabric_sensation", "")).strip()
+    lead_id = abs(hash(fabric or "anon")) % 10_000_000
+    channel = os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify").strip().lower()
+
+    shopify_url = resolve_shopify_checkout_url(lead_id, fabric)
+    amazon_url = resolve_amazon_checkout_url(lead_id, fabric)
+    primary_url = shopify_url if channel == "shopify" else amazon_url
+
+    seal = (
+        "Votre sélection parfaite est prête — "
+        "ajustage biométrique validé sous protocole Zero-Size. "
+        "Aucune taille classique, uniquement la certitude souveraine."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "emotional_seal": seal,
+        "checkout_primary_url": primary_url or "",
+        "checkout_shopify_url": shopify_url or "",
+        "checkout_amazon_url": amazon_url or "",
+        "protocol": "zero_size",
+        "anti_accumulation": True,
+    })), 200
+
+
+@app.route("/api/v1/leads", methods=["OPTIONS"])
+def leads_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/leads", methods=["POST"])
+def leads_capture():
+    body = request.get_json(force=True, silent=True) or {}
+    intent = str(body.get("intent", "")).strip()
+    source = str(body.get("source", "app")).strip()
+
+    try:
+        result = orchestrate_beta_waitlist({
+            "intent": intent,
+            "source": source,
+            "protocol": body.get("protocol", "zero_size"),
+        })
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": True,
+            **result,
+        })), 200
+    except Exception as e:
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": False,
+            "message": str(e),
+        })), 200
+
+
+@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
+def mirror_snap_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/mirror/snap", methods=["POST"])
+def mirror_snap():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric_sensation = str(body.get("fabric_sensation", "")).strip()
+    fabric_fit_verdict = str(body.get("fabric_fit_verdict", "aligned")).strip()
+
+    match = inventory_match_payload({
+        "fabric_sensation": fabric_sensation,
+        "fabric_fit_verdict": fabric_fit_verdict,
+        "snap": True,
+    })
+
+    jules_msg = (
+        "The Snap — votre ligne trouve son équilibre. "
+        f"Référence {match.get('garment_id', 'V10')} ({match.get('brand_line', 'Maison')}) "
+        "sous protocole Zero-Size. Le drapé répond avec élégance, sans mesure visible."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "jules_msg": jules_msg,
+        "inventory_match": match,
+        "protocolo": "zero_size",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
+    })), 200
+
+
 @app.route("/api/health", methods=["GET"])
 @app.route("/health", methods=["GET"])
 def health():
@@ -130,11 +231,16 @@ def health():
     ).strip()
     webhook_secret = (os.getenv("STRIPE_WEBHOOK_SECRET") or "").strip()
 
-    return jsonify({
+    return _cors(jsonify({
+        "ok": True,
         "status": "ok",
-        "version": "V10.4_Lafayette",
+        "version": "V11.0_Lafayette_Sovereign",
+        "service": "tryonyou_v11_omega",
+        "product_lane": "tryonyou_v11_sovereign",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
         "stripe_configured": bool(stripe_secret),
         "stripe_4_5m_set": bool(stripe_link_4_5m),
         "stripe_98k_set": bool(stripe_link_98k),
         "webhook_secret_set": bool(webhook_secret),
-    }), 200
+    })), 200
