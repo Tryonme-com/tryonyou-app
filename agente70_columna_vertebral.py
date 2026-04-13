@@ -150,6 +150,8 @@ def main() -> int:
 
     report = {
         "agent": "AGENTE70",
+        "decision_final_hasta_entrega": True,
+        "autoridad_cierre": "AGENTE70",
         "columna_ok": ok_all,
         "puntos": [asdict(x) for x in pts],
         "siguiente_paso_equipo": [

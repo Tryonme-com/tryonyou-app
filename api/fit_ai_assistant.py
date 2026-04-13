@@ -32,6 +32,9 @@ def fit_ai_assistant_health() -> dict[str, Any]:
         "service_account_path_set": bool(sa),
         "service_account_file_exists": ok_sa,
         "fit_ai_liveit_sync_enabled": sync,
+        # Cierre soberano: Agente 70 valida entorno Fit-AI hasta entrega (Make/webhooks pueden leer el flag).
+        "decision_final_por": "AGENTE70",
+        "cierre_operativo_hasta_entrega": True,
         "hint": "Define LIVEIT_DRIVE_COLLECTION_FOLDER_ID y GOOGLE_APPLICATION_CREDENTIALS "
         "(JSON cuenta de servicio con acceso a la carpeta Live It). "
         "FIT_AI_LIVEIT_SYNC_ENABLED=0 permite modo solo lectura de env sin SA.",
