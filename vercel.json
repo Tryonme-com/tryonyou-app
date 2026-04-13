@@ -50,6 +50,13 @@
   ],
   "headers": [
     {
+      "source": "/docs/(.*\\.(pdf|csv|md|zip))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400" },
+        { "key": "Content-Disposition", "value": "inline" }
+      ]
+    },
+    {
       "source": "/",
       "headers": [
         {
@@ -89,6 +96,10 @@
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
         },
         {
           "key": "X-TryOnYou-Access-Policy",
