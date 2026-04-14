@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -34,10 +35,18 @@ BOT_CHAT_ID = (
     or os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 )
 SETTLEMENT_FILE = Path(
-    os.environ.get("TRYONYOU_SETTLEMENT_FILE", "").strip() or "settlement_confirmation.json"
+    os.environ.get("TRYONYOU_SETTLEMENT_FILE", "").strip()
+    or os.environ.get("FATALITY_EVIDENCE_PATH", "").strip()
+    or "settlement_confirmation.json"
 )
 OUTPUT_FILE = Path(
     os.environ.get("TRYONYOU_FATALITY_OUTPUT", "").strip() or "dossier_fatality_status.json"
+)
+DOSSIER_FILE = Path(
+    os.environ.get("FATALITY_DOSSIER_PATH", "").strip() or "dossier_fatality.json"
+)
+ARMED_FILE = Path(
+    os.environ.get("FATALITY_ARMED_PATH", "").strip() or "dossier_fatality_armed.json"
 )
 SIMULATE_OK = os.environ.get("TRYONYOU_FATALITY_SIMULATE_OK", "").strip() in (
     "1",
@@ -121,6 +130,30 @@ def _write_status(payload: Dict[str, Any]) -> None:
     )
 
 
+def _load_dossier() -> Dict[str, Any]:
+    if not DOSSIER_FILE.exists():
+        return {}
+    try:
+        return json.loads(DOSSIER_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _arm_dossier(base_payload: Dict[str, Any]) -> bool:
+    dossier = _load_dossier()
+    if not dossier:
+        return False
+    armed_payload = deepcopy(dossier)
+    armed_payload["armed_at"] = base_payload["timestamp"]
+    armed_payload["armed_by"] = "dossier_fatality_guard.py"
+    armed_payload["activation_reason"] = base_payload["reason"]
+    ARMED_FILE.write_text(
+        json.dumps(armed_payload, ensure_ascii=True, indent=2),
+        encoding="utf-8",
+    )
+    return True
+
+
 def main() -> int:
     now = datetime.now()
     base_payload: Dict[str, Any] = {
@@ -145,6 +178,9 @@ def main() -> int:
         base_payload["activated"] = True
         base_payload["reason"] = "Entrada 450.000 € confirmada con evidencia verificable."
         base_payload["capital_protected"] = True
+        base_payload["dossier_source"] = str(DOSSIER_FILE)
+        base_payload["dossier_armed_path"] = str(ARMED_FILE)
+        base_payload["dossier_armed"] = _arm_dossier(base_payload)
         _write_status(base_payload)
         _send_bot("✅ Entrada 450.000€ confirmada y Dossier Fatality activado.")
         print(base_payload["reason"])
