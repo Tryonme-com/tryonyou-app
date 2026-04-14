@@ -12,7 +12,7 @@ app.command("/cobrar", async ({ command, ack, say }) => {
   const amount = parseFloat(command.text);
 
   // Si meten basura, el bot los corrige solo sin avisarte
-  if (!amount || amount <= 0) {
+  if (isNaN(amount) || amount <= 0) {
     return await say(
       "⚠️ Introduce un importe válido. No me hagas perder el tiempo (ni a mi jefe)."
     );
