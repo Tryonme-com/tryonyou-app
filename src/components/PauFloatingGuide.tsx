@@ -156,11 +156,11 @@ export function PauFloatingGuide({ locale }: PauFloatingGuideProps) {
                     key={particle.id}
                     className="pau-guide-particle"
                     style={{
-                      ["--angle" as const]: `${particle.angle}deg`,
-                      ["--distance" as const]: `${particle.distance}px`,
-                      ["--delay" as const]: `${particle.delay}s`,
-                      ["--duration" as const]: `${particle.duration}s`,
-                    }}
+                      "--angle": `${particle.angle}deg`,
+                      "--distance": `${particle.distance}px`,
+                      "--delay": `${particle.delay}s`,
+                      "--duration": `${particle.duration}s`,
+                    } as React.CSSProperties}
                   />
                 ))}
               </div>

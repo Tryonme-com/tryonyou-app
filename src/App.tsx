@@ -493,6 +493,49 @@ function App() {
         </motion.section>
 
         <motion.section
+          id="expansion"
+          className="section"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.65, ease: "easeOut" }}
+        >
+          <div className="section-shell">
+            <div className="section-copy">
+              <p className="section-kicker">06</p>
+              <h2>{copy.expansion.sectionTitle}</h2>
+            </div>
+
+            <div className="expansion-banner">
+              <span className="expansion-banner__icon" aria-hidden="true">
+                &#x25C8;
+              </span>
+              <div className="expansion-banner__copy">
+                <h3>{copy.expansion.bannerTitle}</h3>
+                <p>{copy.expansion.bannerBody}</p>
+              </div>
+            </div>
+
+            <div className="expansion-grid">
+              {copy.expansion.locations.map((location) => (
+                <article
+                  key={location.name}
+                  className={`expansion-node expansion-node--${location.status}`}
+                >
+                  <span className="expansion-node__badge">
+                    {location.status === "active"
+                      ? copy.expansion.activeBadge
+                      : copy.expansion.pendingBadge}
+                  </span>
+                  <h3 className="expansion-node__name">{location.name}</h3>
+                  <p className="expansion-node__district">{location.district}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
           id="about"
           className="section"
           initial={{ opacity: 0, y: 24 }}
@@ -502,7 +545,7 @@ function App() {
         >
           <div className="section-shell cta-grid">
             <div className="section-copy">
-              <p className="section-kicker">06</p>
+              <p className="section-kicker">07</p>
               <h2>{copy.finalCta.title}</h2>
               <div className="hero-actions">
                 <a className="button button--primary" href="#demo">
@@ -535,7 +578,7 @@ function App() {
         >
           <div className="section-shell demo-grid">
             <div className="section-copy">
-              <p className="section-kicker">07</p>
+              <p className="section-kicker">08</p>
               <h2>{copy.demoForm.title}</h2>
               <p>{copy.demoForm.support}</p>
             </div>
@@ -695,7 +738,17 @@ function App() {
 
       <footer id="legal" className="site-footer">
         <div className="section-shell site-footer__inner">
-          <p>{copy.footer.companyLine}</p>
+          <div>
+            <p>{copy.footer.companyLine}</p>
+            <p style={{ marginTop: 6, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              {copy.expansion.locations.map((loc, i) => (
+                <span key={loc.name}>
+                  {loc.name}
+                  {i < copy.expansion.locations.length - 1 ? " · " : ""}
+                </span>
+              ))}
+            </p>
+          </div>
           <div className="site-footer__links">
             <a href="#legal">{copy.footer.privacy}</a>
             <a href="#legal">{copy.footer.biometricData}</a>
