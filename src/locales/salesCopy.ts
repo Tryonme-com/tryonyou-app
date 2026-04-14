@@ -76,7 +76,7 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
   fr: {
     localeLabel: "Langue",
     badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Réduisez les retours mode de 85% grâce à l'IA qui prédit le fit parfait",
+    heroTitle: "L'essayage virtuel qui réduit les retours",
     heroLead:
       "TryOnYou crée un jumeau numérique de chaque client pour simuler l'ajustement réel des vêtements — avant l'achat.",
     heroEmailPlaceholder: "Votre email professionnel",
@@ -161,12 +161,12 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
   en: {
     localeLabel: "Language",
     badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Reduce fashion returns by 85% with AI that predicts perfect fit",
+    heroTitle: "The virtual fitting room that reduces returns",
     heroLead:
       "TryOnYou creates a digital twin of each customer to simulate real garment fit — before purchase.",
     heroEmailPlaceholder: "Your professional email",
     heroEmailPrompt: "Your professional email:",
-    heroCta: "Request a demo",
+    heroCta: "Request Demo",
     housePhrases: [
       "We do not sell clothes. We sell fit certainty.",
       "Built for retailers, department stores and fashion groups.",
@@ -246,12 +246,12 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
   es: {
     localeLabel: "Idioma",
     badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Reduce devoluciones en moda un 85% con IA que predice el fit perfecto",
+    heroTitle: "El probador virtual que reduce devoluciones",
     heroLead:
       "TryOnYou crea un gemelo digital de cada cliente para simular el ajuste real de las prendas — antes de la compra.",
     heroEmailPlaceholder: "Tu email profesional",
     heroEmailPrompt: "Tu email profesional:",
-    heroCta: "Solicitar una demo",
+    heroCta: "Solicitar Demo",
     housePhrases: [
       "No vendemos ropa. Vendemos certeza de fit.",
       "Pensado para retailers, grandes almacenes y grupos de moda.",

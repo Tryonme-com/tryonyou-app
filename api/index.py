@@ -184,6 +184,75 @@ def stripe_webhook():
     return jsonify(result), code
 
 
+# ── V1 Lead Capture (B2B form endpoint) ─────────────────────────────
+
+def _append_lead_capture(body):
+    target = Path("/tmp/tryonyou_lead_captures.jsonl")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(body, ensure_ascii=False) + "\n")
+
+
+@app.route("/api/v1/lead-capture", methods=["OPTIONS"])
+def lead_capture_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/lead-capture", methods=["POST"])
+def lead_capture():
+    body = request.get_json(force=True, silent=True) or {}
+    normalized = {
+        "name": str(body.get("name", "")).strip(),
+        "company": str(body.get("company", "")).strip(),
+        "email": str(body.get("email", "")).strip(),
+        "role": str(body.get("role", "")).strip(),
+        "catalog_size": str(body.get("catalog_size", "")).strip(),
+        "message": str(body.get("message", "")).strip(),
+        "source": str(body.get("source", "b2b_landing")).strip() or "b2b_landing",
+        "locale": str(body.get("locale", "fr")).strip() or "fr",
+        "ts": str(body.get("ts", "")).strip(),
+        "intent": "b2b_lead_capture",
+        "protocol": "zero_size",
+        "siret": "94361019600017",
+        "patent": "PCT/EP2025/067317",
+    }
+
+    required = [normalized["email"]]
+    if not all(required):
+        return _cors(jsonify({
+            "status": "error",
+            "message": "email_required",
+        })), 400
+
+    orchestration = False
+    orchestration_error = ""
+    make_ok = False
+
+    try:
+        _append_lead_capture(normalized)
+
+        try:
+            result = orchestrate_beta_waitlist(normalized)
+            orchestration = True
+            make_ok = result.get("make_ok", False) if isinstance(result, dict) else False
+        except Exception as exc:
+            orchestration_error = str(exc)
+
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_captured": True,
+            "orchestration": orchestration,
+            "make_ok": make_ok,
+            "orchestration_error": orchestration_error,
+            "siret": "94361019600017",
+        })), 200
+    except Exception as exc:
+        return _cors(jsonify({
+            "status": "error",
+            "message": str(exc),
+        })), 500
+
+
 # ── V1 Routes: Perfect Selection + Leads + Mirror Snap ─────────────
 
 @app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])

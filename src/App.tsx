@@ -204,6 +204,7 @@ type LocalizedLandingContent = {
   footerDescription: string;
   footerPrivacyLabel: string;
   footerTermsLabel: string;
+  footerLegal: string;
 };
 
 async function syncLeadsToBunker(
@@ -346,7 +347,7 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
       { label: "Contact", href: "#contact" },
     ],
     navCta: "Demander une démo",
-    heroHeadline: "Réduisez les retours mode de 85% grâce à l'IA qui prédit le fit parfait",
+    heroHeadline: "L'essayage virtuel qui réduit les retours",
     heroSubheadline:
       "TryOnYou crée un jumeau numérique de chaque client pour simuler l'ajustement réel des vêtements — avant l'achat.",
     heroTrust:
@@ -430,8 +431,9 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
       "Une vision fondatrice, désormais ramenée à l'essentiel: remplacer l'incertitude de taille par une certitude de fit exploitable pour le retail.",
     manifestoQuoteLabel: "Vision",
     footerDescription: "Essayage virtuel IA pour le retail mode",
-    footerPrivacyLabel: "Privacy Policy",
-    footerTermsLabel: "Terms",
+    footerPrivacyLabel: "Politique de confidentialité",
+    footerTermsLabel: "Conditions",
+    footerLegal: "SIRET 94361019600017 · Brevet PCT/EP2025/067317 · Paris, France",
   },
   en: {
     navLinks: [
@@ -440,8 +442,8 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
       { label: "Demo", href: "#demo" },
       { label: "Contact", href: "#contact" },
     ],
-    navCta: "Request a demo",
-    heroHeadline: "Reduce fashion returns by 85% with AI that predicts perfect fit",
+    navCta: "Request Demo",
+    heroHeadline: "The virtual fitting room that reduces returns",
     heroSubheadline:
       "TryOnYou creates a digital twin of each customer to simulate real garment fit — before purchase.",
     heroTrust:
@@ -527,6 +529,7 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
     footerDescription: "AI-powered virtual try-on for fashion retail",
     footerPrivacyLabel: "Privacy Policy",
     footerTermsLabel: "Terms",
+    footerLegal: "SIRET 94361019600017 · Patent PCT/EP2025/067317 · Paris, France",
   },
   es: {
     navLinks: [
@@ -535,8 +538,8 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
       { label: "Demo", href: "#demo" },
       { label: "Contacto", href: "#contact" },
     ],
-    navCta: "Solicitar una demo",
-    heroHeadline: "Reduce devoluciones en moda un 85% con IA que predice el fit perfecto",
+    navCta: "Solicitar Demo",
+    heroHeadline: "El probador virtual que reduce devoluciones",
     heroSubheadline:
       "TryOnYou crea un gemelo digital de cada cliente para simular el ajuste real de las prendas — antes de la compra.",
     heroTrust:
@@ -620,8 +623,9 @@ const LANDING_CONTENT: Record<AppLocale, LocalizedLandingContent> = {
       "Una visión fundacional, ahora llevada a lo esencial: sustituir la incertidumbre de talla por certeza de fit utilizable para retail.",
     manifestoQuoteLabel: "Visión",
     footerDescription: "Virtual try-on con IA para retail moda",
-    footerPrivacyLabel: "Privacy Policy",
-    footerTermsLabel: "Terms",
+    footerPrivacyLabel: "Política de privacidad",
+    footerTermsLabel: "Condiciones",
+    footerLegal: "SIRET 94361019600017 · Patente PCT/EP2025/067317 · París, Francia",
   },
 };
 
@@ -1041,25 +1045,37 @@ export default function App() {
     event.preventDefault();
     setDemoStatus("submitting");
 
-    try {
-      const response = await fetch("/api/demo-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: demoForm.name.trim(),
-          company: demoForm.company.trim(),
-          email: demoForm.email.trim(),
-          role: demoForm.role.trim(),
-          catalog_size: demoForm.catalogSize.trim() || undefined,
-          message: demoForm.message.trim() || undefined,
-          source: "landing_demo_form",
-          locale,
-          ts: new Date().toISOString(),
-        }),
-      });
+    const payload = {
+      name: demoForm.name.trim(),
+      company: demoForm.company.trim(),
+      email: demoForm.email.trim(),
+      role: demoForm.role.trim(),
+      catalog_size: demoForm.catalogSize.trim() || undefined,
+      message: demoForm.message.trim() || undefined,
+      source: "b2b_landing",
+      locale,
+      ts: new Date().toISOString(),
+    };
 
-      if (!response.ok) {
-        throw new Error("demo-request-failed");
+    try {
+      const [leadResponse, demoResponse] = await Promise.allSettled([
+        fetch("/api/v1/lead-capture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }),
+        fetch("/api/demo-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, source: "landing_demo_form" }),
+        }),
+      ]);
+
+      const leadOk = leadResponse.status === "fulfilled" && leadResponse.value.ok;
+      const demoOk = demoResponse.status === "fulfilled" && demoResponse.value.ok;
+
+      if (!leadOk && !demoOk) {
+        throw new Error("lead-capture-failed");
       }
 
       setDemoStatus("success");
@@ -1580,7 +1596,7 @@ export default function App() {
             </div>
           </div>
           <div className="app-legal">
-            SIRET 94361019600017 · PCT/EP2025/067317
+            {pageCopy.footerLegal}
           </div>
         </footer>
       </div>

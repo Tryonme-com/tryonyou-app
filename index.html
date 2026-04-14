@@ -50,6 +50,44 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>TRYONME × DIVINEO</title>
+<meta name="description" content="TryOnYou — AI-powered virtual fitting room for fashion retail. Patented biometric technology (PCT/EP2025/067317). Zero classic sizing, only fit certainty." />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "TryOnYou",
+  "alternateName": "TryOnMe",
+  "description": "AI-powered virtual fitting room for fashion retail — zero classic sizing, only fit certainty.",
+  "taxID": "94361019600017",
+  "vatID": "FR94943610196",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Rue d'Argenteuil",
+    "addressLocality": "Paris",
+    "postalCode": "75001",
+    "addressCountry": "FR"
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Rubén Espinar Rodríguez"
+  },
+  "knowsAbout": ["virtual try-on", "biometric fitting", "fashion retail AI", "digital twin"],
+  "sameAs": [
+    "https://www.linkedin.com/company/tryonyou"
+  ]
+}
+</script>
+<script>
+(function(){
+  var ld = document.querySelector('script[type="application/ld+json"]');
+  if (!ld) return;
+  try {
+    var d = JSON.parse(ld.textContent);
+    d.url = window.location.origin;
+    ld.textContent = JSON.stringify(d);
+  } catch(e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <style>
