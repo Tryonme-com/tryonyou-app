@@ -2,339 +2,551 @@ export type AppLocale = "fr" | "en" | "es";
 
 export const SUPPORTED_LOCALES: readonly AppLocale[] = ["fr", "en", "es"];
 
+type BenefitCard = {
+  eyebrow: string;
+  title: string;
+  body: string;
+};
+
+type SolutionStep = {
+  title: string;
+  body: string;
+};
+
+type TrustMetric = {
+  value: string;
+  label: string;
+};
+
+type DemoFieldLabels = {
+  fullName: string;
+  corporateEmail: string;
+  company: string;
+  role: string;
+  businessType: string;
+  primaryMarket: string;
+  challenge: string;
+  volume: string;
+  horizon: string;
+  consent: string;
+};
+
 export type SalesCopy = {
   localeLabel: string;
-  badge: string;
-  heroTitle: string;
-  heroLead: string;
-  heroEmailPlaceholder: string;
-  heroEmailPrompt: string;
-  heroCta: string;
-  housePhrases: readonly string[];
-  inaugurationCta: string;
-  inaugurationTitle: string;
-  inaugurationAriaLabel: string;
-  lafayetteCta: string;
-  checkoutHint: string;
-  betaCta: string;
-  packStarterTitle: string;
-  packStarterBody: string;
-  packMaisonTitle: string;
-  packMaisonBody: string;
-  videoOneTitle: string;
-  videoOneBody: string;
-  videoTwoTitle: string;
-  videoTwoBody: string;
-  heroSlotError: string;
-  heroSlotReserved: string;
-  heroSlotReceived: string;
-  bunkerOffline: string;
-  inaugurationMissingCheckout: string;
-  lafayetteMissingCheckout: string;
-  ofrendaBalmain: string;
-  ofrendaReserve: string;
-  ofrendaCombo: string;
-  ofrendaSave: string;
-  ofrendaShare: string;
-  ofrendaSelection: string;
+  nav: {
+    home: string;
+    technology: string;
+    solutions: string;
+    pilots: string;
+    about: string;
+    legal: string;
+    demo: string;
+  };
+  hero: {
+    title: string;
+    lead: string;
+    cta: string;
+    trustStrip: readonly string[];
+  };
+  problem: {
+    title: string;
+    body: string;
+    closing: string;
+  };
+  solution: {
+    title: string;
+    support: string;
+    steps: readonly SolutionStep[];
+  };
+  benefits: {
+    title: string;
+    cards: readonly BenefitCard[];
+    closing: string;
+  };
+  technology: {
+    title: string;
+    body: string;
+    modules: readonly string[];
+    pauLabel: string;
+  };
+  trust: {
+    title: string;
+    body: string;
+    metrics: readonly TrustMetric[];
+    note: string;
+  };
+  finalCta: {
+    title: string;
+    cta: string;
+    microcopy: string;
+  };
+  demoForm: {
+    title: string;
+    support: string;
+    submit: string;
+    businessTypeOptions: readonly string[];
+    fieldLabels: DemoFieldLabels;
+    optionalLabel: string;
+    consentHint: string;
+    submitting: string;
+    successTitle: string;
+    successBody: string;
+    error: string;
+    retry: string;
+  };
+  footer: {
+    companyLine: string;
+    privacy: string;
+    biometricData: string;
+    terms: string;
+    cookies: string;
+    security: string;
+  };
   overlayReserve: string;
   overlayCombos: string;
   overlayMuseum: string;
   overlayShare: string;
-  betaPromptEmail: string;
-  betaApiError: string;
-  betaWaitlistStored: string;
-  betaWebhookStatusOk: string;
-  betaWebhookStatusFail: string;
-  betaWebhookStatusTemplate: string;
-  bridgeConfigured: string;
-  bridgeLimited: string;
-  perfectSelectionFallback: string;
-  manifestoTag: string;
-  manifestoTitle: string;
-  manifestoBody: string;
-  manifestoAccumulation: string;
-  manifestoColor: string;
-  manifestoIdentity: string;
-  manifestoCta: string;
-  manifestoSlogan: string;
-  manifestoHashtags: string;
-  manifestoLafayette: string;
   pauGuideGreeting: string;
   pauGuideScan: string;
   pauGuideSnap: string;
   pauGuideNext: string;
-  demoFormSubmitting: string;
-  demoFormSuccessTitle: string;
-  demoFormSuccessBody: string;
-  demoFormError: string;
-  demoFormRetry: string;
-  demoFormCatalogPlaceholder: string;
 };
 
 export const SALES_COPY: Record<AppLocale, SalesCopy> = {
   fr: {
     localeLabel: "Langue",
-    badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Réduisez les retours mode de 85% grâce à l'IA qui prédit le fit parfait",
-    heroLead:
-      "TryOnYou crée un jumeau numérique de chaque client pour simuler l'ajustement réel des vêtements — avant l'achat.",
-    heroEmailPlaceholder: "Votre email professionnel",
-    heroEmailPrompt: "Votre email professionnel :",
-    heroCta: "Demander une démo",
-    housePhrases: [
-      "Nous ne vendons pas des vêtements. Nous vendons la certitude du fit.",
-      "Retailers, grands magasins et groupes mode : déploiement B2B, pas D2C.",
-    ],
-    inaugurationCta: "Demander une démo",
-    inaugurationTitle: "Demander une démonstration enterprise TryOnYou",
-    inaugurationAriaLabel: "Demander une démonstration enterprise TryOnYou",
-    lafayetteCta: "Contacter l'équipe",
-    checkoutHint: " · démonstration enterprise sur rendez-vous",
-    betaCta: "Demander une démo",
-    packStarterTitle: "Pilote retail",
-    packStarterBody: "Validation rapide sur un périmètre restreint avec KPI de retour et conversion.",
-    packMaisonTitle: "Déploiement enterprise",
-    packMaisonBody: "Intégration omnicanale pour retailers et groupes mode multi-marques.",
-    videoOneTitle: "Expérience d'essayage",
-    videoOneBody: "Le client entre, se scanne et voit le résultat avant achat.",
-    videoTwoTitle: "Impact business",
-    videoTwoBody: "Le retailer réduit les retours, augmente la conversion et collecte un ROI mesurable.",
-    heroSlotError: "Impossible d'envoyer la demande pour le moment.",
-    heroSlotReserved: "Demande envoyée. Notre équipe vous contacte rapidement.",
-    heroSlotReceived: "Demande reçue. Nous revenons vers vous rapidement.",
-    bunkerOffline: "Service temporairement indisponible. Veuillez réessayer.",
-    inaugurationMissingCheckout:
-      "Lien indisponible. Utilisez le formulaire de démo pour contacter l'équipe commerciale.",
-    lafayetteMissingCheckout:
-      "Lien indisponible. Utilisez le formulaire de démo pour contacter l'équipe commerciale.",
-    ofrendaBalmain:
-      "Intérêt enregistré côté miroir digital sous protocole Zero-Size.",
-    ofrendaReserve: "Demande d'essayage assisté enregistrée.",
-    ofrendaCombo: "Simulation alternative chargée sous protocole Zero-Size.",
-    ofrendaSave: "Silhouette enregistrée sous protocole chiffré.",
-    ofrendaShare: "Partage généré avec métadonnées neutralisées.",
-    ofrendaSelection: "Sélection parfaite prête.",
+    nav: {
+      home: "Home",
+      technology: "Technologie",
+      solutions: "Solutions",
+      pilots: "Pilotes",
+      about: "À propos",
+      legal: "Mentions légales",
+      demo: "Demander une démo",
+    },
+    hero: {
+      title: "L'essayage virtuel qui réduit les retours et augmente la conversion.",
+      lead: "TRYONYOU aide les retailers de mode à montrer le bon fit sur le vrai corps du client grâce à un jumeau numérique, un moteur de taille précis et une simulation textile réaliste.",
+      cta: "Demander une démo",
+      trustStrip: [
+        "PCT/EP2025/067317",
+        "Jusqu'à 10 000 utilisateurs simultanés",
+        "99,7 % de précision biométrique déclarée",
+        "Jusqu'à -85 % de retours",
+      ],
+    },
+    problem: {
+      title: "Le problème",
+      body: "Chaque achat raté à cause d'une taille incorrecte érode la marge, augmente les coûts logistiques et affaiblit la confiance du client. Dans la mode, il ne suffit pas de montrer un vêtement : il faut aider le client à comprendre comment il lui ira, quelle taille il lui faut et s'il peut acheter en toute confiance.",
+      closing: "La plupart des expériences de taille reposent encore sur des grilles génériques. TRYONYOU les remplace par une certitude individuelle.",
+    },
+    solution: {
+      title: "La solution en 3 étapes",
+      support: "Ce n'est pas un simple avatar. C'est un moteur de décision pour le fit, le sizing et la visualisation du vêtement pensé pour le retail enterprise.",
+      steps: [
+        {
+          title: "Le client crée son profil corporel",
+          body: "À partir d'images guidées et de données minimales, TRYONYOU génère un profil précis pour estimer les mesures et le comportement du fit.",
+        },
+        {
+          title: "TRYONYOU crée un jumeau numérique exploitable",
+          body: "Le système transforme ces informations en un modèle numérique orienté sizing, recommandation et visualisation.",
+        },
+        {
+          title: "La marque montre la taille et l'ajustement avec clarté",
+          body: "Le retailer peut recommander la bonne taille, montrer comment tombe le vêtement et réduire l'incertitude avant l'achat.",
+        },
+      ],
+    },
+    benefits: {
+      title: "Bénéfices clés",
+      cards: [
+        {
+          eyebrow: "Plus de conversion",
+          title: "Moins d'hésitation au moment d'acheter",
+          body: "Quand le client comprend la taille et le fit, le passage au checkout est plus probable et la PDP travaille mieux.",
+        },
+        {
+          eyebrow: "Moins de retours",
+          title: "Moins d'erreurs de taille, moins de coût opérationnel",
+          body: "TRYONYOU aide à réduire les retours liés au fit et au choix de taille dans les catégories sensibles.",
+        },
+        {
+          eyebrow: "Plus de confiance",
+          title: "Une expérience plus sûre et plus utile",
+          body: "La recommandation personnalisée augmente la perception de contrôle, réduit la friction et améliore la relation avec la marque.",
+        },
+      ],
+      closing: "La promesse n'est pas seulement une meilleure expérience. La promesse est une meilleure économie unitaire par commande.",
+    },
+    technology: {
+      title: "Technologie",
+      body: "TRYONYOU combine capture guidée, modélisation corporelle, intelligence de taille et simulation de vêtement dans une seule couche de décision. Le résultat est un Digital Fit Engine capable de traduire des données visuelles et produit en recommandations de taille, représentation du fit et signaux actionnables pour le retailer.",
+      modules: ["Capture", "Digital Twin", "Sizing Intelligence", "Garment Simulation"],
+      pauLabel: "PAU, personal AI stylist by TRYONYOU",
+    },
+    trust: {
+      title: "Preuve et confiance",
+      body: "Une preuve sobre, orientée validation interne et déploiement enterprise.",
+      metrics: [
+        {
+          value: "-85 %",
+          label: "Jusqu'à -85 % de retours et +25 % de conversion sur des périmètres validés.",
+        },
+        {
+          value: "99,7 %",
+          label: "Précision biométrique déclarée de 99,7 %.",
+        },
+        {
+          value: "10 000",
+          label: "Architecture préparée pour jusqu'à 10 000 utilisateurs simultanés.",
+        },
+        {
+          value: "PCT",
+          label: "Zero-Size Protocol — demande internationale PCT/EP2025/067317.",
+        },
+      ],
+      note: "Ne pas utiliser de logos sans autorisation écrite.",
+    },
+    finalCta: {
+      title: "Si votre équipe veut réduire les retours, augmenter la conversion et valider un pilote avec un business case clair, parlons-en.",
+      cta: "Demander une démo",
+      microcopy: "Réponse indicative sous 48 heures ouvrées. Réunion adaptée au retail, à l'e-commerce ou aux grands magasins.",
+    },
+    demoForm: {
+      title: "Demander une démo",
+      support: "Parlez-nous de votre cas et nous préparerons une démo adaptée à votre opération, à votre canal et à votre priorité business.",
+      submit: "Demander une démo",
+      businessTypeOptions: ["Retailer", "E-commerce", "Grand magasin", "Marketplace"],
+      fieldLabels: {
+        fullName: "Nom et prénom",
+        corporateEmail: "Email professionnel",
+        company: "Entreprise",
+        role: "Fonction",
+        businessType: "Type d'activité",
+        primaryMarket: "Marché principal",
+        challenge: "Ce que vous voulez résoudre",
+        volume: "Volume approximatif",
+        horizon: "Horizon du projet",
+        consent: "J'accepte d'être contacté au sujet de ma demande.",
+      },
+      optionalLabel: "Optionnel",
+      consentHint: "Consentement de contact obligatoire.",
+      submitting: "Envoi en cours…",
+      successTitle: "Merci.",
+      successBody: "Votre demande de démo a bien été envoyée. Notre équipe vous contactera rapidement.",
+      error: "Impossible d'envoyer la demande pour le moment.",
+      retry: "Veuillez réessayer dans quelques instants.",
+    },
+    footer: {
+      companyLine: "Divineo · SIRET 94361019600017 · Paris, France",
+      privacy: "Confidentialité",
+      biometricData: "Données biométriques",
+      terms: "Conditions",
+      cookies: "Cookies",
+      security: "Sécurité",
+    },
     overlayReserve: "Réserver",
     overlayCombos: "Voir variantes",
     overlayMuseum: "Sauvegarder",
     overlayShare: "Partager",
-    betaPromptEmail: "Votre email professionnel (optionnel) :",
-    betaApiError: "Erreur API lors de l'enregistrement.",
-    betaWaitlistStored: "Demande enregistrée avec succès.",
-    betaWebhookStatusOk: "ok",
-    betaWebhookStatusFail: "non configuré",
-    betaWebhookStatusTemplate: "Statut webhook : {{status}}.",
-    bridgeConfigured:
-      "Parcours enregistré — activation commerciale côté serveur requise pour les ponts marchands.",
-    bridgeLimited:
-      "Parcours enregistré — activation commerciale côté serveur requise pour les ponts marchands.",
-    perfectSelectionFallback:
-      "Parcours enregistré — les liens de vente seront activés après configuration serveur.",
-    manifestoTag: "VISION",
-    manifestoTitle: "Le futur du fit n'est pas une taille, c'est une prédiction.",
-    manifestoBody:
-      "TryOnYou transforme l'essayage en infrastructure de décision pour le retail mode. Nous remplaçons l'incertitude par une simulation exploitable avant achat.",
-    manifestoAccumulation:
-      "Moins de friction, moins de retours, plus de confiance : la technologie doit retirer de la complexité, pas en ajouter.",
-    manifestoColor:
-      "Le fit devient mesurable, le choix devient plus rapide et l'expérience reste désirable.",
-    manifestoIdentity:
-      "Nous ne vendons pas une garde-robe. Nous donnons aux retailers la certitude nécessaire pour vendre mieux.",
-    manifestoCta: "Le commerce mode mérite la certitude.",
-    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
-    manifestoHashtags: "#TryOnYou #FashionTech #RetailAI",
-    manifestoLafayette: "Pilotes en cours avec retailers européens.",
-    pauGuideGreeting:
-      "Bonjour, je suis P.A.U., votre assistant d'essayage IA.",
-    pauGuideScan:
-      "Je guide le client à travers le scan et la capture biométrique.",
-    pauGuideSnap: "Je montre le rendu du vêtement en temps réel.",
-    pauGuideNext: "Je l'aide à décider avec certitude avant achat.",
-    demoFormSubmitting: "Envoi en cours…",
-    demoFormSuccessTitle: "Merci.",
-    demoFormSuccessBody: "Votre demande de démo a bien été envoyée. Notre équipe vous contacte rapidement.",
-    demoFormError: "Impossible d'envoyer la demande pour le moment.",
-    demoFormRetry: "Veuillez réessayer dans quelques instants.",
-    demoFormCatalogPlaceholder: "Sélectionner une tranche",
+    pauGuideGreeting: "Bonjour, je suis PAU, personal AI stylist by TRYONYOU.",
+    pauGuideScan: "Je guide le client dans la capture et la création de son profil corporel.",
+    pauGuideSnap: "Je montre comment le vêtement tombe avant l'achat.",
+    pauGuideNext: "J'aide à décider avec plus de clarté sur la taille et le fit.",
   },
   en: {
     localeLabel: "Language",
-    badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Reduce fashion returns by 85% with AI that predicts perfect fit",
-    heroLead:
-      "TryOnYou creates a digital twin of each customer to simulate real garment fit — before purchase.",
-    heroEmailPlaceholder: "Your professional email",
-    heroEmailPrompt: "Your professional email:",
-    heroCta: "Request a demo",
-    housePhrases: [
-      "We do not sell clothes. We sell fit certainty.",
-      "Built for retailers, department stores and fashion groups.",
-    ],
-    inaugurationCta: "Request a demo",
-    inaugurationTitle: "Request a TryOnYou enterprise demo",
-    inaugurationAriaLabel: "Request a TryOnYou enterprise demo",
-    lafayetteCta: "Contact sales",
-    checkoutHint: " · enterprise demo by appointment",
-    betaCta: "Request a demo",
-    packStarterTitle: "Retail pilot",
-    packStarterBody: "Fast validation on a focused scope with return and conversion KPIs.",
-    packMaisonTitle: "Enterprise rollout",
-    packMaisonBody: "Omnichannel integration for retailers and multi-brand fashion groups.",
-    videoOneTitle: "Try-on experience",
-    videoOneBody: "The customer scans and sees the result before purchase.",
-    videoTwoTitle: "Business impact",
-    videoTwoBody: "The retailer reduces returns, lifts conversion and gets measurable ROI.",
-    heroSlotError: "We could not send the request right now.",
-    heroSlotReserved: "Request sent. Our team will contact you shortly.",
-    heroSlotReceived: "Request received. We will get back to you shortly.",
-    bunkerOffline: "Service temporarily unavailable. Please try again.",
-    inaugurationMissingCheckout:
-      "Link unavailable. Please use the demo form to contact the sales team.",
-    lafayetteMissingCheckout:
-      "Link unavailable. Please use the demo form to contact the sales team.",
-    ofrendaBalmain:
-      "Interest logged in the digital mirror under Zero-Size protocol.",
-    ofrendaReserve: "Assisted fitting request recorded.",
-    ofrendaCombo: "Alternative simulation loaded under Zero-Size protocol.",
-    ofrendaSave: "Silhouette saved under encrypted protocol.",
-    ofrendaShare: "Share generated with neutralized metadata.",
-    ofrendaSelection: "Perfect selection ready.",
+    nav: {
+      home: "Home",
+      technology: "Technology",
+      solutions: "Solutions",
+      pilots: "Pilots",
+      about: "About us",
+      legal: "Legal",
+      demo: "Request a demo",
+    },
+    hero: {
+      title: "Virtual try-on that reduces returns and increases conversion.",
+      lead: "TRYONYOU helps fashion retailers show the right fit on the customer's real body through a digital twin, precise sizing intelligence and realistic garment simulation.",
+      cta: "Request a demo",
+      trustStrip: [
+        "PCT/EP2025/067317",
+        "Up to 10,000 simultaneous users",
+        "99.7% declared biometric accuracy",
+        "Up to -85% returns",
+      ],
+    },
+    problem: {
+      title: "The problem",
+      body: "Every failed purchase caused by incorrect sizing erodes margin, increases logistics costs and weakens customer trust. In fashion, it is not enough to show a garment: you must help the customer understand how it will fit, what size they need and whether they can buy with confidence.",
+      closing: "Most sizing experiences still rely on generic charts. TRYONYOU replaces them with individual certainty.",
+    },
+    solution: {
+      title: "The solution in 3 steps",
+      support: "It is not a simple avatar. It is a decision engine for fit, sizing and garment visualization designed for enterprise retail.",
+      steps: [
+        {
+          title: "The customer creates their body profile",
+          body: "From guided images and minimal data, TRYONYOU generates a precise profile to estimate measurements and fit behavior.",
+        },
+        {
+          title: "TRYONYOU creates a usable digital twin",
+          body: "The system transforms that information into a digital model oriented to sizing, recommendation and visualization.",
+        },
+        {
+          title: "The brand shows size and fit clearly",
+          body: "The retailer can recommend the right size, show how the garment falls and reduce uncertainty before purchase.",
+        },
+      ],
+    },
+    benefits: {
+      title: "Key benefits",
+      cards: [
+        {
+          eyebrow: "More conversion",
+          title: "Less doubt at the moment of purchase",
+          body: "When the customer understands size and fit, the step to checkout is more likely and the PDP performs better.",
+        },
+        {
+          eyebrow: "Fewer returns",
+          title: "Fewer sizing errors, lower operating cost",
+          body: "TRYONYOU helps reduce returns associated with fit and size choice in sensitive categories.",
+        },
+        {
+          eyebrow: "More trust",
+          title: "A safer and more useful experience",
+          body: "Personalized recommendation increases the perception of control, reduces friction and improves the relationship with the brand.",
+        },
+      ],
+      closing: "The promise is not only a better experience. The promise is better unit economics per order.",
+    },
+    technology: {
+      title: "Technology",
+      body: "TRYONYOU combines guided capture, body modeling, sizing intelligence and garment simulation into a single decision layer. The result is a Digital Fit Engine capable of translating visual and product data into size recommendations, fit representation and actionable signals for the retailer.",
+      modules: ["Capture", "Digital Twin", "Sizing Intelligence", "Garment Simulation"],
+      pauLabel: "PAU, personal AI stylist by TRYONYOU",
+    },
+    trust: {
+      title: "Proof and trust",
+      body: "A sober proof block designed for internal validation and enterprise deployment.",
+      metrics: [
+        {
+          value: "-85%",
+          label: "Up to -85% returns and +25% conversion in validated scopes.",
+        },
+        {
+          value: "99.7%",
+          label: "Declared biometric accuracy of 99.7%.",
+        },
+        {
+          value: "10,000",
+          label: "Architecture prepared for up to 10,000 simultaneous users.",
+        },
+        {
+          value: "PCT",
+          label: "Zero-Size Protocol — international filing PCT/EP2025/067317.",
+        },
+      ],
+      note: "Do not use logos without written authorization.",
+    },
+    finalCta: {
+      title: "If your team wants to reduce returns, increase conversion and validate a pilot with a clear business case, let's talk.",
+      cta: "Request a demo",
+      microcopy: "Indicative response within 48 business hours. Meeting tailored to retail, e-commerce or department stores.",
+    },
+    demoForm: {
+      title: "Request a demo",
+      support: "Tell us about your case and we will prepare a demo tailored to your operation, your channel and your business priority.",
+      submit: "Request a demo",
+      businessTypeOptions: ["Retailer", "E-commerce", "Department store", "Marketplace"],
+      fieldLabels: {
+        fullName: "Full name",
+        corporateEmail: "Corporate email",
+        company: "Company",
+        role: "Role",
+        businessType: "Business type",
+        primaryMarket: "Primary market",
+        challenge: "What you want to solve",
+        volume: "Approximate volume",
+        horizon: "Project horizon",
+        consent: "I agree to be contacted regarding my request.",
+      },
+      optionalLabel: "Optional",
+      consentHint: "Contact consent is required.",
+      submitting: "Sending…",
+      successTitle: "Thank you.",
+      successBody: "Your demo request has been sent. Our team will contact you shortly.",
+      error: "We could not send your request right now.",
+      retry: "Please try again in a few moments.",
+    },
+    footer: {
+      companyLine: "Divineo · SIRET 94361019600017 · Paris, France",
+      privacy: "Privacy",
+      biometricData: "Biometric data",
+      terms: "Terms",
+      cookies: "Cookies",
+      security: "Security",
+    },
     overlayReserve: "Reserve",
     overlayCombos: "View options",
     overlayMuseum: "Save",
     overlayShare: "Share",
-    betaPromptEmail: "Your professional email (optional):",
-    betaApiError: "API error while saving the request.",
-    betaWaitlistStored: "Request saved successfully.",
-    betaWebhookStatusOk: "ok",
-    betaWebhookStatusFail: "not configured",
-    betaWebhookStatusTemplate: "Webhook status: {{status}}.",
-    bridgeConfigured:
-      "Journey saved — server activation is still required for merchant bridges.",
-    bridgeLimited:
-      "Journey saved — server activation is still required for merchant bridges.",
-    perfectSelectionFallback:
-      "Journey saved — sales links will be activated after server configuration.",
-    manifestoTag: "VISION",
-    manifestoTitle: "The future of fit is not a size. It is a prediction.",
-    manifestoBody:
-      "TryOnYou turns fitting into decision infrastructure for fashion retail. We replace uncertainty with a usable simulation before purchase.",
-    manifestoAccumulation:
-      "Less friction, fewer returns, more trust: technology should remove complexity, not add to it.",
-    manifestoColor:
-      "Fit becomes measurable, decision-making becomes faster and the experience remains desirable.",
-    manifestoIdentity:
-      "We do not sell a wardrobe. We give retailers the certainty they need to sell better.",
-    manifestoCta: "Fashion commerce deserves certainty.",
-    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
-    manifestoHashtags: "#TryOnYou #FashionTech #RetailAI",
-    manifestoLafayette: "Pilots underway with European retailers.",
-    pauGuideGreeting:
-      "Hello, I'm P.A.U., your AI fitting assistant.",
-    pauGuideScan:
-      "I guide the customer through scan and biometric capture.",
-    pauGuideSnap: "I show the garment result in real time.",
-    pauGuideNext: "I help them decide with certainty before purchase.",
-    demoFormSubmitting: "Sending…",
-    demoFormSuccessTitle: "Thank you.",
-    demoFormSuccessBody: "Your demo request has been sent. Our team will contact you shortly.",
-    demoFormError: "We could not send the request right now.",
-    demoFormRetry: "Please try again in a moment.",
-    demoFormCatalogPlaceholder: "Select a range",
+    pauGuideGreeting: "Hello, I am PAU, personal AI stylist by TRYONYOU.",
+    pauGuideScan: "I guide the customer through capture and body profile creation.",
+    pauGuideSnap: "I show how the garment falls before purchase.",
+    pauGuideNext: "I help the customer decide with more clarity on size and fit.",
   },
   es: {
     localeLabel: "Idioma",
-    badge: "TRYONYOU · ZERO-SIZE PROTOCOL",
-    heroTitle: "Reduce devoluciones en moda un 85% con IA que predice el fit perfecto",
-    heroLead:
-      "TryOnYou crea un gemelo digital de cada cliente para simular el ajuste real de las prendas — antes de la compra.",
-    heroEmailPlaceholder: "Tu email profesional",
-    heroEmailPrompt: "Tu email profesional:",
-    heroCta: "Solicitar una demo",
-    housePhrases: [
-      "No vendemos ropa. Vendemos certeza de fit.",
-      "Pensado para retailers, grandes almacenes y grupos de moda.",
-    ],
-    inaugurationCta: "Solicitar una demo",
-    inaugurationTitle: "Solicitar una demo enterprise de TryOnYou",
-    inaugurationAriaLabel: "Solicitar una demo enterprise de TryOnYou",
-    lafayetteCta: "Contactar con ventas",
-    checkoutHint: " · demo enterprise con cita previa",
-    betaCta: "Solicitar una demo",
-    packStarterTitle: "Piloto retail",
-    packStarterBody: "Validación rápida en un alcance acotado con KPIs de devoluciones y conversión.",
-    packMaisonTitle: "Despliegue enterprise",
-    packMaisonBody: "Integración omnicanal para retailers y grupos de moda multimarca.",
-    videoOneTitle: "Experiencia de prueba",
-    videoOneBody: "El cliente se escanea y ve el resultado antes de comprar.",
-    videoTwoTitle: "Impacto de negocio",
-    videoTwoBody: "El retailer reduce devoluciones, aumenta conversión y obtiene ROI medible.",
-    heroSlotError: "No se ha podido enviar la solicitud ahora mismo.",
-    heroSlotReserved: "Solicitud enviada. Nuestro equipo te contactará pronto.",
-    heroSlotReceived: "Solicitud recibida. Te responderemos pronto.",
-    bunkerOffline: "Servicio temporalmente no disponible. Inténtalo de nuevo.",
-    inaugurationMissingCheckout:
-      "Enlace no disponible. Usa el formulario de demo para contactar con el equipo comercial.",
-    lafayetteMissingCheckout:
-      "Enlace no disponible. Usa el formulario de demo para contactar con el equipo comercial.",
-    ofrendaBalmain:
-      "Interés registrado en el espejo digital bajo protocolo Zero-Size.",
-    ofrendaReserve: "Solicitud de prueba asistida registrada.",
-    ofrendaCombo: "Simulación alternativa cargada bajo protocolo Zero-Size.",
-    ofrendaSave: "Silueta guardada bajo protocolo cifrado.",
-    ofrendaShare: "Compartido generado con metadatos neutralizados.",
-    ofrendaSelection: "Selección perfecta lista.",
+    nav: {
+      home: "Home",
+      technology: "Tecnología",
+      solutions: "Soluciones",
+      pilots: "Pilotos",
+      about: "Sobre nosotros",
+      legal: "Legal",
+      demo: "Solicitar demo",
+    },
+    hero: {
+      title: "El probador virtual que reduce devoluciones y aumenta la conversión.",
+      lead: "TRYONYOU ayuda a los retailers de moda a mostrar el fit correcto sobre el cuerpo real del cliente mediante un gemelo digital, un motor preciso de talla y una simulación realista de la prenda.",
+      cta: "Solicitar demo",
+      trustStrip: [
+        "PCT/EP2025/067317",
+        "Hasta 10.000 usuarios simultáneos",
+        "99,7 % de precisión biométrica declarada",
+        "Hasta -85 % devoluciones",
+      ],
+    },
+    problem: {
+      title: "El problema",
+      body: "Cada compra fallida por talla incorrecta erosiona margen, aumenta costes logísticos y debilita la confianza del cliente. En moda, no basta con mostrar una prenda: hay que ayudar al cliente a entender cómo le quedará, qué talla necesita y si puede comprar con seguridad.",
+      closing: "La mayoría de las experiencias de talla siguen basándose en tablas genéricas. TRYONYOU las reemplaza por certeza individual.",
+    },
+    solution: {
+      title: "La solución en 3 pasos",
+      support: "No es un simple avatar. Es un motor de decisión para fit, sizing y visualización de prenda pensado para retail enterprise.",
+      steps: [
+        {
+          title: "El cliente crea su perfil corporal",
+          body: "A partir de imágenes guiadas y datos mínimos, TRYONYOU genera un perfil preciso para estimar medidas y comportamiento de fit.",
+        },
+        {
+          title: "TRYONYOU crea un gemelo digital utilizable",
+          body: "El sistema transforma esa información en un modelo digital orientado a sizing, recomendación y visualización.",
+        },
+        {
+          title: "La marca muestra talla y ajuste con claridad",
+          body: "El retailer puede recomendar la talla correcta, mostrar cómo cae la prenda y reducir la incertidumbre antes de la compra.",
+        },
+      ],
+    },
+    benefits: {
+      title: "Beneficios clave",
+      cards: [
+        {
+          eyebrow: "Más conversión",
+          title: "Menos duda en el momento de compra",
+          body: "Cuando el cliente entiende talla y fit, el paso a checkout es más probable y la PDP trabaja mejor.",
+        },
+        {
+          eyebrow: "Menos devoluciones",
+          title: "Menos errores de talla, menos coste operativo",
+          body: "TRYONYOU ayuda a reducir devoluciones asociadas a fit y elección de talla en categorías sensibles.",
+        },
+        {
+          eyebrow: "Más confianza",
+          title: "Una experiencia más segura y más útil",
+          body: "La recomendación personalizada aumenta la percepción de control, reduce fricción y mejora la relación con la marca.",
+        },
+      ],
+      closing: "La promesa no es solo una mejor experiencia. La promesa es una mejor economía unitaria por pedido.",
+    },
+    technology: {
+      title: "Tecnología",
+      body: "TRYONYOU combina captura guiada, modelado corporal, inteligencia de talla y simulación de prenda en una sola capa de decisión. El resultado es un Digital Fit Engine capaz de traducir datos visuales y de producto en recomendaciones de talla, representación de fit y señales accionables para el retailer.",
+      modules: ["Captura", "Digital Twin", "Sizing Intelligence", "Garment Simulation"],
+      pauLabel: "PAU, personal AI stylist by TRYONYOU",
+    },
+    trust: {
+      title: "Prueba y confianza",
+      body: "Una prueba sobria, orientada a validación interna y despliegue enterprise.",
+      metrics: [
+        {
+          value: "-85 %",
+          label: "Hasta -85 % de devoluciones y +25 % de conversión en perímetros validados.",
+        },
+        {
+          value: "99,7 %",
+          label: "Precisión biométrica declarada de 99,7 %.",
+        },
+        {
+          value: "10.000",
+          label: "Arquitectura preparada para hasta 10.000 usuarios simultáneos.",
+        },
+        {
+          value: "PCT",
+          label: "Zero-Size Protocol — solicitud internacional PCT/EP2025/067317.",
+        },
+      ],
+      note: "No usar logos sin autorización escrita.",
+    },
+    finalCta: {
+      title: "Si su equipo quiere reducir devoluciones, aumentar conversión y validar un piloto con un caso de negocio claro, hablemos.",
+      cta: "Solicitar demo",
+      microcopy: "Respuesta orientativa en 48 horas laborables. Reunión adaptada a retail, e-commerce o grandes almacenes.",
+    },
+    demoForm: {
+      title: "Solicitar demo",
+      support: "Cuéntenos su caso y prepararemos una demo adaptada a su operación, su canal y su prioridad de negocio.",
+      submit: "Solicitar demo",
+      businessTypeOptions: ["Retailer", "E-commerce", "Gran almacén", "Marketplace"],
+      fieldLabels: {
+        fullName: "Nombre y apellido",
+        corporateEmail: "Email corporativo",
+        company: "Empresa",
+        role: "Cargo",
+        businessType: "Tipo de negocio",
+        primaryMarket: "Mercado principal",
+        challenge: "Qué quiere resolver",
+        volume: "Volumen aproximado",
+        horizon: "Horizonte de proyecto",
+        consent: "Acepto ser contactado en relación con mi solicitud.",
+      },
+      optionalLabel: "Opcional",
+      consentHint: "Consentimiento de contacto obligatorio.",
+      submitting: "Enviando…",
+      successTitle: "Gracias.",
+      successBody: "Su solicitud de demo ha sido enviada. Nuestro equipo le contactará pronto.",
+      error: "No hemos podido enviar su solicitud en este momento.",
+      retry: "Por favor, inténtelo de nuevo en unos instantes.",
+    },
+    footer: {
+      companyLine: "Divineo · SIRET 94361019600017 · París, Francia",
+      privacy: "Privacidad",
+      biometricData: "Datos biométricos",
+      terms: "Términos",
+      cookies: "Cookies",
+      security: "Seguridad",
+    },
     overlayReserve: "Reservar",
-    overlayCombos: "Ver opciones",
+    overlayCombos: "Ver variantes",
     overlayMuseum: "Guardar",
     overlayShare: "Compartir",
-    betaPromptEmail: "Tu email profesional (opcional):",
-    betaApiError: "Error de API al guardar la solicitud.",
-    betaWaitlistStored: "Solicitud guardada correctamente.",
-    betaWebhookStatusOk: "ok",
-    betaWebhookStatusFail: "no configurado",
-    betaWebhookStatusTemplate: "Estado del webhook: {{status}}.",
-    bridgeConfigured:
-      "Recorrido registrado: sigue siendo necesaria la activación del servidor para los puentes comerciales.",
-    bridgeLimited:
-      "Recorrido registrado: sigue siendo necesaria la activación del servidor para los puentes comerciales.",
-    perfectSelectionFallback:
-      "Recorrido registrado: los enlaces de venta se activarán tras la configuración del servidor.",
-    manifestoTag: "VISIÓN",
-    manifestoTitle: "El futuro del fit no es una talla. Es una predicción.",
-    manifestoBody:
-      "TryOnYou convierte la prueba en infraestructura de decisión para retail moda. Sustituimos la incertidumbre por una simulación útil antes de comprar.",
-    manifestoAccumulation:
-      "Menos fricción, menos devoluciones y más confianza: la tecnología debe quitar complejidad, no añadirla.",
-    manifestoColor:
-      "El fit se vuelve medible, la decisión es más rápida y la experiencia sigue siendo deseable.",
-    manifestoIdentity:
-      "No vendemos un armario. Damos a los retailers la certeza que necesitan para vender mejor.",
-    manifestoCta: "El comercio de moda merece certeza.",
-    manifestoSlogan: "PA, PA, PA. LET'S BE THE TENDENCY. PARIS 2026.",
-    manifestoHashtags: "#TryOnYou #FashionTech #RetailAI",
-    manifestoLafayette: "Pilotos en curso con retailers europeos.",
-    pauGuideGreeting:
-      "Hola, soy P.A.U., tu asistente de fitting con IA.",
-    pauGuideScan:
-      "Guío al cliente durante el escaneo y la captura biométrica.",
-    pauGuideSnap: "Muestro el resultado de la prenda en tiempo real.",
-    pauGuideNext: "Le ayudo a decidir con certeza antes de comprar.",
-    demoFormSubmitting: "Enviando…",
-    demoFormSuccessTitle: "Gracias.",
-    demoFormSuccessBody: "Tu solicitud de demo se ha enviado correctamente. Nuestro equipo te contactará pronto.",
-    demoFormError: "No se ha podido enviar la solicitud ahora mismo.",
-    demoFormRetry: "Vuelve a intentarlo en unos instantes.",
-    demoFormCatalogPlaceholder: "Selecciona un rango",
+    pauGuideGreeting: "Hola, soy PAU, personal AI stylist by TRYONYOU.",
+    pauGuideScan: "Guío al cliente en la captura y la creación de su perfil corporal.",
+    pauGuideSnap: "Muestro cómo cae la prenda antes de comprar.",
+    pauGuideNext: "Ayudo a decidir con más claridad sobre talla y fit.",
   },
 };
 
 export function formatEurAmount(amount: number, locale: AppLocale): string {
-  const localeTag = locale === "fr" ? "fr-FR" : locale === "en" ? "en-IE" : "es-ES";
+  const localeTag = locale === "fr" ? "fr-FR" : locale === "en" ? "en-GB" : "es-ES";
+
   return new Intl.NumberFormat(localeTag, {
     style: "currency",
     currency: "EUR",
-    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
