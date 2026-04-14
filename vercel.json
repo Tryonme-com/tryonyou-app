@@ -3,8 +3,19 @@
   "public": true,
   "installCommand": "npm install && pip install -r requirements.txt",
   "cleanUrls": true,
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]",
   "env": {
     "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
+  },
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30,
+      "memory": 512
+    },
+    "api/vetos_core_inference.py": {
+      "maxDuration": 15,
+      "memory": 1024
+    }
   },
   "builds": [
     {
@@ -49,6 +60,12 @@
     }
   ],
   "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
     {
       "source": "/docs/:path*",
       "headers": [
