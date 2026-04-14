@@ -846,6 +846,10 @@ button {
   box-shadow: 0 20px 44px rgba(127, 185, 143, 0.16);
 }
 
+.expansion-node--completed:hover {
+  border-color: rgba(127, 185, 143, 0.58);
+  box-shadow: 0 20px 44px rgba(127, 185, 143, 0.16);
+}
 .expansion-node--pending {
   border-color: rgba(139, 167, 255, 0.28);
 }
