@@ -102,6 +102,26 @@ export type SalesCopy = {
     cookies: string;
     security: string;
   };
+  expansion: {
+    sectionTitle: string;
+    activeBadge: string;
+    pendingBadge: string;
+    bannerTitle: string;
+    bannerBody: string;
+    locations: readonly {
+      name: string;
+      district: string;
+      status: "active" | "pending";
+    }[];
+  };
+  ethics: {
+    sectionTitle: string;
+    principles: readonly {
+      title: string;
+      body: string;
+    }[];
+    seal: string;
+  };
   overlayReserve: string;
   overlayCombos: string;
   overlayMuseum: string;
@@ -237,6 +257,41 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       successBody: "Votre demande de démo a bien été envoyée. Notre équipe vous contactera rapidement.",
       error: "Impossible d'envoyer la demande pour le moment.",
       retry: "Veuillez réessayer dans quelques instants.",
+    },
+    expansion: {
+      sectionTitle: "Réseau d'implantation",
+      activeBadge: "Actif",
+      pendingBadge: "Prochaine ouverture",
+      bannerTitle: "Expansion en cours",
+      bannerBody: "De nouveaux points d'expérience ouvrent leurs portes. Le réseau souverain s'étend à travers Paris.",
+      locations: [
+        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
+        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Marais", district: "75003", status: "pending" },
+        { name: "La Défense", district: "92060", status: "pending" },
+      ],
+    },
+    ethics: {
+      sectionTitle: "Manifeste éthique",
+      principles: [
+        {
+          title: "Protection biométrique",
+          body: "Les données corporelles ne quittent jamais l'appareil du client. Aucun stockage de silhouettes, aucune exploitation tierce.",
+        },
+        {
+          title: "Transparence algorithmique",
+          body: "Chaque recommandation de taille est traçable. Le client comprend pourquoi un ajustement lui est proposé.",
+        },
+        {
+          title: "Dignité du corps",
+          body: "Zéro commentaire sur le poids, zéro projection normative. Le moteur ajuste le vêtement au corps, jamais l'inverse.",
+        },
+        {
+          title: "Souveraineté des données",
+          body: "Le détaillant reçoit des signaux d'ajustement, jamais les données biométriques brutes. Le client reste propriétaire.",
+        },
+      ],
+      seal: "Manifeste Éthique V11 — Protocole de Souveraineté",
     },
     footer: {
       companyLine: "Divineo · SIRET 94361019600017 · Paris, France",
@@ -380,6 +435,41 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       error: "We could not send your request right now.",
       retry: "Please try again in a few moments.",
     },
+    expansion: {
+      sectionTitle: "Deployment network",
+      activeBadge: "Active",
+      pendingBadge: "Coming soon",
+      bannerTitle: "Expansion underway",
+      bannerBody: "New experience points are opening their doors. The sovereign network is expanding across Paris.",
+      locations: [
+        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
+        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Marais", district: "75003", status: "pending" },
+        { name: "La Défense", district: "92060", status: "pending" },
+      ],
+    },
+    ethics: {
+      sectionTitle: "Ethical manifesto",
+      principles: [
+        {
+          title: "Biometric protection",
+          body: "Body data never leaves the customer's device. No silhouette storage, no third-party exploitation.",
+        },
+        {
+          title: "Algorithmic transparency",
+          body: "Every size recommendation is traceable. The customer understands why a fit adjustment is suggested.",
+        },
+        {
+          title: "Body dignity",
+          body: "Zero weight commentary, zero normative projection. The engine fits the garment to the body, never the other way round.",
+        },
+        {
+          title: "Data sovereignty",
+          body: "The retailer receives fit signals, never raw biometric data. The customer remains the owner.",
+        },
+      ],
+      seal: "Ethical Manifesto V11 — Sovereignty Protocol",
+    },
     footer: {
       companyLine: "Divineo · SIRET 94361019600017 · Paris, France",
       privacy: "Privacy",
@@ -521,6 +611,41 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       successBody: "Su solicitud de demo ha sido enviada. Nuestro equipo le contactará pronto.",
       error: "No hemos podido enviar su solicitud en este momento.",
       retry: "Por favor, inténtelo de nuevo en unos instantes.",
+    },
+    expansion: {
+      sectionTitle: "Red de implantación",
+      activeBadge: "Activo",
+      pendingBadge: "Próxima apertura",
+      bannerTitle: "Expansión en curso",
+      bannerBody: "Nuevos puntos de experiencia abren sus puertas. La red soberana se extiende por París.",
+      locations: [
+        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
+        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Marais", district: "75003", status: "pending" },
+        { name: "La Défense", district: "92060", status: "pending" },
+      ],
+    },
+    ethics: {
+      sectionTitle: "Manifiesto ético",
+      principles: [
+        {
+          title: "Protección biométrica",
+          body: "Los datos corporales nunca salen del dispositivo del cliente. Sin almacenamiento de siluetas, sin explotación por terceros.",
+        },
+        {
+          title: "Transparencia algorítmica",
+          body: "Cada recomendación de talla es trazable. El cliente entiende por qué se le sugiere un ajuste.",
+        },
+        {
+          title: "Dignidad del cuerpo",
+          body: "Cero comentarios sobre peso, cero proyección normativa. El motor ajusta la prenda al cuerpo, nunca al revés.",
+        },
+        {
+          title: "Soberanía de los datos",
+          body: "El retailer recibe señales de ajuste, nunca datos biométricos brutos. El cliente sigue siendo el propietario.",
+        },
+      ],
+      seal: "Manifiesto Ético V11 — Protocolo de Soberanía",
     },
     footer: {
       companyLine: "Divineo · SIRET 94361019600017 · París, Francia",

@@ -3,6 +3,7 @@
   "public": true,
   "installCommand": "npm install && pip install -r requirements.txt",
   "cleanUrls": true,
+  "regions": ["cdg1", "lhr1"],
   "env": {
     "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
   },
@@ -16,11 +17,17 @@
     },
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxDuration": 30
+      }
     },
     {
       "src": "api/vetos_core_inference.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxDuration": 60
+      }
     }
   ],
   "routes": [
@@ -49,6 +56,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
     {
       "source": "/docs/:path*",
       "headers": [
@@ -103,7 +119,7 @@
         },
         {
           "key": "X-TryOnYou-Access-Policy",
-          "value": "sovereign-firebase-align-2026-04-07"
+          "value": "sovereign-v11-sanitized-2026-04-14"
         }
       ]
     }

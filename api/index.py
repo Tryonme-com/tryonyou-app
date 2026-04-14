@@ -27,6 +27,16 @@ from qonto_iban_transfer import (
     validate_transfer_readiness,
 )
 from invoice_generator import generate_proforma
+from treasury_monitor import (
+    get_treasury_status,
+    get_payouts_list,
+    record_payout,
+)
+from territory_expansion import (
+    get_expansion_nodes,
+    get_territory_summary,
+    generate_node_contract,
+)
 
 app = Flask(__name__)
 
@@ -346,6 +356,95 @@ def invoice_proforma():
     })), 200
 
 
+# ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
+
+@app.route("/api/v1/treasury/status", methods=["OPTIONS"])
+def treasury_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/status", methods=["GET"])
+def treasury_status():
+    status = get_treasury_status()
+    return _cors(jsonify({"status": "ok", **status})), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["OPTIONS"])
+def treasury_payouts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/payouts", methods=["GET"])
+def treasury_payouts_list():
+    payouts = get_payouts_list()
+    return _cors(jsonify({
+        "status": "ok",
+        "payouts": payouts,
+        "count": len(payouts),
+    })), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["POST"])
+def treasury_record_payout():
+    body = request.get_json(force=True, silent=True) or {}
+    amount = body.get("amount_eur")
+    if not amount or not isinstance(amount, (int, float)) or amount <= 0:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "amount_eur_required_positive",
+        })), 400
+
+    entry = record_payout(
+        amount_eur=float(amount),
+        recipient=str(body.get("recipient", "")).strip(),
+        concept=str(body.get("concept", "operational")).strip(),
+    )
+    return _cors(jsonify({"status": "ok", "payout": entry})), 201
+
+
+# ── V11 Territory: Multi-Node Expansion & Licensing ─────────────────
+
+@app.route("/api/v1/territory/nodes", methods=["OPTIONS"])
+def territory_nodes_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/nodes", methods=["GET"])
+def territory_nodes():
+    nodes = get_expansion_nodes()
+    summary = get_territory_summary()
+    return _cors(jsonify({
+        "status": "ok",
+        "nodes": nodes,
+        "summary": summary,
+    })), 200
+
+
+@app.route("/api/v1/territory/contracts", methods=["OPTIONS"])
+def territory_contracts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/contracts", methods=["POST"])
+def territory_generate_contract():
+    body = request.get_json(force=True, silent=True) or {}
+    node_id = str(body.get("node_id", "")).strip()
+    if not node_id:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_id_required",
+        })), 400
+
+    contract = generate_node_contract(node_id)
+    if not contract:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_not_found",
+        })), 404
+
+    return _cors(jsonify({"status": "ok", "contract": contract})), 201
+
+
 @app.route("/api/health", methods=["GET"])
 @app.route("/health", methods=["GET"])
 def health():
@@ -364,10 +463,13 @@ def health():
     ).strip()
     webhook_secret = (os.getenv("STRIPE_WEBHOOK_SECRET") or "").strip()
 
+    territory = get_territory_summary()
+    treasury = get_treasury_status()
+
     return _cors(jsonify({
         "ok": True,
         "status": "ok",
-        "version": "V11.0_Lafayette_Sovereign",
+        "version": "V11.1_Expansion_Sovereign",
         "service": "tryonyou_v11_omega",
         "product_lane": "tryonyou_v11_sovereign",
         "siren": "943610196",
@@ -378,4 +480,9 @@ def health():
         "webhook_secret_set": bool(webhook_secret),
         "iban_transfer_configured": is_iban_transfer_configured(),
         "payment_method": "DIRECT_IBAN_TRANSFER" if is_iban_transfer_configured() else "STRIPE",
+        "territory_active_nodes": territory["active_nodes"],
+        "territory_pending_nodes": territory["pending_nodes"],
+        "territory_expansion_target_eur": territory["expansion_target_eur"],
+        "treasury_reserve_eur": treasury["reserve_eur"],
+        "treasury_capital_label": treasury["capital_label"],
     })), 200
