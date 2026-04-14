@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Wrapper soberano para ejecutar la autonomia total de Supercommit_Max.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "$ROOT/supercommit_max_autonomia.py" "$@"
