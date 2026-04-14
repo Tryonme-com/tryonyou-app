@@ -12,7 +12,6 @@ Bajo Protocolo de Soberanía V10 - Founder: Rubén
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
