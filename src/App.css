@@ -906,6 +906,64 @@ button {
   }
 }
 
+/* ── Ethics Manifesto Section ─────────────────────── */
+
+.ethics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.ethics-card {
+  border-color: rgba(199, 168, 106, 0.18);
+  background: linear-gradient(180deg, rgba(20, 22, 27, 0.96), rgba(14, 14, 18, 0.88));
+}
+
+.ethics-card__icon {
+  color: var(--accent-premium);
+  font-size: 1.2rem;
+  opacity: 0.8;
+}
+
+.ethics-seal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 36px;
+  padding: 18px 28px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(199, 168, 106, 0.24);
+  background: linear-gradient(135deg, rgba(199, 168, 106, 0.06), rgba(139, 167, 255, 0.04));
+}
+
+.ethics-seal__mark {
+  color: var(--accent-premium);
+  font-size: 1.3rem;
+}
+
+.ethics-seal p {
+  margin: 0;
+  color: var(--accent-premium);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1180px) {
+  .ethics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .ethics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .site-footer {
   position: relative;
   z-index: 1;

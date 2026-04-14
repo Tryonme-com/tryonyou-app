@@ -50,6 +50,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>TRYONME × DIVINEO</title>
+<script id="tryonyou-org-jsonld">
+(function(){
+  var d=document,s=d.createElement('script');
+  s.type='application/ld+json';
+  var o=window.location.origin;
+  s.textContent=JSON.stringify({
+    '@context':'https://schema.org','@type':'Organization',
+    'name':'TryOnYou','alternateName':'Divineo','url':o,
+    'foundingDate':'2024',
+    'founder':{'@type':'Person','name':'Rubén Espinar Rodríguez'},
+    'address':{'@type':'PostalAddress','addressLocality':'Paris','postalCode':'75011','addressCountry':'FR'},
+    'taxID':'94361019600017',
+    'knowsAbout':['Virtual try-on technology','Biometric sizing intelligence','Digital twin for fashion retail','Zero-Size Protocol'],
+    'ethicsPolicy':o+'/#ethics',
+    'slogan':'The virtual fitting room that reduces returns'
+  });
+  d.head.appendChild(s);
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <style>

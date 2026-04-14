@@ -536,6 +536,37 @@ function App() {
         </motion.section>
 
         <motion.section
+          id="ethics"
+          className="section"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.65, ease: "easeOut" }}
+        >
+          <div className="section-shell">
+            <div className="section-copy">
+              <p className="section-kicker">07</p>
+              <h2>{copy.ethics.sectionTitle}</h2>
+            </div>
+
+            <div className="ethics-grid">
+              {copy.ethics.principles.map((principle) => (
+                <article key={principle.title} className="content-card ethics-card">
+                  <div className="ethics-card__icon" aria-hidden="true">&#x25C6;</div>
+                  <h3>{principle.title}</h3>
+                  <p>{principle.body}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className="ethics-seal">
+              <span className="ethics-seal__mark" aria-hidden="true">&#x2726;</span>
+              <p>{copy.ethics.seal}</p>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
           id="about"
           className="section"
           initial={{ opacity: 0, y: 24 }}
@@ -545,7 +576,7 @@ function App() {
         >
           <div className="section-shell cta-grid">
             <div className="section-copy">
-              <p className="section-kicker">07</p>
+              <p className="section-kicker">08</p>
               <h2>{copy.finalCta.title}</h2>
               <div className="hero-actions">
                 <a className="button button--primary" href="#demo">
@@ -578,7 +609,7 @@ function App() {
         >
           <div className="section-shell demo-grid">
             <div className="section-copy">
-              <p className="section-kicker">08</p>
+              <p className="section-kicker">09</p>
               <h2>{copy.demoForm.title}</h2>
               <p>{copy.demoForm.support}</p>
             </div>
