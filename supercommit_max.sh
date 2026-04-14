@@ -28,6 +28,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+# Evita fugas de secretos por hooks que escanean variables exportadas.
+# Si COMMIT_MSG viene exportada del entorno, no la reutilizamos.
+unset COMMIT_MSG || true
+
 # ── Colores ─────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -51,6 +55,41 @@ step()  { printf "\n${CYAN}▸ %s${NC}\n" "$1"; }
 ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
 fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
+
+# ── Notificaciones de exito (Telegram bot) ──────────────────────
+DEPLOY_BOT_NAME="${TRYONYOU_DEPLOY_BOT_NAME:-@tryonyou_deploy_bot}"
+
+_notify_success() {
+  local event="$1"
+  local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+  local chat="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
+
+  if [[ -z "$token" || -z "$chat" ]]; then
+    warn "Telegram omitido: define TRYONYOU_DEPLOY_BOT_TOKEN/TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID."
+    return 0
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    warn "Telegram omitido: curl no esta disponible."
+    return 0
+  fi
+
+  local branch
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown-branch')"
+  local text="TRYONYOU SUCCESS
+Bot: ${DEPLOY_BOT_NAME}
+Evento: ${event}
+Rama: ${branch}
+Patente: PCT/EP2025/067317"
+
+  if curl -fsS -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+      -d "chat_id=${chat}" \
+      --data-urlencode "text=${text}" >/dev/null; then
+    ok "Notificacion enviada con ${DEPLOY_BOT_NAME}"
+  else
+    warn "No se pudo notificar por Telegram (continuo sin bloquear pipeline)."
+  fi
+}
 
 # ── Parseo de argumentos ────────────────────────────────────────
 MODE_DEPLOY=false
@@ -177,6 +216,7 @@ if [[ "$MODE_FAST" == false ]]; then
   step "Vite production build"
   npx vite build
   ok "dist/ construido"
+  _notify_success "Validaciones y build completados"
 
 fi
 
@@ -189,7 +229,7 @@ did_commit=0
 if git diff --cached --quiet; then
   warn "Nada nuevo en el índice (sin commit en esta pasada)."
 else
-  git commit -m "$COMMIT_MSG"
+  env -u COMMIT_MSG git commit -m "$COMMIT_MSG"
   did_commit=1
   ok "Commit creado"
 fi
@@ -198,6 +238,7 @@ if [[ "$did_commit" -eq 1 ]]; then
   step "🚀 Lanzando proyectil al servidor..."
   git push
   ok "Push completado"
+  _notify_success "Commit y push completados"
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
   ahead="${ahead:-0}"
@@ -206,6 +247,7 @@ elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
     step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
     git push
     ok "Push completado"
+    _notify_success "Push de commits pendientes completado"
   else
     warn "Sin push: la rama está al día con el remoto."
   fi
@@ -222,6 +264,7 @@ if [[ "$MODE_DEPLOY" == true ]]; then
   command -v vercel >/dev/null 2>&1 || { step "Instalando Vercel CLI"; npm i -g vercel@latest; }
   vercel --token "$VERCEL_TOKEN" --prod --yes
   ok "Vercel production deploy completado"
+  _notify_success "Deploy de produccion completado"
 fi
 
 # ── Resultado final ─────────────────────────────────────────────
@@ -232,3 +275,4 @@ printf "  ✨ STATUS: LINEAL | PODERÍO: 100%% | DIVINEO: MÁXIMO\n"
 printf "  🔱 Patente PCT/EP2025/067317 — Soberanía V10 — VIVOS\n"
 printf "  ════════════════════════════════════════════════════════════\n"
 printf "${NC}\n"
+_notify_success "Supercommit_Max finalizado sin errores de Bash"

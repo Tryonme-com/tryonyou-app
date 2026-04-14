@@ -1,0 +1,22 @@
+BUNKER SOVEREIGNTY MEMORY NOTES
+
+- Archivo operativo de memoria solicitado para soberania del bunker.
+- Notificaciones de exito:
+  - Bot objetivo: @tryonyou_deploy_bot
+  - Token/chat: usar solo variables de entorno (sin secretos en git).
+  - Variables soportadas:
+    - TRYONYOU_DEPLOY_BOT_TOKEN (o TELEGRAM_BOT_TOKEN / TELEGRAM_TOKEN)
+    - TRYONYOU_DEPLOY_CHAT_ID (o TELEGRAM_CHAT_ID)
+- Despliegue:
+  - Script principal: ./TRYONYOU_SUPERCOMMIT_MAX.sh
+  - Alias tecnico: supercommit_max.sh (Supercommit_Max)
+  - Sincroniza bunker de Oberkampf (75011) con galeria web via pipeline de build/commit/push/deploy.
+- Seguridad martes 08:00:
+  - Script: python3 seguridad_martes_0800_fatality.py
+  - Verifica confirmacion documental de entrada de 450000 EUR desde capital_ingresos.json.
+  - Si hay confirmacion (status confirmed/settled), activa fatality_activation en dossier_fatality.json.
+  - Recomendacion cron:
+    - 0 8 * * 2 cd /workspace && /usr/bin/env TZ=Europe/Paris python3 seguridad_martes_0800_fatality.py
+- Estetica y calidad:
+  - Mantener ORO_DIVINEO #D4AF37 en elementos visuales y evitar errores de Bash en automatizaciones.
+  - Validar scripts con "bash -n" y ejecuciones controladas antes de push.

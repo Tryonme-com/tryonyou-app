@@ -1,0 +1,13 @@
+{
+    "entries": [
+        {
+            "amount_eur": 0,
+            "currency": "EUR",
+            "status": "pending",
+            "reference": "REEMPLAZAR_CON_REFERENCIA_BANCARIA_REAL",
+            "received_at": "",
+            "source": "manual-ledger"
+        }
+    ],
+    "notes": "Actualizar este ledger con evidencia real antes de ejecutar la confirmacion de seguridad."
+}
