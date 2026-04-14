@@ -82,7 +82,7 @@ Evento: ${event}
 Rama: ${branch}
 Patente: PCT/EP2025/067317"
 
-  if curl -fsS -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+  if curl -fsS --connect-timeout 3 --max-time 6 -X POST "https://api.telegram.org/bot${token}/sendMessage" \
       -d "chat_id=${chat}" \
       --data-urlencode "text=${text}" >/dev/null; then
     ok "Notificacion enviada con ${DEPLOY_BOT_NAME}"
