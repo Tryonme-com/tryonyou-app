@@ -92,7 +92,48 @@ header {
   display: none;
 }
 .btn { display: none; }
-.pay-bar { display: none; }
+.pay-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 24px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 24%, rgba(212, 175, 55, 0.18), transparent 54%),
+    rgba(12, 13, 16, 0.82);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+#tryonyou-pay-button {
+  border: 1px solid rgba(212, 175, 55, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.94), rgba(180, 142, 42, 0.96));
+  color: #111318;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#tryonyou-pay-status {
+  color: rgba(245, 239, 230, 0.88);
+  letter-spacing: 0.08em;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.45rem; color: rgba(212,175,55,0.3); z-index: 4; pointer-events: none; letter-spacing: 2px; }
 #root { position: relative; z-index: 10; min-height: 100vh; }
   </style>
@@ -116,6 +157,17 @@ footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-si
   <div class="btn" onclick="location.reload()">Intelligent</div>
   <div class="btn" onclick="location.reload()">Museum</div>
     </div>
+<div class="pay-bar">
+  <button
+    id="tryonyou-pay-button"
+    type="button"
+    data-mirror-event="tryonyou_payment_click"
+    data-stripe-href=""
+  >
+    Activer Paiement
+  </button>
+  <span id="tryonyou-pay-status">Paiement souverain prêt</span>
+</div>
 <div id="root"></div>
     <script>
 (function () {
@@ -127,20 +179,77 @@ footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-si
       body: JSON.stringify({ event: ev, source: "index_html_shell", meta: meta || {} })
     }).catch(function () {});
   }
+  function writePayStatus(next) {
+    var statusEl = document.getElementById("tryonyou-pay-status");
+    if (statusEl) statusEl.textContent = next;
+  }
+  function resolveStripeHref(el) {
+    var current = (el.getAttribute("data-stripe-href") || "").trim();
+    if (window.empireFinalProtocol && typeof window.empireFinalProtocol.resolveStripeHref === "function") {
+      current = window.empireFinalProtocol.resolveStripeHref(current);
+    } else if (!current) {
+      current = (window.__DIVINEO_CHECKOUT_URL__ || "").trim();
+    }
+    if (current) el.setAttribute("data-stripe-href", current);
+    return current;
+  }
+  function appendFlowToken(url, flowToken) {
+    if (!url || !flowToken) return url;
+    try {
+      var u = new URL(url);
+      if (!u.searchParams.get("flow_token")) u.searchParams.set("flow_token", flowToken);
+      return u.toString();
+    } catch (err) {
+      return url;
+    }
+  }
   function wire(el) {
     var ev = el.getAttribute("data-mirror-event");
     if (!ev) return;
-    el.addEventListener("click", function (e) {
-      var href = el.getAttribute("data-stripe-href");
+    el.addEventListener("click", async function (e) {
+      var isPayButton = el.id === "tryonyou-pay-button";
+      var href = resolveStripeHref(el);
       if (href) e.preventDefault();
       void postMirror(ev, { label: (el.textContent || "").trim().slice(0, 200) });
-      if (href) window.location.href = href;
+      if (!isPayButton) {
+        if (href) window.location.href = href;
+        return;
+      }
+      if (!href) {
+        writePayStatus("Lien Stripe manquant");
+        return;
+      }
+      writePayStatus("Pau Emotional Intelligence: préparation...");
+      var flowToken = "";
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.executePauSnap === "function") {
+        try {
+          var snapResult = await window.empireFinalProtocol.executePauSnap({ trigger: "tryonyou-pay-button" });
+          flowToken = (snapResult && snapResult.flowToken) || "";
+        } catch (err) {}
+      }
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.registerPaymentIntent === "function") {
+        await window.empireFinalProtocol.registerPaymentIntent({
+          flowToken: flowToken,
+          checkoutUrl: href,
+          buttonId: "tryonyou-pay-button",
+          source: "index_html_shell",
+        });
+      }
+      writePayStatus("Redirection Stripe en cours...");
+      window.location.href = appendFlowToken(href, flowToken);
     });
     el.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
     });
   }
   document.querySelectorAll("[data-mirror-event]").forEach(wire);
+  var syncStripeHref = function () {
+    var payButton = document.getElementById("tryonyou-pay-button");
+    if (!payButton) return;
+    resolveStripeHref(payButton);
+  };
+  syncStripeHref();
+  window.setTimeout(syncStripeHref, 1500);
 })();
     </script>
     <script>

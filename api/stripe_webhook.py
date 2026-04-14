@@ -13,6 +13,7 @@ from typing import Any
 
 import requests
 import stripe
+from empire_payout_trans import register_checkout_success
 
 WIX_PENDING_AMOUNT_EUR = 489.0
 _SERVICE_WEBHOOK_ENV_KEYS = (
@@ -21,8 +22,6 @@ _SERVICE_WEBHOOK_ENV_KEYS = (
     "MAKE_WEBHOOK_URL",
 )
 _PROCESSED_SERVICE_EVENT_IDS: set[str] = set()
-
-
 def handle_webhook(payload: bytes, sig_header: str) -> tuple[dict[str, Any], int]:
     """
     Verify the Stripe webhook signature and process the event.
@@ -68,6 +67,17 @@ def _on_checkout_session_completed(session: Any) -> tuple[dict[str, Any], int]:
     customer_email = session.get("customer_details", {}).get("email", "")
     amount_total = session.get("amount_total")
     currency = session.get("currency", "")
+    session_metadata = session.get("metadata", {}) or {}
+    flow_token = str(session_metadata.get("flow_token", "")).strip()
+    payment_status = str(session.get("payment_status", "")).strip()
+    register_checkout_success(
+        session_id=session_id,
+        amount_total=amount_total,
+        currency=currency,
+        customer_email=customer_email,
+        flow_token=flow_token,
+        source="stripe_webhook",
+    )
 
     return {
         "status": "ok",
@@ -77,6 +87,8 @@ def _on_checkout_session_completed(session: Any) -> tuple[dict[str, Any], int]:
         "customer_email": customer_email,
         "amount_total": amount_total,
         "currency": currency,
+        "flow_token": flow_token,
+        "souverainete_state": 1,
     }, 200
 
 

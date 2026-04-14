@@ -38,6 +38,12 @@ from territory_expansion import (
     get_territory_summary,
     generate_node_contract,
 )
+from empire_payout_trans import (
+    get_flow_summary,
+    register_checkout_success,
+    register_payment_intent,
+    register_payout_transition,
+)
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
@@ -327,6 +333,79 @@ def mirror_snap():
     })), 200
 
 
+# ── V11 Empire Final Protocol: Payment Intent + Success Trace ───────
+
+@app.route("/api/v1/empire/payment-intent", methods=["OPTIONS"])
+def empire_payment_intent_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-intent", methods=["POST"])
+def empire_payment_intent():
+    body = request.get_json(force=True, silent=True) or {}
+    flow_token = str(body.get("flow_token", "")).strip()
+    checkout_url = str(body.get("checkout_url", "")).strip()
+    button_id = str(body.get("button_id", "tryonyou-pay-button")).strip()
+    source = str(body.get("source", "index_html_shell")).strip()
+    protocol = str(body.get("protocol", "Pau Emotional Intelligence")).strip()
+    ui_theme = str(body.get("ui_theme", "Sello de Lujo: Antracita")).strip()
+
+    if not flow_token or not checkout_url:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "flow_token_and_checkout_url_required",
+        })), 400
+
+    event = register_payment_intent(
+        flow_token=flow_token,
+        checkout_url=checkout_url,
+        button_id=button_id,
+        source=source,
+        protocol=protocol,
+        ui_theme=ui_theme,
+    )
+    return _cors(jsonify({"status": "ok", "intent": event})), 201
+
+
+@app.route("/api/v1/empire/payment-success", methods=["OPTIONS"])
+def empire_payment_success_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-success", methods=["POST"])
+def empire_payment_success():
+    body = request.get_json(force=True, silent=True) or {}
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    source = str(body.get("source", "frontend_success_callback")).strip()
+    amount_total = body.get("amount_total")
+    currency = str(body.get("currency", "eur")).strip()
+    customer_email = str(body.get("customer_email", "")).strip()
+
+    event = register_checkout_success(
+        session_id=session_id,
+        amount_total=amount_total,
+        currency=currency,
+        customer_email=customer_email,
+        flow_token=flow_token,
+        source=source,
+    )
+    return _cors(jsonify({"status": "ok", "payment_success": event})), 201
+
+
+@app.route("/api/v1/empire/flow-status", methods=["OPTIONS"])
+def empire_flow_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/flow-status", methods=["GET"])
+def empire_flow_status():
+    flow_token = str(request.args.get("flow_token", "")).strip()
+    session_id = str(request.args.get("session_id", "")).strip()
+    summary = get_flow_summary(flow_token=flow_token, session_id=session_id)
+    return _cors(jsonify({"status": "ok", "flow": summary})), 200
+
+
 # ── V11 Repair: Qonto IBAN Transfer + Proforma Invoices ─────────────
 
 @app.route("/api/v1/payment/iban-transfer", methods=["OPTIONS"])
@@ -433,6 +512,16 @@ def treasury_record_payout():
         amount_eur=float(amount),
         recipient=str(body.get("recipient", "")).strip(),
         concept=str(body.get("concept", "operational")).strip(),
+    )
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    register_payout_transition(
+        amount_eur=float(amount),
+        recipient=entry.get("recipient", ""),
+        concept=entry.get("concept", "operational"),
+        flow_token=flow_token,
+        session_id=session_id,
+        source="api_v1_treasury_payouts",
     )
     return _cors(jsonify({"status": "ok", "payout": entry})), 201
 
