@@ -55,6 +55,21 @@ export const PRICES: Record<string, StripePrice> = {
     amountCents: 10_000,
     currency: STRIPE_CURRENCY,
   },
+  setup_fee: {
+    label: "Setup Fee (Activation Commerciale)",
+    amountCents: 1_250_000,
+    currency: STRIPE_CURRENCY,
+  },
+  exclusivity: {
+    label: "Exclusivité Lafayette",
+    amountCents: 1_500_000,
+    currency: STRIPE_CURRENCY,
+  },
+  total_immediate: {
+    label: "Total Immédiat (Setup + Exclusivité)",
+    amountCents: 2_750_000,
+    currency: STRIPE_CURRENCY,
+  },
 } as const;
 
 /**

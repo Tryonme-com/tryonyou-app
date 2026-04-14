@@ -21,6 +21,12 @@ from stripe_webhook import handle_webhook
 from inventory_engine import inventory_match_payload
 from shopify_bridge import resolve_shopify_checkout_url
 from amazon_bridge import resolve_amazon_checkout_url
+from qonto_iban_transfer import (
+    is_iban_transfer_configured,
+    resolve_iban_transfer_details,
+    validate_transfer_readiness,
+)
+from invoice_generator import generate_proforma
 
 app = Flask(__name__)
 
@@ -276,6 +282,70 @@ def mirror_snap():
     })), 200
 
 
+# ── V11 Repair: Qonto IBAN Transfer + Proforma Invoices ─────────────
+
+@app.route("/api/v1/payment/iban-transfer", methods=["OPTIONS"])
+def iban_transfer_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["GET"])
+def iban_transfer_details():
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    amount_key = request.args.get("amount", None)
+    details = resolve_iban_transfer_details(amount_key)
+    return _cors(jsonify({
+        "status": "ok",
+        **details,
+    })), 200
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["POST"])
+def iban_transfer_initiate():
+    body = request.get_json(force=True, silent=True) or {}
+    amount_key = str(body.get("amount_key", "")).strip() or None
+
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    details = resolve_iban_transfer_details(amount_key)
+    invoice = generate_proforma(
+        to=str(body.get("to", "Galeries Lafayette Haussmann")).strip(),
+        amount_key=amount_key,
+        extra_note=str(body.get("note", "")).strip(),
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "transfer": details,
+        "invoice": invoice,
+        "message": "Proforma générée. Procédez au virement SEPA Business.",
+    })), 200
+
+
+@app.route("/api/v1/invoice/proforma", methods=["OPTIONS"])
+def invoice_proforma_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/invoice/proforma", methods=["POST"])
+def invoice_proforma():
+    body = request.get_json(force=True, silent=True) or {}
+    to = str(body.get("to", "Galeries Lafayette Haussmann")).strip()
+    amount_key = str(body.get("amount_key", "")).strip() or None
+    note = str(body.get("note", "")).strip()
+
+    invoice = generate_proforma(to=to, amount_key=amount_key, extra_note=note)
+    return _cors(jsonify({
+        "status": "ok",
+        "invoice": invoice,
+    })), 200
+
+
 @app.route("/api/health", methods=["GET"])
 @app.route("/health", methods=["GET"])
 def health():
@@ -306,4 +376,6 @@ def health():
         "stripe_4_5m_set": bool(stripe_link_4_5m),
         "stripe_98k_set": bool(stripe_link_98k),
         "webhook_secret_set": bool(webhook_secret),
+        "iban_transfer_configured": is_iban_transfer_configured(),
+        "payment_method": "DIRECT_IBAN_TRANSFER" if is_iban_transfer_configured() else "STRIPE",
     })), 200
