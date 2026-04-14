@@ -61,6 +61,7 @@ export function PauFloatingGuide({ locale }: PauFloatingGuideProps) {
 
   const visibleMessages = [
     copy.pauGuideGreeting,
+    copy.pauGuideWelcome,
     step === "scanning" || step === "snapping" || step === "showing"
       ? copy.pauGuideScan
       : null,
@@ -69,6 +70,7 @@ export function PauFloatingGuide({ locale }: PauFloatingGuideProps) {
         ? copy.pauGuideNext
         : copy.pauGuideSnap
       : null,
+    step === "showing" ? copy.pauGuideClosing : null,
   ].filter(Boolean) as string[];
 
   const handleToggle = () => {

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from qonto_iban_transfer import (
     AMOUNTS,
+    DEFAULT_BENEFICIARY,
     ENTITY,
     PATENT,
     SIREN,
@@ -38,7 +39,7 @@ def _next_ref() -> str:
 
 
 def generate_proforma(
-    to: str = "Galeries Lafayette Haussmann",
+    to: str = DEFAULT_BENEFICIARY,
     amount_key: str | None = None,
     extra_note: str = "",
 ) -> dict:

@@ -23,6 +23,7 @@ interface ImportMeta {
 declare global {
   interface Window {
     __DIVINEO_CHECKOUT_URL__: string;
+    __DIVINEO_CHECKOUT_BLOCKED__?: boolean;
   }
 }
 
