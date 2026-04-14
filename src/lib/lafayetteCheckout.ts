@@ -1,6 +1,8 @@
 /**
- * Utilidades Stripe + alineación checkout Shopify (abvetos.com).
+ * Utilidades de pago: Stripe + IBAN transfer (Qonto SEPA Business) +
+ * alineación checkout Shopify (abvetos.com).
  * Prioridad enlaces Stripe: inauguración → Lafayette → soberanía legada.
+ * V11: IBAN transfer como método primario cuando está configurado.
  */
 import {
   ABVETOS_LIVE_SHOP_VARIANT_ID,
@@ -8,6 +10,74 @@ import {
 } from "../divineo/envBootstrap";
 
 export { ABVETOS_LIVE_SHOP_VARIANT_ID };
+
+export type IbanTransferDetails = {
+  method: string;
+  entity: string;
+  siret: string;
+  iban: string;
+  bic: string;
+  amount_eur: number;
+  amount_label: string;
+  currency: string;
+  bank: string;
+  iban_configured: boolean;
+  note: string;
+};
+
+export type ProformaInvoice = {
+  ref: string;
+  from: string;
+  to: string;
+  amount_eur: number;
+  currency: string;
+  note: string;
+  status: string;
+};
+
+export type IbanTransferResponse = {
+  status: string;
+  transfer: IbanTransferDetails;
+  invoice: ProformaInvoice;
+  message: string;
+};
+
+export async function fetchIbanTransferDetails(
+  amountKey?: string,
+): Promise<IbanTransferDetails | null> {
+  try {
+    const qs = amountKey ? `?amount=${encodeURIComponent(amountKey)}` : "";
+    const r = await fetch(`/api/v1/payment/iban-transfer${qs}`);
+    if (!r.ok) return null;
+    const j = (await r.json()) as IbanTransferDetails & { status: string };
+    if (j.status !== "ok") return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
+
+export async function initiateIbanTransfer(
+  amountKey?: string,
+  to?: string,
+): Promise<IbanTransferResponse | null> {
+  try {
+    const r = await fetch("/api/v1/payment/iban-transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount_key: amountKey || "total_immediate",
+        to: to || "Galeries Lafayette Haussmann",
+      }),
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as IbanTransferResponse;
+    if (j.status !== "ok") return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
 
 export function getLafayetteStripeCheckoutUrl(): string {
   const e = import.meta.env;
