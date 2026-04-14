@@ -37,6 +37,79 @@ GOLD='\033[38;5;220m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# ── Notificación de éxito (bot despliegue) ──────────────────────
+BOT_NAME="${TRYONYOU_DEPLOY_BOT_NAME:-@tryonyou_deploy_bot}"
+BOT_TOKEN="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+BOT_CHAT_ID="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
+BOT_NOTIFY="${TRYONYOU_DEPLOY_NOTIFY:-1}"
+BOT_AUTO_CHAT="${TRYONYOU_DEPLOY_AUTO_CHAT:-1}"
+BOT_WARNED=0
+
+_resolve_chat_id() {
+  [[ -n "${BOT_TOKEN}" ]] || return 1
+  command -v curl >/dev/null 2>&1 || return 1
+  command -v python3 >/dev/null 2>&1 || return 1
+
+  local updates
+  local cid
+  updates="$(curl -fsS --max-time 20 "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates" 2>/dev/null || true)"
+  [[ -n "$updates" ]] || return 1
+
+  cid="$(
+    python3 -c '
+import json
+import sys
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+for entry in reversed(data.get("result") or []):
+    msg = entry.get("message") or entry.get("channel_post") or {}
+    chat = msg.get("chat") or {}
+    chat_id = chat.get("id")
+    if chat_id is not None:
+        print(str(chat_id))
+        raise SystemExit(0)
+print("")
+' <<<"$updates" 2>/dev/null || true
+  )"
+  [[ -n "$cid" ]] || return 1
+  printf '%s' "$cid"
+  return 0
+}
+
+_notify_bot() {
+  local text="$1"
+  [[ "$BOT_NOTIFY" == "1" ]] || return 0
+  [[ -n "$BOT_TOKEN" ]] || return 0
+  command -v curl >/dev/null 2>&1 || return 0
+
+  local chat_id="${BOT_CHAT_ID}"
+  if [[ -z "$chat_id" && "$BOT_AUTO_CHAT" == "1" ]]; then
+    chat_id="$(_resolve_chat_id || true)"
+    if [[ -n "$chat_id" ]]; then
+      BOT_CHAT_ID="$chat_id"
+    fi
+  fi
+
+  if [[ -z "$chat_id" ]]; then
+    if [[ "$BOT_WARNED" -eq 0 ]]; then
+      printf "${YELLOW}  ⚠ Bot activo, pero falta chat_id y no se pudo autodetectar.${NC}\n"
+      BOT_WARNED=1
+    fi
+    return 0
+  fi
+
+  curl -fsS --max-time 20 \
+    -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    --data-urlencode "chat_id=${chat_id}" \
+    --data-urlencode "text=${BOT_NAME} :: ${text}" \
+    >/dev/null 2>&1 || true
+}
+
 _banner() {
   printf "\n${GOLD}${BOLD}"
   printf "  ╔══════════════════════════════════════════════════════════╗\n"
@@ -48,9 +121,9 @@ _banner() {
 }
 
 step()  { printf "\n${CYAN}▸ %s${NC}\n" "$1"; }
-ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
+ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; _notify_bot "✅ ${1}"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
-fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
+fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; _notify_bot "❌ ${1}"; exit 1; }
 
 # ── Parseo de argumentos ────────────────────────────────────────
 MODE_DEPLOY=false
@@ -138,6 +211,7 @@ print('  ✓ Vault y manifest alineados (patente + SIRET)')
 _banner
 
 _stamps_ok "$COMMIT_MSG" || fail "Mensaje de commit sin sellos requeridos."
+_notify_bot "🚀 Supercommit_Max iniciado en rama $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'desconocida')."
 
 # ── Fase 1: Validaciones & Build (salvo --fast) ────────────────
 if [[ "$MODE_FAST" == false ]]; then
@@ -232,3 +306,4 @@ printf "  ✨ STATUS: LINEAL | PODERÍO: 100%% | DIVINEO: MÁXIMO\n"
 printf "  🔱 Patente PCT/EP2025/067317 — Soberanía V10 — VIVOS\n"
 printf "  ════════════════════════════════════════════════════════════\n"
 printf "${NC}\n"
+_notify_bot "✅ Supercommit_Max completado sin errores."

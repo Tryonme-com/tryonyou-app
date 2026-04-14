@@ -37,6 +37,41 @@ def _run_script(*args: str, cwd: str | None = None, env: dict | None = None) -> 
     )
 
 
+def _run_script_clean(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+    """Run supercommit_max.sh in an isolated clean repo (no accidental commits in workspace)."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        _init_git_repo(tmpdir)
+        script_copy = os.path.join(tmpdir, "supercommit_max.sh")
+        shutil.copy2(_SCRIPT, script_copy)
+        subprocess.run(
+            ["git", "add", "supercommit_max.sh"],
+            cwd=tmpdir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add script copy"],
+            cwd=tmpdir,
+            check=True,
+            capture_output=True,
+        )
+        cmd = ["bash", script_copy] + list(args)
+        base_env = os.environ.copy()
+        if env:
+            base_env.update(env)
+        return subprocess.run(
+            cmd,
+            cwd=tmpdir,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=base_env,
+        )
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def _init_git_repo(path: str) -> None:
     """Initialise a minimal git repo with one initial commit."""
     subprocess.run(["git", "init", "-b", "main"], cwd=path, check=True, capture_output=True)
@@ -90,19 +125,19 @@ class TestStampValidation(unittest.TestCase):
     """v10.17 auto-appends stamps when --msg lacks them; explicit stamps are preserved."""
 
     def test_explicit_stamps_preserved(self) -> None:
-        result = _run_script("--fast", "--msg", VALID_MSG)
+        result = _run_script_clean("--fast", "--msg", VALID_MSG)
         self.assertNotIn("Falta", result.stderr)
 
     def test_auto_appended_stamps_pass_validation(self) -> None:
-        result = _run_script("--fast", "--msg", "Custom sin sellos")
+        result = _run_script_clean("--fast", "--msg", "Custom sin sellos")
         self.assertNotIn("Falta", result.stderr)
 
     def test_default_msg_does_not_fail_on_stamps(self) -> None:
-        result = _run_script("--fast")
+        result = _run_script_clean("--fast")
         self.assertNotIn("Falta", result.stderr)
 
     def test_default_msg_not_exit_1_due_to_stamps(self) -> None:
-        result = _run_script("--fast")
+        result = _run_script_clean("--fast")
         if result.returncode == 1:
             self.fail(f"Default message failed stamp validation. stderr={result.stderr!r}")
 
@@ -116,19 +151,24 @@ class TestModeFlags(unittest.TestCase):
     """Verify that --fast, --deploy, --msg are accepted."""
 
     def test_fast_mode_skips_build(self) -> None:
-        result = _run_script("--fast")
+        result = _run_script_clean("--fast")
         self.assertNotIn("Vite production build", result.stdout)
         self.assertNotIn("Python tests", result.stdout)
 
     def test_deploy_mode_without_token_fails(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "VERCEL_TOKEN"}
         env["VERCEL_TOKEN"] = ""
-        result = _run_script("--fast", "--deploy", env=env)
+        result = _run_script_clean("--fast", "--deploy", env=env)
         self.assertNotEqual(result.returncode, 0)
 
     def test_msg_flag_sets_custom_message(self) -> None:
-        result = _run_script("--fast", "--msg", "Hola mundo custom")
+        result = _run_script_clean("--fast", "--msg", "Hola mundo custom")
         self.assertNotIn("Falta", result.stderr)
+
+    def test_deploy_bot_name_from_env_variable(self) -> None:
+        env = {"TRYONYOU_DEPLOY_BOT_NAME": "@tryonyou_deploy_bot"}
+        result = _run_script_clean("--fast", "--msg", VALID_MSG, env=env)
+        self.assertEqual(result.returncode, 0)
 
 
 # ---------------------------------------------------------------------------
