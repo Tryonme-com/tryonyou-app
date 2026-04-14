@@ -841,6 +841,11 @@ button {
   border-color: rgba(199, 168, 106, 0.5);
 }
 
+.expansion-node--completed {
+  border-color: rgba(127, 185, 143, 0.58);
+  box-shadow: 0 20px 44px rgba(127, 185, 143, 0.16);
+}
+
 .expansion-node--pending {
   border-color: rgba(139, 167, 255, 0.28);
 }
@@ -860,6 +865,12 @@ button {
   background: rgba(127, 185, 143, 0.18);
   border: 1px solid rgba(127, 185, 143, 0.4);
   color: #a8e0b4;
+}
+
+.expansion-node--completed .expansion-node__badge {
+  background: rgba(127, 185, 143, 0.24);
+  border: 1px solid rgba(127, 185, 143, 0.56);
+  color: #c6f1d0;
 }
 
 .expansion-node--pending .expansion-node__badge {

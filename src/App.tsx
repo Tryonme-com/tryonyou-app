@@ -525,7 +525,9 @@ function App() {
                   <span className="expansion-node__badge">
                     {location.status === "active"
                       ? copy.expansion.activeBadge
-                      : copy.expansion.pendingBadge}
+                      : location.status === "completed"
+                        ? copy.expansion.completedBadge
+                        : copy.expansion.pendingBadge}
                   </span>
                   <h3 className="expansion-node__name">{location.name}</h3>
                   <p className="expansion-node__district">{location.district}</p>

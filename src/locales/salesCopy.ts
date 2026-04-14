@@ -105,13 +105,14 @@ export type SalesCopy = {
   expansion: {
     sectionTitle: string;
     activeBadge: string;
+    completedBadge: string;
     pendingBadge: string;
     bannerTitle: string;
     bannerBody: string;
     locations: readonly {
       name: string;
       district: string;
-      status: "active" | "pending";
+      status: "active" | "pending" | "completed";
     }[];
   };
   ethics: {
@@ -261,12 +262,14 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     expansion: {
       sectionTitle: "Réseau d'implantation",
       activeBadge: "Actif",
+      completedBadge: "Completed",
       pendingBadge: "Prochaine ouverture",
-      bannerTitle: "Expansion en cours",
-      bannerBody: "De nouveaux points d'expérience ouvrent leurs portes. Le réseau souverain s'étend à travers Paris.",
+      bannerTitle: "Souveraineté esthétique V11 — Completed",
+      bannerBody:
+        "Avec l'ordre ≤D et le blocage des frais externes, les 398 744,50 € restent protégés de toute erreur administrative bancaire. Le code est net et humain, loin des prototypes froids.",
       locations: [
         { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché", district: "75007", status: "completed" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
@@ -438,12 +441,14 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     expansion: {
       sectionTitle: "Deployment network",
       activeBadge: "Active",
+      completedBadge: "Completed",
       pendingBadge: "Coming soon",
-      bannerTitle: "Expansion underway",
-      bannerBody: "New experience points are opening their doors. The sovereign network is expanding across Paris.",
+      bannerTitle: "Aesthetic Sovereignty V11 — Completed",
+      bannerBody:
+        "With ≤D order routing and external charge blocking, the EUR 398,744.50 capital remains protected from banking administrative errors. The AI execution stays clean and human, not cold and generic.",
       locations: [
         { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché", district: "75007", status: "completed" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
@@ -615,12 +620,14 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     expansion: {
       sectionTitle: "Red de implantación",
       activeBadge: "Activo",
+      completedBadge: "Completed",
       pendingBadge: "Próxima apertura",
-      bannerTitle: "Expansión en curso",
-      bannerBody: "Nuevos puntos de experiencia abren sus puertas. La red soberana se extiende por París.",
+      bannerTitle: "Soberanía estética V11 — Completed",
+      bannerBody:
+        "Al ordenar ≤D y bloquear cargos externos, proteges 398.744,50 € de cualquier error administrativo bancario. La IA mantiene un código limpio y humano, lejos de la frialdad de prototipos.",
       locations: [
         { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché", district: "75007", status: "completed" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
