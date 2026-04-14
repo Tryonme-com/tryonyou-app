@@ -14,6 +14,7 @@ PRIORITY_CHANNELS: list[str] = ["PAYMENTS", "LEADS", "ALERTS"]
 OBJETIVO_EUR = 27_500.0
 PATENTE_REF = "PCT/EP2025/067317"
 BOT_VERSION = "V9"
+BUNKER_ORIGIN = "Bunker_V11"
 
 
 class TelegramBunkerBridge:
@@ -40,7 +41,7 @@ class TelegramBunkerBridge:
 
     def send_test_signal(self) -> dict:
         payload: dict = {
-            "origin": "Bunker_V11",
+            "origin": BUNKER_ORIGIN,
             "message": f"🔱 Conexión establecida. Estado: Operativo. Objetivo: {OBJETIVO_EUR:,.0f}€.".replace(",", "."),
             "timestamp": datetime.now().isoformat(),
         }

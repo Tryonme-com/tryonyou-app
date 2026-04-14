@@ -16,6 +16,7 @@ from telegram_bridge import (
     BOT_STATUS_ACTIVE,
     BOT_STATUS_PENDING,
     BOT_VERSION,
+    BUNKER_ORIGIN,
     OBJETIVO_EUR,
     PATENTE_REF,
     PRIORITY_CHANNELS,
@@ -175,7 +176,7 @@ class TestSendTestSignal(unittest.TestCase):
         self.assertIn("origin", self._payload)
 
     def test_payload_origin_is_bunker_v11(self) -> None:
-        self.assertEqual(self._payload["origin"], "Bunker_V11")
+        self.assertEqual(self._payload["origin"], BUNKER_ORIGIN)
 
     def test_payload_has_message(self) -> None:
         self.assertIn("message", self._payload)
