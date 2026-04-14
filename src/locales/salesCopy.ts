@@ -127,9 +127,11 @@ export type SalesCopy = {
   overlayMuseum: string;
   overlayShare: string;
   pauGuideGreeting: string;
+  pauGuideWelcome: string;
   pauGuideScan: string;
   pauGuideSnap: string;
   pauGuideNext: string;
+  pauGuideClosing: string;
 };
 
 export const SALES_COPY: Record<AppLocale, SalesCopy> = {
@@ -265,8 +267,7 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       bannerTitle: "Expansion en cours",
       bannerBody: "De nouveaux points d'expérience ouvrent leurs portes. Le réseau souverain s'étend à travers Paris.",
       locations: [
-        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché Rive Gauche", district: "75007", status: "active" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
@@ -306,9 +307,12 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     overlayMuseum: "Sauvegarder",
     overlayShare: "Partager",
     pauGuideGreeting: "Bonjour, je suis PAU, personal AI stylist by TRYONYOU.",
+    pauGuideWelcome:
+      "Bienvenue au salon Le Bon Marché Rive Gauche, où la loyauté du Bolsillo Oculto guide chaque choix.",
     pauGuideScan: "Je guide le client dans la capture et la création de son profil corporel.",
     pauGuideSnap: "Je montre comment le vêtement tombe avant l'achat.",
     pauGuideNext: "J'aide à décider avec plus de clarté sur la taille et le fit.",
+    pauGuideClosing: "Rends-le-moi avec un sourire",
   },
   en: {
     localeLabel: "Language",
@@ -442,8 +446,7 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       bannerTitle: "Expansion underway",
       bannerBody: "New experience points are opening their doors. The sovereign network is expanding across Paris.",
       locations: [
-        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché Rive Gauche", district: "75007", status: "active" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
@@ -483,9 +486,12 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     overlayMuseum: "Save",
     overlayShare: "Share",
     pauGuideGreeting: "Hello, I am PAU, personal AI stylist by TRYONYOU.",
+    pauGuideWelcome:
+      "Welcome to Le Bon Marché Rive Gauche, where the Hidden Pocket loyalty keeps every choice sovereign.",
     pauGuideScan: "I guide the customer through capture and body profile creation.",
     pauGuideSnap: "I show how the garment falls before purchase.",
     pauGuideNext: "I help the customer decide with more clarity on size and fit.",
+    pauGuideClosing: "Rends-le-moi avec un sourire",
   },
   es: {
     localeLabel: "Idioma",
@@ -619,8 +625,7 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       bannerTitle: "Expansión en curso",
       bannerBody: "Nuevos puntos de experiencia abren sus puertas. La red soberana se extiende por París.",
       locations: [
-        { name: "Galeries Lafayette Haussmann", district: "75009", status: "active" },
-        { name: "Le Bon Marché", district: "75007", status: "pending" },
+        { name: "Le Bon Marché Rive Gauche", district: "75007", status: "active" },
         { name: "Le Marais", district: "75003", status: "pending" },
         { name: "La Défense", district: "92060", status: "pending" },
       ],
@@ -660,9 +665,12 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     overlayMuseum: "Guardar",
     overlayShare: "Compartir",
     pauGuideGreeting: "Hola, soy PAU, personal AI stylist by TRYONYOU.",
+    pauGuideWelcome:
+      "Bienvenida a Le Bon Marché Rive Gauche, donde la lealtad del Bolsillo Oculto guía cada elección.",
     pauGuideScan: "Guío al cliente en la captura y la creación de su perfil corporal.",
     pauGuideSnap: "Muestro cómo cae la prenda antes de comprar.",
     pauGuideNext: "Ayudo a decidir con más claridad sobre talla y fit.",
+    pauGuideClosing: "Rends-le-moi avec un sourire",
   },
 };
 

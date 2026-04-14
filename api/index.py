@@ -22,6 +22,7 @@ from inventory_engine import inventory_match_payload
 from shopify_bridge import resolve_shopify_checkout_url
 from amazon_bridge import resolve_amazon_checkout_url
 from qonto_iban_transfer import (
+    DEFAULT_BENEFICIARY,
     is_iban_transfer_configured,
     resolve_iban_transfer_details,
     validate_transfer_readiness,
@@ -39,6 +40,36 @@ from territory_expansion import (
 )
 
 app = Flask(__name__)
+MANUS_FLOW_ID = "f89d5d98"
+
+_ALLOWED_PAYMENT_HOST_SUFFIXES = ("abvetos.com",)
+_ALLOWED_PAYMENT_LOCAL_HOSTS = {"localhost", "127.0.0.1"}
+
+
+def _is_allowed_payment_host(hostname: str) -> bool:
+    h = hostname.lower().strip(".")
+    if not h:
+        return False
+    if h in _ALLOWED_PAYMENT_LOCAL_HOSTS:
+        return True
+    return any(h == suffix or h.endswith(f".{suffix}") for suffix in _ALLOWED_PAYMENT_HOST_SUFFIXES)
+
+
+def _sanitize_checkout_url(raw_url: str) -> str:
+    raw = str(raw_url or "").strip()
+    if not raw:
+        return ""
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        if parsed.scheme not in ("http", "https"):
+            return ""
+        if not _is_allowed_payment_host(parsed.hostname or ""):
+            return ""
+        return raw
+    except Exception:
+        return ""
 
 
 @app.route("/")
@@ -208,8 +239,8 @@ def perfect_selection():
     lead_id = abs(hash(fabric or "anon")) % 10_000_000
     channel = os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify").strip().lower()
 
-    shopify_url = resolve_shopify_checkout_url(lead_id, fabric)
-    amazon_url = resolve_amazon_checkout_url(lead_id, fabric)
+    shopify_url = _sanitize_checkout_url(resolve_shopify_checkout_url(lead_id, fabric) or "")
+    amazon_url = _sanitize_checkout_url(resolve_amazon_checkout_url(lead_id, fabric) or "")
     primary_url = shopify_url if channel == "shopify" else amazon_url
 
     seal = (
@@ -226,6 +257,10 @@ def perfect_selection():
         "checkout_amazon_url": amazon_url or "",
         "protocol": "zero_size",
         "anti_accumulation": True,
+        "payment_guard": {
+            "external_checkout_blocked": True,
+            "allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
+        },
     })), 200
 
 
@@ -324,7 +359,7 @@ def iban_transfer_initiate():
 
     details = resolve_iban_transfer_details(amount_key)
     invoice = generate_proforma(
-        to=str(body.get("to", "Galeries Lafayette Haussmann")).strip(),
+        to=str(body.get("to", DEFAULT_BENEFICIARY)).strip(),
         amount_key=amount_key,
         extra_note=str(body.get("note", "")).strip(),
     )
@@ -345,7 +380,7 @@ def invoice_proforma_options():
 @app.route("/api/v1/invoice/proforma", methods=["POST"])
 def invoice_proforma():
     body = request.get_json(force=True, silent=True) or {}
-    to = str(body.get("to", "Galeries Lafayette Haussmann")).strip()
+    to = str(body.get("to", DEFAULT_BENEFICIARY)).strip()
     amount_key = str(body.get("amount_key", "")).strip() or None
     note = str(body.get("note", "")).strip()
 
@@ -469,11 +504,14 @@ def health():
     return _cors(jsonify({
         "ok": True,
         "status": "ok",
-        "version": "V11.1_Expansion_Sovereign",
+        "version": "V11.2_Rive_Gauche_Manus",
         "service": "tryonyou_v11_omega",
         "product_lane": "tryonyou_v11_sovereign",
         "siren": "943610196",
         "patente": "PCT/EP2025/067317",
+        "manus_flow_id": MANUS_FLOW_ID,
+        "payment_external_checkout_blocked": True,
+        "payment_allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
         "stripe_configured": bool(stripe_secret),
         "stripe_4_5m_set": bool(stripe_link_4_5m),
         "stripe_98k_set": bool(stripe_link_98k),

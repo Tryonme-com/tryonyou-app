@@ -1,12 +1,11 @@
 /**
- * Utilidades de pago: Stripe + IBAN transfer (Qonto SEPA Business) +
- * alineación checkout Shopify (abvetos.com).
- * Prioridad enlaces Stripe: inauguración → Lafayette → soberanía legada.
- * V11: IBAN transfer como método primario cuando está configurado.
+ * Utilidades de pago: checkout soberano Divineo (abvetos.com) + IBAN transfer.
+ * V11 Rive Gauche: bloqueo de cobros externos fuera de dominio permitido.
  */
 import {
   ABVETOS_LIVE_SHOP_VARIANT_ID,
   getDivineoCheckoutUrl,
+  isDivineoCheckoutUrlAllowed,
 } from "../divineo/envBootstrap";
 
 export { ABVETOS_LIVE_SHOP_VARIANT_ID };
@@ -67,7 +66,7 @@ export async function initiateIbanTransfer(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         amount_key: amountKey || "total_immediate",
-        to: to || "Galeries Lafayette Haussmann",
+        to: to || "Le Bon Marché Rive Gauche",
       }),
     });
     if (!r.ok) return null;
@@ -79,33 +78,35 @@ export async function initiateIbanTransfer(
   }
 }
 
-export function getLafayetteStripeCheckoutUrl(): string {
+export function getDivineoSovereignCheckoutUrl(): string {
   const e = import.meta.env;
   const candidates = [
-    e.VITE_LAFAYETTE_STRIPE_CHECKOUT_URL,
-    e.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M,
     e.VITE_STRIPE_CHECKOUT_URL,
+    e.VITE_INAUGURATION_STRIPE_CHECKOUT_URL,
+    e.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M,
     e.VITE_STRIPE_LINK_SOVEREIGNTY_98K,
   ];
   for (const v of candidates) {
     const s = (v as string | undefined)?.trim();
-    if (s) return s;
+    if (s && isDivineoCheckoutUrlAllowed(s)) return s;
   }
   return "";
 }
 
 /** Solo `VITE_INAUGURATION_STRIPE_CHECKOUT_URL` (build / Vercel). */
 export function getInaugurationStripeEnvUrl(): string {
-  return (
+  const candidate = (
     import.meta.env.VITE_INAUGURATION_STRIPE_CHECKOUT_URL as string | undefined
-  )?.trim() || "";
+  )?.trim();
+  if (!candidate) return "";
+  return isDivineoCheckoutUrlAllowed(candidate) ? candidate : "";
 }
 
-/** Inauguración 12.500 € — primero env inaugural; respaldos Lafayette / soberanía (liquidez). */
+/** Inauguración 12.500 € — primero env inaugural; respaldos soberanos (liquidez). */
 export function getInaugurationStripeCheckoutUrl(): string {
   const direct = getInaugurationStripeEnvUrl();
   if (direct) return direct;
-  return getLafayetteStripeCheckoutUrl();
+  return getDivineoSovereignCheckoutUrl();
 }
 
 /**
@@ -126,10 +127,11 @@ export function getAbvetosSovereignPaymentUrl(): string {
 /**
  * Abre un enlace de pago en nueva pestaña (Stripe Payment Link o URL externa).
  */
-export function openPaymentUrl(url: string): void {
+export function openPaymentUrl(url: string): boolean {
   const u = url.trim();
-  if (!u) return;
+  if (!u || !isDivineoCheckoutUrlAllowed(u)) return false;
   window.open(u, "_blank", "noopener,noreferrer");
+  return true;
 }
 
 /**

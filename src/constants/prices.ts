@@ -45,8 +45,8 @@ export const PRICES: Record<string, StripePrice> = {
     amountCents: 1_250_000,
     currency: STRIPE_CURRENCY,
   },
-  maison_lafayette: {
-    label: "Pack Maison Lafayette",
+  maison_rive_gauche: {
+    label: "Pack Maison Rive Gauche",
     amountCents: 10_990_000,
     currency: STRIPE_CURRENCY,
   },
@@ -61,7 +61,7 @@ export const PRICES: Record<string, StripePrice> = {
     currency: STRIPE_CURRENCY,
   },
   exclusivity: {
-    label: "Exclusivité Lafayette",
+    label: "Exclusivité Rive Gauche",
     amountCents: 1_500_000,
     currency: STRIPE_CURRENCY,
   },
