@@ -69,7 +69,11 @@ def get_treasury_status() -> dict:
     payouts = _read_payout_log()
     total_out = sum(p.get("amount_eur", 0.0) for p in payouts)
     reserve = round(capital - total_out, 2)
-    budget = float(_env("TREASURY_PAYOUT_BUDGET_EUR", str(DEFAULT_PAYOUT_BUDGET)))
+    raw_budget = _env("TREASURY_PAYOUT_BUDGET_EUR", str(DEFAULT_PAYOUT_BUDGET))
+    try:
+        budget = float(raw_budget)
+    except ValueError:
+        budget = DEFAULT_PAYOUT_BUDGET
 
     return {
         "entity": ENTITY,
