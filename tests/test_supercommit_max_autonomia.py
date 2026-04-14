@@ -18,6 +18,9 @@ class TestParseEurAmount(unittest.TestCase):
     def test_parse_european_format(self) -> None:
         self.assertEqual(parse_eur_amount("450.000,00"), 450000.0)
 
+    def test_parse_thousand_dot_without_decimals(self) -> None:
+        self.assertEqual(parse_eur_amount("450.000"), 450000.0)
+
     def test_parse_us_format_with_currency(self) -> None:
         self.assertEqual(parse_eur_amount("EUR 450,000.50"), 450000.5)
 

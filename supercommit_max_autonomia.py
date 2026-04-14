@@ -86,7 +86,14 @@ def parse_eur_amount(raw: str) -> float:
     else:
         # Solo puntos: 450.000 o 450000.00
         parts = filtered.split(".")
-        normalized = filtered.replace(".", "") if len(parts) > 2 else filtered
+        if len(parts) > 2:
+            # Caso ambiguo con varios puntos; asumimos separadores de miles.
+            normalized = filtered.replace(".", "")
+        elif len(parts) == 2 and len(parts[-1]) == 3:
+            # Formato europeo de miles sin decimales: 450.000
+            normalized = filtered.replace(".", "")
+        else:
+            normalized = filtered
 
     try:
         return float(normalized)
