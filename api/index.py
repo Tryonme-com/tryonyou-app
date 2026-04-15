@@ -27,7 +27,7 @@ def home():
 
 
 @app.route("/", methods=["POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
-def home_mutation_blocked():
+def reject_root_mutations():
     if request.method == "OPTIONS":
         return _cors(Response(status=204))
     return _cors(jsonify({"status": "error", "message": "Not Found"})), 404
