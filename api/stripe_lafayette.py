@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 
 import stripe
+from lafayette_lockdown import sovereign_lock_state
 
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
@@ -28,6 +29,10 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
     Returns:
         client_secret del PaymentIntent, o None si ocurre un error.
     """
+    lock = sovereign_lock_state()
+    if lock["blocked"]:
+        return None
+
     sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
 
     if not sk.startswith("sk_live_"):

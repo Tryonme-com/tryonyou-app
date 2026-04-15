@@ -16,6 +16,51 @@ for _p in (_ROOT, _API):
 from stripe_lafayette import create_lafayette_checkout
 
 
+class TestCreateLafayetteCheckoutLockdown(unittest.TestCase):
+    """Bloqueo soberano: no debe crear checkout con Lafayette bloqueado."""
+
+    def setUp(self) -> None:
+        self._env_backup = {
+            "LAFAYETTE_LOCK_ENABLED": os.environ.get("LAFAYETTE_LOCK_ENABLED"),
+            "LAFAYETTE_PAYMENT_STATUS": os.environ.get("LAFAYETTE_PAYMENT_STATUS"),
+            "LAFAYETTE_CONTRACT_MODE": os.environ.get("LAFAYETTE_CONTRACT_MODE"),
+            "STRIPE_SECRET_KEY": os.environ.get("STRIPE_SECRET_KEY"),
+        }
+
+    def tearDown(self) -> None:
+        for key, value in self._env_backup.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def test_returns_none_when_lockdown_active(self) -> None:
+        os.environ["LAFAYETTE_LOCK_ENABLED"] = "1"
+        os.environ["LAFAYETTE_PAYMENT_STATUS"] = "AWAITING_210_3K"
+        os.environ["LAFAYETTE_CONTRACT_MODE"] = "ANNUAL_FIXED_RATE"
+        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
+
+        with patch("stripe_lafayette.stripe.PaymentIntent.create") as mock_create:
+            result = create_lafayette_checkout("LAF-BLOCK", 120.00)
+
+        self.assertIsNone(result)
+        mock_create.assert_not_called()
+
+    def test_allows_checkout_when_payment_received_and_annual_contract(self) -> None:
+        os.environ["LAFAYETTE_LOCK_ENABLED"] = "1"
+        os.environ["LAFAYETTE_PAYMENT_STATUS"] = "RECEIVED"
+        os.environ["LAFAYETTE_CONTRACT_MODE"] = "ANNUAL_FIXED_RATE"
+        os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
+
+        mock_intent = MagicMock()
+        mock_intent.client_secret = "pi_unlocked_secret"
+
+        with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent):
+            result = create_lafayette_checkout("LAF-OPEN", 120.00)
+
+        self.assertEqual(result, "pi_unlocked_secret")
+
+
 class TestCreateLafayetteCheckoutNoKey(unittest.TestCase):
     """Cuando la clave Stripe no está configurada correctamente."""
 
@@ -46,11 +91,26 @@ class TestCreateLafayetteCheckoutNoKey(unittest.TestCase):
 class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
     """Con una clave sk_live_ válida (usando mock de Stripe)."""
 
+    def setUp(self) -> None:
+        self._env_backup = {
+            "LAFAYETTE_LOCK_ENABLED": os.environ.get("LAFAYETTE_LOCK_ENABLED"),
+            "LAFAYETTE_PAYMENT_STATUS": os.environ.get("LAFAYETTE_PAYMENT_STATUS"),
+            "LAFAYETTE_CONTRACT_MODE": os.environ.get("LAFAYETTE_CONTRACT_MODE"),
+        }
+        os.environ["LAFAYETTE_LOCK_ENABLED"] = "1"
+        os.environ["LAFAYETTE_PAYMENT_STATUS"] = "RECEIVED"
+        os.environ["LAFAYETTE_CONTRACT_MODE"] = "ANNUAL_FIXED_RATE"
+
     def _set_live_key(self) -> None:
         os.environ["STRIPE_SECRET_KEY"] = "sk_live_testfakekey123"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
+        for key, value in self._env_backup.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
     def test_returns_client_secret_on_success(self) -> None:
         self._set_live_key()

@@ -38,6 +38,7 @@ from territory_expansion import (
     get_territory_summary,
     generate_node_contract,
 )
+from lafayette_lockdown import lafayette_lock_response, sovereign_lock_state
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
@@ -70,6 +71,14 @@ def _sanitize_checkout_url(raw_url: str) -> str:
         return raw
     except Exception:
         return ""
+
+
+def _lafayette_lock_if_needed(*context_hints: str | None) -> tuple[dict, int] | None:
+    for hint in context_hints:
+        lock = lafayette_lock_response(hint)
+        if lock:
+            return lock
+    return None
 
 
 @app.route("/")
@@ -179,6 +188,18 @@ def stripe_inauguration_checkout_options():
 @app.route("/api/stripe_inauguration_checkout", methods=["POST"])
 @app.route("/stripe_inauguration_checkout", methods=["POST"])
 def stripe_inauguration_checkout():
+    body = request.get_json(force=True, silent=True) or {}
+    lock = _lafayette_lock_if_needed(
+        request.headers.get("Origin"),
+        request.headers.get("Referer"),
+        request.args.get("target"),
+        str(body.get("target", "")),
+        str(body.get("store", "")),
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     origin = request.headers.get("Origin") or ""
     payload, code = create_inauguration_checkout_session(origin or None)
     return _cors(jsonify(payload)), code
@@ -236,6 +257,16 @@ def perfect_selection_options():
 def perfect_selection():
     body = request.get_json(force=True, silent=True) or {}
     fabric = str(body.get("fabric_sensation", "")).strip()
+    lock = _lafayette_lock_if_needed(
+        str(body.get("target", "")),
+        str(body.get("store", "")),
+        str(body.get("node_id", "")),
+        fabric,
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     lead_id = abs(hash(fabric or "anon")) % 10_000_000
     channel = os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify").strip().lower()
 
@@ -336,6 +367,16 @@ def iban_transfer_options():
 
 @app.route("/api/v1/payment/iban-transfer", methods=["GET"])
 def iban_transfer_details():
+    lock = _lafayette_lock_if_needed(
+        request.args.get("target"),
+        request.args.get("store"),
+        request.args.get("node_id"),
+        request.args.get("to"),
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     readiness, code = validate_transfer_readiness()
     if code != 200:
         return _cors(jsonify(readiness)), code
@@ -351,6 +392,16 @@ def iban_transfer_details():
 @app.route("/api/v1/payment/iban-transfer", methods=["POST"])
 def iban_transfer_initiate():
     body = request.get_json(force=True, silent=True) or {}
+    lock = _lafayette_lock_if_needed(
+        str(body.get("target", "")),
+        str(body.get("store", "")),
+        str(body.get("node_id", "")),
+        str(body.get("to", "")),
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     amount_key = str(body.get("amount_key", "")).strip() or None
 
     readiness, code = validate_transfer_readiness()
@@ -380,6 +431,16 @@ def invoice_proforma_options():
 @app.route("/api/v1/invoice/proforma", methods=["POST"])
 def invoice_proforma():
     body = request.get_json(force=True, silent=True) or {}
+    lock = _lafayette_lock_if_needed(
+        str(body.get("target", "")),
+        str(body.get("store", "")),
+        str(body.get("node_id", "")),
+        str(body.get("to", "")),
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     to = str(body.get("to", DEFAULT_BENEFICIARY)).strip()
     amount_key = str(body.get("amount_key", "")).strip() or None
     note = str(body.get("note", "")).strip()
@@ -464,6 +525,15 @@ def territory_contracts_options():
 def territory_generate_contract():
     body = request.get_json(force=True, silent=True) or {}
     node_id = str(body.get("node_id", "")).strip()
+    lock = _lafayette_lock_if_needed(
+        node_id,
+        str(body.get("target", "")),
+        str(body.get("store", "")),
+    )
+    if lock:
+        payload, code = lock
+        return _cors(jsonify(payload)), code
+
     if not node_id:
         return _cors(jsonify({
             "status": "error",
@@ -500,6 +570,7 @@ def health():
 
     territory = get_territory_summary()
     treasury = get_treasury_status()
+    lafayette_lock = sovereign_lock_state()
 
     return _cors(jsonify({
         "ok": True,
@@ -518,6 +589,7 @@ def health():
         "webhook_secret_set": bool(webhook_secret),
         "iban_transfer_configured": is_iban_transfer_configured(),
         "payment_method": "DIRECT_IBAN_TRANSFER" if is_iban_transfer_configured() else "STRIPE",
+        "lafayette_lockdown": lafayette_lock,
         "territory_active_nodes": territory["active_nodes"],
         "territory_pending_nodes": territory["pending_nodes"],
         "territory_expansion_target_eur": territory["expansion_target_eur"],
