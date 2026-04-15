@@ -11,6 +11,5 @@ app.command('/cobrar', async ({ command, ack, say }) => {
     );
   }
 
-  // Ejecución automática y silenciosa...
-  // (Aquí va el resto del código del 8%)
+  // TODO: Implementar la lógica de cobro automática.
 });
