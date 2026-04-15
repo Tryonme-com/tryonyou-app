@@ -21,13 +21,13 @@ class TestSovereigntyEngineThreshold(unittest.TestCase):
     def test_threshold_applies_discount_before_expiration(self) -> None:
         engine = SovereigntyEngine()
         threshold, status = engine.calculate_current_threshold(today=dt.date(2026, 4, 21))
-        self.assertEqual(status, "OFERTA_ACTIVA_15%")
+        self.assertEqual(status, "OFFRE_FLASH_ACTIVE_15")
         self.assertEqual(threshold, 484_908.0)
 
     def test_threshold_uses_full_rate_after_expiration(self) -> None:
         engine = SovereigntyEngine()
         threshold, status = engine.calculate_current_threshold(today=dt.date(2026, 4, 23))
-        self.assertEqual(status, "TARIFA_ESTÁNDAR_VENCIDA")
+        self.assertEqual(status, "TARIF_STANDARD_PENALITÉ")
         self.assertEqual(threshold, 570_480.0)
 
 
