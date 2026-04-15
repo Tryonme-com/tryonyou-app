@@ -13,14 +13,14 @@ from api.index import app
 
 class TestSuccessRoute(unittest.TestCase):
     def setUp(self) -> None:
-        self._prev_status = os.environ.get("JULES_STATUS")
+        self.prev_status = os.environ.get("JULES_STATUS")
         self.client = app.test_client()
 
     def tearDown(self) -> None:
-        if self._prev_status is None:
+        if self.prev_status is None:
             os.environ.pop("JULES_STATUS", None)
         else:
-            os.environ["JULES_STATUS"] = self._prev_status
+            os.environ["JULES_STATUS"] = self.prev_status
 
     def test_success_route_returns_operational_payload(self) -> None:
         os.environ["JULES_STATUS"] = "OPERATIONAL"
