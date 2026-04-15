@@ -73,7 +73,17 @@ def _is_tuesday_0800(now_dt: datetime) -> bool:
 
 
 def _parse_float(value: Any) -> float:
-    txt = str(value or "").strip().replace(".", "").replace(",", ".")
+    txt = str(value or "").strip()
+    if not txt:
+        return 0.0
+    txt = txt.replace("€", "").replace(" ", "")
+    if "," in txt and "." in txt:
+        if txt.rfind(",") > txt.rfind("."):
+            txt = txt.replace(".", "").replace(",", ".")
+        else:
+            txt = txt.replace(",", "")
+    elif "," in txt:
+        txt = txt.replace(",", ".")
     try:
         return float(txt)
     except ValueError:
