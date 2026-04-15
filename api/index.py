@@ -39,6 +39,7 @@ from territory_expansion import (
     generate_node_contract,
 )
 from lafayette_lockdown import lafayette_lock_response, sovereign_lock_state
+from sovereignty_engine import v11_payment_required_guard
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
@@ -79,6 +80,24 @@ def _lafayette_lock_if_needed(*context_hints: str | None) -> tuple[dict, int] | 
         if lock:
             return lock
     return None
+
+
+@app.before_request
+def _enforce_v11_payment_required():
+    """
+    Aplica bloqueo financiero 402 para endpoints V11 cuando el balance
+    operativo está por debajo del umbral soberano.
+    """
+    path = request.path or ""
+    if not path.startswith("/api/v1/"):
+        return None
+    if request.method == "OPTIONS":
+        return None
+    guard = v11_payment_required_guard()
+    if not guard:
+        return None
+    payload, code = guard
+    return _cors(jsonify(payload)), code
 
 
 @app.route("/")

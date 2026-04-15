@@ -24,7 +24,10 @@ class TestLafayetteLockdownAPI(unittest.TestCase):
             "LAFAYETTE_LOCK_ENABLED": os.environ.get("LAFAYETTE_LOCK_ENABLED"),
             "LAFAYETTE_PAYMENT_STATUS": os.environ.get("LAFAYETTE_PAYMENT_STATUS"),
             "LAFAYETTE_CONTRACT_MODE": os.environ.get("LAFAYETTE_CONTRACT_MODE"),
+            "QONTO_BALANCE_EUR": os.environ.get("QONTO_BALANCE_EUR"),
         }
+        # Evita que el guard 402 global tape los tests específicos de lock Lafayette.
+        os.environ["QONTO_BALANCE_EUR"] = "999999.00"
 
     def tearDown(self) -> None:
         for key, value in self._old_env.items():
