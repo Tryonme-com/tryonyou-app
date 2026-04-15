@@ -1,12 +1,5 @@
 /* Divineo V11 — landing soberana, espejo y efecto chasquido PAU */
 
-/* Sello de lujo: antracita, negro y oro (Lafayette / Sacré) */
-:root {
-  --lafayette-bg: radial-gradient(circle at top, #2f353a 0%, #000000 100%);
-  --gold-sovereign: #d4af37;
-  --divine-white: #f9f9f9;
-}
-
 .landing-empire {
   background: radial-gradient(circle at top, #2f353a 0%, #000000 100%);
   font-family: "Cormorant Garamond", Georgia, serif;
@@ -33,31 +26,4 @@
   font-family: "Cormorant Garamond", serif;
   border: 1px solid #d4af37;
   box-shadow: 0 0 40px rgba(212, 175, 55, 0.3);
-}
-
-/* Contenedor espejo alto (> 2 m visual) — clase utilitaria landing */
-.mirror-container {
-  height: 210vh;
-  width: 100%;
-  background: var(--lafayette-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-}
-
-.pau-text-divine {
-  font-family: "Cormorant Garamond", serif;
-  color: var(--divine-white);
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  font-size: 3.5rem;
-  margin-top: 50px;
-}
-
-.qr-vip-display {
-  border: 2px solid var(--gold-sovereign);
-  box-shadow: 0 0 20px var(--gold-sovereign);
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.8);
 }

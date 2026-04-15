@@ -4,17 +4,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { applyMasterBeautyLook, loadPauMasterModel } from "../divineo/pauV11";
-import {
-  applySovereignPixelRatio,
-  lightenTheLoad,
-  sovereignWebGLOptions,
-} from "../divineo/lightenTheLoad";
-import {
-  createDivineoPerspectiveCamera,
-  resizeDivineoPerspectiveCamera,
-} from "../divineo/setupDivineoCamera";
-import { applyVerticalMirrorVersaceCalibration } from "../divineo/mirrorCalibrationVersace";
+import { loadPauMasterModel } from "../divineo/pauV11";
 
 type Variant = "lafayette" | "marais";
 
@@ -22,15 +12,9 @@ type Props = {
   variant: Variant;
   disabled?: boolean;
   videoId: string;
-  /** Espejo vertical >2 m — calibración Versace (FOV, pitch, aspect retrato). */
-  verticalVersaceMirror?: boolean;
 };
 
-function PauVideoFallback({
-  variant,
-  videoId,
-  verticalVersaceMirror,
-}: Pick<Props, "variant" | "videoId" | "verticalVersaceMirror">) {
+function PauVideoFallback({ variant, videoId }: Pick<Props, "variant" | "videoId">) {
   return (
     <video
       key={variant}
@@ -44,7 +28,6 @@ function PauVideoFallback({
         width: "100%",
         height: "100%",
         objectFit: "cover",
-        objectPosition: verticalVersaceMirror ? "center 28%" : "center center",
       }}
     >
       {variant === "marais" ? (
@@ -63,12 +46,7 @@ function PauVideoFallback({
   );
 }
 
-export default function RealTimeAvatar({
-  variant,
-  disabled,
-  videoId,
-  verticalVersaceMirror = false,
-}: Props) {
+export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const glHostRef = useRef<HTMLDivElement>(null);
   const [glbReady, setGlbReady] = useState(false);
@@ -78,20 +56,17 @@ export default function RealTimeAvatar({
 
     const mount = glHostRef.current;
     const scene = new THREE.Scene();
-    const rw0 = Math.max(mount.clientWidth, 1);
-    const rh0 = Math.max(mount.clientHeight, 1);
-    const size0 = rw0;
-    const camW = verticalVersaceMirror ? rw0 : size0;
-    const camH = verticalVersaceMirror ? rh0 : size0;
-    const camera = createDivineoPerspectiveCamera(camW, camH);
-    if (verticalVersaceMirror) {
-      applyVerticalMirrorVersaceCalibration(camera, camW, camH);
-    }
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(0, 0.05, 2.1);
 
-    const renderer = new THREE.WebGLRenderer(sovereignWebGLOptions());
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const size = Math.max(mount.clientWidth, 1);
-    applySovereignPixelRatio(renderer, size);
-    renderer.setSize(rw0, rh0);
+    renderer.setSize(size, size);
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
@@ -116,9 +91,8 @@ export default function RealTimeAvatar({
       raf = requestAnimationFrame(tick);
     };
 
-    const beautyCtx = variant === "marais" ? "POOL_EXIT" : "MASTER_LOOK";
     void loadPauMasterModel(scene)
-      .then(async (g) => {
+      .then((g) => {
         if (!alive) return;
         model = g;
         const box = new THREE.Box3().setFromObject(g);
@@ -127,12 +101,6 @@ export default function RealTimeAvatar({
         g.position.sub(ctr);
         const maxDim = Math.max(sz.x, sz.y, sz.z, 0.001);
         g.scale.setScalar(1.35 / maxDim);
-        try {
-          await applyMasterBeautyLook(g, beautyCtx);
-        } catch {
-          /* look opcional: no bloquea el visor */
-        }
-        if (!alive) return;
         setGlbReady(true);
         tick();
       })
@@ -140,7 +108,8 @@ export default function RealTimeAvatar({
         if (!alive) return;
         setGlbReady(false);
         cancelAnimationFrame(raf);
-        lightenTheLoad(scene, renderer);
+        scene.clear();
+        renderer.dispose();
         if (renderer.domElement.parentNode === mount) {
           mount.removeChild(renderer.domElement);
         }
@@ -148,16 +117,10 @@ export default function RealTimeAvatar({
 
     const ro = new ResizeObserver(() => {
       const el = containerRef.current;
-      const w = Math.max(mount.clientWidth, 1);
-      const h = Math.max(mount.clientHeight, 1);
-      const s = el ? Math.max(el.clientWidth, 1) : w;
-      applySovereignPixelRatio(renderer, s);
-      renderer.setSize(w, h);
-      if (verticalVersaceMirror) {
-        applyVerticalMirrorVersaceCalibration(camera, w, h);
-      } else {
-        resizeDivineoPerspectiveCamera(camera, w, w);
-      }
+      const s = el ? Math.max(el.clientWidth, 1) : Math.max(mount.clientWidth, 1);
+      renderer.setSize(s, s);
+      camera.aspect = 1;
+      camera.updateProjectionMatrix();
     });
     ro.observe(containerRef.current ?? mount);
 
@@ -165,22 +128,19 @@ export default function RealTimeAvatar({
       alive = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
-      lightenTheLoad(scene, renderer);
+      scene.clear();
+      renderer.dispose();
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
       }
       setGlbReady(false);
     };
-  }, [disabled, variant, verticalVersaceMirror]);
+  }, [disabled, variant]);
 
   if (disabled) {
     return (
       <div style={{ width: "100%", height: "100%" }}>
-        <PauVideoFallback
-          variant={variant}
-          videoId={videoId}
-          verticalVersaceMirror={verticalVersaceMirror}
-        />
+        <PauVideoFallback variant={variant} videoId={videoId} />
       </div>
     );
   }
@@ -205,11 +165,7 @@ export default function RealTimeAvatar({
           zIndex: 0,
         }}
       >
-        <PauVideoFallback
-          variant={variant}
-          videoId={videoId}
-          verticalVersaceMirror={verticalVersaceMirror}
-        />
+        <PauVideoFallback variant={variant} videoId={videoId} />
       </div>
       <div
         ref={glHostRef}

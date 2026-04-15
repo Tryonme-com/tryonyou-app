@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import LandingLVT from "./components/LandingLVT";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
-import { executePauSnap } from "./divineo/pauEmotionalIntelligence";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import {
   initFirebaseApplet,
@@ -357,11 +355,6 @@ export default function App() {
   const theSnap = () => {
     if (!pauStarted) return;
     void (async () => {
-      executePauSnap({
-        sovereignFitLabel: elasticLabel,
-        districtPostal: activeDistrict,
-        needsConfidence: true,
-      });
       const j = await postMirrorSnap(
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
