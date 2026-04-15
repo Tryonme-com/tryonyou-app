@@ -26,9 +26,16 @@ def home():
     return "API Active"
 
 
+@app.route("/", methods=["POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+def home_mutation_blocked():
+    if request.method == "OPTIONS":
+        return _cors(Response(status=204))
+    return _cors(jsonify({"status": "error", "message": "Not Found"})), 404
+
+
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Methods"] = "POST, PUT, PATCH, DELETE, OPTIONS"
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return resp
 
