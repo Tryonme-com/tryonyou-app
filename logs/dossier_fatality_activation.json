@@ -1,0 +1,25 @@
+{
+  "security_protocol": "Dossier Fatality",
+  "activation": {
+    "status": "PENDING_SCHEDULE",
+    "detail": "Fuera de ventana de ejecucion: se requiere martes 08:00.",
+    "schedule_ok": false,
+    "expected_amount_eur": 450000.0,
+    "confirmed_amount_eur": 40000.0,
+    "timestamp_local": "2026-04-15T03:37:42"
+  },
+  "dossier_seed": {
+    "estrategia": "DOSSIER FATALITY V10",
+    "activos_media": {
+      "liveitfashion": "https://liveitfashion.com",
+      "vvlart": "https://vvlart.com",
+      "mesa_listos": "Think Tank de Innovación Retail"
+    },
+    "el_efecto_paloma": {
+      "mision": "Eliminar la vulgaridad de las devoluciones",
+      "armadura": "Gafas Dior + Visón de Primavera",
+      "target": "Cliente Final Boss / Retail de Lujo"
+    },
+    "sello_legal": "Patente PCT/EP2025/067317 | SIRET 94361019600017"
+  }
+}
