@@ -115,14 +115,15 @@ export default function RealTimeAvatar({ variant, disabled, videoId }: Props) {
         }
       });
 
-    const ro = new ResizeObserver(() => {
-      const el = containerRef.current;
-      const s = el ? Math.max(el.clientWidth, 1) : Math.max(mount.clientWidth, 1);
+    const ro = new ResizeObserver((entries) => {
+      if (!alive) return;
+      const cr = entries[0]?.contentRect;
+      const s = cr ? Math.max(cr.width, 1) : Math.max(mount.clientWidth, 1);
       renderer.setSize(s, s);
       camera.aspect = 1;
       camera.updateProjectionMatrix();
     });
-    ro.observe(containerRef.current ?? mount);
+    ro.observe(mount);
 
     return () => {
       alive = false;
