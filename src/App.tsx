@@ -9,6 +9,7 @@ import {
   initFirebaseAnalytics,
   initFirebaseAppCheckIfConfigured,
 } from "./lib/firebaseApplet";
+import { trackCoreEvent } from "./lib/coreEngineClient";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
@@ -242,6 +243,7 @@ export default function App() {
   const [elasticLabel, setElasticLabel] = useState("—");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
+  const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -309,21 +311,28 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    const refreshHealth = async () => {
       const h = await fetchJulesHealth();
       if (cancelled) return;
       if (h?.ok) {
+        setMirrorPoweredOn(h.mirror_enabled !== false);
         setJulesLane(
           `Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"}`,
         );
-      } else {
-        setJulesLane(
-          "Jules · prévisualisation locale (API Python non joignable sur ce port)",
-        );
+        return;
       }
-    })();
+      setMirrorPoweredOn(true);
+      setJulesLane(
+        "Jules · prévisualisation locale (API Python non joignable sur ce port)",
+      );
+    };
+    void refreshHealth();
+    const intervalId = window.setInterval(() => {
+      void refreshHealth();
+    }, 15000);
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -338,7 +347,14 @@ export default function App() {
   }, []);
 
   const onOfrenda = (key: OfrendaKey) => {
+    if (!mirrorPoweredOn) {
+      window.alert("Le miroir est momentanément suspendu par contrôle distant.");
+      return;
+    }
     if (key === "selection") {
+      void trackCoreEvent("perfect_selection_intent", {
+        fabric_sensation: elasticLabel,
+      });
       void postPerfectCheckout(elasticLabel);
       return;
     }
@@ -353,8 +369,12 @@ export default function App() {
   };
 
   const theSnap = () => {
-    if (!pauStarted) return;
+    if (!pauStarted || !mirrorPoweredOn) return;
     void (async () => {
+      await trackCoreEvent("silhouette_scan_intent", {
+        fabric_sensation: elasticLabel,
+        fabric_fit_verdict: elasticLabelToVerdict(elasticLabel),
+      });
       const j = await postMirrorSnap(
         elasticLabel,
         elasticLabelToVerdict(elasticLabel),
@@ -565,26 +585,28 @@ export default function App() {
             className={
               isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
             }
-            disabled={!pauStarted}
+            disabled={!pauStarted || !mirrorPoweredOn}
             onClick={theSnap}
             title={
-              pauStarted
-                ? isMaraisNode
-                  ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                  : activeDistrict === "75009"
-                    ? "P.A.U. — Lafayette 75009"
-                    : "P.A.U. — Lafayette / Marais (UserCheck)"
-                : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+              !mirrorPoweredOn
+                ? "P.A.U. — desactivado por kill-switch remoto"
+                : pauStarted
+                  ? isMaraisNode
+                    ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+                    : activeDistrict === "75009"
+                      ? "P.A.U. — Lafayette 75009"
+                      : "P.A.U. — Lafayette / Marais (UserCheck)"
+                  : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
             }
             aria-label="P.A.U. — snap et orchestration Jules"
             style={{
-              opacity: pauStarted ? 1 : 0.55,
-              cursor: pauStarted ? "pointer" : "not-allowed",
+              opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
+              cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
             }}
           >
             <RealTimeAvatar
               variant={isMaraisNode ? "marais" : "lafayette"}
-              disabled={!pauStarted}
+              disabled={!pauStarted || !mirrorPoweredOn}
               videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
             />
           </button>
