@@ -37,6 +37,17 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/",
+      "methods": [
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "dest": "/api/index.py"
+    },
+    {
       "handle": "filesystem"
     },
     {
