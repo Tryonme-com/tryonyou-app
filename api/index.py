@@ -2,7 +2,9 @@ import json
 import sys
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request
+import os
+
+from flask import Flask, Response, jsonify, redirect, request, url_for
 
 _ROOT = Path(__file__).resolve().parent.parent
 _API_DIR = Path(__file__).resolve().parent
@@ -24,6 +26,10 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return "API Active"
+
+
+def _jules_status() -> str:
+    return (os.getenv("JULES_STATUS") or "OPERATIONAL").strip().upper()
 
 
 def _cors(resp):
@@ -109,3 +115,15 @@ def mirror_shadow_log():
         return _cors(jsonify({"status": "ok", **result})), 200
     except Exception as e:
         return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/maintenance")
+def maintenance():
+    return jsonify({"status": "maintenance"}), 503
+
+
+@app.route("/success")
+def success_page():
+    if _jules_status() == "OPERATIONAL":
+        return jsonify({"status": "Full Access Restored"}), 200
+    return redirect(url_for("maintenance"))
