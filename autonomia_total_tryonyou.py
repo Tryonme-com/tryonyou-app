@@ -43,6 +43,13 @@ def _truthy(value: str | None) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on", "si", "ok"}
 
 
+def _sanitize_token(value: str | None) -> str:
+    if not value:
+        return ""
+    # Operators sometimes paste tokens with spaces/newlines from chat formatting.
+    return "".join(value.split())
+
+
 def in_security_window(now: datetime | None = None, tolerance_minutes: int = 10) -> bool:
     """Return True for Tuesday 08:00 within a tolerance window."""
     ref = now or datetime.now()
@@ -182,7 +189,7 @@ def write_memory_notes(path: Path) -> None:
 
 
 def _read_bot_config() -> tuple[str, str]:
-    token = (
+    token = _sanitize_token(
         os.getenv("TRYONYOU_DEPLOY_BOT_TOKEN", "").strip()
         or os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
         or os.getenv("TELEGRAM_TOKEN", "").strip()

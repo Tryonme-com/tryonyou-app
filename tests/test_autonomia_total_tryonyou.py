@@ -32,6 +32,13 @@ class TestAutonomiaTotalTryOnYou(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn("confirmed_by_env", source)
 
+    def test_sanitize_token_removes_spaces(self) -> None:
+        raw = "8788913760:AAE2 gS0M8v1_S96H9F m8I-K1U9Z_6-R-K48\n"
+        clean = auto._sanitize_token(raw)
+        self.assertNotIn(" ", clean)
+        self.assertNotIn("\n", clean)
+        self.assertIn("8788913760:AAE2", clean)
+
     def test_activate_dossier_fatality_pending_without_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dossier = Path(tmp) / "dossier_fatality.json"
