@@ -7,7 +7,10 @@
     "dev": "vite",
     "prebuild": "node scripts/assert-firebase-applet.mjs",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "hito2:validate": "python3 orquestador_hito2_stripe_antracita.py --dry-run",
+    "hito2:deploy": "python3 orquestador_hito2_stripe_antracita.py --deploy",
+    "hito2:oneclick": "./boton_bunker_hito2.sh"
   },
   "dependencies": {
     "@stripe/stripe-js": "^5.5.0",
