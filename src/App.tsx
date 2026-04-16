@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import RealTimeAvatar from "./components/RealTimeAvatar";
+import VirtualMirrorStreet from "./components/VirtualMirrorStreet";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import {
@@ -9,7 +10,7 @@ import {
   initFirebaseAnalytics,
   initFirebaseAppCheckIfConfigured,
 } from "./lib/firebaseApplet";
-import { trackCoreEvent } from "./lib/coreEngineClient";
+import { ensureMirrorSessionId, trackCoreEvent } from "./lib/coreEngineClient";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
@@ -368,9 +369,9 @@ export default function App() {
     window.alert(copy[key]);
   };
 
-  const theSnap = () => {
-    if (!pauStarted || !mirrorPoweredOn) return;
-    void (async () => {
+  const theSnap = async (): Promise<boolean> => {
+    if (!pauStarted || !mirrorPoweredOn) return false;
+    try {
       await trackCoreEvent("silhouette_scan_intent", {
         fabric_sensation: elasticLabel,
         fabric_fit_verdict: elasticLabelToVerdict(elasticLabel),
@@ -383,7 +384,10 @@ export default function App() {
         j?.jules_msg ??
         "The Snap — votre ligne trouve son équilibre. Le drapé répond avec élégance, sans mesure visible.";
       window.alert(msg);
-    })();
+      return Boolean(j);
+    } catch {
+      return false;
+    }
   };
 
   const onHeroSubmit = async () => {
@@ -580,13 +584,11 @@ export default function App() {
           }}
           transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <button
-            type="button"
+          <VirtualMirrorStreet
+            disabled={!pauStarted || !mirrorPoweredOn}
             className={
               isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
             }
-            disabled={!pauStarted || !mirrorPoweredOn}
-            onClick={theSnap}
             title={
               !mirrorPoweredOn
                 ? "P.A.U. — desactivado por kill-switch remoto"
@@ -598,18 +600,18 @@ export default function App() {
                       : "P.A.U. — Lafayette / Marais (UserCheck)"
                   : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
             }
-            aria-label="P.A.U. — snap et orchestration Jules"
-            style={{
-              opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
-              cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
-            }}
-          >
-            <RealTimeAvatar
-              variant={isMaraisNode ? "marais" : "lafayette"}
-              disabled={!pauStarted || !mirrorPoweredOn}
-              videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
-            />
-          </button>
+            ariaLabel="P.A.U. — snap et orchestration Jules"
+            district={activeDistrict}
+            sessionId={ensureMirrorSessionId()}
+            onBiometricVerify={theSnap}
+            mirrorView={
+              <RealTimeAvatar
+                variant={isMaraisNode ? "marais" : "lafayette"}
+                disabled={!pauStarted || !mirrorPoweredOn}
+                videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+              />
+            }
+          />
         </motion.div>
       </div>
     </div>
