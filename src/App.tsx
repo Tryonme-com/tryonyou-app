@@ -293,6 +293,7 @@ export default function App() {
 
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
+  const mirrorSessionId = useMemo(() => ensureMirrorSessionId(), []);
 
   /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
   useEffect(() => {
@@ -602,7 +603,7 @@ export default function App() {
             }
             ariaLabel="P.A.U. — snap et orchestration Jules"
             district={activeDistrict}
-            sessionId={ensureMirrorSessionId()}
+            sessionId={mirrorSessionId}
             onBiometricVerify={theSnap}
             mirrorView={
               <RealTimeAvatar

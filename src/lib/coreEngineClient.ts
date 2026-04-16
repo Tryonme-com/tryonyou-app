@@ -55,7 +55,13 @@ function randomSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `jules_${crypto.randomUUID().replaceAll("-", "")}`;
   }
-  return `jules_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    const token = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `jules_${token}`;
+  }
+  throw new Error("Secure random generator unavailable for session id.");
 }
 
 export function ensureMirrorSessionId(): string {

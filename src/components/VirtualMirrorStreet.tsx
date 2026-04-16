@@ -84,14 +84,14 @@ export default function VirtualMirrorStreet({
         >
           <img
             src={qr.qrImageUrl}
-            alt="QR dinámico Advbet para finalizar The Snap"
+            alt="QR dynamique Advbet pour finaliser The Snap"
             width={220}
             height={220}
             loading="lazy"
             style={{ borderRadius: 8 }}
           />
           <p style={{ margin: "10px 0 0", fontSize: 11, color: "#3b3227" }}>
-            QR activo hasta {new Date(qr.expiresAt).toLocaleTimeString()}.
+            QR actif jusqu’à {new Date(qr.expiresAt).toLocaleTimeString()}.
           </p>
           <a
             href={qr.paymentUrl}
@@ -106,7 +106,7 @@ export default function VirtualMirrorStreet({
               borderBottom: "1px solid #1f4f96",
             }}
           >
-            Abrir pago Advbet
+            Ouvrir le paiement Advbet
           </a>
         </div>
       ) : null}

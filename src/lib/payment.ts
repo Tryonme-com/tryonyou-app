@@ -1,5 +1,6 @@
 import { getAbvetosSovereignPaymentUrl, getInaugurationStripeCheckoutUrl } from "./lafayetteCheckout";
 import { fetchParisInaugurationCheckoutUrl } from "../services/paymentService";
+import QRCode from "qrcode";
 
 const QR_EXPIRATION_MS = 2 * 60 * 1000;
 
@@ -19,12 +20,7 @@ function buildSnapToken(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  }
-  return `${Date.now()}`;
+  throw new Error("Secure random generator unavailable for snap token.");
 }
 
 function decoratePaymentUrl(
@@ -57,7 +53,11 @@ export async function generateAdvbetQR(
 
   const nowIso = new Date().toISOString();
   const paymentUrl = decoratePaymentUrl(paymentBase, options, nowIso);
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(paymentUrl)}`;
+  const qrImageUrl = await QRCode.toDataURL(paymentUrl, {
+    width: 280,
+    margin: 1,
+    errorCorrectionLevel: "M",
+  });
   const expiresAt = new Date(Date.now() + QR_EXPIRATION_MS).toISOString();
 
   return { paymentUrl, qrImageUrl, expiresAt };
