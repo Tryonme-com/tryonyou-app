@@ -371,6 +371,7 @@ export default function App() {
       combo: "Lignes alternatives chargées — composition Zero-Size.",
       save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
       share: "Partage généré — métadonnées d’ajustage neutralisées.",
+      balmain: "Balmain activado bajo protocolo soberano con identidad V9.",
     };
     window.alert(copy[key]);
   };

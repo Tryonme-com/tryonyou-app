@@ -685,10 +685,39 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "message": "kill_switch_active",
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
-    validation = asyncio.run(validate_dual_balance_async())
     session_id = resolve_session_id(body, headers)
     account_scope = resolve_account_scope(body, headers)
     actor_id = resolve_actor_id(body, headers)
+    if is_payment_verified_override_off():
+        trace = trace_event(
+            body={
+                **dict(body or {}),
+                "payment_verified_override": False,
+                "payment_verified_source": "PAYMENT_VERIFIED",
+            },
+            headers=headers,
+            route="/api/v1/core/model-access-token",
+            event_type="model_access_requested",
+            source="jules_core_engine",
+        )
+        return {
+            "ok": False,
+            "status": "debt_pending",
+            "message": "target_balance_not_reached",
+            "payment_verified": False,
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
+            "validation": {
+                "ok": False,
+                "qualified": False,
+                "threshold_eur": round_money(TARGET_BALANCE_EUR),
+                "combined_total_eur": 0.0,
+                "override_source": "PAYMENT_VERIFIED",
+            },
+            "trace": trace,
+            "protocol": CORE_ENGINE_PROTOCOL,
+        }, 402
+    validation = asyncio.run(validate_dual_balance_async())
     trace = trace_event(
         body={**dict(body or {}), "validation": validation},
         headers=headers,

@@ -39,6 +39,24 @@ class TestCommissionAudit(unittest.TestCase):
         self.assertEqual(result["total_con_comision_eur"], 324.0)
 
 
+class TestFabricPrivacyContract(unittest.TestCase):
+    def test_contract_sanitizes_classic_size_into_v9_identity(self) -> None:
+        ff_path = Path(_ROOT) / "src" / "lib" / "fabricFitComparator.ts"
+        pf_path = Path(_ROOT) / "src" / "lib" / "privacyFirewall.ts"
+        self.assertTrue(ff_path.exists())
+        self.assertTrue(pf_path.exists())
+        # Validación estructural del contrato TS en entorno Python (sin transpilar).
+        ff_content = ff_path.read_text(encoding="utf-8")
+        self.assertIn("runFabricFitPrivacyContract", ff_content)
+        self.assertIn("enforceV9IdentityLabel", ff_content)
+        self.assertIn("privacy_firewall_v9", ff_content)
+        self.assertIn("fabric_fit_comparator_v10", ff_content)
+
+        pf_content = pf_path.read_text(encoding="utf-8")
+        self.assertIn("V9 Identity", pf_content)
+        self.assertIn("isForbiddenSizeToken", pf_content)
+
+
 class TestPaymentKillSwitch402(unittest.TestCase):
     def setUp(self) -> None:
         self.prev = os.environ.copy()

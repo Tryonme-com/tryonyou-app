@@ -184,7 +184,19 @@ var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.ne
 pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
 pose.onResults(onResults);
 var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
-camera.start().catch(function(){});
+function emitPrivacyFallbackLabel(){
+try{window.dispatchEvent(new CustomEvent("tryonyou:fit",{detail:{label:"V9 Identity"}}));}catch(e){}
+}
+function hasVideoInput(){
+if(!navigator.mediaDevices||typeof navigator.mediaDevices.enumerateDevices!=="function") return Promise.resolve(false);
+return navigator.mediaDevices.enumerateDevices().then(function(devices){
+return devices.some(function(device){return device&&device.kind==="videoinput";});
+}).catch(function(){return false;});
+}
+hasVideoInput().then(function(available){
+if(!available){emitPrivacyFallbackLabel();return;}
+camera.start().catch(function(){emitPrivacyFallbackLabel();});
+});
         })();
     </script>
 <script type="module" src="/src/main.tsx"></script>
