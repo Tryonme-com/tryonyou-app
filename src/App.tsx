@@ -244,6 +244,10 @@ export default function App() {
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
   const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
+  const [paymentVerified, setPaymentVerified] = useState(true);
+  const [paymentLockMessage, setPaymentLockMessage] = useState(
+    "Sovereign Protocol Restricted - Contact Architect for Reactivation",
+  );
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -316,12 +320,19 @@ export default function App() {
       if (cancelled) return;
       if (h?.ok) {
         setMirrorPoweredOn(h.mirror_enabled !== false);
+        setPaymentVerified(h.payment_verified !== false);
+        setPaymentLockMessage(
+          h.payment_lock_message?.trim() ||
+            "Sovereign Protocol Restricted - Contact Architect for Reactivation",
+        );
         setJulesLane(
           `Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"}`,
         );
         return;
       }
       setMirrorPoweredOn(true);
+      setPaymentVerified(false);
+      setPaymentLockMessage("Sovereign Protocol Restricted - Contact Architect for Reactivation");
       setJulesLane(
         "Jules · prévisualisation locale (API Python non joignable sur ce port)",
       );
@@ -347,6 +358,10 @@ export default function App() {
   }, []);
 
   const onOfrenda = (key: OfrendaKey) => {
+    if (!paymentVerified) {
+      window.alert(paymentLockMessage);
+      return;
+    }
     if (!mirrorPoweredOn) {
       window.alert("Le miroir est momentanément suspendu par contrôle distant.");
       return;
@@ -369,7 +384,7 @@ export default function App() {
   };
 
   const theSnap = () => {
-    if (!pauStarted || !mirrorPoweredOn) return;
+    if (!pauStarted || !mirrorPoweredOn || !paymentVerified) return;
     void (async () => {
       await trackCoreEvent("silhouette_scan_intent", {
         fabric_sensation: elasticLabel,
@@ -433,6 +448,27 @@ export default function App() {
       <div className="app-stage" aria-hidden />
 
       <div className="app-ui">
+        {!paymentVerified ? (
+          <section
+            style={{
+              maxWidth: 960,
+              margin: "18px auto 0",
+              border: `1px solid ${ORO_DIVINEO}`,
+              borderRadius: 14,
+              background: "rgba(0,0,0,0.86)",
+              color: ORO_DIVINEO,
+              padding: "14px 18px",
+              textAlign: "center",
+              letterSpacing: 1.3,
+              textTransform: "uppercase",
+              fontSize: 12,
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            Error 402 · {paymentLockMessage}
+          </section>
+        ) : null}
         <section
           style={{
             padding: "32px 20px 12px",
@@ -470,7 +506,7 @@ export default function App() {
               color: "#4a4034",
             }}
           >
-            Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
+            Espejo digital en ajuste soberano real. Sin probadores crueles, sin etiquetas que hieren.
             Solo la certeza de verte como eres antes de pagar un solo euro.
           </p>
           <div
@@ -585,10 +621,12 @@ export default function App() {
             className={
               isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
             }
-            disabled={!pauStarted || !mirrorPoweredOn}
+            disabled={!pauStarted || !mirrorPoweredOn || !paymentVerified}
             onClick={theSnap}
             title={
-              !mirrorPoweredOn
+              !paymentVerified
+                ? paymentLockMessage
+                : !mirrorPoweredOn
                 ? "P.A.U. — desactivado por kill-switch remoto"
                 : pauStarted
                   ? isMaraisNode
@@ -600,13 +638,13 @@ export default function App() {
             }
             aria-label="P.A.U. — snap et orchestration Jules"
             style={{
-              opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
-              cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
+              opacity: pauStarted && mirrorPoweredOn && paymentVerified ? 1 : 0.55,
+              cursor: pauStarted && mirrorPoweredOn && paymentVerified ? "pointer" : "not-allowed",
             }}
           >
             <RealTimeAvatar
               variant={isMaraisNode ? "marais" : "lafayette"}
-              disabled={!pauStarted || !mirrorPoweredOn}
+              disabled={!pauStarted || !mirrorPoweredOn || !paymentVerified}
               videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
             />
           </button>

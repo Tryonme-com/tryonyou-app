@@ -24,7 +24,10 @@ from core_engine import (  # noqa: E402
     perfect_selection_payload,
     trace_event,
 )
-from mirror_digital_make import forward_mirror_event  # noqa: E402
+from mirror_digital_make import (  # noqa: E402
+    forward_mirror_event,
+    mirror_autonomy_status_payload,
+)
 from stripe_inauguration import create_inauguration_checkout_session  # noqa: E402
 from stripe_webhook_fr import handle_stripe_webhook_fr  # noqa: E402
 
@@ -233,6 +236,14 @@ def mirror_digital_event() -> tuple[Response, int]:
     payload, code = forward_mirror_event(body)
     payload["trace"] = trace
     return _json_response(payload, code)
+
+
+@app.route("/api/v1/mirror/autonomy/status", methods=["GET", "OPTIONS"])
+@app.route("/v1/mirror/autonomy/status", methods=["GET", "OPTIONS"])
+def mirror_autonomy_status() -> tuple[Response, int]:
+    if request.method == "OPTIONS":
+        return _cors(Response(status=204)), 204
+    return _json_response(mirror_autonomy_status_payload(), 200)
 
 
 @app.route("/api/mirror_shadow_log", methods=["POST"])

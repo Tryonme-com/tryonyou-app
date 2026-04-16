@@ -10,15 +10,15 @@ class TryOnYouCore:
 
     def process_silhouette_scan(self, user_data):
         """
-        Analiza los datos del escaneo para determinar la talla exacta.
-        Evita complejos mostrando solo 'Ajuste Perfecto'.
+        Analiza el escaneo y asigna un perfil V9 Identity cifrado
+        (sin tallas clásicas ni medidas corpóreas expuestas).
         """
-        measurements = user_data.get("measurements")
-        self.current_session["size_profile"] = self._calculate_perfect_fit(measurements)
+        anchors = user_data.get("anchors", {})
+        self.current_session["v9_identity_profile"] = self._calculate_perfect_fit(anchors)
         return {"status": "success", "message": "Silueta guardada correctamente"}
 
     def _calculate_perfect_fit(self, data):
-        return "Talla Optimizada"
+        return "V9-ID-ALIGNED"
 
     def get_top_5_suggestions(self, brand="Balmain"):
         """
@@ -38,7 +38,7 @@ class TryOnYouCore:
         Mapeo de los botones principales del piloto.
         """
         actions = {
-            "selección_perfecta": "Añadiendo a carrito con talla confirmada...",
+            "selección_perfecta": "Añadiendo a carrito con identidad V9 confirmada...",
             "reservar_probador": "Generando código QR para tienda física...",
             "ver_combinaciones": "Ciclando entre las 5 sugerencias...",
             "guardar_silueta": "Datos encriptados en perfil de usuario.",

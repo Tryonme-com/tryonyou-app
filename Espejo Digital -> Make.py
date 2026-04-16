@@ -55,7 +55,8 @@ class DivineoAutomation:
             "look_details": {
                 "brand": look_data.get("brand", "Lafayette"),
                 "garment_id": look_data.get("id"),
-                "size_confirmed": look_data.get("size"),
+                # V9 Identity: no exponer talla clásica en el contrato de payload.
+                "v9_identity_fit": look_data.get("v9_identity_fit"),
             },
             "metadata": {
                 "source": "digital_mirror_v1",
@@ -92,5 +93,5 @@ if __name__ == "__main__":
         raise SystemExit(0)
     tracker = DivineoAutomation(url)
     test_user = {"id": "user_88_pau"}
-    test_look = {"brand": "Balmain", "id": "BLM-992", "size": "M"}
+    test_look = {"brand": "Balmain", "id": "BLM-992", "v9_identity_fit": "V9-FIT-ALIGNED-001"}
     print(tracker.sync_pilot_metrics(test_user, test_look, "seleccion_perfecta"))
