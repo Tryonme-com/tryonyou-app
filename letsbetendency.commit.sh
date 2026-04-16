@@ -9,6 +9,11 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+if [[ ! -f package.json || ! -f vercel.json ]]; then
+  echo "❌ Seguridad: ejecuta este script desde la raíz del repo tryonyou-app."
+  exit 1
+fi
+
 echo "🔱 Iniciando Operación Soberanía Total..."
 
 # 1. LIMPIEZA DE INFRAESTRUCTURA
@@ -16,7 +21,11 @@ echo "🛠️ Limpiando caché y módulos corruptos..."
 rm -rf node_modules .next dist
 
 if command -v pnpm >/dev/null 2>&1; then
-  pnpm install --frozen-lockfile || pnpm install
+  if [[ -f pnpm-lock.yaml ]]; then
+    pnpm install --frozen-lockfile
+  else
+    pnpm install
+  fi
 else
   echo "⚠️ pnpm no está instalado; usando npm install como fallback."
   npm install
