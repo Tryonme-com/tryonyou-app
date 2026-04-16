@@ -23,7 +23,7 @@ export default function VirtualMirrorStreet({
   mirrorView,
 }: Props) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [qr, setQr] = useState<AdvbetQR | null>(null);
 
   const onSnapStreet = async () => {
@@ -33,7 +33,7 @@ export default function VirtualMirrorStreet({
     try {
       const verified = await onBiometricVerify();
       if (!verified) {
-        setError("Verificación biométrica no confirmada.");
+        setError("Vérification biométrique non confirmée.");
         return;
       }
       const nextQr = await generateAdvbetQR({
@@ -41,7 +41,7 @@ export default function VirtualMirrorStreet({
         sessionId,
       });
       if (!nextQr) {
-        setError("No se pudo generar el QR Advbet.");
+        setError("Impossible de générer le QR Advbet.");
         return;
       }
       setQr(nextQr);

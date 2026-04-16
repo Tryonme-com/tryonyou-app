@@ -1,6 +1,8 @@
 import { getAbvetosSovereignPaymentUrl, getInaugurationStripeCheckoutUrl } from "./lafayetteCheckout";
 import { fetchParisInaugurationCheckoutUrl } from "../services/paymentService";
 
+const QR_EXPIRATION_MS = 2 * 60 * 1000;
+
 export type AdvbetQR = {
   paymentUrl: string;
   qrImageUrl: string;
@@ -17,7 +19,12 @@ function buildSnapToken(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  return `${Date.now()}`;
 }
 
 function decoratePaymentUrl(
@@ -51,7 +58,7 @@ export async function generateAdvbetQR(
   const nowIso = new Date().toISOString();
   const paymentUrl = decoratePaymentUrl(paymentBase, options, nowIso);
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(paymentUrl)}`;
-  const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + QR_EXPIRATION_MS).toISOString();
 
   return { paymentUrl, qrImageUrl, expiresAt };
 }
