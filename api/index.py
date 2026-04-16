@@ -27,6 +27,8 @@ from core_engine import (  # noqa: E402
 from mirror_digital_make import forward_mirror_event  # noqa: E402
 from stripe_inauguration import create_inauguration_checkout_session  # noqa: E402
 from stripe_webhook_fr import handle_stripe_webhook_fr  # noqa: E402
+from stripe_lafayette import create_lafayette_checkout  # noqa: E402
+from financial_guard import log_sovereignty_event  # noqa: E402
 
 app = Flask(__name__)
 
@@ -188,6 +190,34 @@ def waitlist_beta() -> tuple[Response, int]:
 @app.route("/mirror_shadow_log", methods=["OPTIONS"])
 def mirror_shadow_options() -> tuple[Response, int]:
     return _cors(Response(status=204)), 204
+
+
+@app.route("/api/v1/empire/payment-intent", methods=["POST", "OPTIONS"])
+@app.route("/v1/empire/payment-intent", methods=["POST", "OPTIONS"])
+def empire_payment_intent() -> tuple[Response, int]:
+    if request.method == "OPTIONS":
+        return _cors(Response(status=204)), 204
+    body = _read_json_body()
+    session_id = str(body.get("session_id") or "").strip()
+    amount_eur = float(body.get("amount_eur") or 0)
+    if not session_id or amount_eur <= 0:
+        return _json_response(
+            {"status": "error", "message": "session_id and amount_eur required"}, 400
+        )
+    log_sovereignty_event(
+        event_type="empire_payment_intent_requested",
+        detail=f"amount={amount_eur}",
+        session_id=session_id,
+        amount_eur=amount_eur,
+    )
+    client_secret = create_lafayette_checkout(session_id, amount_eur)
+    if not client_secret:
+        return _json_response(
+            {"status": "error", "message": "payment_intent_creation_failed"}, 502
+        )
+    return _json_response(
+        {"status": "ok", "client_secret": client_secret, "session_id": session_id}, 200
+    )
 
 
 @app.route("/api/stripe_inauguration_checkout", methods=["OPTIONS"])
