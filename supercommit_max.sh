@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # supercommit_max — add + commit con sellos TryOnYou; push opcional por variable de entorno.
 # Uso:
-#   ./supercommit_max.sh "Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
-#   SUPERCOMMIT_PUSH=1 ./supercommit_max.sh "Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
+#   ./supercommit_max.sh "Tu mensaje de commit @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
+#   SUPERCOMMIT_PUSH=1 ./supercommit_max.sh "Tu mensaje de commit @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+REQUIRED_SEAL_1="@CertezaAbsoluta"
+REQUIRED_SEAL_2="@lo+erestu"
+REQUIRED_SEAL_3="PCT/EP2025/067317"
+
 MESSAGE="${1:-}"
 if [[ -z "$MESSAGE" ]]; then
-  echo "Uso: ./supercommit_max.sh \"Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317\"" >&2
+  echo "Uso: ./supercommit_max.sh \"Tu mensaje de commit ${REQUIRED_SEAL_1} ${REQUIRED_SEAL_2} ${REQUIRED_SEAL_3}\"" >&2
   exit 1
 fi
 
-if [[ "$MESSAGE" != *"@CertezaAbsoluta"* ]] || [[ "$MESSAGE" != *"@lo+erestu"* ]] || [[ "$MESSAGE" != *"PCT/EP2025/067317"* ]]; then
-  echo "❌ El mensaje debe incluir: @CertezaAbsoluta, @lo+erestu y PCT/EP2025/067317" >&2
+if [[ "$MESSAGE" != *"$REQUIRED_SEAL_1"* ]] || [[ "$MESSAGE" != *"$REQUIRED_SEAL_2"* ]] || [[ "$MESSAGE" != *"$REQUIRED_SEAL_3"* ]]; then
+  echo "❌ El mensaje debe incluir: ${REQUIRED_SEAL_1}, ${REQUIRED_SEAL_2} y ${REQUIRED_SEAL_3}" >&2
   exit 2
 fi
 
