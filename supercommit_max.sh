@@ -1,7 +1,42 @@
-git commit -m "style: FINAL DIVINEO - HIGH-END LUXURY LANDING" -m "
-- UI/UX: Refinamiento cromático Lafayette (Antracita/Oro/Negro).
-- Typo: Inyección de Cormorant Garamond (Divine Lettering) y contraste blanco puro.
-- Engine: Limpieza total de 63 conflictos de dependencias y rutas legacy.
-- Beauty: Mapeo de Smokey Eye y recogido griego en el motor de renderizado Pau.
-- Performance: Optimización de Shaders para el remolino de polvo dorado (Snap-Effect).
-- Mirror: Calibración de cámara vertical (>2m) para visualización esbelta de Versace."
+#!/usr/bin/env bash
+# supercommit_max — add + commit con sellos TryOnYou; push opcional por variable de entorno.
+# Uso:
+#   ./supercommit_max.sh "Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
+#   SUPERCOMMIT_PUSH=1 ./supercommit_max.sh "Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+MESSAGE="${1:-}"
+if [[ -z "$MESSAGE" ]]; then
+  echo "Uso: ./supercommit_max.sh \"Mensaje @CertezaAbsoluta @lo+erestu PCT/EP2025/067317\"" >&2
+  exit 1
+fi
+
+if [[ "$MESSAGE" != *"@CertezaAbsoluta"* ]] || [[ "$MESSAGE" != *"@lo+erestu"* ]] || [[ "$MESSAGE" != *"PCT/EP2025/067317"* ]]; then
+  echo "❌ El mensaje debe incluir: @CertezaAbsoluta, @lo+erestu y PCT/EP2025/067317" >&2
+  exit 2
+fi
+
+git add -A
+
+if git diff --cached --quiet; then
+  echo "ℹ️ Sin cambios para commit."
+  exit 0
+fi
+
+git commit -m "$MESSAGE"
+echo "✅ Commit creado."
+
+if [[ "${SUPERCOMMIT_PUSH:-0}" == "1" ]]; then
+  BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+  if [[ "${SUPERCOMMIT_FORCE_PUSH:-0}" == "1" ]]; then
+    git push --force origin "$BRANCH"
+  else
+    git push origin "$BRANCH"
+  fi
+  echo "🚀 Push completado en $BRANCH."
+else
+  echo "ℹ️ Push no ejecutado (activa SUPERCOMMIT_PUSH=1 para empujar)."
+fi
