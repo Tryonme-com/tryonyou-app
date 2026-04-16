@@ -36,6 +36,7 @@ echo "✅ Commit creado."
 if [[ "${SUPERCOMMIT_PUSH:-0}" == "1" ]]; then
   BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   if [[ "${SUPERCOMMIT_FORCE_PUSH:-0}" == "1" ]]; then
+    echo "⚠️ FORCE PUSH activado: puede sobrescribir historial remoto en ${BRANCH}." >&2
     git push --force origin "$BRANCH"
   else
     git push origin "$BRANCH"
