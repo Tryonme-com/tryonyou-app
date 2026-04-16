@@ -13,10 +13,10 @@ echo "🔱 Iniciando Operación Soberanía Total..."
 
 # 1. LIMPIEZA DE INFRAESTRUCTURA
 echo "🛠️ Limpiando caché y módulos corruptos..."
-rm -rf node_modules .next dist pnpm-lock.yaml
+rm -rf node_modules .next dist
 
 if command -v pnpm >/dev/null 2>&1; then
-  pnpm install
+  pnpm install --frozen-lockfile || pnpm install
 else
   echo "⚠️ pnpm no está instalado; usando npm install como fallback."
   npm install
@@ -41,15 +41,15 @@ if [[ -f .env.production ]]; then
     SUPABASE_SERVICE_ROLE_KEY
   )
 
-  missing=0
+  has_missing_vars=0
   for var in "${REQUIRED_VARS[@]}"; do
     if ! grep -Eq "^${var}=" .env.production; then
       echo "❌ Falta variable: ${var}"
-      missing=1
+      has_missing_vars=1
     fi
   done
 
-  if [[ "$missing" -eq 0 ]]; then
+  if [[ "$has_missing_vars" -eq 0 ]]; then
     echo "✅ Variables críticas detectadas."
   fi
 else
