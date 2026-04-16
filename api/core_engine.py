@@ -16,6 +16,7 @@ import httpx
 from inventory_engine import inventory_match_payload, inventory_status_payload
 from shopify_bridge import resolve_shopify_checkout_url
 from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
+from stealth_bunker import inventory_references_unlocked
 
 CORE_ENGINE_PROTOCOL = "jules_core_engine_v11"
 COMMISSION_RATE = 0.08
@@ -30,6 +31,9 @@ DEFAULT_CONTROL_KEY = "mirror_power_state"
 DEFAULT_POWER_STATE = "on"
 KILL_SWITCH_ALLOWED_ACTIONS = frozenset({"status", "on", "off"})
 HTTP_TIMEOUT_SECONDS = 20.0
+SOVEREIGN_PAYMENT_RESTRICTED_MESSAGE = (
+    "Sovereign Protocol Restricted - Contact Architect for Reactivation"
+)
 
 
 def utc_now() -> datetime:
@@ -182,6 +186,32 @@ def safe_float(value: Any, default: float = 0.0) -> float:
 
 def round_money(value: float) -> float:
     return round(float(value) + 1e-9, 2)
+
+
+def _is_truthy(raw: str) -> bool:
+    return raw.strip().lower() in ("1", "true", "yes", "on", "verified", "paid")
+
+
+def is_payment_verified() -> bool:
+    raw = (os.environ.get("PAYMENT_VERIFIED") or "").strip()
+    if raw:
+        return _is_truthy(raw)
+    # Fallback production gate: mirrors remain blocked until setup fee unlock is satisfied.
+    try:
+        return inventory_references_unlocked()
+    except Exception:
+        return False
+
+
+def payment_restricted_payload() -> dict[str, Any]:
+    return {
+        "ok": False,
+        "status": "payment_unverified",
+        "error_code": 402,
+        "payment_verified": False,
+        "message": SOVEREIGN_PAYMENT_RESTRICTED_MESSAGE,
+        "protocol": CORE_ENGINE_PROTOCOL,
+    }
 
 
 def resolve_commission_base_eur(payload: Mapping[str, Any] | None) -> float:
@@ -646,6 +676,8 @@ def build_model_access_token(
 
 
 def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, Any]) -> tuple[dict[str, Any], int]:
+    if not is_payment_verified():
+        return payment_restricted_payload(), 402
     if not is_mirror_powered_on():
         return {
             "ok": False,
@@ -699,6 +731,8 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
 
 
 def mirror_snap_payload(body: Mapping[str, Any] | None, headers: Mapping[str, Any]) -> tuple[dict[str, Any], int]:
+    if not is_payment_verified():
+        return payment_restricted_payload(), 402
     if not is_mirror_powered_on():
         return {
             "status": "error",
@@ -726,6 +760,8 @@ def mirror_snap_payload(body: Mapping[str, Any] | None, headers: Mapping[str, An
 
 
 def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[str, Any]) -> tuple[dict[str, Any], int]:
+    if not is_payment_verified():
+        return payment_restricted_payload(), 402
     if not is_mirror_powered_on():
         return {
             "status": "error",
@@ -755,12 +791,19 @@ def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[s
 
 def health_payload() -> dict[str, Any]:
     status = kill_switch_status_payload()
+    payment_verified = is_payment_verified()
     return {
         "ok": True,
         "service": "jules-core-engine",
         "product_lane": "tryonyou_v11",
         "protocol": CORE_ENGINE_PROTOCOL,
         "mirror_enabled": status.get("state") != "off",
+        "payment_verified": payment_verified,
+        "payment_lock_message": (
+            ""
+            if payment_verified
+            else SOVEREIGN_PAYMENT_RESTRICTED_MESSAGE
+        ),
         "kill_switch": status,
         "inventory": inventory_status_payload(),
     }

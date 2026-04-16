@@ -1,0 +1,202 @@
+{
+  "scope": "src+api+módulos operativos críticos",
+  "target_components": 66,
+  "component_files_audited": 68,
+  "target_reached": true,
+  "classical_size_token_hits": [
+    {
+      "file": "api/amazon_bridge.py",
+      "line": 2,
+      "snippet": "Amazon Bridge — Agente 27 (GL-M/GL-F → ASIN + capa SP-API LWA, Zero-Size)."
+    },
+    {
+      "file": "api/amazon_bridge.py",
+      "line": 13,
+      "snippet": "No exponer pesos, tallas (S/M/L) ni medidas en query pública: solo lead_id,"
+    },
+    {
+      "file": "api/core_engine.py",
+      "line": 44,
+      "snippet": "return utc_now().strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+    },
+    {
+      "file": "api/core_engine.py",
+      "line": 669,
+      "snippet": "\"exp\": expires_at.strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
+    },
+    {
+      "file": "api/mirror_digital_make.py",
+      "line": 46,
+      "snippet": "\"received_at_utc\": datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
+    },
+    {
+      "file": "api/stealth_bunker.py",
+      "line": 112,
+      "snippet": "ts = datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+    },
+    {
+      "file": "api/stealth_bunker.py",
+      "line": 235,
+      "snippet": "ts = datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+    },
+    {
+      "file": "api/stealth_bunker.py",
+      "line": 295,
+      "snippet": "ts = datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+    },
+    {
+      "file": "api/stealth_bunker.py",
+      "line": 351,
+      "snippet": "<p class=\"line\">L'accès à la rareté est un privilège. Contactez le 75001.</p>"
+    },
+    {
+      "file": "smart_cart.py",
+      "line": 23,
+      "snippet": "# Simulación soberana V9: no tallas S/M/L."
+    },
+    {
+      "file": "src/components/AbvetosConsolidator.tsx",
+      "line": 28,
+      "snippet": "<PaymentGateway title=\"L’Architecte · pasarela vérifiée (Paris)\">"
+    },
+    {
+      "file": "src/divineo/divineoV11Config.ts",
+      "line": 16,
+      "snippet": "export const FORBIDDEN_CLASSICAL_SIZES = [\"S\", \"M\", \"L\", \"XS\", \"XL\", \"XXL\"] as const;"
+    },
+    {
+      "file": "src/divineo/mediapipeHand21.ts",
+      "line": 4,
+      "snippet": "* o Hands clásico — mismo modelo de 21 puntos (no tallas S/M/L; solo Sovereign Fit)."
+    },
+    {
+      "file": "src/lib/consolidate_bunker.py",
+      "line": 25,
+      "snippet": "# El algoritmo que ignora la mediocridad de las tallas S/M/L"
+    },
+    {
+      "file": "src/locales/refined_locales.ts",
+      "line": 8,
+      "snippet": "\"brand_fallback\": \"L'élégance Burberry en alternative d'exception.\""
+    },
+    {
+      "file": "src/logic/zero_size_engine.py",
+      "line": 10,
+      "snippet": "# El algoritmo que ignora la mediocridad de las tallas S/M/L"
+    }
+  ],
+  "measure_term_hits": [
+    {
+      "file": "api/robert_engine.py",
+      "line": 5,
+      "snippet": "de puntos de anclaje (shoulder_w, hip_y), el fabric_key y las dimensiones"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 25,
+      "snippet": "shoulder_w: float  # anchura de hombros (px normalizados)"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 26,
+      "snippet": "hip_y: float  # posición vertical de caderas (px normalizados)"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 38,
+      "snippet": "shoulder_w: float,"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 39,
+      "snippet": "hip_y: float,"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 48,
+      "snippet": "shoulder_w:   Anchura de hombros del usuario (px normalizados)."
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 49,
+      "snippet": "hip_y:        Posición vertical de caderas del usuario (px normalizados)."
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 60,
+      "snippet": "norm_shoulder = round(float(shoulder_w) / max(frame_w, 1), 4)"
+    },
+    {
+      "file": "api/robert_engine.py",
+      "line": 61,
+      "snippet": "norm_hip = round(float(hip_y) / max(frame_h, 1), 4)"
+    },
+    {
+      "file": "api/sovereign_sale.py",
+      "line": 41,
+      "snippet": "(atributos: shoulder_w, hip_y)."
+    },
+    {
+      "file": "api/sovereign_sale.py",
+      "line": 54,
+      "snippet": "user_anchors.shoulder_w,"
+    },
+    {
+      "file": "api/sovereign_sale.py",
+      "line": 55,
+      "snippet": "user_anchors.hip_y,"
+    },
+    {
+      "file": "src/lib/consolidate_bunker.py",
+      "line": 20,
+      "snippet": "def __init__(self, chest, shoulder, waist):"
+    },
+    {
+      "file": "src/lib/consolidate_bunker.py",
+      "line": 21,
+      "snippet": "self.metrics = {\"chest\": chest, \"shoulder\": shoulder, \"waist\": waist}"
+    },
+    {
+      "file": "src/lib/consolidate_bunker.py",
+      "line": 26,
+      "snippet": "fit_index = (self.metrics['chest'] * self.metrics['shoulder']) / self.sovereignty_buffer"
+    },
+    {
+      "file": "src/lib/consolidate_bunker.py",
+      "line": 94,
+      "snippet": "engine = ZeroSizeEngine(chest=105, shoulder=48, waist=85)"
+    },
+    {
+      "file": "src/lib/fabricFitComparator.ts",
+      "line": 23,
+      "snippet": "const hip = dist2(landmarks[23], landmarks[24]);"
+    },
+    {
+      "file": "src/lib/fabricFitComparator.ts",
+      "line": 24,
+      "snippet": "return shoulder / Math.max(hip, 1e-6);"
+    },
+    {
+      "file": "src/logic/zero_size_engine.py",
+      "line": 5,
+      "snippet": "def __init__(self, chest, shoulder, waist):"
+    },
+    {
+      "file": "src/logic/zero_size_engine.py",
+      "line": 6,
+      "snippet": "self.metrics = {\"chest\": chest, \"shoulder\": shoulder, \"waist\": waist}"
+    },
+    {
+      "file": "src/logic/zero_size_engine.py",
+      "line": 11,
+      "snippet": "fit_index = (self.metrics['chest'] * self.metrics['shoulder']) / self.sovereignty_buffer"
+    }
+  ],
+  "fabric_fit_comparator": {
+    "comparator_file_exists": true,
+    "app_uses_fit_event": true,
+    "index_dispatches_fit_event": true,
+    "patent_reference_found": true
+  },
+  "status": "ok"
+}

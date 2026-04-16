@@ -57,7 +57,7 @@ def execute_sovereign_sale(
         {"w": 1080, "h": 1920},
     )
 
-    # 2. Shopify prepara la orden con la talla exacta
+    # 2. Shopify prepara la orden usando identidad soberana (sin talla visible).
     order_status = shopify.sync_robert_to_shopify(fabric_key, {"fitScore": 100})
 
     # 3. El contrato de franquicia anota la comisión (ej. Vestido Balmain 4.000€)
