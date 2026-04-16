@@ -26,7 +26,17 @@
     },
     {
       "file": "api/mirror_digital_make.py",
-      "line": 46,
+      "line": 43,
+      "snippet": "\"queued_at_utc\": datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
+    },
+    {
+      "file": "api/mirror_digital_make.py",
+      "line": 68,
+      "snippet": "\"updated_at_utc\": datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
+    },
+    {
+      "file": "api/mirror_digital_make.py",
+      "line": 100,
       "snippet": "\"received_at_utc\": datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
     },
     {
