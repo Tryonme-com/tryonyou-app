@@ -5,7 +5,12 @@
     { "src": "package.json", "use": "@vercel/next" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "api/index.py" },
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    {
+      "src": "/",
+      "methods": ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "dest": "/api/index.py"
+    },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
