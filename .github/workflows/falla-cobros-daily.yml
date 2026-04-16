@@ -1,0 +1,69 @@
+name: Falla Cobros Daily
+
+on:
+  schedule:
+    # 09:00 UTC diario (ajusta si necesitas otra zona horaria).
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [falla_cobros_webhook]
+
+jobs:
+  procesar-cobros:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLIENT_PAYLOAD_JSON: ${{ toJson(github.event.client_payload) }}
+      COMMISSION_PCT: "0.08"
+      CUOTA_BASE: "50.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Preparar input de cobros
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload_raw = os.environ.get("CLIENT_PAYLOAD_JSON", "{}").strip() or "{}"
+          payload = json.loads(payload_raw)
+          registros = payload.get("registros")
+
+          default_input = Path("data/falla_cobros_input.json")
+          default_input.parent.mkdir(parents=True, exist_ok=True)
+          if not default_input.exists():
+              default_input.write_text('{"registros": []}\n', encoding="utf-8")
+
+          input_path = Path("data/falla_cobros_runtime.json")
+          if isinstance(registros, list):
+              input_path.write_text(
+                  json.dumps({"registros": registros}, ensure_ascii=False, indent=2),
+                  encoding="utf-8",
+              )
+          else:
+              input_path.write_text(default_input.read_text(encoding="utf-8"), encoding="utf-8")
+          print(f"INPUT_PATH={input_path}")
+          PY
+
+      - name: Ejecutar gestor de cobros Falla
+        run: |
+          python run_gestor_falla_v9.py \
+            --input data/falla_cobros_runtime.json \
+            --memory-path memories/falla_memories_ci.json \
+            --output memories/falla_asientos_ultimos_ci.json \
+            --commission-pct "${COMMISSION_PCT}" \
+            --cuota-base "${CUOTA_BASE}"
+
+      - name: Subir asientos procesados
+        uses: actions/upload-artifact@v4
+        with:
+          name: falla-asientos
+          path: memories/falla_asientos_ultimos_ci.json
