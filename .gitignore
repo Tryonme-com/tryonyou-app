@@ -45,5 +45,8 @@ logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
 logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+logs/hito2/*.jsonl
+logs/hito2/*.json
+src/data/omega_seal.json
 update_stripe_v10.py
 activate_royalties_v10.py
