@@ -127,12 +127,13 @@ if [[ "${SUPERCOMMIT_DEPLOY:-0}" == "1" ]]; then
     echo "❌ SUPERCOMMIT_DEPLOY=1 pero VERCEL_TOKEN no está definido." >&2
     exit 3
   fi
-  if ! command -v vercel >/dev/null 2>&1; then
-    echo "❌ No se encontró CLI de vercel en PATH." >&2
-    exit 3
+  if command -v vercel >/dev/null 2>&1; then
+    echo "🚀 vercel deploy --prod"
+    vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+  else
+    echo "🚀 npx vercel deploy --prod (fallback)"
+    npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN"
   fi
-  echo "🚀 vercel deploy --prod"
-  vercel deploy --prod --yes --token="$VERCEL_TOKEN"
 fi
 
 notify_telegram "✅ @tryonyou_deploy_bot :: Supercommit_Max OK en rama ${branch} (commit ${commit_sha})."
