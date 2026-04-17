@@ -95,6 +95,19 @@ PY
     >/dev/null || echo "⚠️ Falló notificación Telegram." >&2
 }
 
+sanitize_vercel_token() {
+  python3 - <<'PY'
+import os
+raw = os.getenv("VERCEL_TOKEN", "")
+token = raw.strip().strip('"').strip("'")
+for prefix in ("export VERCEL_TOKEN=", "VERCEL_TOKEN="):
+    if token.startswith(prefix):
+        token = token[len(prefix):].strip().strip('"').strip("'")
+token = "".join(token.split())
+print(token)
+PY
+}
+
 echo "🏛️ Supercommit_Max sobre rama: ${branch}"
 
 if [[ "${SUPERCOMMIT_SKIP_BUILD:-0}" != "1" ]]; then
@@ -123,16 +136,17 @@ else
 fi
 
 if [[ "${SUPERCOMMIT_DEPLOY:-0}" == "1" ]]; then
-  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
+  VERCEL_TOKEN_CLEAN="$(sanitize_vercel_token)"
+  if [[ -z "${VERCEL_TOKEN_CLEAN}" ]]; then
     echo "❌ SUPERCOMMIT_DEPLOY=1 pero VERCEL_TOKEN no está definido." >&2
     exit 3
   fi
   if command -v vercel >/dev/null 2>&1; then
     echo "🚀 vercel deploy --prod"
-    vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+    vercel deploy --prod --yes --token="$VERCEL_TOKEN_CLEAN"
   else
     echo "🚀 npx vercel deploy --prod (fallback)"
-    npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+    npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN_CLEAN"
   fi
 fi
 
