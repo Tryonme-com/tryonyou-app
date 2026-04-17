@@ -633,12 +633,17 @@ def core_trace_options():
 @app.route("/api/v1/core/trace", methods=["POST"])
 def core_trace():
     body = request.get_json(silent=True) or {}
-    result = trace_event(
-        event_type=body.get("event_type", "unknown"),
-        body=body,
-        headers=dict(request.headers),
-    )
-    return _cors(jsonify(result)), 200
+    try:
+        result = trace_event(
+            event_type=body.get("event_type", "unknown"),
+            body=body,
+            headers=dict(request.headers),
+            route="/api/v1/core/trace",
+            source=body.get("source", "api"),
+        )
+        return _cors(jsonify(result)), 200
+    except Exception as exc:
+        return _cors(jsonify({"status": "ok", "db_persisted": False, "error": str(exc)})), 200
 
 
 
@@ -649,8 +654,11 @@ def model_access_token_options():
 @app.route("/api/v1/core/model-access-token", methods=["POST"])
 def model_access_token():
     body = request.get_json(silent=True) or {}
-    result, status = model_access_payload(body, dict(request.headers))
-    return _cors(jsonify(result)), status
+    try:
+        result, status = model_access_payload(body, dict(request.headers))
+        return _cors(jsonify(result)), status
+    except Exception as exc:
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
 
 
 @app.route("/api/__jules__/control/kill-switch", methods=["OPTIONS"])
