@@ -47,8 +47,18 @@ def _project_root() -> Path:
 
 def _logs_dir() -> Path:
     path = _project_root() / "logs"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        # Test if writable
+        test_file = path / ".write_test"
+        test_file.touch()
+        test_file.unlink()
+        return path
+    except OSError:
+        # Vercel has read-only filesystem, use /tmp
+        tmp_path = Path("/tmp/core_engine_logs")
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        return tmp_path
 
 
 def _fallback_json_path(stem: str) -> Path:
