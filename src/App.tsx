@@ -244,7 +244,7 @@ export default function App() {
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
   const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
-  const [paymentVerified, setPaymentVerified] = useState(true);
+  const [paymentVerified, setPaymentVerified] = useState(false);
   const [paymentLockMessage, setPaymentLockMessage] = useState(
     "Sovereign Protocol Restricted - Contact Architect for Reactivation",
   );
