@@ -43,6 +43,47 @@ notify_telegram() {
   token="$(echo -n "$token" | tr -d '[:space:]')"
   chat="$(echo -n "$chat" | tr -d '[:space:]')"
 
+  discover_chat_id() {
+    local discovery_token="$1"
+    python3 - "$discovery_token" <<'PY'
+import json
+import sys
+import urllib.request
+
+token = sys.argv[1]
+url = f"https://api.telegram.org/bot{token}/getUpdates"
+try:
+    with urllib.request.urlopen(url, timeout=20) as response:
+        data = json.loads(response.read().decode("utf-8"))
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+if not data.get("ok"):
+    print("")
+    raise SystemExit(0)
+
+for update in reversed(data.get("result", [])):
+    msg = (
+        update.get("message")
+        or update.get("channel_post")
+        or update.get("edited_message")
+        or {}
+    )
+    chat = msg.get("chat") or {}
+    chat_id = chat.get("id")
+    if chat_id is not None:
+        print(chat_id)
+        break
+else:
+    print("")
+PY
+  }
+
+  if [[ -n "$token" && -z "$chat" ]]; then
+    chat="$(discover_chat_id "$token" | tr -d '[:space:]')"
+  fi
+
   if [[ -z "$token" || -z "$chat" ]]; then
     echo "ℹ️ Notificación Telegram omitida (token/chat_id no configurados)."
     return 0
