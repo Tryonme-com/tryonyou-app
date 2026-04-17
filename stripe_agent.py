@@ -11,7 +11,13 @@ Requires env var: STRIPE_SECRET_KEY_FR (Paris) o legado STRIPE_SECRET_KEY (sk_li
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any
+
+_ROOT = Path(__file__).resolve().parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 import stripe
 
