@@ -2000,3 +2000,97 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Manifesto bottom section */
+.manifesto-bottom {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2rem, 7vw, 4.8rem);
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, rgba(245, 243, 238, 0.96), rgba(199, 168, 106, 1), rgba(139, 167, 255, 0.92), rgba(199, 168, 106, 1), rgba(245, 243, 238, 0.96));
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 28px rgba(199, 168, 106, 0.14);
+  animation: manifesto-pulse 5.2s ease-in-out infinite;
+}
+
+@keyframes manifesto-pulse {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 10px rgba(199, 168, 106, 0.12));
+    transform: scale(1);
+  }
+
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 22px rgba(199, 168, 106, 0.3));
+    transform: scale(1.015);
+  }
+}
+
+/* Animated counter glow */
+.metric-card__value--animated {
+  text-shadow:
+    0 0 14px rgba(199, 168, 106, 0.18),
+    0 0 28px rgba(139, 167, 255, 0.12);
+  animation: metric-glow 3.8s ease-in-out infinite;
+}
+
+@keyframes metric-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 12px rgba(199, 168, 106, 0.16),
+      0 0 24px rgba(139, 167, 255, 0.1);
+  }
+
+  50% {
+    text-shadow:
+      0 0 22px rgba(199, 168, 106, 0.3),
+      0 0 36px rgba(139, 167, 255, 0.18);
+  }
+}
+
+/* Hero gradient border animation */
+.hero-panel {
+  animation: hero-border-glow 5s ease-in-out infinite;
+}
+
+@keyframes hero-border-glow {
+  0%,
+  100% {
+    background: linear-gradient(145deg, rgba(199, 168, 106, 0.5), rgba(139, 167, 255, 0.26));
+    box-shadow:
+      0 20px 54px rgba(0, 0, 0, 0.28),
+      0 0 0 1px rgba(199, 168, 106, 0.08),
+      0 0 22px rgba(199, 168, 106, 0.1);
+  }
+
+  50% {
+    background: linear-gradient(145deg, rgba(199, 168, 106, 0.72), rgba(139, 167, 255, 0.42));
+    box-shadow:
+      0 26px 68px rgba(0, 0, 0, 0.34),
+      0 0 0 1px rgba(199, 168, 106, 0.16),
+      0 0 30px rgba(199, 168, 106, 0.18);
+  }
+}
