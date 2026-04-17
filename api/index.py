@@ -641,27 +641,6 @@ def core_trace():
     return _cors(jsonify(result)), 200
 
 
-@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
-def mirror_snap_options():
-    return _cors(Response("", status=204))
-
-@app.route("/api/v1/mirror/snap", methods=["POST"])
-def mirror_snap():
-    body = request.get_json(silent=True) or {}
-    result, status = mirror_snap_payload(body, dict(request.headers))
-    return _cors(jsonify(result)), status
-
-
-@app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])
-def perfect_selection_options_v2():
-    return _cors(Response("", status=204))
-
-@app.route("/api/v1/checkout/perfect-selection", methods=["POST"])
-def perfect_selection_v2():
-    body = request.get_json(silent=True) or {}
-    result, status = perfect_selection_payload(body, dict(request.headers))
-    return _cors(jsonify(result)), status
-
 
 @app.route("/api/v1/core/model-access-token", methods=["OPTIONS"])
 def model_access_token_options():
