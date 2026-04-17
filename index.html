@@ -50,47 +50,92 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>TRYONME × DIVINEO</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<script id="tryonyou-org-jsonld">
+(function(){
+  var d=document,s=d.createElement('script');
+  s.type='application/ld+json';
+  var o=window.location.origin;
+  s.textContent=JSON.stringify({
+    '@context':'https://schema.org','@type':'Organization',
+    'name':'TryOnYou','alternateName':'Divineo','url':o,
+    'foundingDate':'2024',
+    'founder':{'@type':'Person','name':'Rubén Espinar Rodríguez'},
+    'address':{'@type':'PostalAddress','addressLocality':'Paris','postalCode':'75011','addressCountry':'FR'},
+    'taxID':'94361019600017',
+    'knowsAbout':['Virtual try-on technology','Biometric sizing intelligence','Digital twin for fashion retail','Zero-Size Protocol'],
+    'ethicsPolicy':o+'/#ethics',
+    'slogan':'The virtual fitting room that reduces returns'
+  });
+  d.head.appendChild(s);
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <style>
-:root { --gold: #D4AF37; --black: #000; }
+:root { --gold: #D4AF37; --black: #0c0d10; --anthracite: #141619; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--black); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-#container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+body { background: var(--anthracite); color: white; font-family: 'Inter', 'Cinzel', Georgia, serif; overflow-x: hidden; overflow-y: auto; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+#container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 #container video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-#container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+#container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; }
 header {
-  position: fixed; top: 0; width: 100%; z-index: 100; padding: 30px;
-  text-align: center; background: linear-gradient(to bottom, black, transparent);
+  position: fixed; top: 0; width: 100%; z-index: 5; padding: 18px 30px;
+  text-align: center; background: linear-gradient(to bottom, var(--black), transparent);
+  pointer-events: none; opacity: 0;
 }
-.brands { display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); }
+.brands { display: flex; justify-content: center; gap: 24px; margin-top: 12px; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); font-family: 'Cinzel', Georgia, serif; }
 .hero {
-  position: absolute; top: 25%; width: 100%; text-align: center; z-index: 10; pointer-events: none;
+  position: fixed; top: 22%; width: 100%; text-align: center; z-index: 2; pointer-events: none; opacity: 0;
 }
-.hero h1 { font-size: 2rem; letter-spacing: 10px; text-transform: uppercase; font-weight: 100; }
+.hero h1 { font-size: 2rem; letter-spacing: 12px; text-transform: uppercase; font-weight: 100; color: rgba(255,255,255,0.08); }
 .nav-bottom {
-  position: fixed; bottom: 0; width: 100%; z-index: 100;
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+  display: none;
 }
-.btn {
-  position: relative; z-index: 100;
-  padding: 20px 10px; border: 0.5px solid #222; color: white;
-  font-size: 0.6rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
-}
-.btn:hover { background: var(--gold); color: black; }
+.btn { display: none; }
 .pay-bar {
-  position: relative; z-index: 100;
-  grid-column: span 3; background: var(--gold); color: black;
-  font-weight: bold; text-align: center; padding: 25px; font-size: 0.8rem; cursor: pointer;
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 24px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 24%, rgba(212, 175, 55, 0.18), transparent 54%),
+    rgba(12, 13, 16, 0.82);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  backdrop-filter: blur(8px);
 }
-footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-size: 0.4rem; color: #555; z-index: 90; }
-#root { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
-#root .app-ui { pointer-events: none; }
-#root .app-ui > * { pointer-events: auto; }
+#tryonyou-pay-button {
+  border: 1px solid rgba(212, 175, 55, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.94), rgba(180, 142, 42, 0.96));
+  color: #111318;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#tryonyou-pay-status {
+  color: rgba(245, 239, 230, 0.88);
+  letter-spacing: 0.08em;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.45rem; color: rgba(212,175,55,0.3); z-index: 4; pointer-events: none; letter-spacing: 2px; }
+#root { position: relative; z-index: 10; min-height: 100vh; }
   </style>
 </head>
 <body>
@@ -111,10 +156,18 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
   <div class="btn" onclick="location.reload()">Solidaire</div>
   <div class="btn" onclick="location.reload()">Intelligent</div>
   <div class="btn" onclick="location.reload()">Museum</div>
-  <div class="pay-bar" onclick="window.location.href='https://buy.stripe.com/test_soberania_4_5'">
-    SOUVERAINETÉ : 12.500 € (PAYER)
-      </div>
     </div>
+<div class="pay-bar">
+  <button
+    id="tryonyou-pay-button"
+    type="button"
+    data-mirror-event="tryonyou_payment_click"
+    data-stripe-href=""
+  >
+    Activer Paiement
+  </button>
+  <span id="tryonyou-pay-status">Paiement souverain prêt</span>
+</div>
 <div id="root"></div>
     <script>
 (function () {
@@ -126,20 +179,77 @@ footer { position: fixed; bottom: 85px; width: 100%; text-align: center; font-si
       body: JSON.stringify({ event: ev, source: "index_html_shell", meta: meta || {} })
     }).catch(function () {});
   }
+  function writePayStatus(next) {
+    var statusEl = document.getElementById("tryonyou-pay-status");
+    if (statusEl) statusEl.textContent = next;
+  }
+  function resolveStripeHref(el) {
+    var current = (el.getAttribute("data-stripe-href") || "").trim();
+    if (window.empireFinalProtocol && typeof window.empireFinalProtocol.resolveStripeHref === "function") {
+      current = window.empireFinalProtocol.resolveStripeHref(current);
+    } else if (!current) {
+      current = (window.__DIVINEO_CHECKOUT_URL__ || "").trim();
+    }
+    if (current) el.setAttribute("data-stripe-href", current);
+    return current;
+  }
+  function appendFlowToken(url, flowToken) {
+    if (!url || !flowToken) return url;
+    try {
+      var u = new URL(url);
+      if (!u.searchParams.get("flow_token")) u.searchParams.set("flow_token", flowToken);
+      return u.toString();
+    } catch (err) {
+      return url;
+    }
+  }
   function wire(el) {
     var ev = el.getAttribute("data-mirror-event");
     if (!ev) return;
-    el.addEventListener("click", function (e) {
-      var href = el.getAttribute("data-stripe-href");
+    el.addEventListener("click", async function (e) {
+      var isPayButton = el.id === "tryonyou-pay-button";
+      var href = resolveStripeHref(el);
       if (href) e.preventDefault();
       void postMirror(ev, { label: (el.textContent || "").trim().slice(0, 200) });
-      if (href) window.location.href = href;
+      if (!isPayButton) {
+        if (href) window.location.href = href;
+        return;
+      }
+      if (!href) {
+        writePayStatus("Lien Stripe manquant");
+        return;
+      }
+      writePayStatus("Pau Emotional Intelligence: préparation...");
+      var flowToken = "";
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.executePauSnap === "function") {
+        try {
+          var snapResult = await window.empireFinalProtocol.executePauSnap({ trigger: "tryonyou-pay-button" });
+          flowToken = (snapResult && snapResult.flowToken) || "";
+        } catch (err) {}
+      }
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.registerPaymentIntent === "function") {
+        await window.empireFinalProtocol.registerPaymentIntent({
+          flowToken: flowToken,
+          checkoutUrl: href,
+          buttonId: "tryonyou-pay-button",
+          source: "index_html_shell",
+        });
+      }
+      writePayStatus("Redirection Stripe en cours...");
+      window.location.href = appendFlowToken(href, flowToken);
     });
     el.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
     });
   }
   document.querySelectorAll("[data-mirror-event]").forEach(wire);
+  var syncStripeHref = function () {
+    var payButton = document.getElementById("tryonyou-pay-button");
+    if (!payButton) return;
+    resolveStripeHref(payButton);
+  };
+  syncStripeHref();
+  window.setTimeout(syncStripeHref, 1500);
 })();
     </script>
     <script>
@@ -183,20 +293,13 @@ canvasCtx.restore();
 var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
 pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
 pose.onResults(onResults);
-var camera=new CameraCtor(videoElement,{onFrame:function(){pose.send({image:videoElement});},width:1280,height:720});
-function emitPrivacyFallbackLabel(){
-try{window.dispatchEvent(new CustomEvent("tryonyou:fit",{detail:{label:"V9 Identity"}}));}catch(e){}
-}
-function hasVideoInput(){
-if(!navigator.mediaDevices||typeof navigator.mediaDevices.enumerateDevices!=="function") return Promise.resolve(false);
-return navigator.mediaDevices.enumerateDevices().then(function(devices){
-return devices.some(function(device){return device&&device.kind==="videoinput";});
-}).catch(function(){return false;});
-}
-hasVideoInput().then(function(available){
-if(!available){emitPrivacyFallbackLabel();return;}
-camera.start().catch(function(){emitPrivacyFallbackLabel();});
+var camera=new CameraCtor(videoElement,{
+  onFrame:function(){pose.send({image:videoElement});},
+  onError:function(err){console.warn("Camera feed unavailable in this environment.", err);},
+  width:1280,
+  height:720
 });
+camera.start().catch(function(){});
         })();
     </script>
 <script type="module" src="/src/main.tsx"></script>

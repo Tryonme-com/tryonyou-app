@@ -1,5 +1,5 @@
 /**
- * Terminal de cobro — Protocolo Souveraineté V10 (pilote Lafayette verrouillé).
+ * Terminal de cobro — Protocolo Souveraineté V11 (Rive Gauche verrouillé).
  * No utiliza rutas Next; la SPA completa se sustituye en `main.tsx` cuando la licencia no está activa.
  */
 
@@ -40,7 +40,7 @@ export default function PaymentTerminal() {
             lineHeight: 1.4,
           }}
         >
-          ACCÈS RÉSERVÉ : LICENCE SOUVERAINETÉ V10
+          ACCÈS RÉSERVÉ : LICENCE SOUVERAINETÉ V11
         </h1>
         <p
           style={{
@@ -51,7 +51,7 @@ export default function PaymentTerminal() {
             letterSpacing: "0.06em",
           }}
         >
-          Le pilote Galeries Lafayette est verrouillé pour défaut de paiement de
+          Le salon Le Bon Marché Rive Gauche est verrouillé pour défaut de paiement de
           licence.
         </p>
         <p

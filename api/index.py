@@ -1,9 +1,7 @@
 import json
 import os
 import sys
-from urllib.parse import urlencode
 from pathlib import Path
-from typing import Any
 
 from flask import Flask, Response, jsonify, request
 
@@ -13,313 +11,605 @@ for _p in (_ROOT, _API_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from bunker_full_orchestrator import (  # noqa: E402
+from bunker_full_orchestrator import (
     orchestrate_beta_waitlist,
     orchestrate_mirror_shadow_dwell,
 )
-from core_engine import (  # noqa: E402
-    CORE_ENGINE_PROTOCOL,
-    health_payload,
-    kill_switch_payload,
-    model_access_payload,
-    mirror_snap_payload,
-    perfect_selection_payload,
-    trace_event,
+from mirror_digital_make import forward_mirror_event
+from stripe_inauguration import create_inauguration_checkout_session
+from stripe_webhook import handle_webhook
+from inventory_engine import inventory_match_payload
+from shopify_bridge import resolve_shopify_checkout_url
+from amazon_bridge import resolve_amazon_checkout_url
+from qonto_iban_transfer import (
+    DEFAULT_BENEFICIARY,
+    is_iban_transfer_configured,
+    resolve_iban_transfer_details,
+    validate_transfer_readiness,
 )
-from mirror_digital_make import forward_mirror_event  # noqa: E402
-from stripe_inauguration import create_inauguration_checkout_session  # noqa: E402
-from stripe_webhook_fr import handle_stripe_webhook_fr  # noqa: E402
-from stripe_lafayette import create_lafayette_checkout  # noqa: E402
-from financial_guard import log_sovereignty_event  # noqa: E402
+from invoice_generator import generate_proforma
+from treasury_monitor import (
+    get_treasury_status,
+    get_payouts_list,
+    record_payout,
+)
+from territory_expansion import (
+    get_expansion_nodes,
+    get_territory_summary,
+    generate_node_contract,
+)
+from empire_payout_trans import (
+    get_flow_summary,
+    register_checkout_success,
+    register_payment_intent,
+    register_payout_transition,
+)
 
 app = Flask(__name__)
-ADVBET_PROVIDER = "ABVETOS_ADVBET"
-DEFAULT_BIOMETRIC_DEEP_LINK_BASE = "https://abvetos.com/identity/biometric-verify"
+MANUS_FLOW_ID = "f89d5d98"
+
+_ALLOWED_PAYMENT_HOST_SUFFIXES = ("abvetos.com",)
+_ALLOWED_PAYMENT_LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
 
-def _cors(resp: Response) -> Response:
+def _is_allowed_payment_host(hostname: str) -> bool:
+    h = hostname.lower().strip(".")
+    if not h:
+        return False
+    if h in _ALLOWED_PAYMENT_LOCAL_HOSTS:
+        return True
+    return any(h == suffix or h.endswith(f".{suffix}") for suffix in _ALLOWED_PAYMENT_HOST_SUFFIXES)
+
+
+def _sanitize_checkout_url(raw_url: str) -> str:
+    raw = str(raw_url or "").strip()
+    if not raw:
+        return ""
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        if parsed.scheme not in ("http", "https"):
+            return ""
+        if not _is_allowed_payment_host(parsed.hostname or ""):
+            return ""
+        return raw
+    except Exception:
+        return ""
+
+
+@app.route("/")
+def home():
+    return "API Active"
+
+
+def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    resp.headers[
-        "Access-Control-Allow-Headers"
-    ] = "Content-Type, Authorization, X-Jules-Session-Id, X-Mirror-Session-Id, X-Jules-Account-Scope, X-Account-Scope, X-Kill-Switch-Secret"
+    resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return resp
 
 
-def _json_response(payload: dict[str, Any], status: int = 200) -> tuple[Response, int]:
-    return _cors(jsonify(payload)), status
+def _append_demo_request(body):
+    target = Path("/tmp/tryonyou_demo_requests.jsonl")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(body, ensure_ascii=False) + "\n")
 
 
-def _read_json_body() -> dict[str, Any]:
+@app.route("/api/demo-request", methods=["OPTIONS"])
+@app.route("/demo-request", methods=["OPTIONS"])
+def demo_request_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/demo-request", methods=["POST"])
+@app.route("/demo-request", methods=["POST"])
+def demo_request():
+    body = request.get_json(force=True, silent=True) or {}
+    normalized = {
+        "name": str(body.get("name", "")).strip(),
+        "company": str(body.get("company", "")).strip(),
+        "email": str(body.get("email", "")).strip(),
+        "role": str(body.get("role", "")).strip(),
+        "catalog_size": str(body.get("catalog_size", "")).strip(),
+        "message": str(body.get("message", "")).strip(),
+        "source": str(body.get("source", "landing_demo_form")).strip() or "landing_demo_form",
+        "locale": str(body.get("locale", "fr")).strip() or "fr",
+        "ts": str(body.get("ts", "")).strip(),
+        "intent": "demo_request",
+        "protocol": "zero_size",
+        "siret": "94361019600017",
+        "patent": "PCT/EP2025/067317",
+    }
+
+    required = [normalized["name"], normalized["company"], normalized["email"], normalized["role"]]
+    if not all(required):
+        return _cors(jsonify({
+            "status": "error",
+            "message": "missing_required_fields",
+        })), 400
+
+    orchestration = False
+    orchestration_error = ""
+
+    try:
+        _append_demo_request(normalized)
+        try:
+            orchestrate_beta_waitlist(normalized)
+            orchestration = True
+        except Exception as exc:
+            orchestration_error = str(exc)
+        return _cors(jsonify({
+            "status": "ok",
+            "demo_request_saved": True,
+            "orchestration": orchestration,
+            "orchestration_error": orchestration_error,
+        })), 200
+    except Exception as exc:
+        return _cors(jsonify({
+            "status": "error",
+            "message": str(exc),
+        })), 500
+
+
+@app.route("/api/waitlist_beta", methods=["OPTIONS"])
+@app.route("/waitlist_beta", methods=["OPTIONS"])
+def waitlist_beta_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/waitlist_beta", methods=["POST"])
+@app.route("/waitlist_beta", methods=["POST"])
+def waitlist_beta():
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        result = orchestrate_beta_waitlist(body)
+        return _cors(jsonify({"status": "ok", **result})), 200
+    except Exception as e:
+        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/api/mirror_shadow_log", methods=["OPTIONS"])
+@app.route("/mirror_shadow_log", methods=["OPTIONS"])
+def mirror_shadow_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_inauguration_checkout", methods=["OPTIONS"])
+@app.route("/stripe_inauguration_checkout", methods=["OPTIONS"])
+def stripe_inauguration_checkout_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_inauguration_checkout", methods=["POST"])
+@app.route("/stripe_inauguration_checkout", methods=["POST"])
+def stripe_inauguration_checkout():
+    origin = request.headers.get("Origin") or ""
+    payload, code = create_inauguration_checkout_session(origin or None)
+    return _cors(jsonify(payload)), code
+
+
+@app.route("/api/mirror_digital_event", methods=["OPTIONS"])
+@app.route("/mirror_digital_event", methods=["OPTIONS"])
+def mirror_digital_event_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/mirror_digital_event", methods=["POST"])
+@app.route("/mirror_digital_event", methods=["POST"])
+def mirror_digital_event():
+    body = request.get_json(force=True, silent=True) or {}
+    payload, code = forward_mirror_event(body)
+    return _cors(jsonify(payload)), code
+
+
+@app.route("/api/mirror_shadow_log", methods=["POST"])
+@app.route("/mirror_shadow_log", methods=["POST"])
+def mirror_shadow_log():
     if request.content_type and "application/json" not in request.content_type:
         raw = request.get_data(cache=True, as_text=True) or "{}"
         try:
             body = json.loads(raw)
         except json.JSONDecodeError:
             body = {}
-        return body if isinstance(body, dict) else {}
-    body = request.get_json(force=True, silent=True) or {}
-    return body if isinstance(body, dict) else {}
-
-
-def _build_advbet_biometric_deep_link(session_id: str) -> str:
-    base = (
-        os.getenv("ADVBET_BIOMETRIC_DEEP_LINK_BASE")
-        or os.getenv("BIOMETRIC_DEEP_LINK_BASE")
-        or DEFAULT_BIOMETRIC_DEEP_LINK_BASE
-    ).strip()
-    if not base:
-        base = DEFAULT_BIOMETRIC_DEEP_LINK_BASE
-    query = urlencode(
-        {
-            "session_id": session_id,
-            "provider": ADVBET_PROVIDER.lower(),
-            "verification": "voice_facial",
-        }
-    )
-    return f"{base}?{query}"
-
-
-def _build_advbet_qr_payload(session_id: str, deep_link: str) -> dict[str, str]:
-    suffix = session_id[-8:].upper() if session_id else "SESSION"
-    return {
-        "format": "deep_link",
-        "qr_token": f"ADVBET-{suffix}",
-        "deep_link": deep_link,
-    }
-
-
-def _handshake_payload() -> dict[str, Any]:
-    health = health_payload()
-    return {
-        "status": "ok",
-        "jules_msg": "Jules Core Engine online.",
-        "protocolo": CORE_ENGINE_PROTOCOL,
-        "next_step": "mirror_ready" if health.get("mirror_enabled") else "mirror_disabled",
-        "product_lane": health.get("product_lane"),
-        "mirror_enabled": health.get("mirror_enabled"),
-    }
-
-
-@app.route("/")
-def home() -> tuple[Response, int]:
-    return _json_response(health_payload(), 200)
-
-
-@app.route("/api", methods=["GET", "POST", "OPTIONS"])
-@app.route("/api/", methods=["GET", "POST", "OPTIONS"])
-def api_root() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    if request.method == "GET":
-        return _json_response(health_payload(), 200)
-    body = _read_json_body()
-    if body.get("ping"):
-        return _json_response(_handshake_payload(), 200)
-    return _json_response({"status": "error", "message": "Not Found"}, 404)
-
-
-@app.route("/", methods=["POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
-def root_mutations() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    body = _read_json_body()
-    if body.get("ping"):
-        return _json_response(_handshake_payload(), 200)
-    return _json_response({"status": "error", "message": "Not Found"}, 404)
-
-
-@app.route("/api/health", methods=["GET", "OPTIONS"])
-@app.route("/health", methods=["GET", "OPTIONS"])
-def health() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    return _json_response(health_payload(), 200)
-
-
-@app.route("/api/v1/core/trace", methods=["POST", "OPTIONS"])
-@app.route("/v1/core/trace", methods=["POST", "OPTIONS"])
-def core_trace() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    body = _read_json_body()
-    event_type = str(body.get("event_type") or body.get("event") or "custom_event").strip()
-    source = str(body.get("source") or "core_trace").strip() or "core_trace"
-    trace = trace_event(
-        body=body,
-        headers=request.headers,
-        route="/api/v1/core/trace",
-        event_type=event_type,
-        source=source,
-    )
-    return _json_response({"status": "ok", "trace": trace, "protocol": CORE_ENGINE_PROTOCOL}, 200)
-
-
-@app.route("/api/v1/mirror/snap", methods=["POST", "OPTIONS"])
-@app.route("/v1/mirror/snap", methods=["POST", "OPTIONS"])
-def mirror_snap() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    payload, code = mirror_snap_payload(_read_json_body(), request.headers)
-    return _json_response(payload, code)
-
-
-@app.route("/api/v1/checkout/perfect-selection", methods=["POST", "OPTIONS"])
-@app.route("/v1/checkout/perfect-selection", methods=["POST", "OPTIONS"])
-def perfect_selection() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    payload, code = perfect_selection_payload(_read_json_body(), request.headers)
-    return _json_response(payload, code)
-
-
-@app.route("/api/v1/core/model-access-token", methods=["POST", "OPTIONS"])
-@app.route("/v1/core/model-access-token", methods=["POST", "OPTIONS"])
-def model_access_token() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    payload, code = model_access_payload(_read_json_body(), request.headers)
-    return _json_response(payload, code)
-
-
-@app.route("/api/__jules__/control/kill-switch", methods=["GET", "POST", "OPTIONS"])
-@app.route("/__jules__/control/kill-switch", methods=["GET", "POST", "OPTIONS"])
-def kill_switch() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    body = _read_json_body() if request.method == "POST" else {}
-    if request.method == "GET":
-        body = {
-            "action": request.args.get("action", "status"),
-            "secret": request.args.get("secret", ""),
-            "note": request.args.get("note", ""),
-            "actor_id": request.args.get("actor_id", "mobile"),
-            "account_scope": request.args.get("account_scope", "admin"),
-        }
-    payload, code = kill_switch_payload(body, request.headers)
-    return _json_response(payload, code)
-
-
-@app.route("/api/waitlist_beta", methods=["OPTIONS"])
-@app.route("/waitlist_beta", methods=["OPTIONS"])
-def waitlist_beta_options() -> tuple[Response, int]:
-    return _cors(Response(status=204)), 204
-
-
-@app.route("/api/waitlist_beta", methods=["POST"])
-@app.route("/waitlist_beta", methods=["POST"])
-def waitlist_beta() -> tuple[Response, int]:
-    body = _read_json_body()
-    try:
-        result = orchestrate_beta_waitlist(body)
-        return _json_response({"status": "ok", **result}, 200)
-    except Exception as exc:  # noqa: BLE001
-        return _json_response({"status": "error", "message": str(exc)}, 500)
-
-
-@app.route("/api/mirror_shadow_log", methods=["OPTIONS"])
-@app.route("/mirror_shadow_log", methods=["OPTIONS"])
-def mirror_shadow_options() -> tuple[Response, int]:
-    return _cors(Response(status=204)), 204
-
-
-@app.route("/api/v1/empire/payment-intent", methods=["POST", "OPTIONS"])
-@app.route("/v1/empire/payment-intent", methods=["POST", "OPTIONS"])
-def empire_payment_intent() -> tuple[Response, int]:
-    if request.method == "OPTIONS":
-        return _cors(Response(status=204)), 204
-    body = _read_json_body()
-    session_id = str(body.get("session_id") or "").strip()
-    amount_eur = float(body.get("amount_eur") or 0)
-    if not session_id or amount_eur <= 0:
-        return _json_response(
-            {"status": "error", "message": "session_id and amount_eur required"}, 400
-        )
-    log_sovereignty_event(
-        event_type="empire_payment_intent_requested",
-        detail=f"amount={amount_eur}",
-        session_id=session_id,
-        amount_eur=amount_eur,
-    )
-    client_secret = create_lafayette_checkout(session_id, amount_eur)
-    if not client_secret:
-        return _json_response(
-            {"status": "error", "message": "payment_intent_creation_failed"}, 502
-        )
-    deep_link = _build_advbet_biometric_deep_link(session_id)
-    qr_payload = _build_advbet_qr_payload(session_id, deep_link)
-    log_sovereignty_event(
-        event_type="empire_payment_intent_created",
-        detail=f"provider={ADVBET_PROVIDER} deep_link_ready=true",
-        session_id=session_id,
-        amount_eur=amount_eur,
-    )
-    return _json_response(
-        {
-            "status": "ok",
-            "client_secret": client_secret,
-            "session_id": session_id,
-            "advbet": {
-                "provider": ADVBET_PROVIDER,
-                "biometric_deep_link": deep_link,
-                "qr_payload": qr_payload,
-            },
-        },
-        200,
-    )
-
-
-@app.route("/api/stripe_inauguration_checkout", methods=["OPTIONS"])
-@app.route("/stripe_inauguration_checkout", methods=["OPTIONS"])
-def stripe_inauguration_checkout_options() -> tuple[Response, int]:
-    return _cors(Response(status=204)), 204
-
-
-@app.route("/api/stripe_inauguration_checkout", methods=["POST"])
-@app.route("/stripe_inauguration_checkout", methods=["POST"])
-def stripe_inauguration_checkout() -> tuple[Response, int]:
-    origin = request.headers.get("Origin") or ""
-    payload, code = create_inauguration_checkout_session(origin or None)
-    return _json_response(payload, code)
-
-
-@app.route("/api/stripe_webhook_fr", methods=["POST"])
-@app.route("/stripe_webhook_fr", methods=["POST"])
-def stripe_webhook_fr() -> tuple[Response, int]:
-    raw = request.get_data(cache=False)
-    sig = request.headers.get("Stripe-Signature")
-    payload, code = handle_stripe_webhook_fr(raw, sig)
-    return jsonify(payload), code
-
-
-@app.route("/api/mirror_digital_event", methods=["OPTIONS"])
-@app.route("/mirror_digital_event", methods=["OPTIONS"])
-def mirror_digital_event_options() -> tuple[Response, int]:
-    return _cors(Response(status=204)), 204
-
-
-@app.route("/api/mirror_digital_event", methods=["POST"])
-@app.route("/mirror_digital_event", methods=["POST"])
-def mirror_digital_event() -> tuple[Response, int]:
-    body = _read_json_body()
-    trace = trace_event(
-        body=body,
-        headers=request.headers,
-        route="/api/mirror_digital_event",
-        event_type=str(body.get("event") or "mirror_digital_event").strip(),
-        source=str(body.get("source") or "tryonyou_mirror").strip() or "tryonyou_mirror",
-    )
-    payload, code = forward_mirror_event(body)
-    payload["trace"] = trace
-    return _json_response(payload, code)
-
-
-@app.route("/api/mirror_shadow_log", methods=["POST"])
-@app.route("/mirror_shadow_log", methods=["POST"])
-def mirror_shadow_log() -> tuple[Response, int]:
-    body = _read_json_body()
+    else:
+        body = request.get_json(force=True, silent=True) or {}
     try:
         result = orchestrate_mirror_shadow_dwell(body)
-        return _json_response({"status": "ok", **result}, 200)
-    except Exception as exc:  # noqa: BLE001
-        return _json_response({"status": "error", "message": str(exc)}, 500)
+        return _cors(jsonify({"status": "ok", **result})), 200
+    except Exception as e:
+        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/api/webhook", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+    result, code = handle_webhook(payload, sig_header)
+    return jsonify(result), code
+
+
+# ── V1 Routes: Perfect Selection + Leads + Mirror Snap ─────────────
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])
+def perfect_selection_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["POST"])
+def perfect_selection():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric = str(body.get("fabric_sensation", "")).strip()
+    lead_id = abs(hash(fabric or "anon")) % 10_000_000
+    channel = os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify").strip().lower()
+
+    shopify_url = _sanitize_checkout_url(resolve_shopify_checkout_url(lead_id, fabric) or "")
+    amazon_url = _sanitize_checkout_url(resolve_amazon_checkout_url(lead_id, fabric) or "")
+    primary_url = shopify_url if channel == "shopify" else amazon_url
+
+    seal = (
+        "Votre sélection parfaite est prête — "
+        "ajustage biométrique validé sous protocole Zero-Size. "
+        "Aucune taille classique, uniquement la certitude souveraine."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "emotional_seal": seal,
+        "checkout_primary_url": primary_url or "",
+        "checkout_shopify_url": shopify_url or "",
+        "checkout_amazon_url": amazon_url or "",
+        "protocol": "zero_size",
+        "anti_accumulation": True,
+        "payment_guard": {
+            "external_checkout_blocked": True,
+            "allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
+        },
+    })), 200
+
+
+@app.route("/api/v1/leads", methods=["OPTIONS"])
+def leads_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/leads", methods=["POST"])
+def leads_capture():
+    body = request.get_json(force=True, silent=True) or {}
+    intent = str(body.get("intent", "")).strip()
+    source = str(body.get("source", "app")).strip()
+
+    try:
+        result = orchestrate_beta_waitlist({
+            "intent": intent,
+            "source": source,
+            "protocol": body.get("protocol", "zero_size"),
+        })
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": True,
+            **result,
+        })), 200
+    except Exception as e:
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": False,
+            "message": str(e),
+        })), 200
+
+
+@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
+def mirror_snap_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/mirror/snap", methods=["POST"])
+def mirror_snap():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric_sensation = str(body.get("fabric_sensation", "")).strip()
+    fabric_fit_verdict = str(body.get("fabric_fit_verdict", "aligned")).strip()
+
+    match = inventory_match_payload({
+        "fabric_sensation": fabric_sensation,
+        "fabric_fit_verdict": fabric_fit_verdict,
+        "snap": True,
+    })
+
+    jules_msg = (
+        "The Snap — votre ligne trouve son équilibre. "
+        f"Référence {match.get('garment_id', 'V10')} ({match.get('brand_line', 'Maison')}) "
+        "sous protocole Zero-Size. Le drapé répond avec élégance, sans mesure visible."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "jules_msg": jules_msg,
+        "inventory_match": match,
+        "protocolo": "zero_size",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
+    })), 200
+
+
+# ── V11 Empire Final Protocol: Payment Intent + Success Trace ───────
+
+@app.route("/api/v1/empire/payment-intent", methods=["OPTIONS"])
+def empire_payment_intent_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-intent", methods=["POST"])
+def empire_payment_intent():
+    body = request.get_json(force=True, silent=True) or {}
+    flow_token = str(body.get("flow_token", "")).strip()
+    checkout_url = str(body.get("checkout_url", "")).strip()
+    button_id = str(body.get("button_id", "tryonyou-pay-button")).strip()
+    source = str(body.get("source", "index_html_shell")).strip()
+    protocol = str(body.get("protocol", "Pau Emotional Intelligence")).strip()
+    ui_theme = str(body.get("ui_theme", "Sello de Lujo: Antracita")).strip()
+
+    if not flow_token or not checkout_url:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "flow_token_and_checkout_url_required",
+        })), 400
+
+    event = register_payment_intent(
+        flow_token=flow_token,
+        checkout_url=checkout_url,
+        button_id=button_id,
+        source=source,
+        protocol=protocol,
+        ui_theme=ui_theme,
+    )
+    return _cors(jsonify({"status": "ok", "intent": event})), 201
+
+
+@app.route("/api/v1/empire/payment-success", methods=["OPTIONS"])
+def empire_payment_success_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-success", methods=["POST"])
+def empire_payment_success():
+    body = request.get_json(force=True, silent=True) or {}
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    source = str(body.get("source", "frontend_success_callback")).strip()
+    amount_total = body.get("amount_total")
+    currency = str(body.get("currency", "eur")).strip()
+    customer_email = str(body.get("customer_email", "")).strip()
+
+    event = register_checkout_success(
+        session_id=session_id,
+        amount_total=amount_total,
+        currency=currency,
+        customer_email=customer_email,
+        flow_token=flow_token,
+        source=source,
+    )
+    return _cors(jsonify({"status": "ok", "payment_success": event})), 201
+
+
+@app.route("/api/v1/empire/flow-status", methods=["OPTIONS"])
+def empire_flow_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/flow-status", methods=["GET"])
+def empire_flow_status():
+    flow_token = str(request.args.get("flow_token", "")).strip()
+    session_id = str(request.args.get("session_id", "")).strip()
+    summary = get_flow_summary(flow_token=flow_token, session_id=session_id)
+    return _cors(jsonify({"status": "ok", "flow": summary})), 200
+
+
+# ── V11 Repair: Qonto IBAN Transfer + Proforma Invoices ─────────────
+
+@app.route("/api/v1/payment/iban-transfer", methods=["OPTIONS"])
+def iban_transfer_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["GET"])
+def iban_transfer_details():
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    amount_key = request.args.get("amount", None)
+    details = resolve_iban_transfer_details(amount_key)
+    return _cors(jsonify({
+        "status": "ok",
+        **details,
+    })), 200
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["POST"])
+def iban_transfer_initiate():
+    body = request.get_json(force=True, silent=True) or {}
+    amount_key = str(body.get("amount_key", "")).strip() or None
+
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    details = resolve_iban_transfer_details(amount_key)
+    invoice = generate_proforma(
+        to=str(body.get("to", DEFAULT_BENEFICIARY)).strip(),
+        amount_key=amount_key,
+        extra_note=str(body.get("note", "")).strip(),
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "transfer": details,
+        "invoice": invoice,
+        "message": "Proforma générée. Procédez au virement SEPA Business.",
+    })), 200
+
+
+@app.route("/api/v1/invoice/proforma", methods=["OPTIONS"])
+def invoice_proforma_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/invoice/proforma", methods=["POST"])
+def invoice_proforma():
+    body = request.get_json(force=True, silent=True) or {}
+    to = str(body.get("to", DEFAULT_BENEFICIARY)).strip()
+    amount_key = str(body.get("amount_key", "")).strip() or None
+    note = str(body.get("note", "")).strip()
+
+    invoice = generate_proforma(to=to, amount_key=amount_key, extra_note=note)
+    return _cors(jsonify({
+        "status": "ok",
+        "invoice": invoice,
+    })), 200
+
+
+# ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
+
+@app.route("/api/v1/treasury/status", methods=["OPTIONS"])
+def treasury_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/status", methods=["GET"])
+def treasury_status():
+    status = get_treasury_status()
+    return _cors(jsonify({"status": "ok", **status})), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["OPTIONS"])
+def treasury_payouts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/payouts", methods=["GET"])
+def treasury_payouts_list():
+    payouts = get_payouts_list()
+    return _cors(jsonify({
+        "status": "ok",
+        "payouts": payouts,
+        "count": len(payouts),
+    })), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["POST"])
+def treasury_record_payout():
+    body = request.get_json(force=True, silent=True) or {}
+    amount = body.get("amount_eur")
+    if not amount or not isinstance(amount, (int, float)) or amount <= 0:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "amount_eur_required_positive",
+        })), 400
+
+    entry = record_payout(
+        amount_eur=float(amount),
+        recipient=str(body.get("recipient", "")).strip(),
+        concept=str(body.get("concept", "operational")).strip(),
+    )
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    register_payout_transition(
+        amount_eur=float(amount),
+        recipient=entry.get("recipient", ""),
+        concept=entry.get("concept", "operational"),
+        flow_token=flow_token,
+        session_id=session_id,
+        source="api_v1_treasury_payouts",
+    )
+    return _cors(jsonify({"status": "ok", "payout": entry})), 201
+
+
+# ── V11 Territory: Multi-Node Expansion & Licensing ─────────────────
+
+@app.route("/api/v1/territory/nodes", methods=["OPTIONS"])
+def territory_nodes_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/nodes", methods=["GET"])
+def territory_nodes():
+    nodes = get_expansion_nodes()
+    summary = get_territory_summary()
+    return _cors(jsonify({
+        "status": "ok",
+        "nodes": nodes,
+        "summary": summary,
+    })), 200
+
+
+@app.route("/api/v1/territory/contracts", methods=["OPTIONS"])
+def territory_contracts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/contracts", methods=["POST"])
+def territory_generate_contract():
+    body = request.get_json(force=True, silent=True) or {}
+    node_id = str(body.get("node_id", "")).strip()
+    if not node_id:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_id_required",
+        })), 400
+
+    contract = generate_node_contract(node_id)
+    if not contract:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_not_found",
+        })), 404
+
+    return _cors(jsonify({"status": "ok", "contract": contract})), 201
+
+
+@app.route("/api/health", methods=["GET"])
+@app.route("/health", methods=["GET"])
+def health():
+    stripe_secret = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    stripe_link_4_5m = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("STRIPE_LINK_4_5M_EUR")
+        or ""
+    ).strip()
+    stripe_link_98k = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("STRIPE_LINK_98K_EUR")
+        or ""
+    ).strip()
+    webhook_secret = (os.getenv("STRIPE_WEBHOOK_SECRET") or "").strip()
+
+    territory = get_territory_summary()
+    treasury = get_treasury_status()
+
+    return _cors(jsonify({
+        "ok": True,
+        "status": "ok",
+        "version": "V11.2_Rive_Gauche_Manus",
+        "service": "tryonyou_v11_omega",
+        "product_lane": "tryonyou_v11_sovereign",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
+        "manus_flow_id": MANUS_FLOW_ID,
+        "payment_external_checkout_blocked": True,
+        "payment_allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
+        "stripe_configured": bool(stripe_secret),
+        "stripe_4_5m_set": bool(stripe_link_4_5m),
+        "stripe_98k_set": bool(stripe_link_98k),
+        "webhook_secret_set": bool(webhook_secret),
+        "iban_transfer_configured": is_iban_transfer_configured(),
+        "payment_method": "DIRECT_IBAN_TRANSFER" if is_iban_transfer_configured() else "STRIPE",
+        "territory_active_nodes": territory["active_nodes"],
+        "territory_pending_nodes": territory["pending_nodes"],
+        "territory_expansion_target_eur": territory["expansion_target_eur"],
+        "treasury_reserve_eur": treasury["reserve_eur"],
+        "treasury_capital_label": treasury["capital_label"],
+    })), 200
