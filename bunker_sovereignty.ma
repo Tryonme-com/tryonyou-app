@@ -23,6 +23,8 @@ Seguridad financiera (martes 08:00)
 Runbook mínimo
 1) SUPERCOMMIT_SKIP_BUILD=1 ./supercommit_max.sh
 2) CAPITAL_ENTRY_EUR=450000 FATALITY_GUARD_FORCE_WINDOW=1 python3 martes_0800_fatality_guard.py
+3) Cron productivo (martes 08:00):
+   0 8 * * 2 cd /workspace && CAPITAL_ENTRY_EUR=450000 python3 martes_0800_fatality_guard.py
 
 Sello legal
 - @CertezaAbsoluta
