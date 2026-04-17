@@ -1,8 +1,0 @@
-{
-  "status": "CAPITAL_CONFIRMED",
-  "reason": "Entrada de 450.000 EUR confirmada en ventana objetivo.",
-  "amount_eur": 450000.0,
-  "timestamp": "2026-04-17T04:38:29.645165",
-  "fatality_exit_code": 0,
-  "fatality_output": "Slack: no configurado o fallo; mensaje en stdout:\n FATALITY_INVESTORS — sello TryOnYou\nSLACK_WEBHOOK_URL: vacío\nMAKE_WEBHOOK_URL: vacío\nTELEGRAM: vacío\nGITHUB_TOKEN: vacío\n\nGit y push: manual y acotado (git_protocol_bunker_safe.py)."
-}
