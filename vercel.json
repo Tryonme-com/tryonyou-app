@@ -1,111 +1,16 @@
 {
   "version": 2,
-  "public": true,
-  "installCommand": "npm install && pip install -r requirements.txt",
-  "cleanUrls": true,
-  "env": {
-    "TRYONYOU_PUBLIC_DOMAIN": "tryonyou.app"
-  },
   "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/vetos_core_inference.py",
-      "use": "@vercel/python"
-    }
+    { "src": "api/index.py", "use": "@vercel/python" },
+    { "src": "package.json", "use": "@vercel/next" }
   ],
   "routes": [
-    {
-      "src": "/api/vetos_core_inference",
-      "dest": "/api/vetos_core_inference.py"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/api",
-      "dest": "/api/index.py"
-    },
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
     {
       "src": "/",
-      "methods": [
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "OPTIONS"
-      ],
+      "methods": ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       "dest": "/api/index.py"
     },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/index.html",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=*, microphone=(), geolocation=()"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-TryOnYou-Access-Policy",
-          "value": "sovereign-firebase-align-2026-04-07"
-        }
-      ]
-    }
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
