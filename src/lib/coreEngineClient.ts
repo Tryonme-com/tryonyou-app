@@ -6,6 +6,9 @@ export type JulesHealth = {
   product_lane?: string;
   protocol?: string;
   mirror_enabled?: boolean;
+  payment_verified?: boolean;
+  debt_amount_eur?: number;
+  debt_message?: string;
   kill_switch?: {
     state?: "on" | "off";
     updated_at?: string;

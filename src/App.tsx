@@ -4,6 +4,7 @@ import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
+import { enforceV9IdentityLabel } from "./lib/privacyFirewall";
 import {
   initFirebaseApplet,
   initFirebaseAnalytics,
@@ -94,8 +95,9 @@ function resolveActiveDistrict(): "75009" | "75004" | "" {
 }
 
 function elasticLabelToVerdict(label: string): string {
-  if (label.includes("Préférence drapé")) return "drape_bias";
-  if (label.includes("Préférence tenue")) return "tension_bias";
+  const safeLabel = enforceV9IdentityLabel(label);
+  if (safeLabel.includes("Préférence drapé")) return "drape_bias";
+  if (safeLabel.includes("Préférence tenue")) return "tension_bias";
   return "aligned";
 }
 
@@ -240,10 +242,11 @@ export default function App() {
     forceUserCheckIfPilotCold();
   }
 
-  const [elasticLabel, setElasticLabel] = useState("—");
+  const [elasticLabel, setElasticLabel] = useState("V9 Identity");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
   const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
+  const [debtMessage, setDebtMessage] = useState<string>("");
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
@@ -316,12 +319,14 @@ export default function App() {
       if (cancelled) return;
       if (h?.ok) {
         setMirrorPoweredOn(h.mirror_enabled !== false);
+        setDebtMessage(h.debt_message ?? "");
         setJulesLane(
           `Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"}`,
         );
         return;
       }
       setMirrorPoweredOn(true);
+      setDebtMessage("");
       setJulesLane(
         "Jules · prévisualisation locale (API Python non joignable sur ce port)",
       );
@@ -340,7 +345,9 @@ export default function App() {
     const onFit = (e: Event) => {
       const ce = e as CustomEvent<{ label?: string }>;
       const lab = ce.detail?.label;
-      if (typeof lab === "string" && lab.length > 0) setElasticLabel(lab);
+      if (typeof lab === "string" && lab.length > 0) {
+        setElasticLabel(enforceV9IdentityLabel(lab));
+      }
     };
     window.addEventListener("tryonyou:fit", onFit);
     return () => window.removeEventListener("tryonyou:fit", onFit);
@@ -348,7 +355,7 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (!mirrorPoweredOn) {
-      window.alert("Le miroir est momentanément suspendu par contrôle distant.");
+      window.alert(debtMessage || "Le miroir est momentanément suspendu par contrôle distant.");
       return;
     }
     if (key === "selection") {
@@ -364,6 +371,7 @@ export default function App() {
       combo: "Lignes alternatives chargées — composition Zero-Size.",
       save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
       share: "Partage généré — métadonnées d’ajustage neutralisées.",
+      balmain: "Balmain activado bajo protocolo soberano con identidad V9.",
     };
     window.alert(copy[key]);
   };
@@ -473,6 +481,24 @@ export default function App() {
             Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
             Solo la certeza de verte como eres antes de pagar un solo euro.
           </p>
+          {!mirrorPoweredOn && debtMessage ? (
+            <p
+              role="alert"
+              style={{
+                marginTop: 12,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid rgba(196, 66, 66, 0.45)",
+                background: "rgba(125, 28, 28, 0.09)",
+                color: "#7b1313",
+                fontSize: 13,
+                lineHeight: 1.55,
+                maxWidth: 700,
+              }}
+            >
+              {debtMessage}
+            </p>
+          ) : null}
           <div
             style={{
               display: "flex",

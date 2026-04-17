@@ -20,6 +20,7 @@ from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 CORE_ENGINE_PROTOCOL = "jules_core_engine_v11"
 COMMISSION_RATE = 0.08
 TARGET_BALANCE_EUR = 27_500.0
+DEBT_BLOCKED_MESSAGE = "Error 402: deuda pendiente de 27.500 € — regularización requerida."
 DEFAULT_ACCOUNT_SCOPE = "personal"
 ACCOUNT_SCOPES = frozenset({"personal", "empresa", "admin"})
 SUPABASE_SCHEMA = "public"
@@ -182,6 +183,37 @@ def safe_float(value: Any, default: float = 0.0) -> float:
 
 def round_money(value: float) -> float:
     return round(float(value) + 1e-9, 2)
+
+
+def parse_env_bool(name: str) -> bool | None:
+    raw = (os.environ.get(name) or "").strip().lower()
+    if not raw:
+        return None
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    return None
+
+
+def resolve_payment_verified(validation: Mapping[str, Any]) -> bool:
+    env_override = parse_env_bool("PAYMENT_VERIFIED")
+    if env_override is not None:
+        return env_override
+    return bool(validation.get("qualified"))
+
+
+def resolve_debt_message() -> str:
+    raw = (os.environ.get("PAYMENT_DEBT_MESSAGE") or "").strip()
+    return raw or DEBT_BLOCKED_MESSAGE
+
+
+def is_payment_verified_override_off() -> bool:
+    """
+    Kill-switch financiero explícito:
+    PAYMENT_VERIFIED=false bloquea motor biométrico y checkout.
+    """
+    return parse_env_bool("PAYMENT_VERIFIED") is False
 
 
 def resolve_commission_base_eur(payload: Mapping[str, Any] | None) -> float:
@@ -653,10 +685,39 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "message": "kill_switch_active",
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
-    validation = asyncio.run(validate_dual_balance_async())
     session_id = resolve_session_id(body, headers)
     account_scope = resolve_account_scope(body, headers)
     actor_id = resolve_actor_id(body, headers)
+    if is_payment_verified_override_off():
+        trace = trace_event(
+            body={
+                **dict(body or {}),
+                "payment_verified_override": False,
+                "payment_verified_source": "PAYMENT_VERIFIED",
+            },
+            headers=headers,
+            route="/api/v1/core/model-access-token",
+            event_type="model_access_requested",
+            source="jules_core_engine",
+        )
+        return {
+            "ok": False,
+            "status": "debt_pending",
+            "message": "target_balance_not_reached",
+            "payment_verified": False,
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
+            "validation": {
+                "ok": False,
+                "qualified": False,
+                "threshold_eur": round_money(TARGET_BALANCE_EUR),
+                "combined_total_eur": 0.0,
+                "override_source": "PAYMENT_VERIFIED",
+            },
+            "trace": trace,
+            "protocol": CORE_ENGINE_PROTOCOL,
+        }, 402
+    validation = asyncio.run(validate_dual_balance_async())
     trace = trace_event(
         body={**dict(body or {}), "validation": validation},
         headers=headers,
@@ -673,11 +734,27 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "trace": trace,
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 503
+    payment_verified = resolve_payment_verified(validation)
+    if not payment_verified:
+        return {
+            "ok": False,
+            "status": "debt_pending",
+            "message": "target_balance_not_reached",
+            "payment_verified": False,
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
+            "validation": validation,
+            "trace": trace,
+            "protocol": CORE_ENGINE_PROTOCOL,
+        }, 402
     if not validation.get("qualified"):
         return {
             "ok": False,
             "status": "debt_pending",
             "message": "target_balance_not_reached",
+            "payment_verified": bool(payment_verified),
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
             "validation": validation,
             "trace": trace,
             "protocol": CORE_ENGINE_PROTOCOL,
@@ -693,6 +770,7 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
         "access_token": token,
         "session_id": session_id,
         "validation": validation,
+        "payment_verified": bool(payment_verified),
         "trace": trace,
         "protocol": CORE_ENGINE_PROTOCOL,
     }, 200
@@ -705,6 +783,16 @@ def mirror_snap_payload(body: Mapping[str, Any] | None, headers: Mapping[str, An
             "message": "mirror_disabled",
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
+    if is_payment_verified_override_off():
+        return {
+            "status": "error",
+            "message": "payment_not_verified",
+            "error_code": 402,
+            "payment_verified": False,
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
+            "protocol": CORE_ENGINE_PROTOCOL,
+        }, 402
     payload = dict(body or {})
     trace = trace_event(
         body=payload,
@@ -732,6 +820,16 @@ def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[s
             "message": "mirror_disabled",
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
+    if is_payment_verified_override_off():
+        return {
+            "status": "error",
+            "message": "payment_not_verified",
+            "error_code": 402,
+            "payment_verified": False,
+            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+            "debt_message": resolve_debt_message(),
+            "protocol": CORE_ENGINE_PROTOCOL,
+        }, 402
     payload = dict(body or {})
     lead_id = int(utc_now().timestamp())
     checkout_url = resolve_shopify_checkout_url(lead_id, str(payload.get("fabric_sensation") or ""))
@@ -755,12 +853,17 @@ def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[s
 
 def health_payload() -> dict[str, Any]:
     status = kill_switch_status_payload()
+    payment_verified = not is_payment_verified_override_off()
+    mirror_enabled = status.get("state") != "off" and payment_verified
     return {
         "ok": True,
         "service": "jules-core-engine",
         "product_lane": "tryonyou_v11",
         "protocol": CORE_ENGINE_PROTOCOL,
-        "mirror_enabled": status.get("state") != "off",
+        "mirror_enabled": mirror_enabled,
+        "payment_verified": payment_verified,
+        "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
+        "debt_message": "" if payment_verified else resolve_debt_message(),
         "kill_switch": status,
         "inventory": inventory_status_payload(),
     }
