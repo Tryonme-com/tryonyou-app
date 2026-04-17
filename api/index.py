@@ -44,6 +44,14 @@ from empire_payout_trans import (
     register_payment_intent,
     register_payout_transition,
 )
+from core_engine import (
+    trace_event,
+    mirror_snap_payload,
+    perfect_selection_payload,
+    model_access_payload,
+    kill_switch_status_payload,
+    kill_switch_payload,
+)
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
@@ -613,3 +621,69 @@ def health():
         "treasury_reserve_eur": treasury["reserve_eur"],
         "treasury_capital_label": treasury["capital_label"],
     })), 200
+
+
+
+# ── Core Engine V11 Routes ──────────────────────────────────────────────────
+
+@app.route("/api/v1/core/trace", methods=["OPTIONS"])
+def core_trace_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/core/trace", methods=["POST"])
+def core_trace():
+    body = request.get_json(silent=True) or {}
+    result = trace_event(
+        event_type=body.get("event_type", "unknown"),
+        body=body,
+        headers=dict(request.headers),
+    )
+    return _cors(jsonify(result)), 200
+
+
+@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
+def mirror_snap_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/mirror/snap", methods=["POST"])
+def mirror_snap():
+    body = request.get_json(silent=True) or {}
+    result, status = mirror_snap_payload(body, dict(request.headers))
+    return _cors(jsonify(result)), status
+
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])
+def perfect_selection_options_v2():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["POST"])
+def perfect_selection_v2():
+    body = request.get_json(silent=True) or {}
+    result, status = perfect_selection_payload(body, dict(request.headers))
+    return _cors(jsonify(result)), status
+
+
+@app.route("/api/v1/core/model-access-token", methods=["OPTIONS"])
+def model_access_token_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/core/model-access-token", methods=["POST"])
+def model_access_token():
+    body = request.get_json(silent=True) or {}
+    result, status = model_access_payload(body, dict(request.headers))
+    return _cors(jsonify(result)), status
+
+
+@app.route("/api/__jules__/control/kill-switch", methods=["OPTIONS"])
+def kill_switch_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/__jules__/control/kill-switch", methods=["GET"])
+def kill_switch_get():
+    return _cors(jsonify(kill_switch_status_payload())), 200
+
+@app.route("/api/__jules__/control/kill-switch", methods=["POST"])
+def kill_switch_post():
+    body = request.get_json(silent=True) or {}
+    result, status = kill_switch_payload(body, dict(request.headers))
+    return _cors(jsonify(result)), status
