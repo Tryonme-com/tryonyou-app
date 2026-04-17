@@ -1,0 +1,31 @@
+{
+  "name": "falla-cobros-diario",
+  "description": "Automatización para procesar cobros de Falla con comisión fija y control de deuda",
+  "model": "Codex 5.3 High",
+  "triggers": [
+    {
+      "type": "webhook",
+      "enabled": true,
+      "description": "Recibe una notificación por cada pago de app/pasarela"
+    },
+    {
+      "type": "schedule",
+      "enabled": true,
+      "timezone": "Europe/Madrid",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+      "description": "Revisión diaria de hoja/base de datos de cobros a las 09:00"
+    }
+  ],
+  "instructions_file": "automations/falla_cobros_instructions.md",
+  "processor_module": "gestor_falla_v9.py",
+  "output_contract": {
+    "required_fields": [
+      "Fecha",
+      "ID de Fallero",
+      "Importe Bruto",
+      "Comisión Aplicada",
+      "Neto Resultante",
+      "Estado"
+    ]
+  }
+}
