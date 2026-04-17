@@ -22,9 +22,10 @@ INSTANT_PAY_TS = """import { loadStripe } from "@stripe/stripe-js";
 
 /** amount en céntimos (p. ej. 10000 = 100,00 EUR); el servidor debe validar precios. */
 export async function forceInstantPay(): Promise<void> {
-  const pk = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  const pk =
+    import.meta.env.VITE_STRIPE_PUBLIC_KEY_FR || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
   if (!pk) {
-    console.error("VITE_STRIPE_PUBLIC_KEY no configurada");
+    console.error("VITE_STRIPE_PUBLIC_KEY_FR (ou VITE_STRIPE_PUBLIC_KEY) no configurada");
     return;
   }
   console.log("Iniciando cobro de validación técnica (100 EUR)...");

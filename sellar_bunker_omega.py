@@ -33,9 +33,21 @@ def _present(*names: str) -> bool:
 
 def _env_snapshot() -> dict[str, str]:
     return {
-        "stripe_secret": "ok" if _present("STRIPE_SECRET_KEY", "E50_STRIPE_SECRET_KEY") else "missing",
+        "stripe_secret": "ok"
+        if _present(
+            "STRIPE_SECRET_KEY_FR",
+            "E50_STRIPE_SECRET_KEY_FR",
+            "STRIPE_SECRET_KEY",
+            "E50_STRIPE_SECRET_KEY",
+        )
+        else "missing",
         "stripe_publishable": "ok"
-        if _present("VITE_STRIPE_PUBLIC_KEY", "E50_VITE_STRIPE_PUBLIC_KEY")
+        if _present(
+            "VITE_STRIPE_PUBLIC_KEY_FR",
+            "E50_VITE_STRIPE_PUBLIC_KEY_FR",
+            "VITE_STRIPE_PUBLIC_KEY",
+            "E50_VITE_STRIPE_PUBLIC_KEY",
+        )
         else "missing",
         "smtp": "ok"
         if _present("EMAIL_USER", "E50_SMTP_USER") and _present("EMAIL_PASS", "E50_SMTP_PASS")

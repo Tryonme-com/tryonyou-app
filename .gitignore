@@ -7,6 +7,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+.env_security_lock
 
 # Frontend build (Vercel reconstruye en deploy)
 dist/
@@ -43,4 +44,7 @@ billing/VENTA_V10_PROFORMA.json
 logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
-logs/SISTEMA_SUSPENDIDO.jsonl
+logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+update_stripe_v10.py
+activate_royalties_v10.py
+monetizacion_trace_demo.log

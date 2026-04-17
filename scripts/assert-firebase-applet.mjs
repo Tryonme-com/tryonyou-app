@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const path = resolve(root, "firebase-applet-config.json");
-const EXPECT = "gen-lang-client-0066102635";
+const EXPECT = "tryonyou-app";
 
 if (!existsSync(path)) {
   console.error("[TryOnYou] Falta firebase-applet-config.json (sellado permanente).");

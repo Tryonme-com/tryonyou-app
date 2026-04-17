@@ -6,35 +6,24 @@ Handles:
 - Product creation, retrieval, listing, and archival
 - Price creation, retrieval, listing, and deactivation
 
-Includes SIREN 943 610 196 in metadata for legal traceability
-(Stripe Support / Isabella).
-
-Requires env var: STRIPE_SECRET_KEY (sk_live_… or sk_test_…)
+Requires env var: STRIPE_SECRET_KEY_FR (Paris) o legado STRIPE_SECRET_KEY (sk_live_… / sk_test_…).
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import stripe
 
-SIREN = "943 610 196"
-PATENT = "PCT/EP2025/067317"
-
-_LEGAL_METADATA: dict[str, str] = {
-    "siren": SIREN,
-    "patent": PATENT,
-    "platform": "TryOnYou_V10",
-}
+from stripe_fr_resolve import resolve_stripe_secret_fr
 
 
 def _get_stripe_client() -> str:
-    """Return validated Stripe secret key from environment."""
-    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    """Return validated Stripe secret key from environment (cuenta Paris prioritaria)."""
+    sk = resolve_stripe_secret_fr()
     if not sk.startswith(("sk_live_", "sk_test_")):
         raise EnvironmentError(
-            "STRIPE_SECRET_KEY must be set and start with sk_live_ or sk_test_"
+            "STRIPE_SECRET_KEY_FR (o STRIPE_SECRET_KEY) must be set and start with sk_live_ or sk_test_"
         )
     return sk
 
@@ -63,10 +52,11 @@ def create_product(
     """
     stripe.api_key = _get_stripe_client()
     try:
-        merged_metadata = {**_LEGAL_METADATA, **(metadata or {})}
-        params: dict[str, Any] = {"name": name, "metadata": merged_metadata}
+        params: dict[str, Any] = {"name": name}
         if description:
             params["description"] = description
+        if metadata:
+            params["metadata"] = metadata
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
     except stripe.error.StripeError as exc:
@@ -161,15 +151,15 @@ def create_price(
     """
     stripe.api_key = _get_stripe_client()
     try:
-        merged_metadata = {**_LEGAL_METADATA, **(metadata or {})}
         params: dict[str, Any] = {
             "product": product_id,
             "unit_amount": unit_amount,
             "currency": currency.lower(),
-            "metadata": merged_metadata,
         }
         if recurring:
             params["recurring"] = recurring
+        if metadata:
+            params["metadata"] = metadata
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
     except stripe.error.StripeError as exc:

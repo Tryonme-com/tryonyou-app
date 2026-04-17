@@ -2,7 +2,7 @@
 Mirror Sanctuary V10 — orquestación ligera (activos visuales + comprobación Stripe).
 
 Claves Stripe (en entorno, nunca en el código):
-  STRIPE_SECRET_KEY, E50_STRIPE_SECRET_KEY o STRIPE_API_KEY (compat).
+  STRIPE_SECRET_KEY_FR primero; luego STRIPE_SECRET_KEY, E50_* o STRIPE_API_KEY (compat).
 
 Raíz del proyecto: E50_PROJECT_ROOT o ~/tryonyou-app
 
@@ -32,7 +32,10 @@ def _project_root() -> Path:
 
 def _stripe_secret() -> str:
     return (
-        os.environ.get("STRIPE_SECRET_KEY", "").strip()
+        os.environ.get("STRIPE_SECRET_KEY_FR", "").strip()
+        or os.environ.get("INJECT_STRIPE_SECRET_KEY_FR", "").strip()
+        or os.environ.get("E50_STRIPE_SECRET_KEY_FR", "").strip()
+        or os.environ.get("STRIPE_SECRET_KEY", "").strip()
         or os.environ.get("E50_STRIPE_SECRET_KEY", "").strip()
         or os.environ.get("STRIPE_API_KEY", "").strip()
     )

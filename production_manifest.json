@@ -1,7 +1,8 @@
 {
-    "founder": "Ruben Espinar Rodriguez",
+    "founder": "Rubén Espinar Rodríguez",
     "patent": "PCT/EP2025/067317",
     "siret": "94361019600017",
+    "manifest_finance_verified_utc": "2026-04-07T12:00:00Z",
     "identity_system": {
         "official_emails": [
             "ruben@tryonyou.app",
@@ -9,6 +10,50 @@
             "vip@tryonyou.app"
         ],
         "sovereignty_level": "TOTAL"
+    },
+    "finance": {
+        "stripe_inauguration_v10_2": {
+            "status": "production_contract_verified",
+            "checkout_mode": "payment",
+            "live_secret_required": true,
+            "currency": "EUR",
+            "amount_eur": 12500,
+            "amount_cents_default": 1250000,
+            "product_name_default": "Inauguración V10.2 Lafayette",
+            "api_routes": [
+                "/api/stripe_inauguration_checkout",
+                "/stripe_inauguration_checkout",
+                "/api/stripe_webhook_fr",
+                "/stripe_webhook_fr"
+            ],
+            "server_env_keys": [
+                "STRIPE_SECRET_KEY_FR",
+                "STRIPE_CONNECT_ACCOUNT_ID_FR",
+                "STRIPE_WEBHOOK_SECRET_FR",
+                "STRIPE_INAUGURATION_PRICE_ID",
+                "STRIPE_PRICE_INAUGURATION_12500",
+                "STRIPE_INAUGURATION_PRODUCT_NAME",
+                "STRIPE_INAUGURATION_AMOUNT_CENTS",
+                "STRIPE_INAUGURATION_SUCCESS_URL",
+                "STRIPE_INAUGURATION_CANCEL_URL",
+                "TRYONYOU_PUBLIC_DOMAIN"
+            ],
+            "session_metadata": {
+                "patent": "PCT/EP2025/067317",
+                "flow": "v10_2_inauguration"
+            },
+            "success_cancel_query_defaults": {
+                "success": "/?inauguration=merci",
+                "cancel": "/?inauguration=annule"
+            }
+        }
+    },
+    "firebase_web": {
+        "project_id": "gen-lang-client-0066102635",
+        "auth_domain_default": "gen-lang-client-0066102635.firebaseapp.com",
+        "storage_bucket_default": "gen-lang-client-0066102635.appspot.com",
+        "client_env_prefix": "VITE_FIREBASE_",
+        "notes": "storageBucket vacío en .env se omite en el SDK; authDomain cae a {projectId}.firebaseapp.com si falta."
     },
     "deployment": {
         "verified_domains": [
@@ -31,7 +76,8 @@
             "milestone": "Lafayette Inauguration",
             "sovereignty_value": "12.500€",
             "hash": "68752fc",
-            "timestamp": "2026-04-07T06:45:00Z"
+            "timestamp": "2026-04-07T12:00:00Z",
+            "stripe_metadata_flow": "v10_2_inauguration"
         }
     },
     "lockdown": {

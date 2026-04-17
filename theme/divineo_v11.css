@@ -1,0 +1,29 @@
+/* Divineo V11 — landing soberana, espejo y efecto chasquido PAU */
+
+.landing-empire {
+  background: radial-gradient(circle at top, #2f353a 0%, #000000 100%);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #ffffff;
+}
+
+.mirror-v11 {
+  height: 210vh;
+  border: 1px solid #d4af37;
+  box-shadow: 0 0 50px rgba(212, 175, 55, 0.4);
+}
+
+.pau-snap-effect {
+  background-image: url("/assets/gold_swirl_v11.gif");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* Inyección de Lujo Lafayette - Sin errores */
+.pau-divineo-v11 {
+  background: radial-gradient(circle, #2f353a 0%, #000000 100%) !important;
+  color: #ffffff !important;
+  font-family: "Cormorant Garamond", serif;
+  border: 1px solid #d4af37;
+  box-shadow: 0 0 40px rgba(212, 175, 55, 0.3);
+}

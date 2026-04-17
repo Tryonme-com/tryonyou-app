@@ -6,20 +6,21 @@ import { normalizeFirebaseStorageBucket, viteFirebaseValue } from "./firebaseEnv
 
 let appSingleton: FirebaseApp | null = null;
 
-/**
- * Opciones Firebase (Vite sustituye `import.meta.env` en build; no hay carga async).
- * Este módulo no llama a `getStorage()`: cualquier Storage debe usar el mismo `FirebaseApp`
- * tras `initFirebaseApplet()`.
- */
 function mergedOptions(): FirebaseOptions {
+  const projectId =
+    viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") ||
+    String(appletConfig.projectId ?? "").trim() ||
+    "";
+  const authDomainFromEnv =
+    viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") ||
+    String(appletConfig.authDomain ?? "").trim();
+  const authDomain =
+    authDomainFromEnv ||
+    (projectId ? `${projectId}.firebaseapp.com` : "");
   const apiKey =
     viteFirebaseValue("VITE_FIREBASE_API_KEY") ||
     String(appletConfig.apiKey ?? "").trim() ||
     "";
-  const authDomain =
-    viteFirebaseValue("VITE_FIREBASE_AUTH_DOMAIN") || appletConfig.authDomain;
-  const projectId =
-    viteFirebaseValue("VITE_FIREBASE_PROJECT_ID") || appletConfig.projectId;
   const storageBucketRaw =
     viteFirebaseValue("VITE_FIREBASE_STORAGE_BUCKET") ||
     String(appletConfig.storageBucket ?? "").trim();
@@ -43,7 +44,7 @@ function mergedOptions(): FirebaseOptions {
     apiKey,
     authDomain,
     projectId,
-    storageBucket,
+    ...(storageBucket ? { storageBucket } : {}),
     messagingSenderId,
     appId,
     measurementId: mid || undefined,
@@ -68,7 +69,7 @@ export function initFirebaseApplet(): FirebaseApp | null {
   const opts = mergedOptions();
   if (!opts.apiKey || !opts.projectId) {
     console.warn(
-      "[TryOnYou Firebase] Config incompleta: define VITE_FIREBASE_API_KEY (sin comillas en .env) o apiKey en firebase-applet-config.json. Proyecto esperado: gen-lang-client-0066102635.",
+      "[TryOnYou Firebase] Config incompleta: define VITE_FIREBASE_API_KEY (sin comillas en .env) o apiKey en firebase-applet-config.json. Proyecto esperado: tryonyou-app (authDomain/storage coherentes).",
     );
     return null;
   }

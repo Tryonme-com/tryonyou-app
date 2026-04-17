@@ -19,30 +19,30 @@ import stripe_agent
 
 class TestGetStripeClient(unittest.TestCase):
     def test_valid_live_key(self) -> None:
-        with patch.dict(os.environ, {"STRIPE_SECRET_KEY": "sk_live_abc123"}):
+        with patch.dict(os.environ, {"STRIPE_SECRET_KEY_FR": "sk_live_abc123"}):
             key = stripe_agent._get_stripe_client()
             self.assertEqual(key, "sk_live_abc123")
 
     def test_valid_test_key(self) -> None:
-        with patch.dict(os.environ, {"STRIPE_SECRET_KEY": "sk_test_abc123"}):
+        with patch.dict(os.environ, {"STRIPE_SECRET_KEY_FR": "sk_test_abc123"}):
             key = stripe_agent._get_stripe_client()
             self.assertEqual(key, "sk_test_abc123")
 
     def test_missing_key_raises(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            os.environ.pop("STRIPE_SECRET_KEY", None)
+            os.environ.pop("STRIPE_SECRET_KEY_FR", None)
             with self.assertRaises(EnvironmentError):
                 stripe_agent._get_stripe_client()
 
     def test_invalid_key_raises(self) -> None:
-        with patch.dict(os.environ, {"STRIPE_SECRET_KEY": "pk_live_wrong"}):
+        with patch.dict(os.environ, {"STRIPE_SECRET_KEY_FR": "pk_live_wrong"}):
             with self.assertRaises(EnvironmentError):
                 stripe_agent._get_stripe_client()
 
 
 class TestCreateProduct(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_create_product_success(self) -> None:
         mock_product = MagicMock()
@@ -83,7 +83,7 @@ class TestCreateProduct(unittest.TestCase):
 
 class TestRetrieveProduct(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_retrieve_product_success(self) -> None:
         mock_product = MagicMock()
@@ -102,7 +102,7 @@ class TestRetrieveProduct(unittest.TestCase):
 
 class TestListProducts(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_list_products_success(self) -> None:
         mock_iter = [MagicMock(id="prod_1"), MagicMock(id="prod_2")]
@@ -130,7 +130,7 @@ class TestListProducts(unittest.TestCase):
 
 class TestArchiveProduct(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_archive_product_success(self) -> None:
         mock_product = MagicMock()
@@ -149,7 +149,7 @@ class TestArchiveProduct(unittest.TestCase):
 
 class TestCreatePrice(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_create_price_success(self) -> None:
         mock_price = MagicMock()
@@ -177,10 +177,10 @@ class TestCreatePrice(unittest.TestCase):
 
     def test_create_price_currency_lowercased(self) -> None:
         mock_price = MagicMock()
-        mock_price.id = "price_usd"
+        mock_price.id = "price_eur"
         with patch("stripe.Price.create", return_value=mock_price) as mock_fn:
-            stripe_agent.create_price("prod_abc", 9900, currency="USD")
-        self.assertEqual(mock_fn.call_args[1]["currency"], "usd")
+            stripe_agent.create_price("prod_abc", 9900, currency="EUR")
+        self.assertEqual(mock_fn.call_args[1]["currency"], "eur")
 
     def test_create_price_always_has_siren(self) -> None:
         mock_price = MagicMock()
@@ -200,7 +200,7 @@ class TestCreatePrice(unittest.TestCase):
 
 class TestRetrievePrice(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_retrieve_price_success(self) -> None:
         mock_price = MagicMock()
@@ -219,7 +219,7 @@ class TestRetrievePrice(unittest.TestCase):
 
 class TestListPrices(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_list_prices_success(self) -> None:
         mock_iter = [MagicMock(id="price_1"), MagicMock(id="price_2")]
@@ -247,7 +247,7 @@ class TestListPrices(unittest.TestCase):
 
 class TestDeactivatePrice(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_deactivate_price_success(self) -> None:
         mock_price = MagicMock()

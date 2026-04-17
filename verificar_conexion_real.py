@@ -1,7 +1,7 @@
 """
 Comprueba que hay claves Stripe en el entorno (pk + sk) y si pk es live o test.
 
-Acepta los mismos alias que inject_keys: VITE_STRIPE_PUBLIC_KEY, INJECT_*, E50_*.
+Acepta alias Paris primero: VITE_STRIPE_PUBLIC_KEY_FR, luego inject_keys / legado.
 
 No imprime secretos. No añade dependencias (sin requests).
 

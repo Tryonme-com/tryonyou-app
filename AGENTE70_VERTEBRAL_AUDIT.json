@@ -1,0 +1,74 @@
+{
+  "agent": "AGENTE70",
+  "decision_final_hasta_entrega": true,
+  "autoridad_cierre": "AGENTE70",
+  "columna_ok": true,
+  "puntos": [
+    {
+      "id": "1",
+      "titulo": "Manifiesto producción (production_manifest.json)",
+      "ok": true,
+      "detalle": "patente en JSON: PCT/EP2025/067317"
+    },
+    {
+      "id": "2",
+      "titulo": "Vault soberano (master_omega_vault.json)",
+      "ok": true,
+      "detalle": "fuente narrativa / LOI"
+    },
+    {
+      "id": "3",
+      "titulo": "Firebase applet (prebuild)",
+      "ok": true,
+      "detalle": "projectId debe coincidir con assert-firebase-applet.mjs"
+    },
+    {
+      "id": "4",
+      "titulo": "API Flask — rutas financieras Stripe FR",
+      "ok": true,
+      "detalle": "/api/stripe_inauguration_checkout + /api/stripe_webhook_fr"
+    },
+    {
+      "id": "5",
+      "titulo": "Fit-AI Assistant (Live It ↔ biométrico)",
+      "ok": true,
+      "detalle": "GET /api/fit_ai_health — env LIVEIT_DRIVE_COLLECTION_FOLDER_ID"
+    },
+    {
+      "id": "6",
+      "titulo": "Front Divineo V11 + Pau tiempo real",
+      "ok": true,
+      "detalle": "RealTimeAvatar + GLB /fallback vídeo"
+    },
+    {
+      "id": "7",
+      "titulo": "Tipos Vite (import.meta.env)",
+      "ok": true,
+      "detalle": "evita TS2307 en IDE"
+    },
+    {
+      "id": "8",
+      "titulo": "Checkout soberano (abvetos / envBootstrap)",
+      "ok": true,
+      "detalle": "EUR / Paris"
+    },
+    {
+      "id": "9",
+      "titulo": "Orquestador async purga V11 (opcional CI local)",
+      "ok": true,
+      "detalle": "python3 protocolo_purga_v11_async.py"
+    },
+    {
+      "id": "10",
+      "titulo": "Equipo / mesa (referencia)",
+      "ok": true,
+      "detalle": "mesa_redonda_omega.py, mesa_agente70_vercel_telegram.py — dominios y Telegram"
+    }
+  ],
+  "siguiente_paso_equipo": [
+    "Completar LIVEIT_DRIVE_* + GOOGLE_APPLICATION_CREDENTIALS en Vercel/servidor",
+    "Subir pau_v11_high_poly.glb a public/assets/models/",
+    "Registrar webhook Stripe FR → /api/stripe_webhook_fr",
+    "Commit con mensaje Pau: @CertezaAbsoluta @lo+erestu PCT/EP2025/067317"
+  ]
+}

@@ -3,17 +3,22 @@ Activa el flujo de cobro (plan 100€): comprueba vars en entorno, merge seguro 
 
 - Raíz: E50_PROJECT_ROOT (por defecto ~/Projects/22TRYONYOU).
 - Plan ID: exporta INJECT_VITE_PLAN_100_ID o E50_VITE_PLAN_100_ID (nunca hardcodees price_* en código).
-- Claves Stripe: comprueba VITE_STRIPE_PUBLIC_KEY / INJECT_VITE_STRIPE_PUBLIC_KEY y STRIPE_SECRET_KEY / INJECT_*.
-- .env: solo merge; nunca se hace git add de .env.
+- Claves Stripe (Paris): VITE_STRIPE_PUBLIC_KEY_FR o VITE_STRIPE_PUBLIC_KEY / INJECT_*; STRIPE_SECRET_KEY_FR o STRIPE_SECRET_KEY / INJECT_*.
+- Tubo verificado: si hay secreto (FR o alias), valida cuenta vía stripe.Account.retrieve() antes del git.
+- Temporales: antes de git se eliminan __pycache__, .pytest_cache, .mypy_cache (sin tocar node_modules/.git).
+- .env: solo merge local; nunca se hace git add de .env.
 - Git: E50_GIT_PUSH=1; rutas explícitas; --force solo con E50_FORCE_PUSH=1.
 
 Ejecutar: python3 activar_flujo_dinero.py
+
+Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu | Bajo Protocolo V10 - Founder: Rubén
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -83,25 +88,84 @@ def _force_push_on() -> bool:
     )
 
 
+_SKIP_CLEAN = frozenset(
+    {"node_modules", ".git", "dist", "build", ".venv", "venv", "coverage"}
+)
+
+
+def _limpiar_temporales_seguro(root: str) -> None:
+    """Quita cachés Python comunes bajo root; no borra node_modules ni .git."""
+    root = os.path.abspath(root)
+    for base, dirs, files in os.walk(root, topdown=True):
+        dirs[:] = [d for d in dirs if d not in _SKIP_CLEAN]
+        if os.path.basename(base) == "__pycache__":
+            shutil.rmtree(base, ignore_errors=True)
+            dirs.clear()
+            continue
+    for name in (".pytest_cache", ".mypy_cache", ".ruff_cache"):
+        p = os.path.join(root, name)
+        if os.path.isdir(p):
+            shutil.rmtree(p, ignore_errors=True)
+
+
+def _stripe_tubo_cuenta_verificada(sk: str) -> bool:
+    """True si la API Stripe responde con la clave secreta (cuenta asociada al banco en Dashboard)."""
+    try:
+        import stripe
+    except ImportError:
+        print(
+            "⚠️  pip install stripe necesario para verificar STRIPE_SECRET_KEY_FR contra la API."
+        )
+        return True
+    stripe.api_key = sk
+    try:
+        acct = stripe.Account.retrieve()
+        aid = getattr(acct, "id", "?")
+        ch = getattr(acct, "charges_enabled", None)
+        print(f"✅ Tubo Stripe: cuenta {aid} charges_enabled={ch!r}")
+        return True
+    except Exception as e:
+        print(f"❌ STRIPE_SECRET_KEY_FR (o alias) no valida la cuenta: {e}")
+        return False
+
+
 def activar_flujo_dinero() -> int:
     print("🚀 Verificando conexión con la pasarela (entorno + merge local)...")
 
     os.makedirs(ROOT, exist_ok=True)
     os.chdir(ROOT)
 
-    pk = _get("VITE_STRIPE_PUBLIC_KEY", "INJECT_VITE_STRIPE_PUBLIC_KEY", "E50_VITE_STRIPE_PUBLIC_KEY")
-    sk = _get("STRIPE_SECRET_KEY", "INJECT_STRIPE_SECRET_KEY", "E50_STRIPE_SECRET_KEY")
+    pk = _get(
+        "VITE_STRIPE_PUBLIC_KEY_FR",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY_FR",
+        "E50_VITE_STRIPE_PUBLIC_KEY_FR",
+        "VITE_STRIPE_PUBLIC_KEY",
+        "INJECT_VITE_STRIPE_PUBLIC_KEY",
+        "E50_VITE_STRIPE_PUBLIC_KEY",
+    )
+    sk = _get(
+        "STRIPE_SECRET_KEY_FR",
+        "INJECT_STRIPE_SECRET_KEY_FR",
+        "E50_STRIPE_SECRET_KEY_FR",
+        "STRIPE_SECRET_KEY",
+        "INJECT_STRIPE_SECRET_KEY",
+        "E50_STRIPE_SECRET_KEY",
+    )
     plan = _get("VITE_PLAN_100_ID", "INJECT_VITE_PLAN_100_ID", "E50_VITE_PLAN_100_ID")
 
     if pk:
         print("✅ Clave publicable Stripe: presente en entorno.")
     else:
-        print("⚠️  Falta clave publicable (VITE_STRIPE_PUBLIC_KEY o INJECT_VITE_STRIPE_PUBLIC_KEY).")
+        print("⚠️  Falta clave publicable (VITE_STRIPE_PUBLIC_KEY_FR o VITE_STRIPE_PUBLIC_KEY / INJECT_*).")
 
     if sk:
         print("✅ Secreto Stripe: presente en entorno (solo servidor / Vercel).")
+        if sk.startswith("sk_test_"):
+            print("⚠️  sk_test_: para cobro real en cuenta verificada usa sk_live_ en producción.")
+        elif not _stripe_tubo_cuenta_verificada(sk):
+            return 3
     else:
-        print("⚠️  Falta STRIPE_SECRET_KEY en entorno local (puede estar solo en Vercel).")
+        print("⚠️  Falta STRIPE_SECRET_KEY_FR en entorno local (puede estar solo en Vercel).")
 
     if not plan:
         print(
@@ -114,9 +178,9 @@ def activar_flujo_dinero() -> int:
 
     updates = {"VITE_PLAN_100_ID": plan}
     if pk:
-        updates["VITE_STRIPE_PUBLIC_KEY"] = pk
+        updates["VITE_STRIPE_PUBLIC_KEY_FR"] = pk
     if sk:
-        updates["STRIPE_SECRET_KEY"] = sk
+        updates["STRIPE_SECRET_KEY_FR"] = sk
 
     env_path = os.path.join(ROOT, ".env")
     _merge_dotenv(env_path, updates)
@@ -128,7 +192,7 @@ def activar_flujo_dinero() -> int:
         "publishable_in_env": bool(pk),
         "secret_in_env": bool(sk),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "reminder": "Replica VITE_* y STRIPE_SECRET_KEY en Vercel; no subas .env.",
+        "reminder": "Replica VITE_STRIPE_PUBLIC_KEY_FR y STRIPE_SECRET_KEY_FR en Vercel; no subas .env.",
     }
     out_json = os.path.join(ROOT, "MONEY_FLOW_ACTIVATION.json")
     with open(out_json, "w", encoding="utf-8") as f:
@@ -144,6 +208,9 @@ def activar_flujo_dinero() -> int:
     if not os.path.isdir(os.path.join(ROOT, ".git")):
         print("ℹ️  No hay .git en ROOT.")
         return 0
+
+    print("🧹 Limpiando temporales antes de git (cachés Python, no .env)...")
+    _limpiar_temporales_seguro(ROOT)
 
     candidates = [
         "MONEY_FLOW_ACTIVATION.json",
@@ -165,7 +232,9 @@ def activar_flujo_dinero() -> int:
             "git",
             "commit",
             "-m",
-            "MONEY: Activating 100EUR payment flow marker (no secrets)",
+            "MONEY: flujo 100€ + tubo Stripe verificado, sin secretos en repo | @CertezaAbsoluta @lo+erestu PCT/EP2025/067317",
+            "-m",
+            "Bajo Protocolo de Soberanía V10 - Founder: Rubén",
         ],
         cwd=ROOT,
     )

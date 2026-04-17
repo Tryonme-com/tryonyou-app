@@ -119,8 +119,12 @@ def fase_seo_local() -> None:
 
 
 def fase_stripe_opcional() -> None:
-    if not os.environ.get("STRIPE_SECRET_KEY", "").strip():
-        log("Stripe: sin STRIPE_SECRET_KEY.")
+    sk = (
+        os.environ.get("STRIPE_SECRET_KEY_FR", "").strip()
+        or os.environ.get("STRIPE_SECRET_KEY", "").strip()
+    )
+    if not sk:
+        log("Stripe: sin STRIPE_SECRET_KEY_FR (ni legado STRIPE_SECRET_KEY).")
         return
     log("Stripe: clave presente; listar facturas pendientes requiere script aparte (stripe-python).")
 
