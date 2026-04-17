@@ -1,5 +1,7 @@
 import json
+import os
 import sys
+from urllib.parse import urlencode
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +33,8 @@ from stripe_lafayette import create_lafayette_checkout  # noqa: E402
 from financial_guard import log_sovereignty_event  # noqa: E402
 
 app = Flask(__name__)
+ADVBET_PROVIDER = "ABVETOS_ADVBET"
+DEFAULT_BIOMETRIC_DEEP_LINK_BASE = "https://abvetos.com/identity/biometric-verify"
 
 
 def _cors(resp: Response) -> Response:
@@ -56,6 +60,33 @@ def _read_json_body() -> dict[str, Any]:
         return body if isinstance(body, dict) else {}
     body = request.get_json(force=True, silent=True) or {}
     return body if isinstance(body, dict) else {}
+
+
+def _build_advbet_biometric_deep_link(session_id: str) -> str:
+    base = (
+        os.getenv("ADVBET_BIOMETRIC_DEEP_LINK_BASE")
+        or os.getenv("BIOMETRIC_DEEP_LINK_BASE")
+        or DEFAULT_BIOMETRIC_DEEP_LINK_BASE
+    ).strip()
+    if not base:
+        base = DEFAULT_BIOMETRIC_DEEP_LINK_BASE
+    query = urlencode(
+        {
+            "session_id": session_id,
+            "provider": ADVBET_PROVIDER.lower(),
+            "verification": "voice_facial",
+        }
+    )
+    return f"{base}?{query}"
+
+
+def _build_advbet_qr_payload(session_id: str, deep_link: str) -> dict[str, str]:
+    suffix = session_id[-8:].upper() if session_id else "SESSION"
+    return {
+        "format": "deep_link",
+        "qr_token": f"ADVBET-{suffix}",
+        "deep_link": deep_link,
+    }
 
 
 def _handshake_payload() -> dict[str, Any]:
@@ -215,8 +246,26 @@ def empire_payment_intent() -> tuple[Response, int]:
         return _json_response(
             {"status": "error", "message": "payment_intent_creation_failed"}, 502
         )
+    deep_link = _build_advbet_biometric_deep_link(session_id)
+    qr_payload = _build_advbet_qr_payload(session_id, deep_link)
+    log_sovereignty_event(
+        event_type="empire_payment_intent_created",
+        detail=f"provider={ADVBET_PROVIDER} deep_link_ready=true",
+        session_id=session_id,
+        amount_eur=amount_eur,
+    )
     return _json_response(
-        {"status": "ok", "client_secret": client_secret, "session_id": session_id}, 200
+        {
+            "status": "ok",
+            "client_secret": client_secret,
+            "session_id": session_id,
+            "advbet": {
+                "provider": ADVBET_PROVIDER,
+                "biometric_deep_link": deep_link,
+                "qr_payload": qr_payload,
+            },
+        },
+        200,
     )
 
 
