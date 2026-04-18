@@ -44,13 +44,14 @@ def guard_stripe_call(
     NEVER calls sys.exit() or shuts down the server.
     """
     last_error: Exception | None = None
+    fn_name = getattr(fn, "__name__", fn.__class__.__name__)
     for attempt in range(1, max_retries + 1):
         try:
             result = fn(*args, **kwargs)
             if attempt > 1:
                 _logger.info(
                     "stripe_call_recovered | fn=%s | attempt=%d",
-                    fn.__name__,
+                    fn_name,
                     attempt,
                 )
             return result
@@ -59,7 +60,7 @@ def guard_stripe_call(
             error_code = getattr(exc, "http_status", None) or "unknown"
             _logger.warning(
                 "stripe_call_failed | fn=%s | attempt=%d/%d | status=%s | error=%s",
-                fn.__name__,
+                fn_name,
                 attempt,
                 max_retries,
                 error_code,
@@ -70,7 +71,7 @@ def guard_stripe_call(
 
     _logger.error(
         "stripe_call_exhausted | fn=%s | retries=%d | last_error=%s",
-        fn.__name__,
+        fn_name,
         max_retries,
         str(last_error)[:300],
     )

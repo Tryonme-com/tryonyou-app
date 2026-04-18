@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from urllib.parse import urlencode
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, request
@@ -15,7 +16,9 @@ from bunker_full_orchestrator import (
     orchestrate_beta_waitlist,
     orchestrate_mirror_shadow_dwell,
 )
+from financial_guard import guard_stripe_call
 from mirror_digital_make import forward_mirror_event
+from stripe_lafayette import create_lafayette_checkout
 from stripe_inauguration import create_inauguration_checkout_session
 from stripe_webhook import handle_webhook
 from inventory_engine import inventory_match_payload
@@ -55,9 +58,11 @@ from core_engine import (
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
+ADVBET_PROVIDER = "advbet"
 
 _ALLOWED_PAYMENT_HOST_SUFFIXES = ("abvetos.com",)
 _ALLOWED_PAYMENT_LOCAL_HOSTS = {"localhost", "127.0.0.1"}
+_PAYMENT_ORCHESTRATION_LOCKS: set[str] = set()
 
 
 def _is_allowed_payment_host(hostname: str) -> bool:
@@ -84,6 +89,26 @@ def _sanitize_checkout_url(raw_url: str) -> str:
         return raw
     except Exception:
         return ""
+
+
+def _advbet_biometric_deep_link_base() -> str:
+    return (
+        os.getenv("ADVBET_BIOMETRIC_DEEP_LINK_BASE")
+        or os.getenv("BIOMETRIC_DEEP_LINK_BASE")
+        or "https://tryonyou.app/biometric-verify"
+    ).strip().rstrip("/")
+
+
+def _advbet_payload(*, session_id: str, amount_eur: float) -> dict[str, object]:
+    deep_link = f"{_advbet_biometric_deep_link_base()}?{urlencode({'session_id': session_id, 'amount_eur': amount_eur})}"
+    return {
+        "provider": ADVBET_PROVIDER,
+        "biometric_deep_link": deep_link,
+        "qr_payload": {
+            "format": "deep_link",
+            "deep_link": deep_link,
+        },
+    }
 
 
 @app.route("/")
@@ -351,6 +376,49 @@ def empire_payment_intent_options():
 @app.route("/api/v1/empire/payment-intent", methods=["POST"])
 def empire_payment_intent():
     body = request.get_json(force=True, silent=True) or {}
+    session_id = str(body.get("session_id", "")).strip()
+    amount_eur_raw = body.get("amount_eur")
+
+    if session_id or amount_eur_raw is not None:
+        if not session_id or amount_eur_raw in (None, ""):
+            return _cors(jsonify({
+                "status": "error",
+                "message": "session_id_and_amount_eur_required",
+            })), 400
+
+        try:
+            amount_eur = float(amount_eur_raw)
+        except (TypeError, ValueError):
+            return _cors(jsonify({
+                "status": "error",
+                "message": "amount_eur_invalid",
+            })), 400
+
+        if amount_eur <= 0:
+            return _cors(jsonify({
+                "status": "error",
+                "message": "amount_eur_invalid",
+            })), 400
+
+        _PAYMENT_ORCHESTRATION_LOCKS.add(session_id)
+        try:
+            client_secret = guard_stripe_call(create_lafayette_checkout, session_id, amount_eur)
+            if not client_secret:
+                return _cors(jsonify({
+                    "status": "error",
+                    "message": "payment_intent_creation_failed",
+                })), 502
+
+            return _cors(jsonify({
+                "status": "ok",
+                "client_secret": client_secret,
+                "session_id": session_id,
+                "amount_eur": amount_eur,
+                "advbet": _advbet_payload(session_id=session_id, amount_eur=amount_eur),
+            })), 200
+        finally:
+            _PAYMENT_ORCHESTRATION_LOCKS.discard(session_id)
+
     flow_token = str(body.get("flow_token", "")).strip()
     checkout_url = str(body.get("checkout_url", "")).strip()
     button_id = str(body.get("button_id", "tryonyou-pay-button")).strip()
