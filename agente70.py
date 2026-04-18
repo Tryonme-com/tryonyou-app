@@ -68,6 +68,13 @@ class Agente70:
         """
         Procesa la solicitud del usuario tras validar estado soberano.
 
+        Args:
+            user_input: Texto recibido del usuario.
+
+        Returns:
+            Mensaje de espera cuando la validación falla, o mensaje de éxito
+            cuando el procesamiento continúa.
+
         Si la validación falla, retorna mensaje de espera refinada.
         Si la validación pasa, sincroniza logging y devuelve respuesta final.
         """
@@ -84,19 +91,33 @@ class Agente70:
         )
 
     def sync_with_drive(self, data: str) -> dict[str, Any]:
-        """Sincronización de logging con Drive/Sheets (placeholder seguro)."""
+        """
+        Sincronización de logging con Drive/Sheets (placeholder seguro).
+
+        Args:
+            data: Contenido a sincronizar en el registro operativo.
+
+        Returns:
+            Diccionario con:
+              - ``synced``: indicador booleano del paso de sincronización.
+              - ``credentials_loaded``: ``True`` si las credenciales se cargaron.
+        """
         credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
         credentials_loaded = False
 
         if credentials_path and Credentials:
             try:
                 if os.path.exists(credentials_path):
-                    _credentials = Credentials.from_service_account_file(credentials_path)
-                    credentials_loaded = bool(_credentials)
+                    credentials = Credentials.from_service_account_file(credentials_path)
+                    credentials_loaded = bool(credentials)
             except _CREDENTIAL_LOAD_ERRORS:
                 credentials_loaded = False
 
-        _logger.info("Datos sincronizados en Google Drive: %s", data)
+        _logger.info(
+            "Datos sincronizados en Google Drive | payload_length=%d | credentials_loaded=%s",
+            len(data),
+            credentials_loaded,
+        )
         return {"synced": True, "credentials_loaded": credentials_loaded}
 
 
