@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 import logging
 from typing import Any, Mapping
 
@@ -37,7 +38,8 @@ class PauAgent:
                 "magia de nuevo."
             )
 
+        safe_user_input = escape(user_input, quote=True)
         return (
             "Como diría Yves Saint Laurent, el estilo es eterno... sobre tu petición: "
-            f"{user_input}. Déjame ver cómo hacerlo impecable."
+            f"{safe_user_input}. Déjame ver cómo hacerlo impecable."
         )

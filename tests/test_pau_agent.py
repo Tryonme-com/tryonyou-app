@@ -43,6 +43,7 @@ class TestPauAgent(unittest.TestCase):
         )
         self.assertIn("protocolo soberano", response.lower())
         self.assertIn("ajuste técnico", response.lower())
+        self.assertEqual(self.agent.status, "RESTRICTED")
 
     def test_generate_response_returns_persona_message_when_active(self) -> None:
         user_input = "¿Qué look me recomiendas hoy?"
@@ -52,6 +53,13 @@ class TestPauAgent(unittest.TestCase):
         )
         self.assertIn("Yves Saint Laurent", response)
         self.assertIn(user_input, response)
+
+    def test_generate_response_escapes_user_input(self) -> None:
+        response = self.agent.generate_response(
+            "<b>look</b>",
+            {"id": "123", "status_402": False},
+        )
+        self.assertIn("&lt;b&gt;look&lt;/b&gt;", response)
 
 
 if __name__ == "__main__":
