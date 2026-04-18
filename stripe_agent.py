@@ -11,7 +11,10 @@ Requires env var: STRIPE_SECRET_KEY_FR (Paris) o legado STRIPE_SECRET_KEY (sk_li
 
 from __future__ import annotations
 
+import os
 import sys
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +25,74 @@ if str(_ROOT) not in sys.path:
 import stripe
 
 from stripe_fr_resolve import resolve_stripe_secret_fr
+
+
+_list_cache_lock = threading.Lock()
+_list_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
+def _list_cache_ttl_seconds() -> float:
+    raw = (os.getenv("STRIPE_LIST_CACHE_TTL_SECONDS") or "120").strip()
+    try:
+        v = float(raw)
+    except ValueError:
+        v = 120.0
+    return max(0.0, v)
+
+
+def clear_stripe_list_cache() -> None:
+    """Vacía la caché en memoria de list_products / list_prices (tests o tras cambios de catálogo)."""
+    with _list_cache_lock:
+        _list_cache.clear()
+
+
+def _list_cache_key(kind: str, **parts: Any) -> str:
+    flat = tuple(sorted(parts.items()))
+    return f"{kind}|{flat}"
+
+
+def _cache_get(key: str) -> dict[str, Any] | None:
+    ttl = _list_cache_ttl_seconds()
+    if ttl <= 0:
+        return None
+    now = time.monotonic()
+    with _list_cache_lock:
+        hit = _list_cache.get(key)
+        if not hit:
+            return None
+        ts, payload = hit
+        if now - ts > ttl:
+            del _list_cache[key]
+            return None
+        return payload
+
+
+def _cache_set(key: str, payload: dict[str, Any]) -> None:
+    if _list_cache_ttl_seconds() <= 0:
+        return
+    with _list_cache_lock:
+        _list_cache[key] = (time.monotonic(), payload)
+
+
+def _stripe_list_items(result: Any, *, paginate: bool) -> list[Any]:
+    """
+    Una sola página por defecto (``result.data``) para evitar ráfagas GET /v1/prices|products.
+    Con ``paginate=True`` se usa ``auto_paging_iter()`` (catálogos grandes; más peticiones).
+    """
+    if paginate:
+        return list(result.auto_paging_iter())
+    data = getattr(result, "data", None)
+    if isinstance(data, list):
+        return list(data)
+    return list(result.auto_paging_iter())
+
+
+def _valid_product_id(product_id: str) -> bool:
+    return bool(product_id and str(product_id).strip().startswith("prod_"))
+
+
+def _valid_price_id(price_id: str) -> bool:
+    return bool(price_id and str(price_id).strip().startswith("price_"))
 
 
 def _get_stripe_client() -> str:
@@ -78,6 +149,11 @@ def retrieve_product(product_id: str) -> dict[str, Any]:
     Returns:
         dict with 'ok' and 'product' on success, or 'ok': False and 'error'.
     """
+    if not _valid_product_id(product_id):
+        return {
+            "ok": False,
+            "error": "invalid_product_id_expected_prod_prefix",
+        }
     stripe.api_key = _get_stripe_client()
     try:
         product = stripe.Product.retrieve(product_id)
@@ -88,13 +164,19 @@ def retrieve_product(product_id: str) -> dict[str, Any]:
         return {"ok": False, "error": str(exc)}
 
 
-def list_products(active: bool | None = None, limit: int = 100) -> dict[str, Any]:
+def list_products(
+    active: bool | None = None,
+    limit: int = 100,
+    *,
+    paginate: bool = False,
+) -> dict[str, Any]:
     """
     List Stripe products.
 
     Args:
         active: Filter by active status. None returns all.
         limit: Maximum number of products to return (1–100).
+        paginate: If False (default), solo la primera página (menos tráfico API).
 
     Returns:
         dict with 'ok' and 'products' list on success.
@@ -105,7 +187,7 @@ def list_products(active: bool | None = None, limit: int = 100) -> dict[str, Any
         if active is not None:
             params["active"] = active
         result = stripe.Product.list(**params)
-        return {"ok": True, "products": list(result.auto_paging_iter())}
+        return {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
@@ -119,6 +201,8 @@ def archive_product(product_id: str) -> dict[str, Any]:
     Returns:
         dict with 'ok' and 'product_id' on success.
     """
+    if not _valid_product_id(product_id):
+        return {"ok": False, "error": "invalid_product_id_expected_prod_prefix"}
     stripe.api_key = _get_stripe_client()
     try:
         product = stripe.Product.modify(product_id, active=False)
@@ -155,6 +239,8 @@ def create_price(
     Returns:
         dict with 'ok', 'price_id', and 'price' on success.
     """
+    if not _valid_product_id(product_id):
+        return {"ok": False, "error": "invalid_product_id_expected_prod_prefix"}
     stripe.api_key = _get_stripe_client()
     try:
         params: dict[str, Any] = {
@@ -181,6 +267,8 @@ def retrieve_price(price_id: str) -> dict[str, Any]:
     Returns:
         dict with 'ok' and 'price' on success, or 'ok': False and 'error'.
     """
+    if not _valid_price_id(price_id):
+        return {"ok": False, "error": "invalid_price_id_expected_price_prefix"}
     stripe.api_key = _get_stripe_client()
     try:
         price = stripe.Price.retrieve(price_id)
@@ -195,27 +283,44 @@ def list_prices(
     product_id: str | None = None,
     active: bool | None = None,
     limit: int = 100,
+    *,
+    paginate: bool = False,
 ) -> dict[str, Any]:
     """
     List Stripe prices.
 
     Args:
-        product_id: Optionally filter by product ID.
+        product_id: Optionally filter by product ID (prod_…).
         active: Filter by active status. None returns all.
         limit: Maximum number of prices to return (1–100).
+        paginate: If False (default), solo la primera página (menos tráfico API).
 
     Returns:
         dict with 'ok' and 'prices' list on success.
     """
+    if product_id and not _valid_product_id(product_id):
+        return {"ok": False, "error": "invalid_product_id_expected_prod_prefix"}
     stripe.api_key = _get_stripe_client()
+    params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
+    if product_id:
+        params["product"] = product_id
+    if active is not None:
+        params["active"] = active
+    cache_key = _list_cache_key(
+        "prices",
+        product_id=product_id,
+        active=active,
+        limit=params["limit"],
+        paginate=paginate,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
-        if product_id:
-            params["product"] = product_id
-        if active is not None:
-            params["active"] = active
         result = stripe.Price.list(**params)
-        return {"ok": True, "prices": list(result.auto_paging_iter())}
+        out = {"ok": True, "prices": _stripe_list_items(result, paginate=paginate)}
+        _cache_set(cache_key, out)
+        return out
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
@@ -229,6 +334,8 @@ def deactivate_price(price_id: str) -> dict[str, Any]:
     Returns:
         dict with 'ok' and 'price_id' on success.
     """
+    if not _valid_price_id(price_id):
+        return {"ok": False, "error": "invalid_price_id_expected_price_prefix"}
     stripe.api_key = _get_stripe_client()
     try:
         price = stripe.Price.modify(price_id, active=False)

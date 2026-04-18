@@ -3,9 +3,13 @@
  */
 import { useState } from "react";
 import PaymentGateway from "./PaymentGateway";
+import { useParisStripeCheckout } from "../context/ParisStripeCheckoutContext";
+import { getInaugurationStripeCheckoutUrl } from "../lib/lafayetteCheckout";
 import { architectOpenVerifiedParisCheckout } from "../services/paymentService";
 
 export default function AbvetosConsolidator() {
+  const { checkoutApiReady, checkoutProbeError } = useParisStripeCheckout();
+  const hasStaticCheckout = Boolean(getInaugurationStripeCheckoutUrl().trim());
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -30,9 +34,19 @@ export default function AbvetosConsolidator() {
         Les ordres de paiement sont routés vers le compte Stripe France vérifié (EUR). Aucun
         encaissement par défaut vers un compte américain non vérifié.
       </p>
+      {!hasStaticCheckout && !checkoutApiReady ? (
+        <p style={{ margin: "0 0 12px", fontSize: "0.68rem", color: "#8a7a5c" }}>
+          Vérification du compte Stripe Paris (session)…
+        </p>
+      ) : null}
+      {checkoutProbeError && !hasStaticCheckout ? (
+        <p style={{ margin: "0 0 12px", fontSize: "0.68rem", color: "#a8842c" }}>
+          Session Stripe indisponible pour l’instant — vérifiez l’API ou l’URL statique.
+        </p>
+      ) : null}
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || (!hasStaticCheckout && !checkoutApiReady)}
         onClick={() => void onPay()}
         style={{
           width: "100%",

@@ -17,7 +17,12 @@ if _ROOT not in sys.path:
 import stripe_agent
 
 
-class TestGetStripeClient(unittest.TestCase):
+class StripeAgentTestCase(unittest.TestCase):
+    def tearDown(self) -> None:
+        stripe_agent.clear_stripe_list_cache()
+
+
+class TestGetStripeClient(StripeAgentTestCase):
     def test_valid_live_key(self) -> None:
         with patch.dict(os.environ, {"STRIPE_SECRET_KEY_FR": "sk_live_abc123"}):
             key = stripe_agent._get_stripe_client()
@@ -40,7 +45,7 @@ class TestGetStripeClient(unittest.TestCase):
                 stripe_agent._get_stripe_client()
 
 
-class TestCreateProduct(unittest.TestCase):
+class TestCreateProduct(StripeAgentTestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
@@ -88,6 +93,11 @@ class TestRetrieveProduct(unittest.TestCase):
             result = stripe_agent.retrieve_product("prod_bad")
         self.assertFalse(result["ok"])
 
+    def test_retrieve_product_invalid_id(self) -> None:
+        result = stripe_agent.retrieve_product("invalid")
+        self.assertFalse(result["ok"])
+        self.assertIn("invalid_product_id", result.get("error", ""))
+
 
 class TestListProducts(unittest.TestCase):
     def setUp(self) -> None:
@@ -96,6 +106,7 @@ class TestListProducts(unittest.TestCase):
     def test_list_products_success(self) -> None:
         mock_iter = [MagicMock(id="prod_1"), MagicMock(id="prod_2")]
         mock_list = MagicMock()
+        mock_list.data = mock_iter
         mock_list.auto_paging_iter.return_value = iter(mock_iter)
         with patch("stripe.Product.list", return_value=mock_list):
             result = stripe_agent.list_products()
@@ -104,6 +115,7 @@ class TestListProducts(unittest.TestCase):
 
     def test_list_products_active_filter(self) -> None:
         mock_list = MagicMock()
+        mock_list.data = []
         mock_list.auto_paging_iter.return_value = iter([])
         with patch("stripe.Product.list", return_value=mock_list) as mock_fn:
             stripe_agent.list_products(active=True)
@@ -111,10 +123,21 @@ class TestListProducts(unittest.TestCase):
 
     def test_list_products_limit_clamped(self) -> None:
         mock_list = MagicMock()
+        mock_list.data = []
         mock_list.auto_paging_iter.return_value = iter([])
         with patch("stripe.Product.list", return_value=mock_list) as mock_fn:
             stripe_agent.list_products(limit=200)
         self.assertEqual(mock_fn.call_args[1]["limit"], 100)
+
+    def test_list_products_paginate_uses_autopaging(self) -> None:
+        mock_iter = [MagicMock(id="prod_x")]
+        mock_list = MagicMock()
+        mock_list.data = []
+        mock_list.auto_paging_iter.return_value = iter(mock_iter)
+        with patch("stripe.Product.list", return_value=mock_list):
+            result = stripe_agent.list_products(paginate=True)
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(result["products"]), 1)
 
 
 class TestArchiveProduct(unittest.TestCase):
@@ -178,7 +201,7 @@ class TestCreatePrice(unittest.TestCase):
         self.assertFalse(result["ok"])
 
 
-class TestRetrievePrice(unittest.TestCase):
+class TestRetrievePrice(StripeAgentTestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
@@ -196,14 +219,19 @@ class TestRetrievePrice(unittest.TestCase):
             result = stripe_agent.retrieve_price("price_bad")
         self.assertFalse(result["ok"])
 
+    def test_retrieve_price_invalid_id(self) -> None:
+        result = stripe_agent.retrieve_price("bad")
+        self.assertFalse(result["ok"])
 
-class TestListPrices(unittest.TestCase):
+
+class TestListPrices(StripeAgentTestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
     def test_list_prices_success(self) -> None:
         mock_iter = [MagicMock(id="price_1"), MagicMock(id="price_2")]
         mock_list = MagicMock()
+        mock_list.data = mock_iter
         mock_list.auto_paging_iter.return_value = iter(mock_iter)
         with patch("stripe.Price.list", return_value=mock_list):
             result = stripe_agent.list_prices()
@@ -212,6 +240,7 @@ class TestListPrices(unittest.TestCase):
 
     def test_list_prices_by_product(self) -> None:
         mock_list = MagicMock()
+        mock_list.data = []
         mock_list.auto_paging_iter.return_value = iter([])
         with patch("stripe.Price.list", return_value=mock_list) as mock_fn:
             stripe_agent.list_prices(product_id="prod_abc")
@@ -219,13 +248,18 @@ class TestListPrices(unittest.TestCase):
 
     def test_list_prices_limit_clamped(self) -> None:
         mock_list = MagicMock()
+        mock_list.data = []
         mock_list.auto_paging_iter.return_value = iter([])
         with patch("stripe.Price.list", return_value=mock_list) as mock_fn:
             stripe_agent.list_prices(limit=0)
         self.assertEqual(mock_fn.call_args[1]["limit"], 1)
 
+    def test_list_prices_invalid_product_filter(self) -> None:
+        result = stripe_agent.list_prices(product_id="not_a_prod")
+        self.assertFalse(result["ok"])
 
-class TestDeactivatePrice(unittest.TestCase):
+
+class TestDeactivatePrice(StripeAgentTestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 
@@ -242,6 +276,42 @@ class TestDeactivatePrice(unittest.TestCase):
         with patch("stripe.Price.modify", side_effect=err):
             result = stripe_agent.deactivate_price("price_bad")
         self.assertFalse(result["ok"])
+
+
+class TestListCache(StripeAgentTestCase):
+    def test_list_products_second_call_uses_cache(self) -> None:
+        mock_list = MagicMock()
+        mock_list.data = [{"id": "prod_1"}]
+        mock_list.auto_paging_iter = MagicMock(
+            side_effect=AssertionError("auto_paging_iter should not run when paginate=False")
+        )
+        env = {
+            "STRIPE_SECRET_KEY_FR": "sk_test_dummy",
+            "STRIPE_LIST_CACHE_TTL_SECONDS": "60",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            with patch("stripe.Product.list", return_value=mock_list) as m_list:
+                r1 = stripe_agent.list_products()
+                r2 = stripe_agent.list_products()
+        self.assertTrue(r1["ok"])
+        self.assertTrue(r2["ok"])
+        self.assertEqual(m_list.call_count, 1)
+
+    def test_list_products_ttl_zero_no_cache(self) -> None:
+        mock_list = MagicMock()
+        mock_list.data = [{"id": "prod_1"}]
+        mock_list.auto_paging_iter = MagicMock(
+            side_effect=AssertionError("auto_paging_iter should not run when paginate=False")
+        )
+        env = {
+            "STRIPE_SECRET_KEY_FR": "sk_test_dummy",
+            "STRIPE_LIST_CACHE_TTL_SECONDS": "0",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            with patch("stripe.Product.list", return_value=mock_list) as m_list:
+                stripe_agent.list_products()
+                stripe_agent.list_products()
+        self.assertEqual(m_list.call_count, 2)
 
 
 if __name__ == "__main__":

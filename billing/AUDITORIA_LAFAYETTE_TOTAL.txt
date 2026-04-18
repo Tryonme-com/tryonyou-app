@@ -1,0 +1,55 @@
+AUDITORÍA TÉCNICA (solo repositorio local tryonyou-app)
+=====================================================
+Fecha generación (UTC): 2026-04-15
+Alcance: inventario de datos persistidos EN ESTE REPO que permitan reconstruir
+          "ventas asistidas desde el día 1" o comisiones del 8%.
+
+IMPORTANTE — LÍMITES
+--------------------
+- Este archivo NO sustituye extractos Stripe, contabilidad, contratos ni dictamen legal.
+- No se ha accedido a paneles Stripe/Qonto/Gmail; no se certifica saldo 0,00 € ni deuda.
+- Las cifras de comisión requieren BASE IMPONIBLE acordada (GMV, TTC, exclusiones).
+
+BÚSQUEDA EN CÓDIGO
+------------------
+- Términos assisted_sales, look_completions, cart_additions: SIN coincidencias en el repo.
+- Eventos de espejo digital (api/mirror_digital_make.py): balmain_click, reserve_fitting_click;
+  reenvío a Make.com; importes € no calculados en ese módulo.
+
+LOGS PRESENTES EN DISCO (muestra)
+----------------------------------
+- logs/sovereignty_access_audit.jsonl
+  Registros revisados: 6 líneas.
+  Contenido observado por línea: ts, path, method, remote_addr, user_agent,
+  mirror (bool), deuda_total_eur (145500.0), qonto_balance_eur (0.0).
+  NO contiene: SKU, ticket, importe de venta, carrito, ni conteo acumulado GMV.
+
+- salida.log
+  (no analizado línea a línea en esta pasada; no hay esquema garantizado de ventas.)
+
+BASE DE DATOS .db / .sqlite EN REPO
+-----------------------------------
+- No se encontraron archivos .db/.sqlite bajo el proyecto en el glob ejecutado.
+
+CÁLCULO 8 % SOBRE VOLUMEN
+-------------------------
+- NO APLICABLE desde solo este repo: no hay volumen total de ventas asistidas extraíble
+  de los artefactos anteriores.
+- Fórmula referencia (cuando exista BASE validada): comisión = BASE * 0.08
+
+STRIPE (declaración de estado)
+-------------------------------
+- El panel puede mostrar 0,00 € o cualquier cifra; NO verificado en esta auditoría.
+- Para histórico: Stripe Dashboard → Payments / Reports → export (CSV) según periodo
+  y cuenta (FR vs legado).
+
+PRÓXIMOS PASOS RECOMENDADOS (operativos / legales)
+--------------------------------------------------
+1) Exportar datos reales: Stripe, TPV Lafayette, e-commerce, escenarios Make.com
+   donde se hayan registrado conversiones vinculadas al piloto.
+2) Cruzar con contrato (cláusula comisión 8 %, base, exclusiones, arbitraje).
+3) Asesoramiento jurídico y fiscal antes de reclamaciones o cortes de servicio.
+
+FIN DEL INFORME (solo lectura; sin modificación de .env ni código de arranque)
+
+Patente: PCT/EP2025/067317 — Protocolo de Soberanía V10 — Founder: Rubén Espinar Rodríguez
