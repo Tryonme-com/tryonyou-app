@@ -25,7 +25,13 @@ class Agente70:
         self.subscription_check_timeout = float(os.getenv("SUBSCRIPTION_CHECK_TIMEOUT", "5"))
 
     def validate_sovereign_status(self) -> bool:
-        """Disparo de validación del Protocolo Soberano (402)."""
+        """
+        Valida el estado soberano consultando el endpoint de suscripción.
+
+        Returns:
+            ``True`` cuando la operación continúa en estado operacional.
+            ``False`` cuando hay restricción (402) o fallo de conectividad.
+        """
         try:
             response = requests.get(
                 self.subscription_check_url,
@@ -42,7 +48,12 @@ class Agente70:
         return True
 
     def process_request(self, user_input: str) -> str:
-        """Ejecutor central (Jules V7)."""
+        """
+        Procesa la solicitud del usuario tras validar estado soberano.
+
+        Si la validación falla, retorna mensaje de espera refinada.
+        Si la validación pasa, sincroniza logging y devuelve respuesta final.
+        """
         if not self.validate_sovereign_status():
             return (
                 "Oh, cher, el Protocolo Soberano requiere un ajuste. "
@@ -63,8 +74,8 @@ class Agente70:
         if credentials_path and Credentials:
             try:
                 if os.path.exists(credentials_path):
-                    Credentials.from_service_account_file(credentials_path)
-                    credentials_loaded = True
+                    _credentials = Credentials.from_service_account_file(credentials_path)
+                    credentials_loaded = bool(_credentials)
             except Exception:
                 credentials_loaded = False
 

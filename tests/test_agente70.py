@@ -31,7 +31,7 @@ class TestAgente70(unittest.TestCase):
         self.assertFalse(agent.validate_sovereign_status())
         self.assertEqual(agent.status, "DEGRADED")
 
-    def test_process_request_returns_wait_message_when_restricted(self) -> None:
+    def test_process_request_returns_message_when_restricted(self) -> None:
         agent = Agente70()
         with (
             patch.object(agent, "validate_sovereign_status", return_value=False),
