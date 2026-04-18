@@ -17,6 +17,8 @@ from firebase_reprovision_guard import exit_if_firebase_applet_locked
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "firebase-applet-config.json"
+ERIC_PROMPT_KEY = "SYSTEM_PROMPT_ERIC_LAFAYETTE"
+PROMPT_NOT_CONFIGURED = "Prompt no configurado."
 
 PAU_CONFIG = {
     "_manifest": (
@@ -34,15 +36,16 @@ PAU_CONFIG = {
 
 
 def load_system_prompt(prompt_key: str) -> str:
-    if prompt_key == "SYSTEM_PROMPT_ERIC_LAFAYETTE":
+    if prompt_key == ERIC_PROMPT_KEY:
         return (
             "Eres Eric Lafayette. Actúas con precisión, elegancia y enfoque comercial "
             "para operar protocolos de Golden Peacock sin perder trazabilidad."
         )
-    return "Prompt no configurado."
+    return PROMPT_NOT_CONFIGURED
 
 
-def connect_to_database(database_name: str) -> Path:
+def connect_to_database(database_name: str) -> None:
+    """Conecta (SQLite) y asegura trazabilidad mínima de bootstrap para Pau."""
     db_path = Path("/tmp") / f"{database_name}.sqlite3"
     with sqlite3.connect(db_path) as conn:
         conn.execute(
@@ -52,14 +55,14 @@ def connect_to_database(database_name: str) -> Path:
             "INSERT INTO bootstrap_log (event, ts) VALUES (?, datetime('now'))",
             ("initialize_pau",),
         )
-    return db_path
+        conn.commit()
 
 
 def initialize_pau() -> None:
     # Carga la personalidad de Eric y los protocolos de Golden Peacock
-    agent_config = load_system_prompt("SYSTEM_PROMPT_ERIC_LAFAYETTE")
+    if load_system_prompt(ERIC_PROMPT_KEY) == PROMPT_NOT_CONFIGURED:
+        raise RuntimeError("No se pudo cargar la configuración del agente Eric Lafayette.")
     connect_to_database("Divineo_Leads_DB")
-    _ = agent_config
     print("Pau ha sido inicializado. Registro: Eric Lafayette activo.")
 
 
