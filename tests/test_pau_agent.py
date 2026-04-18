@@ -30,6 +30,12 @@ class TestPauAgent(unittest.TestCase):
         self.assertFalse(allowed)
         self.assertEqual(self.agent.status, "RESTRICTED")
 
+    def test_check_sovereign_protocol_restores_active_status(self) -> None:
+        self.assertFalse(self.agent.check_sovereign_protocol({"id": "123", "status_402": True}))
+        self.assertEqual(self.agent.status, "RESTRICTED")
+        self.assertTrue(self.agent.check_sovereign_protocol({"id": "123", "status_402": False}))
+        self.assertEqual(self.agent.status, "ACTIVE")
+
     def test_generate_response_returns_protocol_message_when_restricted(self) -> None:
         response = self.agent.generate_response(
             "¿Qué look me recomiendas hoy?",
@@ -50,4 +56,3 @@ class TestPauAgent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

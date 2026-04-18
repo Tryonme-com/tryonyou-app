@@ -17,12 +17,13 @@ class PauAgent:
         self.status = "ACTIVE"
 
     def check_sovereign_protocol(self, user_account: Mapping[str, Any]) -> bool:
-        """Valida si la cuenta está restringida por protocolo soberano (402)."""
+        """Valida protocolo soberano y actualiza ``status`` a ACTIVE/RESTRICTED."""
         is_restricted = bool(user_account.get("status_402", False))
         if is_restricted:
             self.status = "RESTRICTED"
             logger.info("pau_agent_restricted account_status_402=true")
             return False
+        self.status = "ACTIVE"
         return True
 
     def generate_response(self, user_input: str, user_account: Mapping[str, Any]) -> str:
@@ -39,6 +40,5 @@ class PauAgent:
             f"{user_input}. Déjame ver cómo hacerlo impecable."
         )
 
-
 pau = PauAgent()
-
+__all__ = ["PauAgent", "pau"]
