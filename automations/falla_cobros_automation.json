@@ -1,0 +1,19 @@
+{
+  "name": "falla-cobros-diario",
+  "description": "Procesamiento diario de cobros Falla con comisión fija y memoria antideduplicados.",
+  "model": "Codex 5.3 High",
+  "triggers": [
+    {
+      "type": "schedule",
+      "timezone": "Europe/Madrid",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0"
+    },
+    {
+      "type": "webhook",
+      "method": "POST",
+      "content_type": "application/json",
+      "notes": "Usar este trigger cuando la pasarela envíe cobros en tiempo real."
+    }
+  ],
+  "entrypoint": "python3 gestor_falla_v9.py --input data/cobros_entrada.json --memory data/falla_memorias.json --comision-pct 0.08 --cuota-base 50 --pretty"
+}
