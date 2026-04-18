@@ -119,15 +119,18 @@ class InventoryManager:
 
         chosen: Garment | None = None
         if snap or "balmain" in sensation or "snap" in sensation:
+            first_museum: Garment | None = None
             for g in pool:
-                if "BALMAIN" in g.brand.upper() or g.id.upper().startswith("V10-BALMAIN"):
+                brand_up = g.brand.upper()
+                if "BALMAIN" in brand_up or g.id.upper().startswith("V10-BALMAIN"):
                     chosen = g
                     break
+                if first_museum is None and ("MUSEUM" in brand_up or "SAC" in brand_up):
+                    first_museum = g
+
             if chosen is None:
-                for g in pool:
-                    if "MUSEUM" in g.brand.upper() or "SAC" in g.brand.upper():
-                        chosen = g
-                        break
+                chosen = first_museum
+
             if chosen is None and pool:
                 chosen = pool[0]
 
