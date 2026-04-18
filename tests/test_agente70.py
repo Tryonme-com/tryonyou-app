@@ -31,7 +31,7 @@ class TestAgente70(unittest.TestCase):
         self.assertFalse(agent.validate_sovereign_status())
         self.assertEqual(agent.status, "DEGRADED")
 
-    def test_process_request_returns_message_when_restricted(self) -> None:
+    def test_process_request_returns_restriction_message_when_validation_fails(self) -> None:
         agent = Agente70()
         with (
             patch.object(agent, "validate_sovereign_status", return_value=False),
@@ -42,7 +42,7 @@ class TestAgente70(unittest.TestCase):
         self.assertIn("espera refinada", result)
         sync_mock.assert_not_called()
 
-    def test_process_request_syncs_and_returns_success(self) -> None:
+    def test_process_request_syncs_and_returns_success_message_when_validation_passes(self) -> None:
         agent = Agente70()
         with (
             patch.object(agent, "validate_sovereign_status", return_value=True),

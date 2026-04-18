@@ -3,14 +3,25 @@
 from __future__ import annotations
 
 import os
+import logging
 from typing import Any
 
 import requests
 
 try:
     from google.oauth2.service_account import Credentials
-except Exception:  # pragma: no cover - dependencia opcional en algunos entornos
+    from google.auth.exceptions import DefaultCredentialsError
+except ImportError:  # pragma: no cover - dependencia opcional en algunos entornos
     Credentials = None  # type: ignore[assignment]
+    DefaultCredentialsError = None  # type: ignore[assignment]
+
+_CREDENTIAL_LOAD_ERRORS: tuple[type[BaseException], ...] = (
+    ValueError,
+    OSError,
+    TypeError,
+) + ((DefaultCredentialsError,) if DefaultCredentialsError else ())
+
+_logger = logging.getLogger(__name__)
 
 
 class Agente70:
@@ -22,7 +33,13 @@ class Agente70:
         self.subscription_check_url = os.getenv(
             "SUBSCRIPTION_CHECK_URL", "https://api.tryandyou.com/check-subscription"
         )
-        self.subscription_check_timeout = float(os.getenv("SUBSCRIPTION_CHECK_TIMEOUT", "5"))
+        timeout_raw = os.getenv("SUBSCRIPTION_CHECK_TIMEOUT", "5")
+        try:
+            self.subscription_check_timeout = float(timeout_raw)
+        except ValueError as exc:
+            raise ValueError(
+                "SUBSCRIPTION_CHECK_TIMEOUT debe ser un número (ej. 5 o 5.0)."
+            ) from exc
 
     def validate_sovereign_status(self) -> bool:
         """
@@ -76,10 +93,10 @@ class Agente70:
                 if os.path.exists(credentials_path):
                     _credentials = Credentials.from_service_account_file(credentials_path)
                     credentials_loaded = bool(_credentials)
-            except Exception:
+            except _CREDENTIAL_LOAD_ERRORS:
                 credentials_loaded = False
 
-        print(f"Log: Datos sincronizados en Google Drive: {data}")
+        _logger.info("Datos sincronizados en Google Drive: %s", data)
         return {"synced": True, "credentials_loaded": credentials_loaded}
 
 
