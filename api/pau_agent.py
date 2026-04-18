@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Mapping
 
+__all__ = ["PauAgent"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,4 +41,3 @@ class PauAgent:
             "Como diría Yves Saint Laurent, el estilo es eterno... sobre tu petición: "
             f"{user_input}. Déjame ver cómo hacerlo impecable."
         )
-__all__ = ["PauAgent"]
