@@ -22,6 +22,16 @@ _CREDENTIAL_LOAD_ERRORS: tuple[type[BaseException], ...] = (
 ) + ((DefaultCredentialsError,) if DefaultCredentialsError else ())
 
 _logger = logging.getLogger(__name__)
+_TRUTHY_SUBSCRIPTION_VALUES = {"active", "operational", "ok", "enabled", "valid", "paid"}
+_FALSY_SUBSCRIPTION_VALUES = {
+    "inactive",
+    "restricted",
+    "blocked",
+    "expired",
+    "revoked",
+    "delinquent",
+    "payment_required",
+}
 
 
 class Agente70:
@@ -55,12 +65,28 @@ class Agente70:
                 timeout=self.subscription_check_timeout,
             )
         except requests.RequestException:
+            _logger.warning("No se pudo consultar el estado soberano.")
             self.status = "DEGRADED"
             return False
 
-        if response.status_code == 402:
+        if response.status_code in (401, 402, 403):
             self.status = "RESTRICTED"
             return False
+        if response.status_code >= 500:
+            self.status = "DEGRADED"
+            return False
+        if response.status_code >= 400:
+            self.status = "RESTRICTED"
+            return False
+
+        payload_state = self._extract_subscription_state(response)
+        if payload_state is False:
+            self.status = "RESTRICTED"
+            return False
+        if payload_state is None:
+            self.status = "DEGRADED"
+            return False
+
         self.status = "OPERATIONAL"
         return True
 
@@ -84,9 +110,19 @@ class Agente70:
                 "Mi estado es de espera refinada hasta que se solvente el detalle técnico."
             )
 
-        self.sync_with_drive(user_input)
+        safe_input = user_input if isinstance(user_input, str) else str(user_input)
+        try:
+            self.sync_with_drive(safe_input)
+        except Exception:
+            _logger.exception("Fallo durante la sincronización de Drive.")
+            self.status = "DEGRADED"
+            return (
+                "Mon ami, hubo una contingencia durante la sincronización. "
+                "Quedo en modo resguardo hasta recuperar estabilidad."
+            )
+
         return (
-            f"He procesado tu petición, mon ami: '{user_input}'. "
+            f"He procesado tu petición, mon ami: '{safe_input}'. "
             "Todo bajo control, la elegancia es nuestra prioridad."
         )
 
@@ -119,6 +155,55 @@ class Agente70:
             credentials_loaded,
         )
         return {"synced": True, "credentials_loaded": credentials_loaded}
+
+    def _extract_subscription_state(self, response: requests.Response) -> bool | None:
+        """
+        Interpreta campos opcionales del payload de suscripción.
+
+        Returns:
+            - True: el payload confirma acceso.
+            - False: el payload marca restricción explícita.
+            - None: payload ambiguo o inválido (fail-closed).
+        """
+        try:
+            payload = response.json()
+        except ValueError:
+            return True
+        except Exception:
+            return None
+
+        if not isinstance(payload, dict):
+            return None
+
+        candidates = (
+            payload.get("subscription_active"),
+            payload.get("is_active"),
+            payload.get("active"),
+            payload.get("sovereign_status"),
+            payload.get("status"),
+        )
+        for value in candidates:
+            interpreted = self._interpret_subscription_value(value)
+            if interpreted is not None:
+                return interpreted
+        return True
+
+    @staticmethod
+    def _interpret_subscription_value(value: Any) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in _TRUTHY_SUBSCRIPTION_VALUES:
+                return True
+            if normalized in _FALSY_SUBSCRIPTION_VALUES:
+                return False
+            return None
+        return None
 
 
 agente70 = Agente70()
