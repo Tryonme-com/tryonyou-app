@@ -32,7 +32,6 @@ TARGET_HOUR = 8
 TARGET_MINUTE = 0
 TARGET_AMOUNT_EUR = 450_000.0
 
-BOT_TOKEN_DEFAULT = "8788913760:AAE2gS0M8v1_S96H9Fm8I-K1U9Z_6-R-K48"
 CHAT_ID_DEFAULT = "7868120279"
 
 
@@ -91,8 +90,7 @@ def _activate_dossier(path: Path, evidence: PaymentEvidence) -> None:
             "details": evidence.details,
         },
     }
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "
-", encoding="utf-8")
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def _is_tuesday_0800(now: datetime) -> bool:
@@ -107,7 +105,7 @@ def _notify(message: str) -> None:
     token = (
         os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
         or os.getenv("TELEGRAM_TOKEN", "").strip()
-        or BOT_TOKEN_DEFAULT
+        or ""
     )
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip() or CHAT_ID_DEFAULT
     if not token or not chat_id:

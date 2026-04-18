@@ -24,7 +24,6 @@ FAST_MODE=false
 DEPLOY_MODE=false
 COMMIT_TITLE="$DEFAULT_TITLE"
 
-TELEGRAM_BOT_TOKEN_DEFAULT='8788913760:AAE2gS0M8v1_S96H9Fm8I-K1U9Z_6-R-K48'
 TELEGRAM_CHAT_ID_DEFAULT='7868120279'
 
 usage() {
@@ -59,7 +58,7 @@ build_commit_message() {
 
 notify_telegram_success() {
   local summary="$1"
-  local token="${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-$TELEGRAM_BOT_TOKEN_DEFAULT}}"
+  local token="${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}"
   local chat_id="${TELEGRAM_CHAT_ID:-$TELEGRAM_CHAT_ID_DEFAULT}"
 
   if [[ -z "$token" || -z "$chat_id" ]]; then
@@ -148,6 +147,11 @@ main() {
 
   local final_msg
   final_msg="$(build_commit_message "$COMMIT_TITLE")"
+
+  if $DEPLOY_MODE && [[ -z "${VERCEL_TOKEN:-}" ]]; then
+    echo "❌ --deploy requiere VERCEL_TOKEN en entorno." >&2
+    exit 1
+  fi
 
   run_quality_checks
 
