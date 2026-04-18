@@ -4,7 +4,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 
-const el = document.getElementById("root");
+const el = document.getElementById("root") as HTMLDivElement | null;
 if (el) {
   createRoot(el).render(
     <React.StrictMode>
