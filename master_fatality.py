@@ -1,12 +1,13 @@
 """
-Consolidación maestra — Lafayette, Le Bon Marché y red retail (escalable).
+Punto de entrada único de consolidación — Lafayette, Le Bon Marché y canales asociados.
 
-Fuente única de verificación de infra: Qonto (liquidez vía env / FinancialGuard) y Stripe
-(cuenta Paris / saldo EUR, requisitos y metadatos de cuenta).
+Instrucción para el agente (Cursor): este script es la fuente operativa a contrastar antes
+de cambiar infraestructura, contratos o pagos. Nueva entrada de dossier → actualizar
+CONTACTOS_CLAVE si implica un contacto o sede nuevo. Qonto y Stripe: usar solo las
+funciones de verificación de este módulo (env; nunca claves en código).
 
-Prompt maestro (Cursor): confirmar cambios operativos contra este script. Nuevas entradas
-de dossier / retail → ampliar CONTACTOS_CLAVE. Qonto y Stripe: solo funciones de lectura
-con variables de entorno; nunca claves hardcodeadas.
+Ejecución: ``python3 master_fatality.py`` — imprime estado Qonto (FinancialGuard), saldo
+Stripe (httpx) y si hay metadatos tipo documento en los últimos PaymentIntents.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
@@ -18,98 +19,158 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# --- Contactos y operaciones (única lista extensible: Mango, El Corte Inglés, etc.) ---
-CONTACTOS_CLAVE: dict[str, dict[str, Any]] = {
-    "galeries_lafayette": {
-        "label": "Galeries Lafayette — piloto / espejo digital",
-        "role": "retail_pilot",
-        "city": "Paris",
+from stripe_fr_resolve import resolve_stripe_secret_fr
+
+# --- Red / tiendas (escalable: añadir clave = nuevo diccionario) ---
+CONTACTOS_CLAVE: dict[str, dict[str, str]] = {
+    "galeries_lafayette_pilot": {
+        "label": "Galeries Lafayette (piloto TryOnYou / espejo)",
+        "ciudad": "París",
+        "rol": "Retail soberano / vitrina",
+        "notas": "Alineado con production_manifest y FinancialGuard (espejo 402 si impago).",
     },
     "le_bon_marche": {
         "label": "Le Bon Marché",
-        "role": "retail_reference",
-        "city": "Paris",
+        "ciudad": "París",
+        "rol": "Canal de referencia luxury (expansión)",
+        "notas": "Misma matriz de contacto que Lafayette; añadir aquí personas/nodos reales.",
     },
-    # Añadir aquí nuevas entradas de dossier (p. ej. "mango", "el_corte_ingles").
+    "mango": {
+        "label": "Mango (placeholder)",
+        "ciudad": "",
+        "rol": "Canal futuro",
+        "notas": "Rellenar cuando exista acuerdo; no operativo hasta entrada en dossier.",
+    },
+    "el_corte_ingles": {
+        "label": "El Corte Inglés (placeholder)",
+        "ciudad": "",
+        "rol": "Canal futuro",
+        "notas": "Rellenar cuando exista acuerdo; no operativo hasta entrada en dossier.",
+    },
 }
 
+# --- Dossier de operaciones (añadir entradas; si hay contacto nuevo, duplicar clave en CONTACTOS_CLAVE) ---
+DOSSIER_FATALITY: list[dict[str, Any]] = [
+    {
+        "id": "op-001",
+        "titulo": "Matriz Lafayette — consolidación soberana",
+        "estado": "activo",
+        "notas": "Contratos y capital: verificar vía Qonto + Stripe; metadatos en PI/charges.",
+    },
+]
 
-def _eur_available_cents(balance_obj: Any) -> int | None:
-    for bucket in getattr(balance_obj, "available", []) or []:
-        if getattr(bucket, "currency", "").lower() == "eur":
-            return int(getattr(bucket, "amount", 0) or 0)
-    return None
+
+STRIPE_API_BASE = "https://api.stripe.com/v1"
+# Metadatos que sugieren documento / contrato en objetos Stripe (ajustar a tu convención)
+DOCUMENT_METADATA_KEYS = (
+    "contract_id",
+    "document_id",
+    "contrat",
+    "dossier_ref",
+    "invoice_pdf",
+)
 
 
-def verificar_qonto() -> dict[str, Any]:
-    """Liquidez y deuda: misma lógica que api/financial_guard (solo lectura env)."""
+def verify_qonto() -> dict[str, Any]:
+    """Estado Qonto / deuda según FinancialGuard (solo lectura env)."""
     from api.financial_guard import sovereignty_status
 
     return sovereignty_status()
 
 
-def verificar_stripe() -> dict[str, Any]:
-    """
-    Saldo EUR disponible en Stripe + estado de cuenta (requisitos, metadatos).
-    No imprime secretos ni claves completas.
-    """
-    import stripe
-
-    from stripe_fr_resolve import resolve_stripe_secret_fr
-
+def _stripe_headers() -> dict[str, str]:
     sk = resolve_stripe_secret_fr()
-    if not sk.strip():
+    if not sk:
+        return {}
+    return {"Authorization": f"Bearer {sk}"}
+
+
+def verify_stripe_balance_httpx() -> dict[str, Any]:
+    """Saldo Stripe cuenta FR vía httpx (sin volcar secretos)."""
+    headers = _stripe_headers()
+    if not headers:
         return {
             "ok": False,
             "error": "missing_stripe_secret",
             "hint": "Definir STRIPE_SECRET_KEY_FR (u otras resueltas por stripe_fr_resolve).",
         }
-
-    stripe.api_key = sk
-    out: dict[str, Any] = {"ok": True, "key_prefix": sk[:7] + "…"}
-
     try:
-        bal = stripe.Balance.retrieve()
-        out["balance_eur_available_cents"] = _eur_available_cents(bal)
-        acct = stripe.Account.retrieve()
-        req = getattr(acct, "requirements", None)
-        meta = getattr(acct, "metadata", None) or {}
-        out["account_id"] = getattr(acct, "id", None)
-        out["charges_enabled"] = getattr(acct, "charges_enabled", None)
-        out["payouts_enabled"] = getattr(acct, "payouts_enabled", None)
-        out["details_submitted"] = getattr(acct, "details_submitted", None)
-        out["metadata_keys"] = sorted(meta.keys()) if isinstance(meta, dict) else []
-        out["metadata_has_entries"] = bool(meta)
-        if req is not None:
-            out["requirements_currently_due"] = list(
-                getattr(req, "currently_due", []) or [],
-            )
-            out["requirements_pending_verification"] = list(
-                getattr(req, "pending_verification", []) or [],
-            )
-            out["requirements_disabled_reason"] = getattr(req, "disabled_reason", None)
-    except Exception as e:
+        with httpx.Client(timeout=30.0) as client:
+            r = client.get(f"{STRIPE_API_BASE}/balance", headers=headers)
+    except httpx.HTTPError as e:
         return {"ok": False, "error": str(e)}
-
-    return out
-
-
-def consolidar_todo() -> dict[str, Any]:
-    """Snapshot único: contactos declarativos + Qonto + Stripe."""
+    if r.status_code != 200:
+        return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
+    data = r.json()
+    available = data.get("available") or []
+    pending = data.get("pending") or []
     return {
+        "ok": True,
+        "available": available,
+        "pending": pending,
+        "livemode": data.get("livemode"),
+    }
+
+
+def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
+    """
+    Últimos PaymentIntents: indica si hay metadatos que parecen documento/contrato.
+    """
+    headers = _stripe_headers()
+    if not headers:
+        return {"ok": False, "error": "missing_stripe_secret"}
+    params = {"limit": str(max(1, min(limit, 100)))}
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            r = client.get(
+                f"{STRIPE_API_BASE}/payment_intents",
+                headers=headers,
+                params=params,
+            )
+    except httpx.HTTPError as e:
+        return {"ok": False, "error": str(e)}
+    if r.status_code != 200:
+        return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
+    data = r.json()
+    rows: list[dict[str, Any]] = []
+    for pi in data.get("data") or []:
+        meta = pi.get("metadata") or {}
+        keys = [k for k in meta if k.lower() in {m.lower() for m in DOCUMENT_METADATA_KEYS}]
+        any_doc_hint = bool(keys) or any(
+            "pdf" in str(v).lower() or "contr" in str(v).lower() for v in meta.values()
+        )
+        rows.append(
+            {
+                "id": pi.get("id"),
+                "amount": pi.get("amount"),
+                "currency": pi.get("currency"),
+                "metadata_keys": list(meta.keys()),
+                "document_like_metadata": bool(keys or any_doc_hint),
+            }
+        )
+    return {"ok": True, "payment_intents": rows}
+
+
+def consolidate_report() -> dict[str, Any]:
+    """Informe único: Qonto/FinancialGuard + Stripe (capital + huella de documentos en metadatos)."""
+    return {
+        "patent": "PCT/EP2025/067317",
         "contactos_clave": CONTACTOS_CLAVE,
-        "qonto_financial_guard": verificar_qonto(),
-        "stripe": verificar_stripe(),
+        "dossier": DOSSIER_FATALITY,
+        "qonto_y_deuda": verify_qonto(),
+        "stripe_balance": verify_stripe_balance_httpx(),
+        "stripe_metadata_probe": stripe_payment_intents_metadata_probe(),
     }
 
 
 def main() -> None:
-    snapshot = consolidar_todo()
-    print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+    print(json.dumps(consolidate_report(), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
