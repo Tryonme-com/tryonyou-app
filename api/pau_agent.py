@@ -39,6 +39,4 @@ class PauAgent:
             "Como diría Yves Saint Laurent, el estilo es eterno... sobre tu petición: "
             f"{user_input}. Déjame ver cómo hacerlo impecable."
         )
-
-pau = PauAgent()
-__all__ = ["PauAgent", "pau"]
+__all__ = ["PauAgent"]
