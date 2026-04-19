@@ -98,7 +98,7 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 COMMIT_TITLE="${CUSTOM_MSG:-$DEFAULT_TITLE}"
-COMMIT_MSG="$(with_required_stamps "$COMMIT_TITLE")"
+COMMIT_MESSAGE_TEXT="$(with_required_stamps "$COMMIT_TITLE")"
 
 if [[ "$FAST_MODE" -eq 0 ]]; then
   echo "🧪 Vite production build"
@@ -112,7 +112,9 @@ git add -A
 if git diff --cached --quiet; then
   echo "ℹ️ nada nuevo, sin commit."
 else
-  git commit -m "$COMMIT_MSG"
+  # Evita colisión con secretos exportados como COMMIT_MSG en el entorno CI/agent.
+  unset COMMIT_MSG || true
+  git commit -m "$COMMIT_MESSAGE_TEXT"
   echo "✅ Commit creado."
   notify_success "commit" "Commit registrado en $(git rev-parse --abbrev-ref HEAD)."
 fi
