@@ -1,26 +1,16 @@
 """
 Punto de entrada único de consolidación — Lafayette, Le Bon Marché y canales asociados.
 
-Ejecución recomendada (entorno del proyecto): ``.venv/bin/python master_fatality.py``
-(``httpx`` instalado en ``.venv``; si usas otro Python, ``pip install httpx`` en ese entorno).
+Instrucción para el agente (Cursor): este script es la fuente operativa a contrastar antes
+de cambiar infraestructura, contratos o pagos. Nueva entrada de dossier → actualizar
+CONTACTOS_CLAVE si implica un contacto o sede nuevo. Qonto y Stripe: usar solo las
+funciones de verificación de este módulo (env; nunca claves en código).
+
+Ejecución: ``python3 master_fatality.py`` — imprime estado Qonto (FinancialGuard), saldo
+Stripe (httpx) y si hay metadatos tipo documento en los últimos PaymentIntents.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
-"""
-
-# Directiva maestra para agentes (Cursor): leer antes de tocar infra, contratos o pagos.
-AGENTE_CONSOLIDACION_DIRECTIVA = """
-Actúa como agente técnico. El archivo master_fatality.py concentra el marco operativo
-(Lafayette, Le Bon Marché y canales listados en CONTACTOS_CLAVE). Todo lo que hagamos
-debe poder contrastarse con este script: si añades una entrada nueva al dossier y aparece
-un contacto o sede nuevo, incorpóralo en CONTACTOS_CLAVE. Con Qonto o Stripe, usa únicamente
-las funciones de verificación de este módulo (variables de entorno; nunca claves en código).
-Es la fuente de archivo operativa para esta capa de infraestructura.
-
-Consolidación: un solo punto de entrada; CONTACTOS_CLAVE escala con nuevos retail
-(p. ej. Mango, El Corte Inglés) como diccionarios adicionales. Al consolidar, ejecuta
-python master_fatality.py y registra saldo/capital y si los metadatos de Stripe sugieren
-documento o contrato (véase stripe_payment_intents_metadata_probe).
 """
 from __future__ import annotations
 
