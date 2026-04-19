@@ -80,7 +80,7 @@ def verify_qonto() -> dict[str, Any]:
     """Estado Qonto / deuda según FinancialGuard (solo lectura env)."""
     try:
         from api.financial_guard import sovereignty_status
-    except Exception as e:
+    except ImportError as e:
         return {"ok": False, "error": "financial_guard_unavailable", "detail": str(e)}
     try:
         return sovereignty_status()
@@ -91,8 +91,8 @@ def verify_qonto() -> dict[str, Any]:
 def _resolve_httpx() -> tuple[Any | None, str | None]:
     try:
         import httpx  # type: ignore
-    except Exception as e:
-        return None, str(e)
+    except ImportError as e:
+        return None, f"httpx package not installed: {e}"
     return httpx, None
 
 
@@ -118,7 +118,7 @@ def verify_stripe_balance_httpx() -> dict[str, Any]:
     try:
         with httpx.Client(timeout=30.0) as client:
             r = client.get(f"{STRIPE_API_BASE}/balance", headers=headers)
-    except Exception as e:
+    except httpx.HTTPError as e:
         return {"ok": False, "error": str(e)}
     if r.status_code != 200:
         return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
@@ -151,7 +151,7 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
                 headers=headers,
                 params=params,
             )
-    except Exception as e:
+    except httpx.HTTPError as e:
         return {"ok": False, "error": str(e)}
     if r.status_code != 200:
         return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
