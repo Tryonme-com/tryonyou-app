@@ -15,9 +15,12 @@ Bajo Protocolo de Soberanía V10 - Founder: Rubén
 from __future__ import annotations
 
 import json
+import os
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -63,10 +66,22 @@ DOSSIER_FATALITY: list[dict[str, Any]] = [
         "estado": "activo",
         "notas": "Contratos y capital: verificar vía Qonto + Stripe; metadatos en PI/charges.",
     },
+    {
+        "id": "op-450k-shield",
+        "titulo": "Blindaje de capital 450.000€",
+        "estado": "armado",
+        "notas": (
+            "Martes 08:00 (Europa/París): confirmar entrada de 450.000€ y activar "
+            "Dossier Fatality."
+        ),
+    },
 ]
 
 
 STRIPE_API_BASE = "https://api.stripe.com/v1"
+PARIS_TZ = ZoneInfo("Europe/Paris")
+TARGET_CAPITAL_ENTRY_EUR = 450_000.0
+CAPITAL_ENTRY_EPSILON_EUR = 0.01
 # Metadatos que sugieren documento / contrato en objetos Stripe (ajustar a tu convención)
 DOCUMENT_METADATA_KEYS = (
     "contract_id",
@@ -75,6 +90,95 @@ DOCUMENT_METADATA_KEYS = (
     "dossier_ref",
     "invoice_pdf",
 )
+
+
+def _parse_amount_eur(raw: str) -> float | None:
+    value = (raw or "").strip().replace("€", "").replace(" ", "")
+    if not value:
+        return None
+    if "," in value and "." in value:
+        if value.rfind(",") > value.rfind("."):
+            value = value.replace(".", "").replace(",", ".")
+        else:
+            value = value.replace(",", "")
+    elif "," in value:
+        value = value.replace(".", "").replace(",", ".")
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _env_truthy(name: str) -> bool:
+    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _next_tuesday_0800(reference: datetime) -> datetime:
+    local_ref = reference.astimezone(PARIS_TZ)
+    days_ahead = (1 - local_ref.weekday()) % 7
+    slot = (local_ref + timedelta(days=days_ahead)).replace(
+        hour=8, minute=0, second=0, microsecond=0
+    )
+    if slot < local_ref:
+        slot += timedelta(days=7)
+    return slot
+
+
+def dossier_fatality_security_status(now: datetime | None = None) -> dict[str, Any]:
+    """
+    Corte de seguridad para el hito de tesorería:
+    - martes 08:00 (Europa/París),
+    - entrada objetivo de 450.000 €,
+    - activación de Dossier Fatality para blindaje de capital.
+    """
+    local_now = (now or datetime.now(tz=PARIS_TZ)).astimezone(PARIS_TZ)
+    next_slot = _next_tuesday_0800(local_now)
+    slot_is_now = local_now.weekday() == 1 and local_now.hour >= 8
+
+    raw_entry = (
+        os.environ.get("FATALITY_CAPITAL_ENTRY_EUR", "").strip()
+        or os.environ.get("QONTO_LAST_ENTRY_EUR", "").strip()
+    )
+    capital_entry_eur = _parse_amount_eur(raw_entry) if raw_entry else None
+    manual_confirmed = _env_truthy("FATALITY_CAPITAL_CONFIRMED") or _env_truthy(
+        "QONTO_PAGO_CONFIRMADO"
+    )
+    entry_confirmed = manual_confirmed or (
+        capital_entry_eur is not None
+        and capital_entry_eur + CAPITAL_ENTRY_EPSILON_EUR >= TARGET_CAPITAL_ENTRY_EUR
+    )
+    dossier_activated = bool(slot_is_now and entry_confirmed)
+
+    status = "scheduled"
+    if slot_is_now and entry_confirmed:
+        status = "active"
+    elif slot_is_now and not entry_confirmed:
+        status = "awaiting_capital_confirmation"
+
+    return {
+        "timezone": "Europe/Paris",
+        "target_amount_eur": TARGET_CAPITAL_ENTRY_EUR,
+        "checkpoint_rule": "Tuesday 08:00",
+        "now_local": local_now.isoformat(),
+        "next_checkpoint_local": next_slot.isoformat(),
+        "checkpoint_window_open": slot_is_now,
+        "manual_confirmed": manual_confirmed,
+        "capital_entry_detected_eur": capital_entry_eur,
+        "entry_confirmed": entry_confirmed,
+        "dossier_fatality_activated": dossier_activated,
+        "status": status,
+    }
+
+
+def _dossier_with_security_state(status: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for entry in DOSSIER_FATALITY:
+        row = dict(entry)
+        if row.get("id") == "op-450k-shield":
+            row["estado"] = "activo" if status["dossier_fatality_activated"] else "armado"
+            row["checkpoint_status"] = status["status"]
+        rows.append(row)
+    return rows
 
 
 def verify_qonto() -> dict[str, Any]:
@@ -159,10 +263,12 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
 
 def consolidate_report() -> dict[str, Any]:
     """Informe único: Qonto/FinancialGuard + Stripe (capital + huella de documentos en metadatos)."""
+    security_status = dossier_fatality_security_status()
     return {
         "patent": "PCT/EP2025/067317",
         "contactos_clave": CONTACTOS_CLAVE,
-        "dossier": DOSSIER_FATALITY,
+        "dossier": _dossier_with_security_state(security_status),
+        "fatality_security": security_status,
         "qonto_y_deuda": verify_qonto(),
         "stripe_balance": verify_stripe_balance_httpx(),
         "stripe_metadata_probe": stripe_payment_intents_metadata_probe(),
