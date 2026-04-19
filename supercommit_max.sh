@@ -88,6 +88,11 @@ if ! _commit_stamps_ok "$MSG"; then
   exit 1
 fi
 
+if [[ "$DEPLOY" -eq 1 && -z "${VERCEL_TOKEN:-}" ]]; then
+  echo "❌ --deploy requiere VERCEL_TOKEN en el entorno." >&2
+  exit 1
+fi
+
 if [[ "$FAST" -eq 0 ]]; then
   echo "▶ Vite production build"
   npm run build
@@ -124,10 +129,6 @@ else
 fi
 
 if [[ "$DEPLOY" -eq 1 ]]; then
-  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-    echo "❌ --deploy requiere VERCEL_TOKEN en el entorno." >&2
-    exit 1
-  fi
   echo "▶ Deploy Vercel (prod)"
   vercel deploy --prod --yes --token "$VERCEL_TOKEN"
 fi
