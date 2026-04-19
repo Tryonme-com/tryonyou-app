@@ -131,6 +131,22 @@ if [[ "$FAST_MODE" == false ]]; then
 fi
 
 log_step "Git add"
+
+# En repos grandes, evita un `git add -A` costoso cuando no hay cambios.
+if [[ -z "$(git status --porcelain)" ]]; then
+  echo "ℹ️  nada nuevo: sin commit."
+  if [[ "$DEPLOY_MODE" == true ]]; then
+    log_step "Deploy Vercel"
+    if ! command -v vercel >/dev/null 2>&1; then
+      npm i -g vercel@latest
+    fi
+    vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+  fi
+  notify_success
+  echo "✅ Supercommit_Max finalizado."
+  exit 0
+fi
+
 git add -A
 
 committed=false
