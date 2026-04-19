@@ -19,8 +19,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -75,13 +73,27 @@ DOCUMENT_METADATA_KEYS = (
     "dossier_ref",
     "invoice_pdf",
 )
+_DOCUMENT_METADATA_KEYS_NORMALIZED = {k.lower() for k in DOCUMENT_METADATA_KEYS}
 
 
 def verify_qonto() -> dict[str, Any]:
     """Estado Qonto / deuda según FinancialGuard (solo lectura env)."""
-    from api.financial_guard import sovereignty_status
+    try:
+        from api.financial_guard import sovereignty_status
+    except Exception as e:
+        return {"ok": False, "error": "financial_guard_unavailable", "detail": str(e)}
+    try:
+        return sovereignty_status()
+    except Exception as e:
+        return {"ok": False, "error": "financial_guard_failed", "detail": str(e)}
 
-    return sovereignty_status()
+
+def _resolve_httpx() -> tuple[Any | None, str | None]:
+    try:
+        import httpx  # type: ignore
+    except Exception as e:
+        return None, str(e)
+    return httpx, None
 
 
 def _stripe_headers() -> dict[str, str]:
@@ -93,6 +105,9 @@ def _stripe_headers() -> dict[str, str]:
 
 def verify_stripe_balance_httpx() -> dict[str, Any]:
     """Saldo Stripe cuenta FR vía httpx (sin volcar secretos)."""
+    httpx, httpx_error = _resolve_httpx()
+    if not httpx:
+        return {"ok": False, "error": "missing_dependency_httpx", "detail": httpx_error}
     headers = _stripe_headers()
     if not headers:
         return {
@@ -103,7 +118,7 @@ def verify_stripe_balance_httpx() -> dict[str, Any]:
     try:
         with httpx.Client(timeout=30.0) as client:
             r = client.get(f"{STRIPE_API_BASE}/balance", headers=headers)
-    except httpx.HTTPError as e:
+    except Exception as e:
         return {"ok": False, "error": str(e)}
     if r.status_code != 200:
         return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
@@ -122,6 +137,9 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
     """
     Últimos PaymentIntents: indica si hay metadatos que parecen documento/contrato.
     """
+    httpx, httpx_error = _resolve_httpx()
+    if not httpx:
+        return {"ok": False, "error": "missing_dependency_httpx", "detail": httpx_error}
     headers = _stripe_headers()
     if not headers:
         return {"ok": False, "error": "missing_stripe_secret"}
@@ -133,7 +151,7 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
                 headers=headers,
                 params=params,
             )
-    except httpx.HTTPError as e:
+    except Exception as e:
         return {"ok": False, "error": str(e)}
     if r.status_code != 200:
         return {"ok": False, "status_code": r.status_code, "body_preview": r.text[:200]}
@@ -141,7 +159,7 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for pi in data.get("data") or []:
         meta = pi.get("metadata") or {}
-        keys = [k for k in meta if k.lower() in {m.lower() for m in DOCUMENT_METADATA_KEYS}]
+        keys = [k for k in meta if k.lower() in _DOCUMENT_METADATA_KEYS_NORMALIZED]
         any_doc_hint = bool(keys) or any(
             "pdf" in str(v).lower() or "contr" in str(v).lower() for v in meta.values()
         )
@@ -169,9 +187,10 @@ def consolidate_report() -> dict[str, Any]:
     }
 
 
-def main() -> None:
+def main() -> int:
     print(json.dumps(consolidate_report(), indent=2, ensure_ascii=False))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
