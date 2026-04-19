@@ -61,6 +61,7 @@ from core_engine import (
     persist_session,
     save_control_state,
 )
+from bunker_sync import execute_bunker_sync, bunker_sync_status
 
 app = Flask(__name__)
 MANUS_FLOW_ID = "f89d5d98"
@@ -1160,6 +1161,27 @@ def model_access_token():
     body = request.get_json(silent=True) or {}
     try:
         result, status = model_access_payload(body, dict(request.headers))
+        return _cors(jsonify(result)), status
+    except Exception as exc:
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
+
+
+@app.route("/api/v1/bunker/sync", methods=["OPTIONS"])
+def bunker_sync_options():
+    return _cors(Response("", status=204))
+
+
+@app.route("/api/v1/bunker/sync", methods=["GET"])
+def bunker_sync_get():
+    result, status = bunker_sync_status()
+    return _cors(jsonify(result)), status
+
+
+@app.route("/api/v1/bunker/sync", methods=["POST"])
+def bunker_sync_post():
+    body = request.get_json(silent=True) or {}
+    try:
+        result, status = execute_bunker_sync(body)
         return _cors(jsonify(result)), status
     except Exception as exc:
         return _cors(jsonify({"status": "error", "message": str(exc)})), 500
