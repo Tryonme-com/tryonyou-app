@@ -15,7 +15,12 @@ if str(_ROOT) not in sys.path:
 
 import stripe
 
+from financial_guard import guard_stripe_call
 from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
+
+SIREN = "943 610 196"
+PATENT = "PCT/EP2025/067317"
+PLATFORM = "TryOnYou_V10"
 
 
 def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
@@ -37,20 +42,21 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
     stripe.api_key = sk
     connect_kw = stripe_api_call_kwargs()
 
-    try:
-        payment_intent = stripe.PaymentIntent.create(
-            amount=int(amount_eur * 100),
-            currency="eur",
-            payment_method_types=["card"],
-            metadata={
-                "session_id": session_id,
-                "project": "TryOnYou_Lafayette_Pilot",
-                "status": "V10_Production",
-                "billing_country_default": "FR",
-            },
-            description=f"TryOnYou - Mirror Session {session_id}",
-            **connect_kw,
-        )
-        return payment_intent.client_secret
-    except stripe.error.StripeError:
-        return None
+    payment_intent = guard_stripe_call(
+        stripe.PaymentIntent.create,
+        amount=int(amount_eur * 100),
+        currency="eur",
+        payment_method_types=["card"],
+        metadata={
+            "session_id": session_id,
+            "project": "TryOnYou_Lafayette_Pilot",
+            "status": "V10_Production",
+            "billing_country_default": "FR",
+            "siren": SIREN,
+            "patent": PATENT,
+            "platform": PLATFORM,
+        },
+        description=f"TryOnYou - Mirror Session {session_id}",
+        **connect_kw,
+    )
+    return payment_intent.client_secret if payment_intent else None

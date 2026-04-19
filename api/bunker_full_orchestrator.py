@@ -1,12 +1,6 @@
 """
-Bunker Full Orchestrator — Make.com (Slack) + waitlist + Supabase opcional (estado V11).
-
-- Waitlist / mirror shadow: sin dependencias extra.
-- Supabase: solo si ``SUPABASE_URL`` y ``SUPABASE_KEY`` (o ``SUPABASE_SERVICE_ROLE_KEY``)
-  están definidos y el paquete ``supabase`` instalado.
-
-Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
-Bajo Protocolo de Soberanía V10 - Founder: Rubén
+Bunker Full Orchestrator — Make.com (Slack) + persistencia waitlist en leads_empire/waitlist.json.
+Patente: PCT/EP2025/067317 — payloads JSON estables para escenarios Make.
 """
 
 from __future__ import annotations
@@ -19,66 +13,9 @@ from typing import Any
 
 import requests
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent
 
 VETOS_PRIORITY_BETA = 0.92
-
-_supabase_client: Any | None = None
-
-
-def _get_supabase_client() -> Any | None:
-    """Cliente Supabase lazy; None si falta env o el paquete no está instalado."""
-    global _supabase_client
-    if _supabase_client is not None:
-        return _supabase_client
-    url = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (
-        (os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "")
-        .strip()
-    )
-    if not url or not key:
-        return None
-    try:
-        from supabase import create_client
-    except ImportError:
-        return None
-    _supabase_client = create_client(url, key)
-    return _supabase_client
-
-
-class BunkerOrchestrator:
-    """Orquestación de estado soberano hacia Supabase (tabla ``users`` por defecto)."""
-
-    def __init__(self) -> None:
-        self.status = "SOUVERAINETÉ:1"
-
-    @property
-    def supabase(self) -> Any:
-        client = _get_supabase_client()
-        if client is None:
-            raise RuntimeError(
-                "Supabase no configurado: SUPABASE_URL + SUPABASE_KEY (o "
-                "SUPABASE_SERVICE_ROLE_KEY) y pip install supabase"
-            )
-        return client
-
-    def update_sovereignty(self, user_id: str, status: bool = True) -> Any | None:
-        if not status:
-            return None
-        sb = _get_supabase_client()
-        if sb is None:
-            raise RuntimeError(
-                "Supabase no disponible: revisa variables de entorno y dependencia supabase"
-            )
-        return (
-            sb.table("users")
-            .update({"status": self.status})
-            .eq("id", user_id)
-            .execute()
-        )
-
-
-orchestrator = BunkerOrchestrator()
 
 
 def _make_post(payload: dict[str, Any]) -> bool:
@@ -93,7 +30,7 @@ def _make_post(payload: dict[str, Any]) -> bool:
 
 
 def append_waitlist_json(entry: dict[str, Any]) -> tuple[bool, str | None]:
-    """Intenta ``leads_empire/waitlist.json``; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
+    """Intenta `leads_empire/waitlist.json`; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
     stamped = {
         **entry,
         "stored_at": datetime.now(timezone.utc).isoformat(),

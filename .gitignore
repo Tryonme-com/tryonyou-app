@@ -47,3 +47,4 @@ logs/LAFAYETTE_TTC_MONITOR.md
 logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
 update_stripe_v10.py
 activate_royalties_v10.py
+monetizacion_trace_demo.log

@@ -1,19 +1,13 @@
 """
 Punto de entrada único de consolidación — Lafayette, Le Bon Marché y canales asociados.
 
-Prompt maestro (Cursor / agente técnico)
-----------------------------------------
-Actúa como agente técnico. Este archivo ``master_fatality.py`` concentra el marco de
-operaciones con Lafayette y Le Bon Marché. Lo que se haga en adelante debe poder
-confirmarse contra este script. Si se introduce una nueva entrada de dossier, añádela a
-``DOSSIER_FATALITY`` y, si implica contacto o sede nueva, amplía ``CONTACTOS_CLAVE``.
-Para Qonto o Stripe, usar las funciones de verificación de este módulo (variables de
-entorno; nunca secretos en código). Es la fuente de archivo operativa de la infraestructura
-descrita aquí: estrategia, contactos, lectura de capital Stripe y huella de documentos en
-metadatos (PaymentIntents).
+Instrucción para el agente (Cursor): este script es la fuente operativa a contrastar antes
+de cambiar infraestructura, contratos o pagos. Nueva entrada de dossier → actualizar
+CONTACTOS_CLAVE si implica un contacto o sede nuevo. Qonto y Stripe: usar solo las
+funciones de verificación de este módulo (env; nunca claves en código).
 
-Ejecución pura: ``python3 master_fatality.py`` — JSON con FinancialGuard (Qonto/deuda),
-saldo Stripe vía httpx y sonda de metadatos tipo documento en últimos PaymentIntents.
+Ejecución: ``python3 master_fatality.py`` — imprime estado Qonto (FinancialGuard), saldo
+Stripe (httpx) y si hay metadatos tipo documento en los últimos PaymentIntents.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén

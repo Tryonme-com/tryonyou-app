@@ -1,15 +1,12 @@
-/**
- * Puente estable hacia Jules (Make.com / orquestaciones: mismos nombres de campo que api/index.py).
- */
+import {
+  buildCoreHeaders,
+  ensureMirrorSessionId,
+  fetchCoreHealth,
+  resolveAccountScope,
+  type JulesHealth,
+} from "./coreEngineClient";
 
-export type JulesHealth = {
-  ok: boolean;
-  service?: string;
-  siren?: string;
-  patente?: string;
-  product_lane?: string;
-  protocol?: string;
-};
+export type { JulesHealth } from "./coreEngineClient";
 
 export type JulesHandshake = {
   status?: string;
@@ -19,24 +16,24 @@ export type JulesHandshake = {
   patente?: string;
   siren?: string;
   product_lane?: string;
+  mirror_enabled?: boolean;
 };
 
 export async function fetchJulesHealth(): Promise<JulesHealth | null> {
-  try {
-    const r = await fetch("/api/health", { method: "GET" });
-    if (!r.ok) return null;
-    return (await r.json()) as JulesHealth;
-  } catch {
-    return null;
-  }
+  return fetchCoreHealth();
 }
 
 export async function postJulesHandshake(): Promise<JulesHandshake | null> {
   try {
     const r = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ping: true }),
+      headers: buildCoreHeaders(),
+      body: JSON.stringify({
+        ping: true,
+        session_id: ensureMirrorSessionId(),
+        account_scope: resolveAccountScope(),
+      }),
+      credentials: "same-origin",
     });
     if (!r.ok) return null;
     return (await r.json()) as JulesHandshake;
@@ -53,7 +50,6 @@ export type InventoryMatch = {
   protocol?: string;
 };
 
-/** The Snap : Jules + moteur inventaire réel (Elena Grandini / stock JSON). */
 export async function postMirrorSnap(
   fabricSensation: string,
   fabricFitVerdict?: string,
@@ -61,12 +57,15 @@ export async function postMirrorSnap(
   try {
     const r = await fetch("/api/v1/mirror/snap", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildCoreHeaders(),
       body: JSON.stringify({
         ping: true,
+        session_id: ensureMirrorSessionId(),
+        account_scope: resolveAccountScope(),
         fabric_sensation: fabricSensation,
         fabric_fit_verdict: fabricFitVerdict ?? "",
       }),
+      credentials: "same-origin",
     });
     if (!r.ok) return null;
     return (await r.json()) as JulesHandshake & {

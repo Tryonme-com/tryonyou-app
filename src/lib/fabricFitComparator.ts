@@ -2,6 +2,7 @@
  * Fabric Fit Comparator + elasticidad (protocolo Zero-Size: sin tallas ni medidas corpóreas en UI).
  * Métricas derivadas de landmarks normalizados (MediaPipe) — referencias relativas, no absolutas.
  */
+import { enforceV9IdentityLabel } from "./privacyFirewall";
 
 export type NormalizedLandmark = {
   x: number;
@@ -47,4 +48,31 @@ export function verdictToUiLabel(v: FabricFitVerdict): string {
     default:
       return "Analyse en cours";
   }
+}
+
+export type FabricPrivacySignal = {
+  verdict: FabricFitVerdict;
+  safeLabel: string;
+  patent: "PCT/EP2025/067317";
+  firewall: "privacy_firewall_v9";
+  comparator: "fabric_fit_comparator_v10";
+};
+
+/**
+ * Contrato The Snap:
+ * Fabric Fit Comparator calcula el veredicto y Privacy Firewall blinda la etiqueta renderizable.
+ */
+export function runFabricFitPrivacyContract(
+  elasticityEma: number,
+  candidateLabel = "",
+): FabricPrivacySignal {
+  const verdict = fabricFitComparator(elasticityEma);
+  const baseLabel = candidateLabel.trim() || verdictToUiLabel(verdict);
+  return {
+    verdict,
+    safeLabel: enforceV9IdentityLabel(baseLabel),
+    patent: "PCT/EP2025/067317",
+    firewall: "privacy_firewall_v9",
+    comparator: "fabric_fit_comparator_v10",
+  };
 }
