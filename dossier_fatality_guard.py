@@ -48,16 +48,25 @@ def _parse_amount_file(path: Path) -> float:
     return 0.0
 
 
+def parse_now(value: str) -> datetime:
+    """Parse ISO datetime string into datetime object."""
+    return datetime.fromisoformat(value)
+
+
 def _is_tuesday_0800(now: datetime) -> bool:
     return now.weekday() == TARGET_WEEKDAY and now.hour == TARGET_HOUR
 
 
-def evaluate_guard(now: datetime | None = None) -> GuardResult:
+def env_confirmed_450k() -> bool:
+    return os.getenv("TRYONYOU_CAPITAL_450K_CONFIRMED", "").strip().lower() in {"1", "true", "yes"}
+
+
+def evaluate_guard(now: datetime | None = None, capital_confirmed: bool | None = None) -> GuardResult:
     now = now or datetime.now()
     amount_in_file = _parse_amount_file(EMERGENCY_PAYOUT_FILE)
 
     # Confirmación explícita desde entorno para evitar afirmaciones no verificadas.
-    env_confirmed = os.getenv("TRYONYOU_CAPITAL_450K_CONFIRMED", "").strip() == "1"
+    env_confirmed = env_confirmed_450k() if capital_confirmed is None else capital_confirmed
     amount_ok = abs(amount_in_file - TARGET_AMOUNT) < 0.0001
     schedule_ok = _is_tuesday_0800(now)
 
@@ -96,6 +105,20 @@ def persist_result(result: GuardResult, now: datetime | None = None) -> None:
         "timestamp": now.isoformat(),
     }
     STATUS_FILE.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def evaluate_dossier_fatality_window(
+    now_dt: datetime | None = None,
+    capital_confirmed: bool = False,
+) -> dict[str, object]:
+    """API de compatibilidad usada por tests/herramientas previas."""
+    result = evaluate_guard(now=now_dt, capital_confirmed=capital_confirmed)
+    return {
+        "status": "ACTIVATION_ALLOWED" if result.status == "DOSSIER_FATALITY_ARMED" else "PENDING_VALIDATION",
+        "activation_allowed": result.status == "DOSSIER_FATALITY_ARMED",
+        "reason": result.reason,
+        "amount_confirmed": result.amount_confirmed,
+    }
 
 
 def main() -> int:

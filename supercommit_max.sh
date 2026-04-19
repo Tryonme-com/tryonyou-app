@@ -113,6 +113,12 @@ if [[ -z "$COMMIT_MSG_RAW" ]]; then
 fi
 FINAL_MSG="$(append_missing_stamps "$COMMIT_MSG_RAW")"
 
+# Falla rápido en --deploy sin token para evitar operaciones pesadas innecesarias.
+if [[ "$DEPLOY_MODE" == true && -z "${VERCEL_TOKEN:-}" ]]; then
+  echo "❌ VERCEL_TOKEN no está definido." >&2
+  exit 1
+fi
+
 if [[ "$FAST_MODE" == false ]]; then
   log_step "Python tests"
   python3 -m unittest discover -s tests -p 'test_*.py' -v
@@ -148,11 +154,6 @@ fi
 
 if [[ "$DEPLOY_MODE" == true ]]; then
   log_step "Deploy Vercel"
-  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-    echo "❌ VERCEL_TOKEN no está definido." >&2
-    exit 1
-  fi
-
   if ! command -v vercel >/dev/null 2>&1; then
     npm i -g vercel@latest
   fi
