@@ -14,6 +14,7 @@ Copiar al chat de Cursor (consolidación): ``CURSOR_AGENT_PROMPT_ES`` en este mi
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
+from __future__ import annotations
 
 # Pegar en Cursor cuando trabajes consolidación / infra con este repo (fuente única).
 CURSOR_AGENT_PROMPT_ES = """
@@ -26,7 +27,6 @@ código). Esta es la fuente de archivo: la única fuente consolidada de mi infra
 para capital, contratos y verificación. Punto de entrada: python3 master_fatality.py
 (imprime liquidez Qonto/FinancialGuard, saldo Stripe y sonda de metadatos tipo documento).
 """.strip()
-from __future__ import annotations
 
 import json
 import sys
