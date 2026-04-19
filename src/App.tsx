@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
-import RealTimeAvatar from "./components/RealTimeAvatar";
-import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
+import { SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import { enforceV9IdentityLabel } from "./lib/privacyFirewall";
 import {
@@ -246,6 +245,22 @@ function isPauAuthorized(): boolean {
   if (uc != null && uc !== false && uc !== "") return true;
   const postal = readPostalFromWindowOrUrl();
   return PAU_POSTAL_NODES.has(postal);
+}
+
+function resolveInitialLocale(): AppLocale {
+  if (typeof navigator === "undefined") return "fr";
+
+  const browserLocales = [navigator.language, ...(navigator.languages ?? [])]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.toLowerCase());
+
+  for (const browserLocale of browserLocales) {
+    if (browserLocale.startsWith("fr")) return "fr";
+    if (browserLocale.startsWith("en")) return "en";
+    if (browserLocale.startsWith("es")) return "es";
+  }
+
+  return "fr";
 }
 
 /** Primera pasada: UserCheck soberano para App Check + Pau (sin esperar efectos). */
@@ -497,18 +512,19 @@ export default function App() {
     forceUserCheckIfPilotCold();
   }
 
-  const [locale, setLocale] = useState<AppLocale>("fr");
+  const initialLocaleRef = useRef<AppLocale>(resolveInitialLocale());
+  const [locale, setLocale] = useState<AppLocale>(initialLocaleRef.current);
   const [elasticLabel, setElasticLabel] = useState("V9 Identity");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
   const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
   const [debtMessage, setDebtMessage] = useState<string>("");
-  const [demoForm, setDemoForm] = useState<DemoFormState>(() => createInitialDemoFormState("fr"));
+  const [demoForm, setDemoForm] = useState<DemoFormState>(() => createInitialDemoFormState(initialLocaleRef.current));
   const [formStatus, setFormStatus] = useState<FormStatus>({ type: "idle" });
   const [preScanVisible, setPreScanVisible] = useState(false);
   const [pendingSnap, setPendingSnap] = useState(false);
   const [metricValues, setMetricValues] = useState<string[]>(() =>
-    SALES_COPY.fr.trust.metrics.map((metric) => metric.value),
+    SALES_COPY[initialLocaleRef.current].trust.metrics.map((metric) => metric.value),
   );
 
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
@@ -895,10 +911,11 @@ export default function App() {
     }
   };
 
-  const onPauOrbClick = () => {
-    if (!pauStarted || !mirrorPoweredOn) return;
-    setPendingSnap(true);
-    setPreScanVisible(true);
+  const onPauCoinClick = () => {
+    const pauGuideTrigger = document.querySelector<HTMLButtonElement>(".pau-guide-trigger");
+    if (!pauGuideTrigger) return;
+    if (pauGuideTrigger.getAttribute("aria-pressed") === "true") return;
+    pauGuideTrigger.click();
   };
 
   const handlePreScanDismiss = () => {
@@ -1478,46 +1495,20 @@ export default function App() {
 
       <PauFloatingGuide locale={locale} />
 
-      <motion.div
-        className="app-pau-row"
-        animate={{
-          boxShadow: [
-            `0 0 0 1px ${ORO_DIVINEO}33`,
-            `0 0 28px ${ORO_DIVINEO}55`,
-            `0 0 0 1px ${ORO_DIVINEO}33`,
-          ],
-        }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-      >
+      <div className="app-pau-row">
         <button
           type="button"
-          className={isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"}
-          disabled={!pauStarted || !mirrorPoweredOn}
-          onClick={onPauOrbClick}
-          title={
-            !mirrorPoweredOn
-              ? "P.A.U. — desactivado por kill-switch remoto"
-              : pauStarted
-                ? isMaraisNode
-                  ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                  : activeDistrict === "75009"
-                    ? "P.A.U. — Lafayette 75009"
-                    : "P.A.U. — Lafayette / Marais (UserCheck)"
-                : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
-          }
-          aria-label="P.A.U. — snap et orchestration Jules"
-          style={{
-            opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
-            cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
-          }}
+          className="app-pau-coin"
+          onClick={onPauCoinClick}
+          title="P.A.U. — ouvrir l'interaction"
+          aria-label="Ouvrir l'interaction flottante P.A.U."
         >
-          <RealTimeAvatar
-            variant={isMaraisNode ? "marais" : "lafayette"}
-            disabled={!pauStarted || !mirrorPoweredOn}
-            videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
-          />
+          <span className="app-pau-coin__inner">
+            <img className="app-pau-coin__image" src="/pau-coin.jpg" alt="P.A.U. Coin" />
+            <span className="app-pau-coin__shine" aria-hidden="true" />
+          </span>
         </button>
-      </motion.div>
+      </div>
 
       <PreScanHook visible={preScanVisible} onDismiss={handlePreScanDismiss} />
     </div>
