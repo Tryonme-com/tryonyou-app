@@ -1,0 +1,18 @@
+[
+  {
+    "fallero_id": "F-001",
+    "fallero_nombre": "Pau",
+    "concepto": "cuota",
+    "importe_bruto": 100.0,
+    "transaccion_id": "TX-2026-04-19-0001",
+    "fecha": "2026-04-19"
+  },
+  {
+    "fallero_id": "F-002",
+    "fallero_nombre": "Maria",
+    "concepto": "loteria",
+    "importe_bruto": 40.0,
+    "transaccion_id": "TX-2026-04-19-0002",
+    "fecha": "2026-04-19"
+  }
+]
