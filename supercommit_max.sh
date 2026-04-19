@@ -46,6 +46,34 @@ log_step() {
   printf "\n==> %s\n" "$1"
 }
 
+notify_success() {
+  local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+  local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
+  local branch short_sha message
+
+  if [[ -z "$token" || -z "$chat_id" ]]; then
+    echo "ℹ️  Notificación Telegram omitida (falta token/chat_id en entorno)."
+    return 0
+  fi
+
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  short_sha="$(git rev-parse --short HEAD)"
+  message="✅ TryOnYou Supercommit_Max OK | branch=${branch} | sha=${short_sha}"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "⚠️ No hay curl para enviar notificación Telegram."
+    return 0
+  fi
+
+  if curl -fsS -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+    --data-urlencode "chat_id=${chat_id}" \
+    --data-urlencode "text=${message}" >/dev/null; then
+    echo "✅ Notificación Telegram de éxito enviada."
+  else
+    echo "⚠️ No se pudo enviar notificación Telegram."
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --fast)
@@ -131,4 +159,5 @@ if [[ "$DEPLOY_MODE" == true ]]; then
   vercel deploy --prod --yes --token "$VERCEL_TOKEN"
 fi
 
+notify_success
 echo "✅ Supercommit_Max finalizado."

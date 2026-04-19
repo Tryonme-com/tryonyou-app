@@ -1,0 +1,8 @@
+{
+  "status": "PENDING_VALIDATION",
+  "reason": "Fuera de ventana martes 08:00; Falta TRYONYOU_CAPITAL_450K_CONFIRMED=1",
+  "amount_confirmed": 450000.0,
+  "target_amount": 450000.0,
+  "schedule_ok": false,
+  "timestamp": "2026-04-19T00:24:49.616569"
+}
