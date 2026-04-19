@@ -422,8 +422,8 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
         "Parcours enregistré — les ponts marchands seront actifs dès configuration serveur (Zero-Size).",
       );
     }
-  } catch {
-    /* silencieux */
+  } catch (e) {
+    console.warn("[App] postPerfectCheckout", e);
   }
 }
 

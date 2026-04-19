@@ -20,6 +20,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 import stripe
+from linear_stripe_notify import notify_stripe_failure_optional
 from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 
 _DEFAULT_PRODUCT_NAME = "Inauguración V10.2 Lafayette"
@@ -32,14 +33,7 @@ def _session_id_suffix(success_url: str) -> str:
     return f"{sep}session_id={{CHECKOUT_SESSION_ID}}"
 
 
-def _resolve_line_items() -> list[dict]:
-    price_id = (
-        os.getenv("STRIPE_INAUGURATION_PRICE_ID")
-        or os.getenv("STRIPE_PRICE_INAUGURATION_12500")
-        or ""
-    ).strip()
-    if price_id.startswith("price_"):
-        return [{"price": price_id, "quantity": 1}]
+def _line_items_from_price_data() -> list[dict]:
     name = (os.getenv("STRIPE_INAUGURATION_PRODUCT_NAME") or _DEFAULT_PRODUCT_NAME).strip()
     raw_cents = (os.getenv("STRIPE_INAUGURATION_AMOUNT_CENTS") or "").strip()
     try:
@@ -56,6 +50,72 @@ def _resolve_line_items() -> list[dict]:
             },
         }
     ]
+
+
+def _resolve_line_items() -> list[dict]:
+    price_id = (
+        os.getenv("STRIPE_INAUGURATION_PRICE_ID")
+        or os.getenv("STRIPE_PRICE_INAUGURATION_12500")
+        or ""
+    ).strip()
+    if price_id.startswith("price_"):
+        return [{"price": price_id, "quantity": 1}]
+    return _line_items_from_price_data()
+
+
+def _validated_line_items_for_checkout() -> list[dict]:
+    """
+    Si STRIPE_INAUGURATION_PRICE_ID apunta a un price_…, verifica que el precio y el producto
+    existan y estén activos antes de crear la sesión; si no, evita GET /v1/products fallidos
+    en cadena usando price_data (12.500 € EUR por defecto) y notifica a Linear si está configurado.
+    """
+    items = _resolve_line_items()
+    if not items or "price" not in items[0]:
+        return items
+    price_id = str(items[0].get("price") or "").strip()
+    if not price_id.startswith("price_"):
+        return items
+    try:
+        price_obj = stripe.Price.retrieve(price_id, expand=["product"])
+    except stripe.error.StripeError as e:
+        notify_stripe_failure_optional(
+            "inauguration_price_retrieve_failed",
+            str(e.user_message or e),
+            price_id=price_id,
+        )
+        return _line_items_from_price_data()
+    prod_ref = getattr(price_obj, "product", None)
+    if prod_ref is None:
+        notify_stripe_failure_optional(
+            "inauguration_price_missing_product",
+            "stripe_price_has_no_product",
+            price_id=price_id,
+        )
+        return _line_items_from_price_data()
+    if isinstance(prod_ref, str):
+        try:
+            product_obj = stripe.Product.retrieve(prod_ref)
+        except stripe.error.StripeError as e:
+            notify_stripe_failure_optional(
+                "inauguration_product_retrieve_failed",
+                str(e.user_message or e),
+                price_id=price_id,
+                product_id=prod_ref,
+            )
+            return _line_items_from_price_data()
+    else:
+        product_obj = prod_ref
+    active_price = getattr(price_obj, "active", True)
+    active_prod = getattr(product_obj, "active", True)
+    if not active_price or not active_prod:
+        notify_stripe_failure_optional(
+            "inauguration_price_or_product_inactive",
+            f"active_price={active_price} active_product={active_prod}",
+            price_id=price_id,
+            product_id=getattr(product_obj, "id", None),
+        )
+        return _line_items_from_price_data()
+    return items
 
 
 def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dict, int]:
@@ -89,7 +149,7 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
             }, 500
 
     success_with_session = f"{success}{_session_id_suffix(success)}"
-    line_items = _resolve_line_items()
+    line_items = _validated_line_items_for_checkout()
     meta_product = (os.getenv("STRIPE_INAUGURATION_PRODUCT_NAME") or "").strip() or _DEFAULT_PRODUCT_NAME
     if line_items and "price_data" in line_items[0]:
         meta_product = (
@@ -122,6 +182,9 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
             return {"status": "error", "message": "stripe_no_checkout_url"}, 502
         return {"status": "ok", "url": url, "session_id": session.id}, 200
     except stripe.error.StripeError as e:
-        return {"status": "error", "message": str(e.user_message or e)}, 502
+        msg = str(e.user_message or e)
+        notify_stripe_failure_optional("inauguration_checkout_session_failed", msg)
+        return {"status": "error", "message": msg}, 502
     except Exception as e:
+        notify_stripe_failure_optional("inauguration_checkout_session_unexpected", str(e))
         return {"status": "error", "message": str(e)}, 502

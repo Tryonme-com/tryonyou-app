@@ -1,6 +1,11 @@
 {
     "founder": "Rubén Espinar Rodríguez",
     "patent": "PCT/EP2025/067317",
+    "legal_identity_anchor": {
+        "founder": "Rubén Espinar Rodríguez",
+        "patent": "PCT/EP2025/067317",
+        "protocol": "Soberanía V10"
+    },
     "siret": "94361019600017",
     "manifest_finance_verified_utc": "2026-04-07T12:00:00Z",
     "identity_system": {
