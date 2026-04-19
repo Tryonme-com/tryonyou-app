@@ -65,7 +65,18 @@ class TestCreateProduct(StripeAgentTestCase):
             result = stripe_agent.create_product("Meta Product", metadata={"brand": "divineo"})
         self.assertTrue(result["ok"])
         call_kwargs = mock_create.call_args[1]
-        self.assertEqual(call_kwargs["metadata"], {"brand": "divineo"})
+        self.assertEqual(call_kwargs["metadata"]["brand"], "divineo")
+        self.assertEqual(call_kwargs["metadata"]["siren"], "943 610 196")
+
+    def test_create_product_always_has_siren(self) -> None:
+        mock_product = MagicMock()
+        mock_product.id = "prod_siren"
+        with patch("stripe.Product.create", return_value=mock_product) as mock_create:
+            result = stripe_agent.create_product("SIREN Product")
+        self.assertTrue(result["ok"])
+        call_kwargs = mock_create.call_args[1]
+        self.assertEqual(call_kwargs["metadata"]["siren"], "943 610 196")
+        self.assertEqual(call_kwargs["metadata"]["patent"], "PCT/EP2025/067317")
 
     def test_create_product_stripe_error(self) -> None:
         err = stripe.error.StripeError("api error")
@@ -193,6 +204,15 @@ class TestCreatePrice(unittest.TestCase):
         with patch("stripe.Price.create", return_value=mock_price) as mock_fn:
             stripe_agent.create_price("prod_abc", 9900, currency="EUR")
         self.assertEqual(mock_fn.call_args[1]["currency"], "eur")
+
+    def test_create_price_always_has_siren(self) -> None:
+        mock_price = MagicMock()
+        mock_price.id = "price_siren"
+        with patch("stripe.Price.create", return_value=mock_price) as mock_fn:
+            stripe_agent.create_price("prod_abc", 2_750_000)
+        meta = mock_fn.call_args[1]["metadata"]
+        self.assertEqual(meta["siren"], "943 610 196")
+        self.assertEqual(meta["patent"], "PCT/EP2025/067317")
 
     def test_create_price_stripe_error(self) -> None:
         err = stripe.error.StripeError("invalid")

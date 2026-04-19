@@ -1,4 +1,5 @@
 """
+<<<<<<< HEAD
 Bunker Full Orchestrator — Make.com (Slack) + waitlist + Supabase opcional (estado V11).
 
 - Waitlist / mirror shadow: sin dependencias extra.
@@ -7,6 +8,10 @@ Bunker Full Orchestrator — Make.com (Slack) + waitlist + Supabase opcional (es
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
+=======
+Bunker Full Orchestrator — Make.com (Slack) + persistencia waitlist en leads_empire/waitlist.json.
+Patente: PCT/EP2025/067317 — payloads JSON estables para escenarios Make.
+>>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
 """
 
 from __future__ import annotations
@@ -19,6 +24,7 @@ from typing import Any
 
 import requests
 
+<<<<<<< HEAD
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 VETOS_PRIORITY_BETA = 0.92
@@ -80,6 +86,12 @@ class BunkerOrchestrator:
 
 orchestrator = BunkerOrchestrator()
 
+=======
+REPO_ROOT = Path(__file__).resolve().parent
+
+VETOS_PRIORITY_BETA = 0.92
+
+>>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
 
 def _make_post(payload: dict[str, Any]) -> bool:
     url = (os.getenv("MAKE_WEBHOOK_URL") or "").strip()
@@ -93,7 +105,11 @@ def _make_post(payload: dict[str, Any]) -> bool:
 
 
 def append_waitlist_json(entry: dict[str, Any]) -> tuple[bool, str | None]:
+<<<<<<< HEAD
     """Intenta ``leads_empire/waitlist.json``; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
+=======
+    """Intenta `leads_empire/waitlist.json`; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
+>>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
     stamped = {
         **entry,
         "stored_at": datetime.now(timezone.utc).isoformat(),

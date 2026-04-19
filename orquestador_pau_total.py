@@ -7,7 +7,7 @@ Ejecutar desde la raíz del proyecto (donde está el CSV de leads, si aplica):
 
 Variables de entorno (opcionales):
 
-    ORQUESTA_MODE       total | ligero | entrega_only | github_only  (default: total)
+    ORQUESTA_MODE       total | ligero | entrega_only | github_only | audit_only (default: total)
     ORQUESTA_ENTREGA    omega | paloma | divineo | jules            (default: omega)
     ORQUESTA_SKIP_ENTREGA  1  — no genera carpetas en el Escritorio ni purga de entrega
     ORQUESTA_GITHUB_PR  0 | 2264 | 2266  — merge vía API si GITHUB_TOKEN está definido
@@ -96,9 +96,9 @@ def _run_mirror_paloma() -> None:
 
 
 def _run_divineo() -> None:
-    from divineo_justicia_v10 import Divineo_Justicia_V10
+    from deploy_divineo import deploy_divineo
 
-    Divineo_Justicia_V10().servir_bandeja_plata()
+    deploy_divineo()
 
 
 def _run_jules_monetizador() -> None:
@@ -149,6 +149,13 @@ def _fase_registro() -> None:
     registrar_exito_monetario("ORQUESTA_TOTAL_DIVINEO")
 
 
+def _fase_auditoria_omega() -> None:
+    from validar_omega_v10 import validar_omega_v10
+
+    estado = validar_omega_v10()
+    print(estado)
+
+
 def orquestar() -> None:
     mode = os.getenv("ORQUESTA_MODE", "total").strip().lower()
     skip_entrega = os.getenv("ORQUESTA_SKIP_ENTREGA", "").strip() in ("1", "true", "yes", "on")
@@ -169,10 +176,16 @@ def orquestar() -> None:
             sys.exit(1)
         return
 
+    if mode == "audit_only":
+        if not _fase("Auditoria Omega V10", _fase_auditoria_omega, continuar_si_falla=False):
+            sys.exit(1)
+        return
+
     if mode == "ligero":
         _fase("Protocolo liquidez", _fase_protocolo)
         _fase("Jules — validación / log", _fase_jules_validator)
         _fase("Registro monetario", _fase_registro)
+        _fase("Auditoria Omega V10", _fase_auditoria_omega)
         _banner("Fin modo ligero")
         return
 
@@ -190,6 +203,7 @@ def orquestar() -> None:
     _fase("GitHub (opcional)", _fase_github)
     _fase("Jules Slack prueba (opcional)", _fase_email_opcional)
     _fase("Registro monetario", _fase_registro)
+    _fase("Auditoria Omega V10", _fase_auditoria_omega)
     _banner("Orquestación total completada (revisa avisos arriba si hubo fallos parciales)")
 
 

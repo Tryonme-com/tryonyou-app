@@ -1,33 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 @import "../theme/divineo_v11.css";
 
 :root {
-  /* Oro Divineo V11 — protocolo UI */
   --oro-divineo: #d4af37;
   --gold: #c5a46d;
+  --gold-bright: #e8c547;
   --anthracite: #141619;
+  --anthracite-deep: #0c0d10;
   --bone: #f5efe6;
+  --bone-soft: #ece4d8;
   --glass: rgba(20, 22, 25, 0.72);
+  --glass-heavy: rgba(10, 11, 14, 0.88);
+  --shadow-gold: rgba(212, 175, 55, 0.15);
+  --shadow-deep: rgba(0, 0, 0, 0.35);
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body,
+html {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  background: var(--anthracite);
+  color: var(--bone);
+  font-family: "Inter", "Cinzel", Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  background: var(--anthracite);
+  color: var(--bone);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 #root {
   margin: 0;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--anthracite);
-  color: var(--bone);
-  font-family: "Cinzel", Georgia, serif;
+  min-height: 100%;
+  position: relative;
+  z-index: 10;
 }
 
 .app-root {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
 }

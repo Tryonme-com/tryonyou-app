@@ -1,4 +1,4 @@
-export { loadPauMasterModel } from "./loadPauMasterModel";
+export { createPauPreviewShell, loadPauMasterModel } from "./loadPauMasterModel";
 export {
   DEG2RAD,
   PAU_V11_BONE_MAP,

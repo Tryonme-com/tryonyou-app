@@ -5,6 +5,10 @@ FinancialGuard — liquidez Qonto / deuda soberana (Lafayette, espejo).
 - Umbral: DEUDA_TOTAL (default 145_500 €) frente a QONTO_BALANCE_EUR o anulación QONTO_PAGO_CONFIRMADO=1.
 - Rutas de cobro/webhook permanecen en allowlist para poder regularizar.
 
+Capa adicional: ``guard_stripe_call`` / ``resilient_stripe`` — reintentos en llamadas Stripe sin
+apagar el servidor; ``log_sovereignty_event`` — trazabilidad (``monetizacion_trace_demo.log`` o
+``MONETIZATION_LOG_PATH``).
+
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
@@ -18,8 +22,9 @@ import sys
 import threading
 import time
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -268,3 +273,104 @@ def register_financial_guard_middleware(app) -> None:
                         threading.Thread(target=_delayed_exit, daemon=True).start()
 
         return response
+
+
+# --- Stripe error resilience (retries; nunca sys.exit desde aquí) ---
+_LOG_FILE = os.getenv(
+    "MONETIZATION_LOG_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "monetizacion_trace_demo.log"),
+)
+
+_logger = logging.getLogger("financial_guard.stripe_resilience")
+if not any(isinstance(h, logging.FileHandler) for h in _logger.handlers):
+    _handler = logging.FileHandler(_LOG_FILE, encoding="utf-8")
+    _handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
+    )
+    _logger.addHandler(_handler)
+_logger.setLevel(logging.INFO)
+
+MAX_RETRIES: int = 3
+RETRY_DELAY_S: float = 2.0
+
+
+def guard_stripe_call(
+    fn: Callable[..., Any],
+    *args: Any,
+    max_retries: int = MAX_RETRIES,
+    retry_delay: float = RETRY_DELAY_S,
+    **kwargs: Any,
+) -> Any:
+    """
+    Envuelve una llamada Stripe con reintentos.
+    Ante 402 u otro error, registra el fallo y reintenta.
+    No llama a sys.exit() ni apaga el servidor.
+    """
+    last_error: Exception | None = None
+    fn_name = getattr(fn, "__name__", fn.__class__.__name__)
+    for attempt in range(1, max_retries + 1):
+        try:
+            result = fn(*args, **kwargs)
+            if attempt > 1:
+                _logger.info(
+                    "stripe_call_recovered | fn=%s | attempt=%d",
+                    fn_name,
+                    attempt,
+                )
+            return result
+        except Exception as exc:
+            last_error = exc
+            error_code = getattr(exc, "http_status", None) or "unknown"
+            _logger.warning(
+                "stripe_call_failed | fn=%s | attempt=%d/%d | status=%s | error=%s",
+                fn_name,
+                attempt,
+                max_retries,
+                error_code,
+                str(exc)[:200],
+            )
+            if attempt < max_retries:
+                time.sleep(retry_delay * attempt)
+
+    _logger.error(
+        "stripe_call_exhausted | fn=%s | retries=%d | last_error=%s",
+        fn_name,
+        max_retries,
+        str(last_error)[:300],
+    )
+    return None
+
+
+def resilient_stripe(max_retries: int = MAX_RETRIES, retry_delay: float = RETRY_DELAY_S):
+    """
+    Versión decorador de guard_stripe_call.
+    """
+
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return guard_stripe_call(
+                fn, *args, max_retries=max_retries, retry_delay=retry_delay, **kwargs
+            )
+
+        return wrapper
+
+    return decorator
+
+
+def log_sovereignty_event(
+    event_type: str,
+    detail: str,
+    session_id: str = "",
+    amount_eur: float = 0.0,
+) -> None:
+    """Registro de evento soberano / financiero para auditoría."""
+    _logger.info(
+        "sovereignty_event | type=%s | session=%s | amount=%.2f | detail=%s",
+        event_type,
+        session_id,
+        amount_eur,
+        detail[:500],
+    )
