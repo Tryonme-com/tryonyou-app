@@ -1,0 +1,9 @@
+Métrica,Valor Actual,Objetivo Mes 1,Objetivo Mes 2,Objetivo Mes 3,North Star (Sí/No)
+% usuarios que ven resultado,Por medir,>= 55%,>= 70%,>= 80%,Sí
+% usuarios que compran,Por medir,>= 2%,>= 4%,>= 6%,Sí
+Tiempo hasta primer resultado,Por medir,< 10 s,< 8 s,< 6 s,Sí
+CAC,Por medir,Baseline definida,-10% vs baseline,-20% vs baseline,Sí
+Retención semanal,Por medir,>= 20%,>= 30%,>= 40%,Sí
+ARPU,Por medir,Baseline definida,+15% vs Mes 1,+30% vs Mes 1,No
+Tasa de abandono,Por medir,< 45%,< 35%,< 25%,No
+Confianza percibida,Por medir,>= 70/100,>= 80/100,>= 85/100,No

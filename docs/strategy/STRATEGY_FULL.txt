@@ -1,0 +1,96 @@
+COLUMNA VERTEBRAL - DOCUMENTO ESTRATÉGICO B2B TRYONYOU
+================================================================
+
+Este documento es la columna vertebral. Implementar TAL CUAL está escrito.
+Solo cambiar algo si es para darle MÁS VALOR. No inventar, no embellecer.
+
+RESUMEN DE LO QUE DEBE TENER LA HOMEPAGE (en orden):
+
+1. HERO
+- FR: "L'essayage virtuel qui réduit les retours et augmente la conversion."
+- EN: "Virtual try-on that reduces returns and increases conversion."
+- ES: "El probador virtual que reduce devoluciones y aumenta la conversión."
+- Subheadline FR: "TRYONYOU aide les retailers de mode à montrer le bon fit sur le vrai corps du client grâce à un jumeau numérique, un moteur de taille précis et une simulation textile réaliste."
+- Subheadline EN: "TRYONYOU helps fashion retailers show the right fit on the customer's real body through a digital twin, precise sizing intelligence and realistic garment simulation."
+- Subheadline ES: "TRYONYOU ayuda a los retailers de moda a mostrar el fit correcto sobre el cuerpo real del cliente mediante un gemelo digital, un motor preciso de talla y una simulación realista de la prenda."
+- CTA: "Demander une démo" / "Request a demo" / "Solicitar demo"
+- Trust strip: PCT/EP2025/067317, hasta 10,000 usuarios simultáneos, 99.7% precisión biométrica, -85% devoluciones
+
+2. PROBLEMA
+- "Cada compra fallida por talla incorrecta erosiona margen, aumenta costes logísticos y debilita la confianza del cliente. En moda, no basta con mostrar una prenda: hay que ayudar al cliente a entender cómo le quedará, qué talla necesita y si puede comprar con seguridad."
+- Cierre: "La mayoría de las experiencias de talla siguen basándose en tablas genéricas. TRYONYOU las reemplaza por certeza individual."
+
+3. SOLUCIÓN (3 pasos)
+- Paso 1: "El cliente crea su perfil corporal" - A partir de imágenes guiadas y datos mínimos, TRYONYOU genera un perfil preciso para estimar medidas y comportamiento de fit.
+- Paso 2: "TRYONYOU crea un gemelo digital utilizable" - El sistema transforma esa información en un modelo digital orientado a sizing, recomendación y visualización.
+- Paso 3: "La marca muestra talla y ajuste con claridad" - El retailer puede recomendar la talla correcta, mostrar cómo cae la prenda y reducir la incertidumbre antes de la compra.
+- Apoyo: "No es un simple avatar. Es un motor de decisión para fit, sizing y visualización de prenda pensado para retail enterprise."
+
+4. BENEFICIOS (3 cards)
+- Más conversión: "Menos duda en el momento de compra" - Cuando el cliente entiende talla y fit, el paso a checkout es más probable y la PDP trabaja mejor.
+- Menos devoluciones: "Menos errores de talla, menos coste operativo" - TRYONYOU ayuda a reducir devoluciones asociadas a fit y elección de talla en categorías sensibles.
+- Más confianza: "Una experiencia más segura y más útil" - La recomendación personalizada aumenta la percepción de control, reduce fricción y mejora la relación con la marca.
+- Cierre: "La promesa no es solo una mejor experiencia. La promesa es una mejor economía unitaria por pedido."
+
+5. TECNOLOGÍA
+- "TRYONYOU combina captura guiada, modelado corporal, inteligencia de talla y simulación de prenda en una sola capa de decisión. El resultado es un Digital Fit Engine capaz de traducir datos visuales y de producto en recomendaciones de talla, representación de fit y señales accionables para el retailer."
+- 4 módulos: Captura, Digital Twin, Sizing Intelligence, Garment Simulation
+
+6. PRUEBA/TRUST
+- Hasta -85% devoluciones y +25% conversión en perímetros validados
+- Precisión biométrica declarada de 99.7%
+- Hasta 10,000 usuarios simultáneos
+- Zero-Size Protocol — solicitud internacional PCT/EP2025/067317
+- NO usar logos sin autorización
+
+7. CTA FINAL
+- "Si su equipo quiere reducir devoluciones, aumentar conversión y validar un piloto con un caso de negocio claro, hablemos."
+- Botón: "Solicitar demo"
+- Microcopy: "Respuesta orientativa en 48 horas laborables. Reunión adaptada a retail, e-commerce o grandes almacenes."
+
+8. FORMULARIO DE DEMO
+- Campos obligatorios: Nombre y apellido, Email corporativo, Empresa, Cargo, Tipo de negocio (Retailer/e-commerce/gran almacén/marketplace), Mercado principal, Qué quiere resolver
+- Campos opcionales: Volumen aproximado, Horizonte de proyecto
+- Consentimiento de contacto: obligatorio
+- Línea de apoyo: "Cuéntenos su caso y prepararemos una demo adaptada a su operación, su canal y su prioridad de negocio."
+
+9. PAU - presentar como funcionalidad dentro de TRYONYOU, NUNCA como marca independiente
+- "PAU, personal AI stylist by TRYONYOU"
+
+10. ARQUITECTURA DE MARCA
+- TRYONYOU = marca principal (siempre protagonista)
+- Digital Fit Engine = producto núcleo
+- PAU = asistente dentro del producto
+- Divineo = solo en footer legal
+- Zero-Size Protocol = solo contextos técnicos/legales
+
+11. UX/UI
+- Fondo: #0B0B0D
+- Superficie secundaria: #14161B
+- Texto principal: #F5F3EE
+- Texto secundario: #B7BCC7
+- Línea/borde: #2A2E36
+- Acento premium: #C7A86A
+- Acento tecnológico: #8BA7FF
+- Error: #D96B6B
+- Tipografía: Inter/Söhne (principal), Canela/Cormorant Garamond (apoyo editorial limitado)
+- H1: 56-64px, peso 600-700
+- Mobile-first
+- CTA visible siempre
+- Navbar sticky con "Solicitar demo"
+
+12. FOOTER
+- Divineo · SIRET 94361019600017 · París, Francia
+- Enlaces: privacidad, datos biométricos, términos, cookies, seguridad
+
+13. NAVBAR
+- Home, Tecnología, Soluciones, Pilotos, Sobre nosotros, Legal, Solicitar demo
+
+COMPONENTES QUE DEBEN SEGUIR FUNCIONANDO:
+- PauFloatingGuide (botón flotante abajo derecha)
+- OfrendaOverlay
+- PreScanHook
+- Selector de idioma FR/EN/ES
+- Partículas doradas ambientales
+- Scroll reveal animations
+- Contadores animados en métricas
