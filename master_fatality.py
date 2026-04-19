@@ -9,24 +9,10 @@ funciones de verificación de este módulo (env; nunca claves en código).
 Ejecución: ``python3 master_fatality.py`` — imprime estado Qonto (FinancialGuard), saldo
 Stripe (httpx) y si hay metadatos tipo documento en los últimos PaymentIntents.
 
-Copiar al chat de Cursor (consolidación): ``CURSOR_AGENT_PROMPT_ES`` en este mismo módulo.
-
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
 from __future__ import annotations
-
-# Pegar en Cursor cuando trabajes consolidación / infra con este repo (fuente única).
-CURSOR_AGENT_PROMPT_ES = """
-Actúa como mi agente técnico. El archivo master_fatality.py contiene el número y el marco
-de mis operaciones con Lafayette y Le Bon Marché. Todo lo que hagamos de ahora en adelante
-debe confirmarse con este script. Si introducimos una nueva entrada de dossier, añádela a
-CONTACTOS_CLAVE cuando haya contacto o sede nuevo. Con Qonto o Stripe, usa solo las
-funciones de verificación de master_fatality.py (variables de entorno; nunca secretos en
-código). Esta es la fuente de archivo: la única fuente consolidada de mi infraestructura
-para capital, contratos y verificación. Punto de entrada: python3 master_fatality.py
-(imprime liquidez Qonto/FinancialGuard, saldo Stripe y sonda de metadatos tipo documento).
-""".strip()
 
 import json
 import sys
