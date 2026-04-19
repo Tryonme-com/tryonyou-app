@@ -23,7 +23,7 @@ import os
 import time
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 import unicodedata
@@ -58,7 +58,6 @@ _DEFAULT_COMPLIANCE_PATHS = (
     Path("/workspace/logs/compliance_logs.log"),
     Path("/workspace/compliance_logs.jsonl"),
     Path("/workspace/compliance_logs.log"),
-    Path("/workspace/logs/sovereignty_access_audit.jsonl"),
 )
 
 _STATE_DEFAULT = Path("/tmp/tryonyou_batch_payout_engine_state.json")
@@ -542,7 +541,7 @@ def run_cycle(config: BatchPayoutConfig, *, now: datetime | None = None) -> dict
     payout_data = _to_dict(payout)
     payout_id = str(payout_data.get("id") or "")
     execution = {
-        "ts": datetime.utcnow().isoformat() + "Z",
+        "ts": datetime.now(timezone.utc).isoformat(),
         "payout_id": payout_id,
         "currency": payout_currency,
         "amount_cents": payout_amount_cents,
