@@ -6,21 +6,12 @@ de cambiar infraestructura, contratos o pagos. Nueva entrada de dossier → actu
 CONTACTOS_CLAVE si implica un contacto o sede nuevo. Qonto y Stripe: usar solo las
 funciones de verificación de este módulo (env; nunca claves en código).
 
-Ejecución: ``.venv/bin/python master_fatality.py`` o ``python3 master_fatality.py`` — imprime
-estado Qonto (FinancialGuard), saldo Stripe (httpx) y si hay metadatos tipo documento en los
-últimos PaymentIntents.
+Ejecución: ``python3 master_fatality.py`` — imprime estado Qonto (FinancialGuard), saldo
+Stripe (httpx) y si hay metadatos tipo documento en los últimos PaymentIntents.
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
-
-# Prompt maestro (Cursor): copiar al chat con el agente cuando se trabaje infra/pagos.
-AGENT_PROMPT_MASTER = """Actúa como mi agente técnico. El archivo master_fatality.py contiene
-el marco de operaciones con Lafayette y Le Bon Marché. Todo lo que hagamos debe confirmarse
-con este script. Si introducimos una nueva entrada de dossier, añádela a CONTACTOS_CLAVE
-cuando haya contacto o sede nuevo. Con Qonto o Stripe, usar solo las funciones de verificación
-de este módulo (entorno; nunca claves en código). Esta es la fuente de consolidación de la
-infraestructura comercial soberana."""
 from __future__ import annotations
 
 import json
