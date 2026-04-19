@@ -90,7 +90,7 @@ def verify_qonto() -> dict[str, Any]:
 
 def _resolve_httpx() -> tuple[Any | None, str | None]:
     try:
-        import httpx  # type: ignore
+        import httpx  # type: ignore  # optional dependency imported lazily at runtime
     except ImportError as e:
         return None, f"httpx package not installed: {e}"
     return httpx, None
