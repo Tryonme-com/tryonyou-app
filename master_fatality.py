@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import sys
+from types import ModuleType
 from pathlib import Path
 from typing import Any
 
@@ -73,7 +74,7 @@ DOCUMENT_METADATA_KEYS = (
     "dossier_ref",
     "invoice_pdf",
 )
-_DOCUMENT_METADATA_KEYS_NORMALIZED = {k.lower() for k in DOCUMENT_METADATA_KEYS}
+_NORMALIZED_DOCUMENT_METADATA_KEYS = {k.lower() for k in DOCUMENT_METADATA_KEYS}
 
 
 def verify_qonto() -> dict[str, Any]:
@@ -88,9 +89,9 @@ def verify_qonto() -> dict[str, Any]:
         return {"ok": False, "error": "financial_guard_failed", "detail": str(e)}
 
 
-def _resolve_httpx() -> tuple[Any | None, str | None]:
+def _resolve_httpx() -> tuple[ModuleType | None, str | None]:
     try:
-        import httpx  # type: ignore  # optional dependency imported lazily at runtime
+        import httpx  # type: ignore[import]  # defensive lazy import for isolated execution
     except ImportError as e:
         return None, f"httpx package not installed: {e}"
     return httpx, None
@@ -159,7 +160,7 @@ def stripe_payment_intents_metadata_probe(limit: int = 8) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for pi in data.get("data") or []:
         meta = pi.get("metadata") or {}
-        keys = [k for k in meta if k.lower() in _DOCUMENT_METADATA_KEYS_NORMALIZED]
+        keys = [k for k in meta if k.lower() in _NORMALIZED_DOCUMENT_METADATA_KEYS]
         any_doc_hint = bool(keys) or any(
             "pdf" in str(v).lower() or "contr" in str(v).lower() for v in meta.values()
         )
