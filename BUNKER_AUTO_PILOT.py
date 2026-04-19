@@ -31,6 +31,19 @@ PATENT = "PCT/EP2025/067317"
 SOVEREIGN_PROTOCOL = "Bajo Protocolo de Soberania V10 - Founder: Ruben"
 DEFAULT_FINANCIAL_IMPACT_EUR = 51988.50
 DEFAULT_CAPITAL_ENTRY_EUR = 450000.00
+DEFAULT_TELEGRAM_CHAT_ID = "@tryonyou_deploy_bot"
+DEFAULT_SUPERCOMMIT_MESSAGE = (
+    "Supercommit_Max: bunker Oberkampf 75011 sincronizado con galeria web"
+)
+IGNORED_BASH_DIRS = {
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    ".venv",
+    "venv",
+    "__pycache__",
+}
 
 
 @dataclass(frozen=True)
@@ -45,6 +58,8 @@ class PilotConfig:
     capital_entry_target_eur: float
     capital_entry_confirmed: bool
     timezone_name: str
+    supercommit_fast_mode: bool
+    supercommit_message: str
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -58,12 +73,16 @@ def _load_config() -> PilotConfig:
     token = (
         os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
         or os.getenv("TELEGRAM_TOKEN", "").strip()
+        or os.getenv("TRYONYOU_DEPLOY_BOT_TOKEN", "").strip()
     )
     return PilotConfig(
         github_repo=os.getenv("BUNKER_GITHUB_REPO", "tryonme-com/tryonyou-app").strip(),
         github_token=os.getenv("GITHUB_TOKEN", "").strip(),
         telegram_token=token,
-        telegram_chat_id=os.getenv("TELEGRAM_CHAT_ID", "@tryonyou_deploy_bot").strip(),
+        telegram_chat_id=(
+            os.getenv("TELEGRAM_CHAT_ID", DEFAULT_TELEGRAM_CHAT_ID).strip()
+            or DEFAULT_TELEGRAM_CHAT_ID
+        ),
         render_health_url=os.getenv("RENDER_HEALTHCHECK_URL", "").strip(),
         stripe_webhook_health_url=os.getenv("STRIPE_WEBHOOK_HEALTH_URL", "").strip(),
         financial_impact_eur=float(
@@ -74,6 +93,11 @@ def _load_config() -> PilotConfig:
         ),
         capital_entry_confirmed=_env_bool("BUNKER_CAPITAL_ENTRY_CONFIRMED", default=False),
         timezone_name=os.getenv("BUNKER_TIMEZONE", "Europe/Paris").strip(),
+        supercommit_fast_mode=_env_bool("BUNKER_SUPERCOMMIT_FAST", default=False),
+        supercommit_message=(
+            os.getenv("BUNKER_SUPERCOMMIT_MESSAGE", DEFAULT_SUPERCOMMIT_MESSAGE).strip()
+            or DEFAULT_SUPERCOMMIT_MESSAGE
+        ),
     )
 
 
@@ -170,7 +194,10 @@ class AutonomousEmpire:
         script = self.repo_root / "supercommit_max.sh"
         if not script.is_file():
             return False, "supercommit_max.sh no encontrado"
-        cmd = ["bash", str(script), "--fast", "--msg", "Auto-sync bunker galeria web"]
+        cmd = ["bash", str(script)]
+        if self.config.supercommit_fast_mode:
+            cmd.append("--fast")
+        cmd.extend(["--msg", self.config.supercommit_message])
         result = subprocess.run(
             cmd,
             cwd=self.repo_root,
@@ -181,17 +208,20 @@ class AutonomousEmpire:
         if result.returncode != 0:
             msg = (result.stderr or result.stdout or "").strip().replace("\n", " ")
             return False, f"Supercommit_Max fallo: {msg[:240]}"
-        return True, "Supercommit_Max ejecutado"
+        mode = "FAST" if self.config.supercommit_fast_mode else "FULL"
+        return True, f"Supercommit_Max ejecutado ({mode})"
 
     def _bash_syntax_check(self) -> tuple[bool, str]:
-        scripts = [
-            self.repo_root / "supercommit_max.sh",
-            self.repo_root / "TRYONYOU_SUPERCOMMIT_MAX.sh",
-            self.repo_root / "SUPERCOMMIT.sh",
-        ]
-        for script in scripts:
-            if not script.is_file():
+        scripts: list[Path] = []
+        for script in self.repo_root.rglob("*.sh"):
+            if any(part in IGNORED_BASH_DIRS for part in script.parts):
                 continue
+            scripts.append(script)
+
+        if not scripts:
+            return True, "Sin scripts Bash para validar"
+
+        for script in sorted(scripts):
             result = subprocess.run(
                 ["bash", "-n", str(script)],
                 cwd=self.repo_root,
@@ -202,7 +232,7 @@ class AutonomousEmpire:
             if result.returncode != 0:
                 detail = (result.stderr or result.stdout or "").strip().replace("\n", " ")
                 return False, f"Sintaxis Bash invalida en {script.name}: {detail[:180]}"
-        return True, "Sintaxis Bash validada (galeria 10/10)"
+        return True, f"Sintaxis Bash validada en {len(scripts)} scripts (galeria 10/10)"
 
     def _merge_pr(self, pr_number: int) -> tuple[bool, str]:
         if not self.config.github_token:
@@ -245,15 +275,41 @@ class AutonomousEmpire:
             self._log(f"Telegram error: {exc}")
         return False
 
+    def _report_success(self, title: str, detail: str, pr_number: int | None = None) -> None:
+        pr_line = f"PR: `#{pr_number}`\\n" if pr_number is not None else ""
+        message = (
+            "✅ *TryOnYou Autopilot — Exito*\\n"
+            f"Hito: `{title}`\\n"
+            f"{pr_line}"
+            f"Detalle: {detail}\\n"
+            f"Canal bot: `{self.config.telegram_chat_id}`\\n"
+            f"{PATENT}"
+        )
+        if not self._telegram_report(message):
+            self._log(f"No se pudo reportar exito en Telegram para hito: {title}")
+
     def _is_tuesday_0800(self, now: datetime) -> bool:
-        return now.weekday() == 1 and now.hour == 8
+        return now.weekday() == 1 and now.hour == 8 and now.minute == 0
+
+    def _has_expected_capital_entry(self) -> bool:
+        return abs(self.config.capital_entry_target_eur - DEFAULT_CAPITAL_ENTRY_EUR) < 0.01
 
     def _activate_dossier_fatality(self, now: datetime) -> tuple[bool, str]:
         if not self.config.capital_entry_confirmed:
             return False, "Capital no confirmado por entorno (BUNKER_CAPITAL_ENTRY_CONFIRMED)"
+        if not self._has_expected_capital_entry():
+            return (
+                False,
+                (
+                    "Capital esperado distinto de 450000.00 EUR "
+                    f"({self.config.capital_entry_target_eur:,.2f} EUR)"
+                ),
+            )
         artifact = {
             "activated_at": now.isoformat(),
             "capital_entry_eur": self.config.capital_entry_target_eur,
+            "capital_expected_eur": DEFAULT_CAPITAL_ENTRY_EUR,
+            "capital_entry_confirmed": True,
             "status": "DOSSIER_FATALITY_ACTIVE",
             "patent": PATENT,
             "protocol": SOVEREIGN_PROTOCOL,
@@ -278,6 +334,7 @@ class AutonomousEmpire:
                     f"{PATENT}"
                 )
             )
+            self._report_success("Seguridad Martes 08:00", detail)
             self._log(detail)
             return
         self._log(f"Rutina de seguridad no activada: {detail}")
@@ -303,6 +360,8 @@ class AutonomousEmpire:
         for service, ok, detail in checks:
             status = "OK" if ok else "FAIL"
             self._log(f"{service}: {status} - {detail}")
+            if ok:
+                self._report_success(f"Check {service}", detail, pr_number=number)
 
         if not all_ok:
             self._log(f"PR #{number} no fusionada: checks incompletos.")
@@ -313,14 +372,14 @@ class AutonomousEmpire:
         if not merged:
             return
 
-        self._telegram_report(
+        self._report_success(
+            "Merge PR financiera",
             (
-                "✅ *Exito de Autopilot TryOnYou*\\n"
-                f"PR #{number} fusionada: `{title}`\\n"
-                f"Impacto financiero: `{self.config.financial_impact_eur:,.2f} €`\\n"
-                f"Estado: Render + Stripe + Supercommit_Max + Bash en verde\\n"
-                f"{PATENT}"
-            )
+                f"PR #{number} fusionada: `{title}` | "
+                f"Impacto financiero: {self.config.financial_impact_eur:,.2f} EUR | "
+                "Estado: Render + Stripe + Supercommit_Max + Bash en verde"
+            ),
+            pr_number=number,
         )
 
     def process_all_requests(self) -> None:

@@ -22,6 +22,8 @@ def _cfg() -> PilotConfig:
         capital_entry_target_eur=450000.0,
         capital_entry_confirmed=True,
         timezone_name="Europe/Paris",
+        supercommit_fast_mode=False,
+        supercommit_message="sync bunker",
     )
 
 
@@ -53,6 +55,30 @@ class TestSecurityRoutine(unittest.TestCase):
             self.assertIn("Dossier Fatality activado", detail)
             artifact = Path(tmp) / "dossier_fatality_activation.json"
             self.assertTrue(artifact.is_file())
+
+    def test_activate_dossier_fatality_requires_exact_450k(self) -> None:
+        cfg = _cfg()
+        cfg = PilotConfig(
+            github_repo=cfg.github_repo,
+            github_token=cfg.github_token,
+            telegram_token=cfg.telegram_token,
+            telegram_chat_id=cfg.telegram_chat_id,
+            render_health_url=cfg.render_health_url,
+            stripe_webhook_health_url=cfg.stripe_webhook_health_url,
+            financial_impact_eur=cfg.financial_impact_eur,
+            capital_entry_target_eur=449999.0,
+            capital_entry_confirmed=True,
+            timezone_name=cfg.timezone_name,
+            supercommit_fast_mode=cfg.supercommit_fast_mode,
+            supercommit_message=cfg.supercommit_message,
+        )
+        pilot = AutonomousEmpire(cfg)
+        with tempfile.TemporaryDirectory() as tmp:
+            pilot.repo_root = Path(tmp)
+            now = __import__("datetime").datetime(2026, 4, 14, 8, 0, 0)
+            ok, detail = pilot._activate_dossier_fatality(now)
+            self.assertFalse(ok)
+            self.assertIn("450000.00", detail)
 
     @patch.object(AutonomousEmpire, "_telegram_report")
     @patch.object(AutonomousEmpire, "_activate_dossier_fatality")
