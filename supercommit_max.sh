@@ -65,7 +65,7 @@ notify_success() {
     return 0
   fi
 
-  if curl -fsS -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+  if curl -fsS --connect-timeout 3 --max-time 6 -X POST "https://api.telegram.org/bot${token}/sendMessage" \
     --data-urlencode "chat_id=${chat_id}" \
     --data-urlencode "text=${message}" >/dev/null; then
     echo "✅ Notificación Telegram de éxito enviada."
