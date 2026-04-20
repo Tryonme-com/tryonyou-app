@@ -9,6 +9,11 @@ import requests
 
 DEFAULT_API_URL = "https://api.tryonyou.app/v1/compliance/status"
 DEFAULT_TIMEOUT_SECONDS = 10.0
+MIN_TIMEOUT_SECONDS = 0.1
+
+
+def _env_stripped(key: str, default: str = "") -> str:
+    return (os.getenv(key) or default).strip()
 
 
 def _build_headers(system_token: str) -> dict[str, str]:
@@ -16,9 +21,9 @@ def _build_headers(system_token: str) -> dict[str, str]:
 
 
 def get_bunker_status() -> dict[str, Any] | None:
-    api_url = (os.getenv("BUNKER_STATUS_API_URL") or DEFAULT_API_URL).strip()
-    token = (os.getenv("SYSTEM_TOKEN") or "").strip()
-    timeout_raw = (os.getenv("BUNKER_STATUS_TIMEOUT_SECONDS") or "").strip()
+    api_url = _env_stripped("BUNKER_STATUS_API_URL", DEFAULT_API_URL)
+    token = _env_stripped("SYSTEM_TOKEN")
+    timeout_raw = _env_stripped("BUNKER_STATUS_TIMEOUT_SECONDS")
 
     if not token:
         print("Error de sincronización: SYSTEM_TOKEN no configurado.")
@@ -37,12 +42,12 @@ def get_bunker_status() -> dict[str, Any] | None:
         response = requests.get(
             api_url,
             headers=_build_headers(token),
-            timeout=max(timeout, 0.1),
+            timeout=max(timeout, MIN_TIMEOUT_SECONDS),
         )
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, dict):
-            raise ValueError("respuesta JSON no es objeto")
+            raise ValueError("API returned non-dictionary JSON response")
         print(f"ESTADO BANCARIO: {data.get('status')}")
         print(f"SALDO EN TRÁNSITO: {data.get('pending_amount')} EUR")
         print(f"REFERENCIA E2E: {data.get('e2e_reference')}")
