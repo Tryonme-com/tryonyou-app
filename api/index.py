@@ -2,6 +2,7 @@ import hmac
 import json
 import os
 import sys
+import traceback
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from pathlib import Path
@@ -14,63 +15,75 @@ for _p in (_ROOT, _API_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from bunker_full_orchestrator import (
-    orchestrate_beta_waitlist,
-    orchestrate_mirror_shadow_dwell,
-)
-from financial_guard import guard_stripe_call
+_BOOT_ERROR = None
 try:
-    from financial_guard import log_sovereignty_event
-except ImportError:
-    log_sovereignty_event = None
-from mirror_digital_make import forward_mirror_event
-from stripe_lafayette import create_lafayette_checkout
-from stripe_inauguration import create_inauguration_checkout_session
-from stripe_webhook import handle_webhook
-from inventory_engine import inventory_match_payload
-from shopify_bridge import resolve_shopify_checkout_url
-from amazon_bridge import resolve_amazon_checkout_url
-from qonto_iban_transfer import (
-    DEFAULT_BENEFICIARY,
-    is_iban_transfer_configured,
-    resolve_iban_transfer_details,
-    validate_transfer_readiness,
-)
-from invoice_generator import generate_proforma
-from treasury_monitor import (
-    get_treasury_status,
-    get_payouts_list,
-    record_payout,
-)
-from territory_expansion import (
-    get_expansion_nodes,
-    get_territory_summary,
-    generate_node_contract,
-)
-from empire_payout_trans import (
-    get_flow_summary,
-    register_checkout_success,
-    register_payment_intent,
-    register_payout_transition,
-)
-from core_engine import (
-    trace_event,
-    mirror_snap_payload,
-    perfect_selection_payload,
-    model_access_payload,
-    kill_switch_status_payload,
-    kill_switch_payload,
-)
-# Lazy imports for bunker sync (avoid cold-start crash)
-try:
-    from core_engine import SupabaseStore, persist_event, persist_session, save_control_state
-except ImportError:
-    SupabaseStore = None
-    persist_event = persist_session = save_control_state = lambda *a, **kw: None
-# Lazy import: bunker_sync loaded only when route is hit to avoid cold-start crash
-# from bunker_sync import execute_bunker_sync, bunker_sync_status
+
+    from bunker_full_orchestrator import (
+        orchestrate_beta_waitlist,
+        orchestrate_mirror_shadow_dwell,
+    )
+    from financial_guard import guard_stripe_call
+    try:
+        from financial_guard import log_sovereignty_event
+    except ImportError:
+        log_sovereignty_event = None
+    from mirror_digital_make import forward_mirror_event
+    from stripe_lafayette import create_lafayette_checkout
+    from stripe_inauguration import create_inauguration_checkout_session
+    from stripe_webhook import handle_webhook
+    from inventory_engine import inventory_match_payload
+    from shopify_bridge import resolve_shopify_checkout_url
+    from amazon_bridge import resolve_amazon_checkout_url
+    from qonto_iban_transfer import (
+        DEFAULT_BENEFICIARY,
+        is_iban_transfer_configured,
+        resolve_iban_transfer_details,
+        validate_transfer_readiness,
+    )
+    from invoice_generator import generate_proforma
+    from treasury_monitor import (
+        get_treasury_status,
+        get_payouts_list,
+        record_payout,
+    )
+    from territory_expansion import (
+        get_expansion_nodes,
+        get_territory_summary,
+        generate_node_contract,
+    )
+    from empire_payout_trans import (
+        get_flow_summary,
+        register_checkout_success,
+        register_payment_intent,
+        register_payout_transition,
+    )
+    from core_engine import (
+        trace_event,
+        mirror_snap_payload,
+        perfect_selection_payload,
+        model_access_payload,
+        kill_switch_status_payload,
+        kill_switch_payload,
+    )
+    # Lazy imports for bunker sync (avoid cold-start crash)
+    try:
+        from core_engine import SupabaseStore, persist_event, persist_session, save_control_state
+    except ImportError:
+        SupabaseStore = None
+        persist_event = persist_session = save_control_state = lambda *a, **kw: None
+    # Lazy import: bunker_sync loaded only when route is hit to avoid cold-start crash
+    # from bunker_sync import execute_bunker_sync, bunker_sync_status
+
+except Exception as _exc:
+    _BOOT_ERROR = traceback.format_exc()
 
 app = Flask(__name__)
+
+@app.route('/api/debug-boot')
+def _debug_boot():
+    if _BOOT_ERROR:
+        return Response(_BOOT_ERROR, status=500, mimetype='text/plain')
+    return jsonify({'boot': 'ok', 'sys_path': sys.path[:5], 'root': str(_ROOT), 'api_dir': str(_API_DIR)})
 MANUS_FLOW_ID = "f89d5d98"
 ADVBET_PROVIDER = "advbet"
 
