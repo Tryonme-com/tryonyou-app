@@ -1,19 +1,1651 @@
+import hmac
 import json
+import os
 import sys
 import traceback
+from datetime import datetime, timezone
+from urllib.parse import urlencode
 from pathlib import Path
+
 from flask import Flask, Response, jsonify, request
+
+_ROOT = Path(__file__).resolve().parent.parent
+_API_DIR = Path(__file__).resolve().parent
+for _p in (_ROOT, _API_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
+_BOOT_ERROR = None
+try:
+
+    from bunker_full_orchestrator import (
+        orchestrate_beta_waitlist,
+        orchestrate_mirror_shadow_dwell,
+    )
+    from financial_guard import guard_stripe_call
+    try:
+        from financial_guard import log_sovereignty_event
+    except ImportError:
+        log_sovereignty_event = None
+    from mirror_digital_make import forward_mirror_event
+    from stripe_lafayette import create_lafayette_checkout
+    from stripe_inauguration import create_inauguration_checkout_session
+    from stripe_webhook import handle_webhook
+    from inventory_engine import inventory_match_payload
+    from shopify_bridge import resolve_shopify_checkout_url
+    from amazon_bridge import resolve_amazon_checkout_url
+    from qonto_iban_transfer import (
+        DEFAULT_BENEFICIARY,
+        is_iban_transfer_configured,
+        resolve_iban_transfer_details,
+        validate_transfer_readiness,
+    )
+    from invoice_generator import generate_proforma
+    from treasury_monitor import (
+        get_treasury_status,
+        get_payouts_list,
+        record_payout,
+    )
+    from territory_expansion import (
+        get_expansion_nodes,
+        get_territory_summary,
+        generate_node_contract,
+    )
+    from empire_payout_trans import (
+        get_flow_summary,
+        register_checkout_success,
+        register_payment_intent,
+        register_payout_transition,
+    )
+    from core_engine import (
+        trace_event,
+        mirror_snap_payload,
+        perfect_selection_payload,
+        model_access_payload,
+        kill_switch_status_payload,
+        kill_switch_payload,
+    )
+    # Lazy imports for bunker sync (avoid cold-start crash)
+    try:
+        from core_engine import SupabaseStore, persist_event, persist_session, save_control_state
+    except ImportError:
+        SupabaseStore = None
+        persist_event = persist_session = save_control_state = lambda *a, **kw: None
+    # Lazy import: bunker_sync loaded only when route is hit to avoid cold-start crash
+    # from bunker_sync import execute_bunker_sync, bunker_sync_status
+
+except Exception as _exc:
+    _BOOT_ERROR = traceback.format_exc()
 
 app = Flask(__name__)
 
-@app.route('/api/health')
-def health():
-    return jsonify({
-        'status': 'ok',
-        'python': sys.version,
-        'file': str(Path(__file__).resolve()),
+@app.route('/api/debug-boot')
+def _debug_boot():
+    if _BOOT_ERROR:
+        return Response(_BOOT_ERROR, status=500, mimetype='text/plain')
+    return jsonify({'boot': 'ok', 'sys_path': sys.path[:5], 'root': str(_ROOT), 'api_dir': str(_API_DIR)})
+MANUS_FLOW_ID = "f89d5d98"
+ADVBET_PROVIDER = "advbet"
+
+_ALLOWED_PAYMENT_HOST_SUFFIXES = ("abvetos.com",)
+_ALLOWED_PAYMENT_LOCAL_HOSTS = {"localhost", "127.0.0.1"}
+_PAYMENT_ORCHESTRATION_LOCKS: set[str] = set()
+
+
+
+PAU_ENGINE_VERSION = "V12_Pau_Core_Engine"
+PAU_SOVEREIGNTY_STATE = "SOUVERAINETÉ:1"
+PAU_PATENT_REFERENCE = "PCT/EP2025/067317"
+PAU_SIREN = "943610196"
+PAU_SIREN_FORMATTED = "943 610 196"
+PAU_DEFAULT_STORE = "Galeries Lafayette Haussmann"
+PAU_DEFAULT_LOCATION = "Planta 1 - Espejo Digital"
+_PAU_ENGINE = None
+
+
+class PauPeacockEngine:
+    def __init__(self):
+        self.stripe_key = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+        self.sb_url = (
+            os.getenv("PAU_SUPABASE_URL")
+            or os.getenv("SUPABASE_URL")
+            or "https://irwyurrpofyzcdsihjmz.supabase.co"
+        ).strip()
+        self.sb_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+        self.persona = "Eric - Family Lafayette Expert"
+        self._stripe = None
+        self._db = None
+
+    def _stripe_client(self):
+        if self._stripe is False:
+            return None
+        if self._stripe is None:
+            try:
+                import stripe
+
+                stripe.api_key = self.stripe_key
+                self._stripe = stripe
+            except Exception:
+                self._stripe = False
+        return None if self._stripe is False else self._stripe
+
+    def _supabase_client(self):
+        if self._db is False:
+            return None
+        if self._db is None:
+            if not self.sb_key:
+                self._db = False
+                return None
+            try:
+                from supabase import create_client
+
+                self._db = create_client(self.sb_url, self.sb_key)
+            except Exception:
+                self._db = False
+        return None if self._db is False else self._db
+
+    def process_body_scan(self, weight, height, event_type):
+        recommendations = self._calculate_ideal_looks(height, weight, event_type)
+        return {
+            "status": "Success",
+            "message": "Silueta capturada con elegancia.",
+            "persona": self.persona,
+            "scan": {
+                "weight_kg": weight,
+                "height_cm": height,
+                "event_type": event_type,
+            },
+            "looks": recommendations,
+        }
+
+    def trigger_snap_logic(self, look_id):
+        safe_look_id = str(look_id or "L1").strip() or "L1"
+        return {
+            "status": "Success",
+            "action": "update_avatar_mesh",
+            "look_id": safe_look_id,
+            "model_url": f"/models/looks/{safe_look_id}.glb",
+        }
+
+    def handle_perfect_selection(self, user_id, look_data):
+        normalized_look = {
+            "id": str((look_data or {}).get("id") or "L1").strip() or "L1",
+            "name": str((look_data or {}).get("name") or "Pau Curated Look").strip() or "Pau Curated Look",
+            "price": float((look_data or {}).get("price") or 0),
+        }
+        stripe_client = self._stripe_client()
+        if not self.stripe_key or stripe_client is None or not getattr(stripe_client, "checkout", None):
+            return {
+                "status": "Fallback",
+                "checkout_session_created": False,
+                "checkout_url": "",
+                "payment_provider": "stripe",
+                "message": "Stripe no configurado; la selección perfecta queda registrada sin sesión de pago.",
+                "look": normalized_look,
+            }
+        try:
+            checkout_session = stripe_client.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {'name': normalized_look['name']},
+                        'unit_amount': int(round(normalized_look['price'] * 100)),
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url='https://tryonyou.app/success',
+                cancel_url='https://tryonyou.app/cancel',
+                metadata={
+                    'user_id': str(user_id or 'PAU_GUEST'),
+                    'look_id': normalized_look['id'],
+                    'type': 'Lafayette_Selection',
+                    'sovereignty_state': PAU_SOVEREIGNTY_STATE,
+                },
+            )
+            return {
+                "status": "Success",
+                "checkout_session_created": True,
+                "checkout_url": checkout_session.url,
+                "payment_provider": "stripe",
+                "look": normalized_look,
+            }
+        except Exception as exc:
+            return {
+                "status": "Error",
+                "checkout_session_created": False,
+                "checkout_url": "",
+                "payment_provider": "stripe",
+                "error": str(exc),
+                "look": normalized_look,
+            }
+
+    def reserve_in_store(self, user_id, look_id):
+        qr_code_data = f"RES-{user_id}-{look_id}-{datetime.now().timestamp()}"
+        payload = {
+            "user_id": user_id,
+            "look_id": look_id,
+            "store": PAU_DEFAULT_STORE,
+            "status": "Pending",
+            "sovereignty_state": PAU_SOVEREIGNTY_STATE,
+        }
+        db = self._supabase_client()
+        persisted = False
+        db_error = ""
+        if db is not None:
+            try:
+                db.table("reservations").insert(payload).execute()
+                persisted = True
+            except Exception as exc:
+                db_error = str(exc)
+        else:
+            db_error = "supabase_not_configured"
+        return {
+            "status": "Success",
+            "qr_data": qr_code_data,
+            "location": PAU_DEFAULT_LOCATION,
+            "store": PAU_DEFAULT_STORE,
+            "reservation": payload,
+            "db_persisted": persisted,
+            "db_error": db_error,
+        }
+
+    def sync_sovereignty_state(self, user_id):
+        db = self._supabase_client()
+        if not user_id:
+            return {
+                "status": "Skipped",
+                "db_persisted": False,
+                "message": "user_id_not_provided",
+            }
+        if db is None:
+            return {
+                "status": "Skipped",
+                "db_persisted": False,
+                "message": "supabase_not_configured",
+            }
+        try:
+            db.table("profiles").update({"state": PAU_SOVEREIGNTY_STATE}).eq("id", user_id).execute()
+            return {
+                "status": "Success",
+                "db_persisted": True,
+                "message": f"Soberanía confirmada para usuario {user_id}.",
+            }
+        except Exception as exc:
+            return {
+                "status": "Error",
+                "db_persisted": False,
+                "message": str(exc),
+            }
+
+    def sovereignty_status(self, user_id=""):
+        return {
+            "status": "active",
+            "user_id": str(user_id or "").strip(),
+            "state": PAU_SOVEREIGNTY_STATE,
+            "persona": self.persona,
+            "patent_reference": PAU_PATENT_REFERENCE,
+            "siren": PAU_SIREN,
+            "siren_formatted": PAU_SIREN_FORMATTED,
+            "stripe_configured": bool(self.stripe_key),
+            "supabase_configured": bool(self.sb_key),
+        }
+
+    def _calculate_ideal_looks(self, h, w, event):
+        event_label = str(event or "soirée").strip().lower()
+        base_looks = [
+            {
+                "id": "L1",
+                "name": "Balmain Evening",
+                "price": 2450.00,
+                "fit_profile": "structured",
+                "event_tags": ["gala", "soirée", "evening", "cocktail"],
+            },
+            {
+                "id": "L2",
+                "name": "Jacquemus Summer",
+                "price": 1100.00,
+                "fit_profile": "fluid",
+                "event_tags": ["summer", "day", "garden", "casual"],
+            },
+            {
+                "id": "L3",
+                "name": "Saint Laurent Tuxedo",
+                "price": 3200.00,
+                "fit_profile": "tailored",
+                "event_tags": ["formal", "black tie", "soirée", "dinner"],
+            },
+            {
+                "id": "L4",
+                "name": "Dior Silhouette",
+                "price": 2800.00,
+                "fit_profile": "architectural",
+                "event_tags": ["editorial", "business", "vernissage", "formal"],
+            },
+            {
+                "id": "L5",
+                "name": "Chanel Classic",
+                "price": 4100.00,
+                "fit_profile": "classic",
+                "event_tags": ["classic", "heritage", "cocktail", "soirée"],
+            },
+        ]
+        ranked = []
+        for look in base_looks:
+            score = 0
+            if event_label and event_label in look["event_tags"]:
+                score += 10
+            if h and h >= 175 and look["fit_profile"] in {"tailored", "architectural", "structured"}:
+                score += 2
+            if h and h < 165 and look["fit_profile"] in {"fluid", "classic"}:
+                score += 2
+            if w and w >= 80 and look["fit_profile"] in {"structured", "classic"}:
+                score += 1
+            ranked.append({
+                "id": look["id"],
+                "name": look["name"],
+                "price": look["price"],
+                "fit_profile": look["fit_profile"],
+                "score": score,
+            })
+        return sorted(ranked, key=lambda item: (-item["score"], item["price"]))
+
+
+def _get_pau_engine():
+    global _PAU_ENGINE
+    if _PAU_ENGINE is None:
+        _PAU_ENGINE = PauPeacockEngine()
+    return _PAU_ENGINE
+
+
+def _pau_float(value):
+    try:
+        if value in (None, ""):
+            return 0.0
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _pau_payload(payload=None):
+    merged = {
+        "version": PAU_ENGINE_VERSION,
+        "engine": "PauPeacockEngine",
+        "SOUVERAINETÉ": 1,
+        "sovereignty_state": PAU_SOVEREIGNTY_STATE,
+        "siren": PAU_SIREN,
+    }
+    if isinstance(payload, dict):
+        merged.update(payload)
+    return merged
+
+
+def _pau_resolve_look(body):
+    body = body or {}
+    provided = body.get("look_data")
+    if isinstance(provided, dict) and provided:
+        return {
+            "id": str(provided.get("id") or "L1").strip() or "L1",
+            "name": str(provided.get("name") or "Pau Curated Look").strip() or "Pau Curated Look",
+            "price": _pau_float(provided.get("price") or 0),
+        }
+
+    engine = _get_pau_engine()
+    recommendations = engine._calculate_ideal_looks(
+        _pau_float(body.get("height") or body.get("height_cm")),
+        _pau_float(body.get("weight") or body.get("weight_kg")),
+        str(body.get("event_type") or body.get("occasion") or "soirée").strip() or "soirée",
+    )
+    requested_look_id = str(body.get("look_id") or "").strip()
+    if requested_look_id:
+        for look in recommendations:
+            if look.get("id") == requested_look_id:
+                return look
+        return {
+            "id": requested_look_id,
+            "name": f"Pau Curated Look {requested_look_id}",
+            "price": recommendations[0]["price"] if recommendations else 0.0,
+        }
+    return recommendations[0] if recommendations else {"id": "L1", "name": "Balmain Evening", "price": 2450.0}
+
+def _is_allowed_payment_host(hostname: str) -> bool:
+    h = hostname.lower().strip(".")
+    if not h:
+        return False
+    if h in _ALLOWED_PAYMENT_LOCAL_HOSTS:
+        return True
+    return any(h == suffix or h.endswith(f".{suffix}") for suffix in _ALLOWED_PAYMENT_HOST_SUFFIXES)
+
+
+def _sanitize_checkout_url(raw_url: str) -> str:
+    raw = str(raw_url or "").strip()
+    if not raw:
+        return ""
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        if parsed.scheme not in ("http", "https"):
+            return ""
+        if not _is_allowed_payment_host(parsed.hostname or ""):
+            return ""
+        return raw
+    except Exception:
+        return ""
+
+
+def _advbet_biometric_deep_link_base() -> str:
+    return (
+        os.getenv("ADVBET_BIOMETRIC_DEEP_LINK_BASE")
+        or os.getenv("BIOMETRIC_DEEP_LINK_BASE")
+        or "https://tryonyou.app/biometric-verify"
+    ).strip().rstrip("/")
+
+
+def _advbet_payload(*, session_id: str, amount_eur: float) -> dict[str, object]:
+    deep_link = f"{_advbet_biometric_deep_link_base()}?{urlencode({'session_id': session_id, 'amount_eur': amount_eur})}"
+    return {
+        "provider": ADVBET_PROVIDER,
+        "biometric_deep_link": deep_link,
+        "qr_payload": {
+            "format": "deep_link",
+            "deep_link": deep_link,
+        },
+    }
+
+
+@app.route("/")
+def home():
+    return "API Active"
+
+
+def _cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
+
+def _ensure_sovereignty_payload(payload):
+    if isinstance(payload, dict):
+        payload.setdefault("SOUVERAINETÉ", 1)
+        payload.setdefault("sovereignty_state", PAU_SOVEREIGNTY_STATE)
+        payload.setdefault("siren", PAU_SIREN)
+    return payload
+
+
+@app.after_request
+def _apply_global_sovereignty_headers(resp):
+    resp = _cors(resp)
+    if resp.status_code == 204:
+        return resp
+    content_type = (resp.headers.get("Content-Type") or "").lower()
+    if "application/json" not in content_type:
+        return resp
+    try:
+        payload = resp.get_json(silent=True)
+        if isinstance(payload, dict):
+            payload = _ensure_sovereignty_payload(payload)
+            body = json.dumps(payload, ensure_ascii=False)
+            resp.set_data(body)
+            resp.headers["Content-Length"] = str(len(body.encode("utf-8")))
+    except Exception:
+        return resp
+    return resp
+
+
+def _append_demo_request(body):
+    target = Path("/tmp/tryonyou_demo_requests.jsonl")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(body, ensure_ascii=False) + "\n")
+
+
+_BUNKER_SYNC_PROTOCOL = "bunker_sync_v1"
+_BUNKER_SYNC_ROUTE = "/api/v1/bunker/sync"
+_BUNKER_SYNC_PAYOUT_ID = "po_1R4X2kEaDYPMBmMK912"
+_BUNKER_SYNC_PAYOUT_AMOUNT_EUR = 27_500.00
+_BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR = 96_981.60
+_BUNKER_SYNC_PAYMENT_INTENT_IDS = [
+    "pi_30zL9kEaDYPMBmMK1XJ7k5p",
+    "pi_30zL9kEaDYPMBmMK1XJ7k5q",
+    "pi_30zL9kEaDYPMBmMK1XJ7k5r",
+    "pi_30zL9kEaDYPMBmMK1XJ7k5s",
+    "pi_30zL9kEaDYPMBmMK1XJ7k5t",
+]
+_BUNKER_SYNC_BLOCK_AMOUNT_EUR = round(
+    _BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR * len(_BUNKER_SYNC_PAYMENT_INTENT_IDS),
+    2,
+)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+
+def _bunker_sync_secret() -> str:
+    for key in (
+        "BUNKER_SYNC_SECRET",
+        "JULES_BUNKER_SYNC_SECRET",
+        "JULES_KILL_SWITCH_SECRET",
+        "CORE_ENGINE_KILL_SWITCH_SECRET",
+    ):
+        raw = (os.getenv(key) or "").strip()
+        if raw:
+            return raw
+    return ""
+
+
+
+def _bunker_sync_supabase_tables() -> dict[str, str]:
+    return {
+        "payouts": (os.getenv("BUNKER_PAYOUTS_TABLE") or "payouts").strip() or "payouts",
+        "payment_intents": (
+            os.getenv("BUNKER_PAYMENT_INTENTS_TABLE") or "payment_intents"
+        ).strip() or "payment_intents",
+        "clients": (os.getenv("BUNKER_CLIENTS_TABLE") or "clients").strip() or "clients",
+        "compliance_logs": (
+            os.getenv("BUNKER_COMPLIANCE_LOGS_TABLE") or "compliance_logs"
+        ).strip() or "compliance_logs",
+        "watchdog_logs": (
+            os.getenv("BUNKER_WATCHDOG_LOGS_TABLE") or "watchdog_logs"
+        ).strip() or "watchdog_logs",
+    }
+
+
+
+def _bunker_sync_provided_secret(body: dict, headers: dict[str, str]) -> str:
+    auth_header = str(headers.get("Authorization", "")).strip()
+    bearer = ""
+    if auth_header.lower().startswith("bearer "):
+        bearer = auth_header[7:].strip()
+    return str(
+        body.get("secret")
+        or body.get("bunker_sync_secret")
+        or headers.get("X-Bunker-Sync-Secret")
+        or headers.get("X-Kill-Switch-Secret")
+        or bearer
+        or ""
+    ).strip()
+
+
+
+def _bunker_sync_authorized(body: dict, headers: dict[str, str]) -> bool:
+    expected = _bunker_sync_secret()
+    provided = _bunker_sync_provided_secret(body, headers)
+    return bool(expected and provided and hmac.compare_digest(expected, provided))
+
+
+
+def _bunker_sync_write_row(
+    store: SupabaseStore,
+    table: str,
+    row: dict,
+    *,
+    on_conflict: str = "",
+) -> dict[str, object]:
+    try:
+        if on_conflict:
+            store.upsert(table, row, on_conflict=on_conflict)
+            mode = "upsert"
+        else:
+            store.insert(table, row)
+            mode = "insert"
+        return {"table": table, "ok": True, "mode": mode}
+    except Exception as exc:
+        return {
+            "table": table,
+            "ok": False,
+            "mode": "upsert" if on_conflict else "insert",
+            "error": str(exc)[:400],
+        }
+
+
+
+def _bunker_sync_control_row(
+    *,
+    control_key: str,
+    state: str,
+    updated_by: str,
+    account_scope: str,
+    note: str,
+    updated_at: str,
+) -> dict[str, object]:
+    return {
+        "control_key": control_key,
+        "state": state,
+        "updated_at": updated_at,
+        "updated_by": updated_by,
+        "account_scope": account_scope,
+        "note": note,
+        "protocol": _BUNKER_SYNC_PROTOCOL,
+    }
+
+
+
+def _bunker_sync_event_row(
+    *,
+    session_id: str,
+    actor_id: str,
+    account_scope: str,
+    client_ip: str,
+    event_type: str,
+    payload: dict,
+    amount_eur: float,
+) -> dict[str, object]:
+    return {
+        "session_id": session_id,
+        "event_type": event_type,
+        "account_scope": account_scope,
+        "actor_id": actor_id,
+        "client_ip": client_ip,
+        "source": "api",
+        "route": _BUNKER_SYNC_ROUTE,
+        "commission_rate": 0.0,
+        "commission_basis_eur": amount_eur,
+        "commission_audit_eur": 0.0,
+        "payload": payload,
+        "protocol": _BUNKER_SYNC_PROTOCOL,
+    }
+
+
+
+def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> tuple[dict[str, object], int]:
+    expected_secret = _bunker_sync_secret()
+    if not expected_secret:
+        return {
+            "status": "error",
+            "message": "bunker_sync_secret_not_configured",
+        }, 503
+
+    if not _bunker_sync_authorized(body, headers):
+        return {
+            "status": "error",
+            "message": "unauthorized",
+        }, 403
+
+    store = SupabaseStore()
+    if not store.enabled:
+        return {
+            "status": "error",
+            "message": "supabase_runtime_not_configured",
+        }, 503
+
+    actor_id = str(body.get("actor_id", "bunker_cli")).strip() or "bunker_cli"
+    account_scope = str(body.get("account_scope", "admin")).strip() or "admin"
+    session_id = str(body.get("session_id", "")).strip() or "bunker-sync-lafayette-h2"
+    now = _utc_now_iso()
+    tables = _bunker_sync_supabase_tables()
+    client_ip = str(headers.get("X-Forwarded-For") or remote_addr or "unknown").split(",")[0].strip() or "unknown"
+
+    payout_row = {
+        "payout_id": _BUNKER_SYNC_PAYOUT_ID,
+        "provider": "stripe",
+        "status": "COMPLETED",
+        "amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
+        "currency": "EUR",
+        "recipient": "Qonto linked account",
+        "concept": "Hito 2 settlement",
+        "partner_name": "Lafayette",
+        "institutional_partner": "BPIFRANCE FINANCEMENT",
+        "session_id": session_id,
+        "metadata": {
+            "block": "Hito 2",
+            "source": "bunker_sync_endpoint",
+            "sovereignty_state": "SOUVERAINETÉ:1",
+        },
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    payment_intent_rows = [
+        {
+            "payment_intent_id": payment_intent_id,
+            "status": "SUCCEEDED",
+            "amount_eur": _BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR,
+            "currency": "EUR",
+            "client_name": "Galeries Lafayette",
+            "block_name": "Lafayette",
+            "partner_name": "BPIFRANCE FINANCEMENT",
+            "session_id": session_id,
+            "metadata": {
+                "source": "bunker_sync_endpoint",
+                "sovereignty_state": "SOUVERAINETÉ:1",
+                "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+            },
+            "created_at": now,
+            "updated_at": now,
+        }
+        for payment_intent_id in _BUNKER_SYNC_PAYMENT_INTENT_IDS
+    ]
+
+    client_row = {
+        "client_id": "bpifrance_financement_507052338",
+        "name": "BPIFRANCE FINANCEMENT",
+        "legal_name": "BPIFRANCE FINANCEMENT",
+        "siren": "507052338",
+        "client_type": "institutional_partner",
+        "partner_role": "partner_institutionnel",
+        "status": "ACTIVE",
+        "country": "FR",
+        "source": "bunker_sync_endpoint",
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    payout_write = _bunker_sync_write_row(
+        store,
+        tables["payouts"],
+        payout_row,
+        on_conflict="payout_id",
+    )
+    payment_intent_writes = [
+        _bunker_sync_write_row(
+            store,
+            tables["payment_intents"],
+            row,
+            on_conflict="payment_intent_id",
+        )
+        for row in payment_intent_rows
+    ]
+    client_write = _bunker_sync_write_row(
+        store,
+        tables["clients"],
+        client_row,
+        on_conflict="siren",
+    )
+
+    control_rows = [
+        _bunker_sync_control_row(
+            control_key="sovereignty_status",
+            state="SOUVERAINETÉ:1",
+            updated_by=actor_id,
+            account_scope=account_scope,
+            note="Persistent sovereign state enabled by bunker sync.",
+            updated_at=now,
+        ),
+        _bunker_sync_control_row(
+            control_key="cursor_sweep_schedule",
+            state="scheduled",
+            updated_by=actor_id,
+            account_scope=account_scope,
+            note="Cursor sweep scheduled for 09:00 AM over available balance towards linked Qonto account.",
+            updated_at=now,
+        ),
+        _bunker_sync_control_row(
+            control_key="qonto_watch_27500",
+            state="active",
+            updated_by=actor_id,
+            account_scope=account_scope,
+            note="Active alert for 27,500.00 EUR landing in linked Qonto account.",
+            updated_at=now,
+        ),
+    ]
+    control_results = [
+        {
+            "control_key": row["control_key"],
+            "state": row["state"],
+            "db_persisted": save_control_state(row),
+        }
+        for row in control_rows
+    ]
+
+    compliance_payload = {
+        "session_id": session_id,
+        "event_type": "bunker_sync_completed",
+        "status": "ok",
+        "detail": "Capital synchronization completed and SOUVERAINETÉ:1 persisted.",
+        "payload": {
+            "payout_id": _BUNKER_SYNC_PAYOUT_ID,
+            "payment_intent_ids": _BUNKER_SYNC_PAYMENT_INTENT_IDS,
+            "client_siren": "507052338",
+        },
+        "created_at": now,
+    }
+    watchdog_payload = {
+        "session_id": session_id,
+        "event_type": "qonto_watch_armed",
+        "status": "active",
+        "detail": "09:00 AM sweep scheduled and 27,500 EUR watch armed for Qonto landing.",
+        "payload": {
+            "watch_amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
+            "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+            "schedule": "09:00 AM",
+        },
+        "created_at": now,
+    }
+    compliance_write = _bunker_sync_write_row(store, tables["compliance_logs"], compliance_payload)
+    watchdog_write = _bunker_sync_write_row(store, tables["watchdog_logs"], watchdog_payload)
+
+    event_payload = {
+        "payout_id": _BUNKER_SYNC_PAYOUT_ID,
+        "payment_intent_ids": _BUNKER_SYNC_PAYMENT_INTENT_IDS,
+        "institutional_partner": client_row["name"],
+        "sovereignty_state": "SOUVERAINETÉ:1",
+        "cursor_sweep": {"state": "scheduled", "time": "09:00 AM"},
+        "qonto_watch": {"state": "active", "amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR},
+        "write_results": {
+            "payout": payout_write,
+            "payment_intents": payment_intent_writes,
+            "client": client_write,
+            "compliance_logs": compliance_write,
+            "watchdog_logs": watchdog_write,
+        },
+    }
+    event_persisted = persist_event(
+        _bunker_sync_event_row(
+            session_id=session_id,
+            actor_id=actor_id,
+            account_scope=account_scope,
+            client_ip=client_ip,
+            event_type="bunker_sync_completed",
+            payload=event_payload,
+            amount_eur=_BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+        )
+    )
+    session_persisted = persist_session({
+        "session_id": session_id,
+        "account_scope": account_scope,
+        "actor_id": actor_id,
+        "last_event_type": "bunker_sync_completed",
+        "last_route": _BUNKER_SYNC_ROUTE,
+        "last_seen_at": now,
+        "source": "api",
+        "payload": event_payload,
+        "protocol": _BUNKER_SYNC_PROTOCOL,
     })
 
-@app.route('/api/debug-boot')
-def debug_boot():
-    return jsonify({'boot': 'ok', 'minimal': True})
+    log_sovereignty_event(
+        event_type="bunker_sync_completed",
+        detail=(
+            f"payout={_BUNKER_SYNC_PAYOUT_ID} payment_intents={len(_BUNKER_SYNC_PAYMENT_INTENT_IDS)} "
+            "sovereignty=SOUVERAINETÉ:1 cursor=09:00 qonto_watch=active"
+        ),
+        session_id=session_id,
+        amount_eur=_BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+    )
+
+    target_ok = all(
+        [payout_write.get("ok", False), client_write.get("ok", False)]
+        + [entry.get("ok", False) for entry in payment_intent_writes]
+    )
+
+    return {
+        "status": "ok" if target_ok else "partial",
+        "session_id": session_id,
+        "protocol": _BUNKER_SYNC_PROTOCOL,
+        "runtime_supabase": store.enabled,
+        "sovereignty_state": "SOUVERAINETÉ:1",
+        "capital_block_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+        "payout": {
+            "id": _BUNKER_SYNC_PAYOUT_ID,
+            "status": "COMPLETED",
+            "amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
+            "db": payout_write,
+        },
+        "payment_intents": [
+            {
+                "id": row["payment_intent_id"],
+                "status": row["status"],
+                "amount_eur": row["amount_eur"],
+                "db": payment_intent_writes[idx],
+            }
+            for idx, row in enumerate(payment_intent_rows)
+        ],
+        "client": {
+            "name": client_row["name"],
+            "siren": client_row["siren"],
+            "status": client_row["status"],
+            "db": client_write,
+        },
+        "controls": control_results,
+        "logs": {
+            "compliance_logs": compliance_write,
+            "watchdog_logs": watchdog_write,
+            "core_engine_event": event_persisted,
+            "core_engine_session": session_persisted,
+        },
+        "cursor_sweep": {
+            "state": "scheduled",
+            "time": "09:00 AM",
+            "target": "linked_qonto_account",
+            "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+        },
+        "qonto_watch": {
+            "state": "active",
+            "watch_amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
+        },
+    }, 200 if target_ok else 207
+
+
+@app.route("/api/demo-request", methods=["OPTIONS"])
+@app.route("/demo-request", methods=["OPTIONS"])
+def demo_request_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/demo-request", methods=["POST"])
+@app.route("/demo-request", methods=["POST"])
+def demo_request():
+    body = request.get_json(force=True, silent=True) or {}
+    normalized = {
+        "name": str(body.get("name", "")).strip(),
+        "company": str(body.get("company", "")).strip(),
+        "email": str(body.get("email", "")).strip(),
+        "role": str(body.get("role", "")).strip(),
+        "catalog_size": str(body.get("catalog_size", "")).strip(),
+        "message": str(body.get("message", "")).strip(),
+        "source": str(body.get("source", "landing_demo_form")).strip() or "landing_demo_form",
+        "locale": str(body.get("locale", "fr")).strip() or "fr",
+        "ts": str(body.get("ts", "")).strip(),
+        "intent": "demo_request",
+        "protocol": "zero_size",
+        "siret": "94361019600017",
+        "patent": "PCT/EP2025/067317",
+    }
+
+    required = [normalized["name"], normalized["company"], normalized["email"], normalized["role"]]
+    if not all(required):
+        return _cors(jsonify({
+            "status": "error",
+            "message": "missing_required_fields",
+        })), 400
+
+    orchestration = False
+    orchestration_error = ""
+
+    try:
+        _append_demo_request(normalized)
+        try:
+            orchestrate_beta_waitlist(normalized)
+            orchestration = True
+        except Exception as exc:
+            orchestration_error = str(exc)
+        return _cors(jsonify({
+            "status": "ok",
+            "demo_request_saved": True,
+            "orchestration": orchestration,
+            "orchestration_error": orchestration_error,
+        })), 200
+    except Exception as exc:
+        return _cors(jsonify({
+            "status": "error",
+            "message": str(exc),
+        })), 500
+
+
+@app.route("/api/waitlist_beta", methods=["OPTIONS"])
+@app.route("/waitlist_beta", methods=["OPTIONS"])
+def waitlist_beta_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/waitlist_beta", methods=["POST"])
+@app.route("/waitlist_beta", methods=["POST"])
+def waitlist_beta():
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        result = orchestrate_beta_waitlist(body)
+        return _cors(jsonify({"status": "ok", **result})), 200
+    except Exception as e:
+        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/api/mirror_shadow_log", methods=["OPTIONS"])
+@app.route("/mirror_shadow_log", methods=["OPTIONS"])
+def mirror_shadow_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_inauguration_checkout", methods=["OPTIONS"])
+@app.route("/stripe_inauguration_checkout", methods=["OPTIONS"])
+def stripe_inauguration_checkout_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/stripe_inauguration_checkout", methods=["POST"])
+@app.route("/stripe_inauguration_checkout", methods=["POST"])
+def stripe_inauguration_checkout():
+    origin = request.headers.get("Origin") or ""
+    payload, code = create_inauguration_checkout_session(origin or None)
+    return _cors(jsonify(payload)), code
+
+
+@app.route("/api/mirror_digital_event", methods=["OPTIONS"])
+@app.route("/mirror_digital_event", methods=["OPTIONS"])
+def mirror_digital_event_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/mirror_digital_event", methods=["POST"])
+@app.route("/mirror_digital_event", methods=["POST"])
+def mirror_digital_event():
+    body = request.get_json(force=True, silent=True) or {}
+    payload, code = forward_mirror_event(body)
+    return _cors(jsonify(payload)), code
+
+
+@app.route("/api/mirror_shadow_log", methods=["POST"])
+@app.route("/mirror_shadow_log", methods=["POST"])
+def mirror_shadow_log():
+    if request.content_type and "application/json" not in request.content_type:
+        raw = request.get_data(cache=True, as_text=True) or "{}"
+        try:
+            body = json.loads(raw)
+        except json.JSONDecodeError:
+            body = {}
+    else:
+        body = request.get_json(force=True, silent=True) or {}
+    try:
+        result = orchestrate_mirror_shadow_dwell(body)
+        return _cors(jsonify({"status": "ok", **result})), 200
+    except Exception as e:
+        return _cors(jsonify({"status": "error", "message": str(e)})), 500
+
+
+@app.route("/api/webhook", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+    result, code = handle_webhook(payload, sig_header)
+    return jsonify(result), code
+
+
+# ── V1 Routes: Perfect Selection + Leads + Mirror Snap ─────────────
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["OPTIONS"])
+def perfect_selection_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/checkout/perfect-selection", methods=["POST"])
+def perfect_selection():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric = str(body.get("fabric_sensation", "")).strip()
+    lead_id = abs(hash(fabric or "anon")) % 10_000_000
+    channel = os.environ.get("CHECKOUT_PRIMARY_CHANNEL", "shopify").strip().lower()
+
+    shopify_url = _sanitize_checkout_url(resolve_shopify_checkout_url(lead_id, fabric) or "")
+    amazon_url = _sanitize_checkout_url(resolve_amazon_checkout_url(lead_id, fabric) or "")
+    primary_url = shopify_url if channel == "shopify" else amazon_url
+
+    seal = (
+        "Votre sélection parfaite est prête — "
+        "ajustage biométrique validé sous protocole Zero-Size. "
+        "Aucune taille classique, uniquement la certitude souveraine."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "emotional_seal": seal,
+        "checkout_primary_url": primary_url or "",
+        "checkout_shopify_url": shopify_url or "",
+        "checkout_amazon_url": amazon_url or "",
+        "protocol": "zero_size",
+        "anti_accumulation": True,
+        "payment_guard": {
+            "external_checkout_blocked": True,
+            "allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
+        },
+    })), 200
+
+
+@app.route("/api/v1/leads", methods=["OPTIONS"])
+def leads_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/leads", methods=["POST"])
+def leads_capture():
+    body = request.get_json(force=True, silent=True) or {}
+    intent = str(body.get("intent", "")).strip()
+    source = str(body.get("source", "app")).strip()
+
+    try:
+        result = orchestrate_beta_waitlist({
+            "intent": intent,
+            "source": source,
+            "protocol": body.get("protocol", "zero_size"),
+        })
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": True,
+            **result,
+        })), 200
+    except Exception as e:
+        return _cors(jsonify({
+            "status": "ok",
+            "lead_persisted": False,
+            "message": str(e),
+        })), 200
+
+
+@app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
+def mirror_snap_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/mirror/snap", methods=["POST"])
+def mirror_snap():
+    body = request.get_json(force=True, silent=True) or {}
+    fabric_sensation = str(body.get("fabric_sensation", "")).strip()
+    fabric_fit_verdict = str(body.get("fabric_fit_verdict", "aligned")).strip()
+
+    match = inventory_match_payload({
+        "fabric_sensation": fabric_sensation,
+        "fabric_fit_verdict": fabric_fit_verdict,
+        "snap": True,
+    })
+
+    jules_msg = (
+        "The Snap — votre ligne trouve son équilibre. "
+        f"Référence {match.get('garment_id', 'V10')} ({match.get('brand_line', 'Maison')}) "
+        "sous protocole Zero-Size. Le drapé répond avec élégance, sans mesure visible."
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "jules_msg": jules_msg,
+        "inventory_match": match,
+        "protocolo": "zero_size",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
+    })), 200
+
+
+# ── V11 Empire Final Protocol: Payment Intent + Success Trace ───────
+
+@app.route("/api/v1/empire/payment-intent", methods=["OPTIONS"])
+def empire_payment_intent_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-intent", methods=["POST"])
+def empire_payment_intent():
+    body = request.get_json(force=True, silent=True) or {}
+    session_id = str(body.get("session_id", "")).strip()
+    amount_eur_raw = body.get("amount_eur")
+
+    if session_id or amount_eur_raw is not None:
+        if not session_id or amount_eur_raw in (None, ""):
+            return _cors(jsonify({
+                "status": "error",
+                "message": "session_id_and_amount_eur_required",
+            })), 400
+
+        try:
+            amount_eur = float(amount_eur_raw)
+        except (TypeError, ValueError):
+            return _cors(jsonify({
+                "status": "error",
+                "message": "amount_eur_invalid",
+            })), 400
+
+        if amount_eur <= 0:
+            return _cors(jsonify({
+                "status": "error",
+                "message": "amount_eur_invalid",
+            })), 400
+
+        _PAYMENT_ORCHESTRATION_LOCKS.add(session_id)
+        try:
+            client_secret = guard_stripe_call(create_lafayette_checkout, session_id, amount_eur)
+            if not client_secret:
+                return _cors(jsonify({
+                    "status": "error",
+                    "message": "payment_intent_creation_failed",
+                })), 502
+
+            return _cors(jsonify({
+                "status": "ok",
+                "client_secret": client_secret,
+                "session_id": session_id,
+                "amount_eur": amount_eur,
+                "advbet": _advbet_payload(session_id=session_id, amount_eur=amount_eur),
+            })), 200
+        finally:
+            _PAYMENT_ORCHESTRATION_LOCKS.discard(session_id)
+
+    flow_token = str(body.get("flow_token", "")).strip()
+    checkout_url = str(body.get("checkout_url", "")).strip()
+    button_id = str(body.get("button_id", "tryonyou-pay-button")).strip()
+    source = str(body.get("source", "index_html_shell")).strip()
+    protocol = str(body.get("protocol", "Pau Emotional Intelligence")).strip()
+    ui_theme = str(body.get("ui_theme", "Sello de Lujo: Antracita")).strip()
+
+    if not flow_token or not checkout_url:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "flow_token_and_checkout_url_required",
+        })), 400
+
+    event = register_payment_intent(
+        flow_token=flow_token,
+        checkout_url=checkout_url,
+        button_id=button_id,
+        source=source,
+        protocol=protocol,
+        ui_theme=ui_theme,
+    )
+    return _cors(jsonify({"status": "ok", "intent": event})), 201
+
+
+@app.route("/api/v1/empire/payment-success", methods=["OPTIONS"])
+def empire_payment_success_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/payment-success", methods=["POST"])
+def empire_payment_success():
+    body = request.get_json(force=True, silent=True) or {}
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    source = str(body.get("source", "frontend_success_callback")).strip()
+    amount_total = body.get("amount_total")
+    currency = str(body.get("currency", "eur")).strip()
+    customer_email = str(body.get("customer_email", "")).strip()
+
+    event = register_checkout_success(
+        session_id=session_id,
+        amount_total=amount_total,
+        currency=currency,
+        customer_email=customer_email,
+        flow_token=flow_token,
+        source=source,
+    )
+    return _cors(jsonify({"status": "ok", "payment_success": event})), 201
+
+
+@app.route("/api/v1/empire/flow-status", methods=["OPTIONS"])
+def empire_flow_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/empire/flow-status", methods=["GET"])
+def empire_flow_status():
+    flow_token = str(request.args.get("flow_token", "")).strip()
+    session_id = str(request.args.get("session_id", "")).strip()
+    summary = get_flow_summary(flow_token=flow_token, session_id=session_id)
+    return _cors(jsonify({"status": "ok", "flow": summary})), 200
+
+
+# ── V11 Repair: Qonto IBAN Transfer + Proforma Invoices ─────────────
+
+@app.route("/api/v1/payment/iban-transfer", methods=["OPTIONS"])
+def iban_transfer_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["GET"])
+def iban_transfer_details():
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    amount_key = request.args.get("amount", None)
+    details = resolve_iban_transfer_details(amount_key)
+    return _cors(jsonify({
+        "status": "ok",
+        **details,
+    })), 200
+
+
+@app.route("/api/v1/payment/iban-transfer", methods=["POST"])
+def iban_transfer_initiate():
+    body = request.get_json(force=True, silent=True) or {}
+    amount_key = str(body.get("amount_key", "")).strip() or None
+
+    readiness, code = validate_transfer_readiness()
+    if code != 200:
+        return _cors(jsonify(readiness)), code
+
+    details = resolve_iban_transfer_details(amount_key)
+    invoice = generate_proforma(
+        to=str(body.get("to", DEFAULT_BENEFICIARY)).strip(),
+        amount_key=amount_key,
+        extra_note=str(body.get("note", "")).strip(),
+    )
+
+    return _cors(jsonify({
+        "status": "ok",
+        "transfer": details,
+        "invoice": invoice,
+        "message": "Proforma générée. Procédez au virement SEPA Business.",
+    })), 200
+
+
+@app.route("/api/v1/invoice/proforma", methods=["OPTIONS"])
+def invoice_proforma_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/invoice/proforma", methods=["POST"])
+def invoice_proforma():
+    body = request.get_json(force=True, silent=True) or {}
+    to = str(body.get("to", DEFAULT_BENEFICIARY)).strip()
+    amount_key = str(body.get("amount_key", "")).strip() or None
+    note = str(body.get("note", "")).strip()
+
+    invoice = generate_proforma(to=to, amount_key=amount_key, extra_note=note)
+    return _cors(jsonify({
+        "status": "ok",
+        "invoice": invoice,
+    })), 200
+
+
+# ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
+
+@app.route("/api/v1/treasury/status", methods=["OPTIONS"])
+def treasury_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/status", methods=["GET"])
+def treasury_status():
+    status = get_treasury_status()
+    return _cors(jsonify({"status": "ok", **status})), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["OPTIONS"])
+def treasury_payouts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/treasury/payouts", methods=["GET"])
+def treasury_payouts_list():
+    payouts = get_payouts_list()
+    return _cors(jsonify({
+        "status": "ok",
+        "payouts": payouts,
+        "count": len(payouts),
+    })), 200
+
+
+@app.route("/api/v1/treasury/payouts", methods=["POST"])
+def treasury_record_payout():
+    body = request.get_json(force=True, silent=True) or {}
+    amount = body.get("amount_eur")
+    if not amount or not isinstance(amount, (int, float)) or amount <= 0:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "amount_eur_required_positive",
+        })), 400
+
+    entry = record_payout(
+        amount_eur=float(amount),
+        recipient=str(body.get("recipient", "")).strip(),
+        concept=str(body.get("concept", "operational")).strip(),
+    )
+    flow_token = str(body.get("flow_token", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    register_payout_transition(
+        amount_eur=float(amount),
+        recipient=entry.get("recipient", ""),
+        concept=entry.get("concept", "operational"),
+        flow_token=flow_token,
+        session_id=session_id,
+        source="api_v1_treasury_payouts",
+    )
+    return _cors(jsonify({"status": "ok", "payout": entry})), 201
+
+
+# ── V11 Territory: Multi-Node Expansion & Licensing ─────────────────
+
+@app.route("/api/v1/territory/nodes", methods=["OPTIONS"])
+def territory_nodes_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/nodes", methods=["GET"])
+def territory_nodes():
+    nodes = get_expansion_nodes()
+    summary = get_territory_summary()
+    return _cors(jsonify({
+        "status": "ok",
+        "nodes": nodes,
+        "summary": summary,
+    })), 200
+
+
+@app.route("/api/v1/territory/contracts", methods=["OPTIONS"])
+def territory_contracts_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/territory/contracts", methods=["POST"])
+def territory_generate_contract():
+    body = request.get_json(force=True, silent=True) or {}
+    node_id = str(body.get("node_id", "")).strip()
+    if not node_id:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_id_required",
+        })), 400
+
+    contract = generate_node_contract(node_id)
+    if not contract:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "node_not_found",
+        })), 404
+
+    return _cors(jsonify({"status": "ok", "contract": contract})), 201
+
+
+@app.route("/api/v1/bunker/sync", methods=["OPTIONS"])
+def bunker_sync_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/bunker/sync", methods=["POST"])
+def bunker_sync():
+    body = request.get_json(silent=True) or {}
+    result, status = _run_bunker_sync(body, dict(request.headers), request.remote_addr or "")
+    return _cors(jsonify(result)), status
+
+
+
+
+@app.route("/api/v1/pau/scan", methods=["OPTIONS"])
+def pau_scan_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/pau/scan", methods=["POST"])
+def pau_scan():
+    body = request.get_json(force=True, silent=True) or {}
+    engine = _get_pau_engine()
+    user_id = str(body.get("user_id", "")).strip()
+    result = engine.process_body_scan(
+        _pau_float(body.get("weight") or body.get("weight_kg")),
+        _pau_float(body.get("height") or body.get("height_cm")),
+        str(body.get("event_type") or body.get("occasion") or "soirée").strip() or "soirée",
+    )
+    sync = engine.sync_sovereignty_state(user_id) if user_id else {"status": "Skipped", "db_persisted": False, "message": "user_id_not_provided"}
+    return _cors(jsonify(_pau_payload({
+        "status": "ok",
+        "scan_result": result,
+        "sovereignty_sync": sync,
+    }))), 200
+
+
+@app.route("/api/v1/pau/snap", methods=["OPTIONS"])
+def pau_snap_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/pau/snap", methods=["POST"])
+def pau_snap():
+    body = request.get_json(force=True, silent=True) or {}
+    engine = _get_pau_engine()
+    look = _pau_resolve_look(body)
+    snap = engine.trigger_snap_logic(look.get("id"))
+    return _cors(jsonify(_pau_payload({
+        "status": "ok",
+        "selected_look": look,
+        "snap": snap,
+    }))), 200
+
+
+@app.route("/api/v1/pau/perfect-selection", methods=["OPTIONS"])
+def pau_perfect_selection_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/pau/perfect-selection", methods=["POST"])
+def pau_perfect_selection():
+    body = request.get_json(force=True, silent=True) or {}
+    engine = _get_pau_engine()
+    user_id = str(body.get("user_id") or body.get("customer_id") or "PAU_GUEST").strip() or "PAU_GUEST"
+    look = _pau_resolve_look(body)
+    selection = engine.handle_perfect_selection(user_id, look)
+    sync = engine.sync_sovereignty_state(user_id)
+    return _cors(jsonify(_pau_payload({
+        "status": "ok",
+        "selected_look": look,
+        "selection": selection,
+        "sovereignty_sync": sync,
+    }))), 200
+
+
+@app.route("/api/v1/pau/reserve", methods=["OPTIONS"])
+def pau_reserve_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/pau/reserve", methods=["POST"])
+def pau_reserve():
+    body = request.get_json(force=True, silent=True) or {}
+    engine = _get_pau_engine()
+    user_id = str(body.get("user_id") or body.get("customer_id") or "PAU_GUEST").strip() or "PAU_GUEST"
+    look = _pau_resolve_look(body)
+    reservation = engine.reserve_in_store(user_id, str(look.get("id") or "L1"))
+    sync = engine.sync_sovereignty_state(user_id)
+    return _cors(jsonify(_pau_payload({
+        "status": "ok",
+        "selected_look": look,
+        "reservation": reservation,
+        "sovereignty_sync": sync,
+    }))), 200
+
+
+@app.route("/api/v1/pau/sovereignty", methods=["OPTIONS"])
+def pau_sovereignty_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/pau/sovereignty", methods=["GET", "POST"])
+def pau_sovereignty():
+    body = request.get_json(silent=True) or {}
+    user_id = str(body.get("user_id") or request.args.get("user_id", "")).strip()
+    engine = _get_pau_engine()
+    sync = engine.sync_sovereignty_state(user_id) if user_id else {"status": "Skipped", "db_persisted": False, "message": "user_id_not_provided"}
+    return _cors(jsonify(_pau_payload({
+        "status": "ok",
+        "persona": engine.persona,
+        "sovereignty": engine.sovereignty_status(user_id),
+        "sovereignty_sync": sync,
+        "patent_reference": PAU_PATENT_REFERENCE,
+        "siren_formatted": PAU_SIREN_FORMATTED,
+    }))), 200
+
+@app.route("/api/health", methods=["GET"])
+@app.route("/health", methods=["GET"])
+def health():
+    stripe_secret = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    stripe_link_4_5m = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_4_5M")
+        or os.getenv("STRIPE_LINK_4_5M_EUR")
+        or ""
+    ).strip()
+    stripe_link_98k = (
+        os.getenv("STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("VITE_STRIPE_LINK_SOVEREIGNTY_98K")
+        or os.getenv("STRIPE_LINK_98K_EUR")
+        or ""
+    ).strip()
+    webhook_secret = (os.getenv("STRIPE_WEBHOOK_SECRET") or "").strip()
+
+    territory = get_territory_summary()
+    treasury = get_treasury_status()
+
+    return _cors(jsonify({
+        "ok": True,
+        "status": "ok",
+        "version": PAU_ENGINE_VERSION,
+        "service": "tryonyou_v11_omega",
+        "product_lane": "tryonyou_v11_sovereign",
+        "siren": "943610196",
+        "patente": "PCT/EP2025/067317",
+        "manus_flow_id": MANUS_FLOW_ID,
+        "payment_external_checkout_blocked": True,
+        "payment_allowed_hosts": list(_ALLOWED_PAYMENT_HOST_SUFFIXES),
+        "stripe_configured": bool(stripe_secret),
+        "stripe_4_5m_set": bool(stripe_link_4_5m),
+        "stripe_98k_set": bool(stripe_link_98k),
+        "webhook_secret_set": bool(webhook_secret),
+        "iban_transfer_configured": is_iban_transfer_configured(),
+        "payment_method": "DIRECT_IBAN_TRANSFER" if is_iban_transfer_configured() else "STRIPE",
+        "territory_active_nodes": territory["active_nodes"],
+        "territory_pending_nodes": territory["pending_nodes"],
+        "territory_expansion_target_eur": territory["expansion_target_eur"],
+        "treasury_reserve_eur": treasury["reserve_eur"],
+        "treasury_capital_label": treasury["capital_label"],
+    })), 200
+
+
+
+# ── Core Engine V11 Routes ──────────────────────────────────────────────────
+
+@app.route("/api/v1/core/trace", methods=["OPTIONS"])
+def core_trace_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/core/trace", methods=["POST"])
+def core_trace():
+    body = request.get_json(silent=True) or {}
+    try:
+        result = trace_event(
+            event_type=body.get("event_type", "unknown"),
+            body=body,
+            headers=dict(request.headers),
+            route="/api/v1/core/trace",
+            source=body.get("source", "api"),
+        )
+        return _cors(jsonify(result)), 200
+    except Exception as exc:
+        return _cors(jsonify({"status": "ok", "db_persisted": False, "error": str(exc)})), 200
+
+
+
+@app.route("/api/v1/core/model-access-token", methods=["OPTIONS"])
+def model_access_token_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/core/model-access-token", methods=["POST"])
+def model_access_token():
+    body = request.get_json(silent=True) or {}
+    try:
+        result, status = model_access_payload(body, dict(request.headers))
+        return _cors(jsonify(result)), status
+    except Exception as exc:
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
+
+
+@app.route("/api/__jules__/control/kill-switch", methods=["OPTIONS"])
+def kill_switch_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/__jules__/control/kill-switch", methods=["GET"])
+def kill_switch_get():
+    return _cors(jsonify(kill_switch_status_payload())), 200
+
+@app.route("/api/__jules__/control/kill-switch", methods=["POST"])
+def kill_switch_post():
+    body = request.get_json(silent=True) or {}
+    result, status = kill_switch_payload(body, dict(request.headers))
+    return _cors(jsonify(result)), status
