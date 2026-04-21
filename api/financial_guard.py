@@ -278,12 +278,15 @@ def register_financial_guard_middleware(app) -> None:
 # --- Stripe error resilience (retries; nunca sys.exit desde aquí) ---
 _LOG_FILE = os.getenv(
     "MONETIZATION_LOG_PATH",
-    os.path.join(os.path.dirname(__file__), "..", "monetizacion_trace_demo.log"),
+    os.path.join("/tmp", "monetizacion_trace_demo.log"),
 )
 
 _logger = logging.getLogger("financial_guard.stripe_resilience")
-if not any(isinstance(h, logging.FileHandler) for h in _logger.handlers):
-    _handler = logging.FileHandler(_LOG_FILE, encoding="utf-8")
+if not any(isinstance(h, (logging.FileHandler, logging.StreamHandler)) for h in _logger.handlers):
+    try:
+        _handler = logging.FileHandler(_LOG_FILE, encoding="utf-8")
+    except OSError:
+        _handler = logging.StreamHandler()
     _handler.setFormatter(
         logging.Formatter(
             "%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
