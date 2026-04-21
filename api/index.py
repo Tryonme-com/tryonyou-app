@@ -81,6 +81,10 @@ app = Flask(__name__)
 
 @app.route('/api/debug-boot')
 def _debug_boot():
+    return jsonify({'boot_errors': _BOOT_ERRORS, 'sys_path': sys.path[:5], 'root': str(_ROOT), 'api_dir': str(_API_DIR)})
+
+@app.route('/api/debug-boot')
+def _debug_boot():
     if _BOOT_ERROR:
         return Response(_BOOT_ERROR, status=500, mimetype='text/plain')
     return jsonify({'boot': 'ok', 'sys_path': sys.path[:5], 'root': str(_ROOT), 'api_dir': str(_API_DIR)})
