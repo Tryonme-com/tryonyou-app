@@ -13,8 +13,11 @@ def main() -> None:
     print(
         "api/disparo_soberano.py — usar desde la raíz del repo:\n"
         "  python3 scripts/sacmuseum_h2_stripe.py\n"
-        "  STRIPE_PAYOUT_CONFIRM=1 python3 scripts/sacmuseum_h2_stripe.py\n"
-        "Ver docstring de ese script (STRIPE_SECRET_KEY_FR, STRIPE_ACCOUNT_ID, etc.)."
+        "  SACMUSEUM_PAYOUT_MODE=lafayette_watch python3 scripts/sacmuseum_h2_stripe.py\n"
+        "  SACMUSEUM_PAYOUT_MODE=legacy_hito2 STRIPE_PAYOUT_CONFIRM=1 "
+        "python3 scripts/sacmuseum_h2_stripe.py\n"
+        "Modo por defecto: watch de cambios de balance y payout Lafayette automático "
+        "para PI `pi_3OzL...` en estado available."
     )
 
 
