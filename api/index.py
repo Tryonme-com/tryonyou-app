@@ -67,6 +67,11 @@ validate_transfer_readiness = _i['validate_transfer_readiness']
 _i = _safe_import('invoice_generator', ['generate_proforma'])
 generate_proforma = _i['generate_proforma']
 
+_i = _safe_import('balance_soberana', ['master_ledger', 'ledger_soberano', 'FACTURA_F_2026_001'])
+master_ledger = _i['master_ledger']
+ledger_soberano = _i['ledger_soberano']
+FACTURA_F_2026_001 = _i['FACTURA_F_2026_001']
+
 _i = _safe_import('treasury_monitor', ['get_treasury_status', 'get_payouts_list', 'record_payout'])
 get_treasury_status = _i['get_treasury_status']
 get_payouts_list = _i['get_payouts_list']
@@ -1352,6 +1357,33 @@ def invoice_proforma():
         "status": "ok",
         "invoice": invoice,
     })), 200
+
+
+# ── V12 Master Ledger: Consolidated Two-Tier Billing ─────────────────
+
+@app.route("/api/v1/master-ledger", methods=["OPTIONS"])
+def master_ledger_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/master-ledger", methods=["GET"])
+def master_ledger_endpoint():
+    if master_ledger is None:
+        return _cors(jsonify({"status": "error", "message": "master_ledger_unavailable"})), 500
+    ledger = master_ledger()
+    return _cors(jsonify({"status": "ok", **ledger})), 200
+
+
+@app.route("/api/v1/master-ledger/factura/F-2026-001", methods=["OPTIONS"])
+def factura_f2026001_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/master-ledger/factura/F-2026-001", methods=["GET"])
+def factura_f2026001():
+    if FACTURA_F_2026_001 is None:
+        return _cors(jsonify({"status": "error", "message": "factura_unavailable"})), 500
+    return _cors(jsonify({"status": "ok", "factura": FACTURA_F_2026_001})), 200
 
 
 # ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
