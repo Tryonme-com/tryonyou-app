@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from api.treasury_monitor import record_payout
+from treasury_monitor import record_payout
 
 ALLOWED_CHECKOUT_HOST_SUFFIXES = ("abvetos.com",)
 TRACE_FILE_NAME = "events.jsonl"
