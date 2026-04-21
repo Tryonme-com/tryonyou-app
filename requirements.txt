@@ -1,4 +1,3 @@
-# Vercel: api/index.py (Flask) y api/vetos_core_inference.py. FastAPI/uvicorn: backend/requirements.txt, voice_agent/requirements.txt.
 flask>=3.0.0
 httpx>=0.27.0
 requests>=2.31.0
