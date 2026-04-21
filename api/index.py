@@ -72,6 +72,10 @@ master_ledger = _i['master_ledger']
 ledger_soberano = _i['ledger_soberano']
 FACTURA_F_2026_001 = _i['FACTURA_F_2026_001']
 
+_i = _safe_import('financial_compliance', ['build_financial_reconciliation_report', 'build_compliance_status_summary'])
+build_financial_reconciliation_report = _i['build_financial_reconciliation_report']
+build_compliance_status_summary = _i['build_compliance_status_summary']
+
 _i = _safe_import('treasury_monitor', ['get_treasury_status', 'get_payouts_list', 'record_payout'])
 get_treasury_status = _i['get_treasury_status']
 get_payouts_list = _i['get_payouts_list']
@@ -1384,6 +1388,32 @@ def factura_f2026001():
     if FACTURA_F_2026_001 is None:
         return _cors(jsonify({"status": "error", "message": "factura_unavailable"})), 500
     return _cors(jsonify({"status": "ok", "factura": FACTURA_F_2026_001})), 200
+
+
+@app.route("/api/v1/compliance/audit", methods=["OPTIONS"])
+def compliance_audit_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/compliance/audit", methods=["GET"])
+def compliance_audit():
+    if build_financial_reconciliation_report is None:
+        return _cors(jsonify({"status": "error", "message": "financial_compliance_unavailable"})), 500
+    report = build_financial_reconciliation_report()
+    return _cors(jsonify(report)), 200
+
+
+@app.route("/api/v1/compliance/status", methods=["OPTIONS"])
+def compliance_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/compliance/status", methods=["GET"])
+def compliance_status():
+    if build_compliance_status_summary is None:
+        return _cors(jsonify({"status": "error", "message": "financial_compliance_unavailable"})), 500
+    summary = build_compliance_status_summary()
+    return _cors(jsonify(summary)), 200
 
 
 # ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
