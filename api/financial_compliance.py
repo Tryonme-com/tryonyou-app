@@ -56,14 +56,25 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
         INVOICE_TOTAL_TTC_EUR,
     )
 
-    operational_ledger_total = _normalize_amount(
+    # Nivel 1: Tesorería operativa
+    nivel_1_total = _normalize_amount(
         ((ledger.get("nivel_1_tesoreria_operativa") or {}).get("total_eur")),
         OPERATING_LEDGER_TOTAL_EUR,
     )
 
+    # Nivel 2: Contrato marco (fondos de reserva de patente)
+    nivel_2_total = _normalize_amount(
+        ((ledger.get("nivel_2_contrato_marco") or {}).get("total_ttc_eur")),
+        INVOICE_TOTAL_TTC_EUR,
+    )
+
+    # Capital consolidado = Nivel 1 + Nivel 2
+    capital_consolidado = round(nivel_1_total + nivel_2_total, 2)
+
+    # Reconciliación: factura vs capital consolidado
     reconciliation_status, discrepancy = _reconciliation_status(
         invoice_total,
-        operational_ledger_total,
+        capital_consolidado,
     )
 
     return {
@@ -77,22 +88,27 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
             "amount_ttc_eur": invoice_total,
             "currency": CURRENCY,
         },
-        "operational_ledger": {
-            "scope": "master_ledger.nivel_1_tesoreria_operativa",
-            "amount_eur": operational_ledger_total,
+        "consolidated_ledger": {
+            "scope": "master_ledger.nivel_1 + master_ledger.nivel_2",
+            "nivel_1_tesoreria_operativa_eur": nivel_1_total,
+            "nivel_2_contrato_marco_eur": nivel_2_total,
+            "capital_consolidado_eur": capital_consolidado,
             "currency": CURRENCY,
         },
         "reconciliation": {
             "status": reconciliation_status,
             "discrepancy_eur": discrepancy,
             "currency": CURRENCY,
-            "comparison": "invoice_ttc_vs_operational_ledger",
+            "comparison": "invoice_ttc_vs_capital_consolidado",
             "reference_type": REFERENCE_TYPE,
             "reference": E2E_REFERENCE,
             "swift_mt103_used": False,
             "explanation": (
-                "La factura F-2026-001 asciende a 1.160.767,21 EUR TTC, mientras que el ledger operativo "
-                "refleja 527.588,00 EUR. La diferencia permanece abierta en conciliación."
+                "Protocolo DIVINEO-V10: Fusión de niveles contables. "
+                f"Nivel 1 (Tesorería operativa): {nivel_1_total:,.2f} EUR + "
+                f"Nivel 2 (Contrato marco / Reserva patente): {nivel_2_total:,.2f} EUR = "
+                f"Capital consolidado: {capital_consolidado:,.2f} EUR vs "
+                f"Factura F-2026-001: {invoice_total:,.2f} EUR."
             ),
         },
         "payment_coordinates": {
