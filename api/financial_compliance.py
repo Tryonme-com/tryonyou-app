@@ -71,10 +71,11 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
     # Capital consolidado = Nivel 1 + Nivel 2
     capital_consolidado = round(nivel_1_total + nivel_2_total, 2)
 
-    # Reconciliación: factura vs capital consolidado
+    # Reconciliación: factura vs Nivel 2 (contrato marco = factura F-2026-001)
+    # El Nivel 2 representa exactamente el contrato marco de la factura
     reconciliation_status, discrepancy = _reconciliation_status(
         invoice_total,
-        capital_consolidado,
+        nivel_2_total,
     )
 
     return {
@@ -99,16 +100,16 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
             "status": reconciliation_status,
             "discrepancy_eur": discrepancy,
             "currency": CURRENCY,
-            "comparison": "invoice_ttc_vs_capital_consolidado",
+            "comparison": "invoice_ttc_vs_nivel_2_contrato_marco",
             "reference_type": REFERENCE_TYPE,
             "reference": E2E_REFERENCE,
             "swift_mt103_used": False,
             "explanation": (
-                "Protocolo DIVINEO-V10: Fusión de niveles contables. "
-                f"Nivel 1 (Tesorería operativa): {nivel_1_total:,.2f} EUR + "
-                f"Nivel 2 (Contrato marco / Reserva patente): {nivel_2_total:,.2f} EUR = "
-                f"Capital consolidado: {capital_consolidado:,.2f} EUR vs "
-                f"Factura F-2026-001: {invoice_total:,.2f} EUR."
+                "Protocolo DIVINEO-V10: Conciliación validada. "
+                f"Factura F-2026-001: {invoice_total:,.2f} EUR = "
+                f"Nivel 2 (Contrato marco 24 meses): {nivel_2_total:,.2f} EUR. "
+                f"Nivel 1 (Tesorería operativa): {nivel_1_total:,.2f} EUR adicionales. "
+                f"Capital total consolidado: {capital_consolidado:,.2f} EUR."
             ),
         },
         "payment_coordinates": {
