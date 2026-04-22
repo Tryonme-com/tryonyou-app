@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ParisStripeCheckoutProvider } from "./context/ParisStripeCheckoutContext";
 
-const el = document.getElementById("root");
+const el = document.getElementById("root") as HTMLDivElement | null;
 if (el) {
   createRoot(el).render(
     <React.StrictMode>
