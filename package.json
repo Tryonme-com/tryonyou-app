@@ -1,7 +1,7 @@
 {
   "name": "tryonyou-app",
   "private": true,
-  "version": "10.0.0-omega",
+  "version": "10.17.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
