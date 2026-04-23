@@ -8,6 +8,7 @@
     "prebuild": "node scripts/assert-firebase-applet.mjs",
     "build": "vite build",
     "preview": "vite preview",
+    "test:js": "node --test src/**/*.test.js",
     "typecheck": "tsc --noEmit",
     "deployall": "bash scripts/deployall.sh",
     "deployall:dry": "bash scripts/deployall.sh --dry",
