@@ -139,6 +139,22 @@ That architecture is exposed through a small but symbolic set of production-faci
 | `/api/v1/checkout/perfect-selection` | Conversion endpoint for the ideal product selection path |
 | `/api/v1/bunker/sync` | Protected synchronization workflow for controlled state propagation |
 
+<<<<<<< HEAD
+=======
+## Historial del repositorio — **v10.17** (consolidación de infraestructura)
+
+La rama `main` se mantiene con **historial lineal y legible**: los avances de producto (stack React + Vite, API Flask en Vercel, capas **Core Engine**, **Financial Guard**, trazas y webhooks) se integran en commits claros. La versión **v10.17** concentra, en un único eje de entrega:
+
+| Área | Estado |
+|------|--------|
+| **CI/CD (GitHub Actions)** | Jobs: tests Python (`unittest`), prebuild Firebase, `tsc`, `vite build`; despliegue Vercel en `main` si existe el secreto `VERCEL_TOKEN` (misma lógica que `vercel pull` → `vercel build` → `vercel deploy --prebuilt`). |
+| **Pipeline local** | `npm run deployall` / `deployall:dry` → `scripts/deployall.sh` (paridad con CI: dependencias, tests, typecheck, build; despliegue opcional con `VERCEL_TOKEN`). |
+| **Trazabilidad (Linear / finanzas)** | Notificaciones y trazas alineadas con eventos operativos (p. ej. `api/linear_stripe_notify.py` y rutas de trazabilidad bajo `/api/v1/...`), sin mezclar secretos en el repositorio. |
+| **Protocolo** | Patente **PCT/EP2025/067317**; **Bajo Protocolo de Soberanía V10 - Founder: Rubén**. |
+
+Esta sección documenta el **estado actual** del repositorio respecto a CI, despliegue y trazabilidad, no una “hoja de ruta” genérica.
+
+>>>>>>> a04181f (chore: enforce security blackout for TRY-12 and close #256)
 ## Repository posture
 
 This repository is the principal deployment source for **tryonyou.app**. It is where vision is translated into production. It is where interface meets engine. It is where a fashion-tech statement becomes an operational system.
