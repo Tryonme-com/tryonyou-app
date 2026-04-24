@@ -88,3 +88,54 @@ def validate_transfer_readiness() -> tuple[dict, int]:
         "entity": ENTITY,
         "siret": SIRET,
     }, 200
+
+
+def build_qonto_invoice_import_metadata(
+    *,
+    invoice_ref: str = "",
+    amount_eur: float | None = None,
+) -> dict[str, object]:
+    """
+    Metadatos para importación / sincronización con Qonto (evitar estado
+    «Importadas — Faltan datos»): proveedor, categoría IVA y referencia de contrato.
+
+    Variables de entorno:
+      - QONTO_INVOICE_SUPPLIER_NAME (opcional; por defecto ENTITY)
+      - QONTO_INVOICE_VAT_CATEGORY (obligatoria para cobro automático / import limpio)
+      - QONTO_CONTRACT_REFERENCE (opcional; referencia marco DIVINEO / factura)
+    """
+    supplier = _env("QONTO_INVOICE_SUPPLIER_NAME") or ENTITY
+    vat_category = _env("QONTO_INVOICE_VAT_CATEGORY")
+    contract_ref = _env("QONTO_CONTRACT_REFERENCE") or "DIVINEO-V10-PCT2025-067317"
+    row: dict[str, object] = {
+        "proveedor": supplier,
+        "supplier_name": supplier,
+        "categoria_iva": vat_category,
+        "vat_category": vat_category,
+        "referencia_contrato": contract_ref,
+        "contract_reference": contract_ref,
+        "invoice_ref": invoice_ref or None,
+        "amount_eur": amount_eur,
+        "qonto_import_ready": bool(vat_category),
+    }
+    if not vat_category:
+        row["qonto_import_hint"] = (
+            "Defina QONTO_INVOICE_VAT_CATEGORY (p. ej. código de tasa Qonto / FR TVA) "
+            "para completar la ficha en Qonto."
+        )
+    return row
+
+
+def validate_qonto_invoice_import_readiness() -> tuple[dict | None, int]:
+    """422 si falta categoría IVA (requisito típico Qonto para facturas importadas)."""
+    vat = _env("QONTO_INVOICE_VAT_CATEGORY")
+    if vat:
+        return None, 200
+    return {
+        "status": "error",
+        "message": "qonto_invoice_metadata_incomplete",
+        "hint": (
+            "Configure QONTO_INVOICE_VAT_CATEGORY (y opcionalmente "
+            "QONTO_INVOICE_SUPPLIER_NAME, QONTO_CONTRACT_REFERENCE) en el entorno."
+        ),
+    }, 422

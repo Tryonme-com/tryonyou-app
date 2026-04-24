@@ -58,11 +58,21 @@ resolve_shopify_checkout_url = _i['resolve_shopify_checkout_url']
 _i = _safe_import('amazon_bridge', ['resolve_amazon_checkout_url'])
 resolve_amazon_checkout_url = _i['resolve_amazon_checkout_url']
 
-_i = _safe_import('qonto_iban_transfer', ['DEFAULT_BENEFICIARY', 'is_iban_transfer_configured', 'resolve_iban_transfer_details', 'validate_transfer_readiness'])
+_i = _safe_import(
+    'qonto_iban_transfer',
+    [
+        'DEFAULT_BENEFICIARY',
+        'is_iban_transfer_configured',
+        'resolve_iban_transfer_details',
+        'validate_transfer_readiness',
+        'validate_qonto_invoice_import_readiness',
+    ],
+)
 DEFAULT_BENEFICIARY = _i['DEFAULT_BENEFICIARY']
 is_iban_transfer_configured = _i['is_iban_transfer_configured']
 resolve_iban_transfer_details = _i['resolve_iban_transfer_details']
 validate_transfer_readiness = _i['validate_transfer_readiness']
+validate_qonto_invoice_import_readiness = _i['validate_qonto_invoice_import_readiness']
 
 _i = _safe_import('invoice_generator', ['generate_proforma'])
 generate_proforma = _i['generate_proforma']
@@ -531,20 +541,20 @@ def _append_demo_request(body):
 
 _BUNKER_SYNC_PROTOCOL = "bunker_sync_v1"
 _BUNKER_SYNC_ROUTE = "/api/v1/bunker/sync"
-_BUNKER_SYNC_PAYOUT_ID = "po_1R4X2kEaDYPMBmMK912"
+# IDs de payout / PI deben ser los de Stripe LIVE (ver .env.example). No hardcodear po_/pi_ de test.
 _BUNKER_SYNC_PAYOUT_AMOUNT_EUR = 27_500.00
 _BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR = 96_981.60
-_BUNKER_SYNC_PAYMENT_INTENT_IDS = [
-    "pi_30zL9kEaDYPMBmMK1XJ7k5p",
-    "pi_30zL9kEaDYPMBmMK1XJ7k5q",
-    "pi_30zL9kEaDYPMBmMK1XJ7k5r",
-    "pi_30zL9kEaDYPMBmMK1XJ7k5s",
-    "pi_30zL9kEaDYPMBmMK1XJ7k5t",
-]
-_BUNKER_SYNC_BLOCK_AMOUNT_EUR = round(
-    _BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR * len(_BUNKER_SYNC_PAYMENT_INTENT_IDS),
-    2,
-)
+
+
+def _bunker_sync_env_payout_id() -> str:
+    return (os.getenv("BUNKER_SYNC_STRIPE_PAYOUT_ID") or "").strip()
+
+
+def _bunker_sync_env_payment_intent_ids() -> list[str]:
+    raw = (os.getenv("BUNKER_SYNC_PAYMENT_INTENT_IDS") or "").strip()
+    if not raw:
+        return []
+    return [x.strip() for x in raw.split(",") if x.strip()]
 
 
 def _utc_now_iso() -> str:
@@ -707,8 +717,26 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
     tables = _bunker_sync_supabase_tables()
     client_ip = str(headers.get("X-Forwarded-For") or remote_addr or "unknown").split(",")[0].strip() or "unknown"
 
+    payout_id = _bunker_sync_env_payout_id()
+    payment_intent_ids = _bunker_sync_env_payment_intent_ids()
+    if not payout_id or not payment_intent_ids:
+        return {
+            "status": "error",
+            "message": "bunker_sync_live_ids_required",
+            "hint": (
+                "Defina BUNKER_SYNC_STRIPE_PAYOUT_ID (payout LIVE po_…) y "
+                "BUNKER_SYNC_PAYMENT_INTENT_IDS=pi_1,pi_2,… separados por coma. "
+                "Evita IDs que no existan en el modo Live de Stripe."
+            ),
+        }, 422
+
+    block_amount_eur = round(
+        _BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR * len(payment_intent_ids),
+        2,
+    )
+
     payout_row = {
-        "payout_id": _BUNKER_SYNC_PAYOUT_ID,
+        "payout_id": payout_id,
         "provider": "stripe",
         "status": "COMPLETED",
         "amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
@@ -740,12 +768,12 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
             "metadata": {
                 "source": "bunker_sync_endpoint",
                 "sovereignty_state": "SOUVERAINETÉ:1",
-                "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+                "batch_total_eur": block_amount_eur,
             },
             "created_at": now,
             "updated_at": now,
         }
-        for payment_intent_id in _BUNKER_SYNC_PAYMENT_INTENT_IDS
+        for payment_intent_id in payment_intent_ids
     ]
 
     client_row = {
@@ -825,8 +853,8 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
         "status": "ok",
         "detail": "Capital synchronization completed and SOUVERAINETÉ:1 persisted.",
         "payload": {
-            "payout_id": _BUNKER_SYNC_PAYOUT_ID,
-            "payment_intent_ids": _BUNKER_SYNC_PAYMENT_INTENT_IDS,
+            "payout_id": payout_id,
+            "payment_intent_ids": payment_intent_ids,
             "client_siren": "507052338",
         },
         "created_at": now,
@@ -838,7 +866,7 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
         "detail": "09:00 AM sweep scheduled and 27,500 EUR watch armed for Qonto landing.",
         "payload": {
             "watch_amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
-            "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+            "batch_total_eur": block_amount_eur,
             "schedule": "09:00 AM",
         },
         "created_at": now,
@@ -847,8 +875,8 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
     watchdog_write = _bunker_sync_write_row(store, tables["watchdog_logs"], watchdog_payload)
 
     event_payload = {
-        "payout_id": _BUNKER_SYNC_PAYOUT_ID,
-        "payment_intent_ids": _BUNKER_SYNC_PAYMENT_INTENT_IDS,
+        "payout_id": payout_id,
+        "payment_intent_ids": payment_intent_ids,
         "institutional_partner": client_row["name"],
         "sovereignty_state": "SOUVERAINETÉ:1",
         "cursor_sweep": {"state": "scheduled", "time": "09:00 AM"},
@@ -869,7 +897,7 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
             client_ip=client_ip,
             event_type="bunker_sync_completed",
             payload=event_payload,
-            amount_eur=_BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+            amount_eur=block_amount_eur,
         )
     )
     session_persisted = persist_session({
@@ -887,11 +915,11 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
     log_sovereignty_event(
         event_type="bunker_sync_completed",
         detail=(
-            f"payout={_BUNKER_SYNC_PAYOUT_ID} payment_intents={len(_BUNKER_SYNC_PAYMENT_INTENT_IDS)} "
+            f"payout={payout_id} payment_intents={len(payment_intent_ids)} "
             "sovereignty=SOUVERAINETÉ:1 cursor=09:00 qonto_watch=active"
         ),
         session_id=session_id,
-        amount_eur=_BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+        amount_eur=block_amount_eur,
     )
 
     target_ok = all(
@@ -905,9 +933,9 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
         "protocol": _BUNKER_SYNC_PROTOCOL,
         "runtime_supabase": store.enabled,
         "sovereignty_state": "SOUVERAINETÉ:1",
-        "capital_block_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+        "capital_block_eur": block_amount_eur,
         "payout": {
-            "id": _BUNKER_SYNC_PAYOUT_ID,
+            "id": payout_id,
             "status": "COMPLETED",
             "amount_eur": _BUNKER_SYNC_PAYOUT_AMOUNT_EUR,
             "db": payout_write,
@@ -938,7 +966,7 @@ def _run_bunker_sync(body: dict, headers: dict[str, str], remote_addr: str) -> t
             "state": "scheduled",
             "time": "09:00 AM",
             "target": "linked_qonto_account",
-            "batch_total_eur": _BUNKER_SYNC_BLOCK_AMOUNT_EUR,
+            "batch_total_eur": block_amount_eur,
         },
         "qonto_watch": {
             "state": "active",
@@ -1219,16 +1247,26 @@ def empire_payment_intent():
 
         _PAYMENT_ORCHESTRATION_LOCKS.add(session_id)
         try:
-            client_secret = guard_stripe_call(create_lafayette_checkout, session_id, amount_eur)
-            if not client_secret:
+            pi_bundle = guard_stripe_call(create_lafayette_checkout, session_id, amount_eur)
+            if not isinstance(pi_bundle, dict):
                 return _cors(jsonify({
                     "status": "error",
                     "message": "payment_intent_creation_failed",
+                })), 502
+            client_secret = str(pi_bundle.get("client_secret") or "").strip()
+            payment_intent_id = str(pi_bundle.get("payment_intent_id") or "").strip()
+            if not client_secret or not payment_intent_id or not pi_bundle.get("livemode"):
+                return _cors(jsonify({
+                    "status": "error",
+                    "message": "payment_intent_creation_failed",
+                    "hint": "Se requiere PaymentIntent LIVE (sk_live_… y livemode=true en Stripe).",
                 })), 502
 
             return _cors(jsonify({
                 "status": "ok",
                 "client_secret": client_secret,
+                "payment_intent_id": payment_intent_id,
+                "livemode": True,
                 "session_id": session_id,
                 "amount_eur": amount_eur,
                 "advbet": _advbet_payload(session_id=session_id, amount_eur=amount_eur),
@@ -1329,6 +1367,10 @@ def iban_transfer_initiate():
     if code != 200:
         return _cors(jsonify(readiness)), code
 
+    qonto_err, qonto_code = validate_qonto_invoice_import_readiness()
+    if qonto_code != 200:
+        return _cors(jsonify(qonto_err)), qonto_code
+
     details = resolve_iban_transfer_details(amount_key)
     invoice = generate_proforma(
         to=str(body.get("to", DEFAULT_BENEFICIARY)).strip(),
@@ -1355,6 +1397,10 @@ def invoice_proforma():
     to = str(body.get("to", DEFAULT_BENEFICIARY)).strip()
     amount_key = str(body.get("amount_key", "")).strip() or None
     note = str(body.get("note", "")).strip()
+
+    qonto_err, qonto_code = validate_qonto_invoice_import_readiness()
+    if qonto_code != 200:
+        return _cors(jsonify(qonto_err)), qonto_code
 
     invoice = generate_proforma(to=to, amount_key=amount_key, extra_note=note)
     return _cors(jsonify({

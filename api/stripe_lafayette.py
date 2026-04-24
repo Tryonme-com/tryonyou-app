@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -23,16 +24,17 @@ PATENT = "PCT/EP2025/067317"
 PLATFORM = "TryOnYou_V10"
 
 
-def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
+def create_lafayette_checkout(session_id: str, amount_eur: float) -> dict[str, Any] | None:
     """
-    Crea un PaymentIntent vinculado al piloto de Lafayette.
+    Crea un PaymentIntent vinculado al piloto de Lafayette (modo **Live** únicamente).
 
     Args:
         session_id: Identificador único de la sesión (p.ej. "LAF-001").
         amount_eur: Importe en euros (p.ej. 175.50).
 
     Returns:
-        client_secret del PaymentIntent, o None si ocurre un error.
+        ``{"client_secret", "payment_intent_id", "livemode"}`` si el PI existe y
+        ``livemode`` es verdadero en Stripe; ``None`` en cualquier otro caso.
     """
     sk = resolve_stripe_secret_fr()
 
@@ -59,4 +61,15 @@ def create_lafayette_checkout(session_id: str, amount_eur: float) -> str | None:
         description=f"TryOnYou - Mirror Session {session_id}",
         **connect_kw,
     )
-    return payment_intent.client_secret if payment_intent else None
+    if not payment_intent:
+        return None
+    if not bool(getattr(payment_intent, "livemode", False)):
+        return None
+    cs = getattr(payment_intent, "client_secret", None)
+    if not cs:
+        return None
+    return {
+        "client_secret": cs,
+        "payment_intent_id": str(getattr(payment_intent, "id", "") or ""),
+        "livemode": True,
+    }

@@ -31,12 +31,21 @@ PATENT = "PCT/EP2025/067317"
 _REQUIRED_METER_FIELDS = ("customer", "event_name")
 
 
+def _stripe_require_live_payment_intents() -> bool:
+    raw = (os.getenv("STRIPE_REQUIRE_LIVE") or "").strip().lower()
+    return raw in ("1", "true", "yes")
+
+
 def _init_stripe() -> None:
     """Set the module-level Stripe API key from the environment."""
     sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
     if not sk.startswith(("sk_live_", "sk_test_")):
         raise EnvironmentError(
             "STRIPE_SECRET_KEY must be set and start with sk_live_ or sk_test_"
+        )
+    if _stripe_require_live_payment_intents() and not sk.startswith("sk_live_"):
+        raise EnvironmentError(
+            "STRIPE_REQUIRE_LIVE=1 requires STRIPE_SECRET_KEY with prefix sk_live_"
         )
     stripe.api_key = sk
 
@@ -184,10 +193,16 @@ def create_payment_intent(
             params["description"] = description
 
         pi = stripe.PaymentIntent.create(**params)
+        if _stripe_require_live_payment_intents() and not bool(getattr(pi, "livemode", False)):
+            return {
+                "ok": False,
+                "error": "payment_intent_not_live_mode",
+            }
         return {
             "ok": True,
             "client_secret": pi.client_secret,
             "payment_intent_id": pi.id,
+            "livemode": bool(getattr(pi, "livemode", False)),
         }
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}

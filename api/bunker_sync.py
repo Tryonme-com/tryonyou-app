@@ -10,7 +10,11 @@ from urllib.parse import quote
 
 import requests
 
-DEFAULT_PAYOUT_ID = "po_1R4X2kEaDYPMBmMK912"
+def _default_payout_id_from_env() -> str:
+    """Payout LIVE Stripe; nunca hardcodear IDs de test (no existen en Live)."""
+    return (os.getenv("BUNKER_SYNC_STRIPE_PAYOUT_ID") or "").strip()
+
+
 DEFAULT_PAYOUT_AMOUNT_EUR = 27_500.00
 DEFAULT_PAYMENT_INTENT_AMOUNT_EUR = 96_981.60
 DEFAULT_PAYMENT_INTENT_AMOUNT_CENTS = 9_698_160
@@ -554,7 +558,7 @@ def locate_payment_intents(
 
 
 def sync_payout_record(writer: AdaptiveTableWriter, payout: dict[str, Any]) -> dict[str, Any]:
-    payout_id = str(payout.get("id") or DEFAULT_PAYOUT_ID).strip()
+    payout_id = str(payout.get("id") or _default_payout_id_from_env()).strip()
     status = str(payout.get("status") or "paid").strip().upper()
     amount_eur = money_cents_to_eur(payout.get("amount")) or DEFAULT_PAYOUT_AMOUNT_EUR
     payload_json = compact_payload(payout)
@@ -827,7 +831,16 @@ def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, A
     if not supabase_key:
         return ({"status": "error", "message": "supabase_service_role_missing"}, 500)
 
-    payout_id = str(body.get("payout_id") or DEFAULT_PAYOUT_ID).strip() or DEFAULT_PAYOUT_ID
+    payout_id = str(body.get("payout_id") or _default_payout_id_from_env()).strip()
+    if not payout_id:
+        return (
+            {
+                "status": "error",
+                "message": "payout_id_required",
+                "hint": "Defina BUNKER_SYNC_STRIPE_PAYOUT_ID o envíe payout_id en el body (po_… LIVE).",
+            },
+            422,
+        )
     payout_amount_eur = float(body.get("payout_amount_eur") or DEFAULT_PAYOUT_AMOUNT_EUR)
     payment_intent_ids = _resolve_explicit_payment_intents(body)
     payment_intent_amount_eur = float(body.get("payment_intent_amount_eur") or DEFAULT_PAYMENT_INTENT_AMOUNT_EUR)

@@ -23,6 +23,7 @@ from qonto_iban_transfer import (
     PATENT,
     SIREN,
     SIRET,
+    build_qonto_invoice_import_metadata,
     get_qonto_bic,
     get_qonto_iban,
 )
@@ -67,6 +68,10 @@ def generate_proforma(
         "note": extra_note or "Paiement par virement bancaire SEPA Business.",
         "ts": datetime.now(timezone.utc).isoformat(),
         "status": "PROFORMA",
+        "qonto_import": build_qonto_invoice_import_metadata(
+            invoice_ref=ref,
+            amount_eur=float(amount),
+        ),
     }
 
     try:

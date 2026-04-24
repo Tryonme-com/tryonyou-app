@@ -24,7 +24,14 @@ class TestEmpirePaymentIntentV11(unittest.TestCase):
         self.assertEqual(response.json["status"], "error")
 
     def test_returns_advbet_deep_link_and_qr_payload(self) -> None:
-        with patch("api.index.create_lafayette_checkout", return_value="pi_secret_123"):
+        with patch(
+            "api.index.create_lafayette_checkout",
+            return_value={
+                "client_secret": "pi_secret_123",
+                "payment_intent_id": "pi_live_abc",
+                "livemode": True,
+            },
+        ):
             response = self.client.post(
                 "/api/v1/empire/payment-intent",
                 json={"session_id": "sess_abc_1234", "amount_eur": 125.0},
@@ -33,6 +40,7 @@ class TestEmpirePaymentIntentV11(unittest.TestCase):
         body = response.json
         self.assertEqual(body["status"], "ok")
         self.assertEqual(body["client_secret"], "pi_secret_123")
+        self.assertEqual(body["payment_intent_id"], "pi_live_abc")
         self.assertEqual(body["advbet"]["provider"], ADVBET_PROVIDER)
         self.assertIn("session_id=sess_abc_1234", body["advbet"]["biometric_deep_link"])
         self.assertEqual(body["advbet"]["qr_payload"]["format"], "deep_link")
@@ -43,7 +51,14 @@ class TestEmpirePaymentIntentV11(unittest.TestCase):
 
     def test_uses_env_deep_link_base_when_present(self) -> None:
         os.environ["ADVBET_BIOMETRIC_DEEP_LINK_BASE"] = "https://verify.example.com/bio"
-        with patch("api.index.create_lafayette_checkout", return_value="pi_secret_abc"):
+        with patch(
+            "api.index.create_lafayette_checkout",
+            return_value={
+                "client_secret": "pi_secret_abc",
+                "payment_intent_id": "pi_live_xyz",
+                "livemode": True,
+            },
+        ):
             response = self.client.post(
                 "/api/v1/empire/payment-intent",
                 json={"session_id": "sess_live_9999", "amount_eur": 80},

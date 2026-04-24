@@ -58,16 +58,23 @@ class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
         self._set_live_key()
         mock_intent = MagicMock()
         mock_intent.client_secret = "pi_fake_secret_abc"
+        mock_intent.id = "pi_live_fake001"
+        mock_intent.livemode = True
 
         with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent):
             result = create_lafayette_checkout("LAF-001", 175.50)
 
-        self.assertEqual(result, "pi_fake_secret_abc")
+        assert result is not None
+        self.assertEqual(result["client_secret"], "pi_fake_secret_abc")
+        self.assertEqual(result["payment_intent_id"], "pi_live_fake001")
+        self.assertTrue(result["livemode"])
 
     def test_amount_converted_to_cents(self) -> None:
         self._set_live_key()
         mock_intent = MagicMock()
         mock_intent.client_secret = "pi_fake_secret_xyz"
+        mock_intent.id = "pi_1"
+        mock_intent.livemode = True
 
         with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent) as mock_create:
             create_lafayette_checkout("LAF-042", 100.00)
@@ -88,6 +95,8 @@ class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
         self._set_live_key()
         mock_intent = MagicMock()
         mock_intent.client_secret = "pi_fake_secret_xyz"
+        mock_intent.id = "pi_3"
+        mock_intent.livemode = True
 
         with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent) as mock_create:
             create_lafayette_checkout("LAF-099", 200.00)
@@ -111,6 +120,8 @@ class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
         self._set_live_key()
         mock_intent = MagicMock()
         mock_intent.client_secret = "pi_fake_secret_xyz"
+        mock_intent.id = "pi_5"
+        mock_intent.livemode = True
 
         with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent) as mock_create:
             create_lafayette_checkout("LAF-007", 175.50)
@@ -126,6 +137,18 @@ class TestCreateLafayetteCheckoutWithLiveKey(unittest.TestCase):
             side_effect=stripe_lib.error.StripeError("card_error"),
         ):
             result = create_lafayette_checkout("LAF-ERR", 50.00)
+
+        self.assertIsNone(result)
+
+    def test_returns_none_when_stripe_returns_test_mode_intent(self) -> None:
+        self._set_live_key()
+        mock_intent = MagicMock()
+        mock_intent.client_secret = "pi_secret_testmode"
+        mock_intent.id = "pi_testmode"
+        mock_intent.livemode = False
+
+        with patch("stripe_lafayette.stripe.PaymentIntent.create", return_value=mock_intent):
+            result = create_lafayette_checkout("LAF-NOT-LIVE", 10.00)
 
         self.assertIsNone(result)
 
