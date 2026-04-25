@@ -11,10 +11,10 @@ def sellar_bunker_git():
     print(f"🏛️  [ERIC] Sellando Propiedad en GitHub (V10.4 Omega)...")
     os.chdir(PROJECT_ROOT)
     # Limpiamos cualquier rastro previo para asegurar subida limpia
-    subprocess.run("git add .", shell=True)
+    subprocess.run(["git", "add", "."], shell=False)
     msg = f"V10.4 OMEGA: Bunker 75005 Blindado - Patente {PATENTE}"
-    subprocess.run(f'git commit -m "{msg}"', shell=True)
-    subprocess.run("git push origin main --force", shell=True)
+    subprocess.run(["git", "commit", "-m", msg], shell=False)
+    subprocess.run(["git", "push", "origin", "main", "--force"], shell=False)
     print("✅ GitHub: Sincronizado y Blindado sin secretos expuestos.")
 
 def generar_mazas_cobro():
