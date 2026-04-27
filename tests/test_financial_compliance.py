@@ -20,9 +20,9 @@ class TestCapitalCoversInvoice(unittest.TestCase):
     def test_capital_gte_invoice_is_matched_ok(self) -> None:
         ledger = {
             "nivel_1_tesoreria_operativa": {"total_eur": 527_588.00},
-            "nivel_2_contrato_marco": {"total_ttc_eur": 1_160_767.21},
+            "nivel_2_contrato_marco": {"total_ttc_eur": 1_160_693.60},
         }
-        inv = {"importe_ttc_eur": 1_160_767.21, "statut": "EMISE"}
+        inv = {"importe_ttc_eur": 1_160_693.60, "statut": "EMISE"}
         with patch.object(fc, "master_ledger", return_value=ledger), patch.object(fc, "FACTURA_F_2026_001", inv):
             rep = fc.build_financial_reconciliation_report()
         self.assertEqual(rep.get("reconciliation_status"), "OK")
@@ -32,13 +32,14 @@ class TestCapitalCoversInvoice(unittest.TestCase):
         self.assertFalse(rec.get("payout_blocked"))
         self.assertTrue(rec.get("payout_trigger"))
         self.assertGreater(float(rec.get("treasury_reserve_eur") or 0), 0.0)
+        self.assertEqual(rec.get("reserva_tesoreria_eur"), rec.get("treasury_reserve_eur"))
 
     def test_invoice_exceeds_contract_discrepancy(self) -> None:
         ledger = {
             "nivel_1_tesoreria_operativa": {"total_eur": 10_000.00},
             "nivel_2_contrato_marco": {"total_ttc_eur": 100_000.00},
         }
-        inv = {"importe_ttc_eur": 1_160_767.21, "statut": "EMISE"}
+        inv = {"importe_ttc_eur": 1_160_693.60, "statut": "EMISE"}
         with patch.object(fc, "master_ledger", return_value=ledger), patch.object(fc, "FACTURA_F_2026_001", inv):
             rep = fc.build_financial_reconciliation_report()
         self.assertEqual(rep.get("reconciliation_status"), "DISCREPANCY")

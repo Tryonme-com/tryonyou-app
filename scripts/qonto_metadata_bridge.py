@@ -93,16 +93,20 @@ def _build_patch_body(
         f"Proveedor: {supplier} | Catégorie: {category} | Réf. contrat: "
         f"{_env('QONTO_CONTRACT_REFERENCE', 'DIVINEO-V10-PCT2025-067317')}"
     )
+    bridge_hint = _env(
+        "QONTO_BRIDGE_INVOICE_HINT",
+        "Cobertura importes tipo 484k EUR y 27,5k EUR: IVA y categoría completos.",
+    )
     footer = (
-        f"TryOnYou — F-2026-001 | TVA article: {vat_rate}% (logiciel / luxe). "
-        "Métadonnées injectées via scripts/qonto_metadata_bridge.py"
+        f"TryOnYou F-2026-001 | TVA {vat_rate}% (logiciel / luxe) | {bridge_hint} "
+        "Bridge: qonto_metadata_bridge.py"
     )
     existing_h = str(invoice.get("header") or "").strip()
     merged_header = f"{existing_h} | {header}" if existing_h else header
     payload: dict[str, Any] = {
         "due_date": due_date,
         "header": merged_header[:500],
-        "footer": footer[:525],
+        "footer": (footer or "")[:525],
     }
     items = invoice.get("items")
     if isinstance(items, list) and items:

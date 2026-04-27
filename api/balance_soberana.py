@@ -57,10 +57,10 @@ FACTURA_F_2026_001 = {
         "Contrat-cadre 24 mois incluant : intégration API, maintenance, "
         "formation équipes, support prioritaire."
     ),
-    "importe_ht_eur": 967_306.01,
+    "importe_ht_eur": 967_244.67,
     "tva_pct": 20.0,
-    "tva_eur": 193_461.20,
-    "importe_ttc_eur": 1_160_767.21,
+    "tva_eur": 193_448.93,
+    "importe_ttc_eur": 1_160_693.60,
     "devise": "EUR",
     "duree_mois": 24,
     "date_emission": "2026-04-21",

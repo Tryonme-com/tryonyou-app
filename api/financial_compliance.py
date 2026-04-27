@@ -13,7 +13,8 @@ from typing import Any
 from balance_soberana import FACTURA_F_2026_001, master_ledger
 
 INVOICE_NUMBER = "F-2026-001"
-INVOICE_TOTAL_TTC_EUR = 1_160_767.21
+# TTC factura F-2026-001 (referencia contable; anti-OVERALLOCATED: excedente va a reserva_tesoreria)
+INVOICE_TOTAL_TTC_EUR = 1_160_693.60
 OPERATING_LEDGER_TOTAL_EUR = 527_588.00
 E2E_REFERENCE = "DIVINEO-V10-PCT2025-067317"
 REFERENCE_TYPE = "E2E"
@@ -46,14 +47,13 @@ def _reconcile_invoice_vs_contract_strict(
     capital_consolidado_eur: float,
 ) -> dict[str, Any]:
     """
-    Prioridad liquidez (anti-OVERALLOCATED_LEDGER):
+    Regla de negocio (sin falso OVERALLOCATED_LEDGER):
 
-    1) Si **capital consolidado** (Nivel 1 + Nivel 2) ≥ factura TTC → **MATCHED**,
-       ``reconciliation_status: OK``, excedente en ``treasury_reserve_eur``,
-       ``payout_trigger: true``, nunca bloquea por "demasiado capital".
+    1) Si capital consolidado ≥ TTC F-2026-001 → MATCHED, OK, excedente en
+       ``reserva_tesoreria_eur`` (y ``treasury_reserve_eur``), nunca bloquea por excedente.
 
-    2) Si no, matching 1:1 factura vs Nivel 2 (contrato); Nivel 1 no suma al match
-       pero sigue informando buffer operativo.
+    2) Si no, cruce factura TTC vs línea de contrato en ledger; excedente contrato
+       se ancla a reserva sin bloquear payout si aplica.
     """
     invoice = round(float(invoice_total_eur), 2)
     nivel_2 = round(float(contract_ttc_eur), 2)
@@ -66,24 +66,27 @@ def _reconcile_invoice_vs_contract_strict(
             "status": "MATCHED",
             "reconciliation_status": "OK",
             "discrepancy_eur": 0.0,
+            "reserva_tesoreria_eur": treasury_surplus,
             "treasury_reserve_eur": treasury_surplus,
             "buffer_reserve_eur": n1,
             "payout_blocked": False,
             "payout_trigger": True,
             "comparison": "capital_consolidado_gte_invoice",
             "note": (
-                "Capital consolidado cubre la factura: sin OVERALLOCATED_LEDGER; "
-                "excedente en treasury_reserve; payout_trigger desbloqueado."
+                "Capital consolidado >= factura F-2026-001: MATCHED; excedente en reserva_tesoreria; "
+                "sin OVERALLOCATED_LEDGER; payout desbloqueado."
             ),
         }
 
     diff = round(invoice - nivel_2, 2)
     if abs(diff) <= _MATCH_EPS_EUR:
+        rsv = round(max(0.0, capital - invoice), 2)
         return {
             "status": "MATCHED",
             "reconciliation_status": "OK",
             "discrepancy_eur": 0.0,
-            "treasury_reserve_eur": round(max(0.0, capital - invoice), 2),
+            "reserva_tesoreria_eur": rsv,
+            "treasury_reserve_eur": rsv,
             "buffer_reserve_eur": n1,
             "payout_blocked": False,
             "payout_trigger": True,
@@ -94,6 +97,7 @@ def _reconcile_invoice_vs_contract_strict(
             "status": "DISCREPANCY_DETECTED",
             "reconciliation_status": "DISCREPANCY",
             "discrepancy_eur": diff,
+            "reserva_tesoreria_eur": 0.0,
             "treasury_reserve_eur": 0.0,
             "buffer_reserve_eur": n1,
             "payout_blocked": True,
@@ -101,19 +105,21 @@ def _reconcile_invoice_vs_contract_strict(
             "comparison": "invoice_ttc_vs_nivel_2_contract_only",
         }
     excess = round(abs(diff), 2)
+    rsv2 = round(max(0.0, capital - invoice), 2)
     return {
         "status": "BUFFER_RINGFENCED",
         "reconciliation_status": "OK",
         "discrepancy_eur": diff,
-        "treasury_reserve_eur": round(max(0.0, capital - invoice), 2),
+        "reserva_tesoreria_eur": rsv2,
+        "treasury_reserve_eur": rsv2,
         "buffer_reserve_eur": round(n1 + excess, 2),
         "contract_surplus_eur": excess,
         "payout_blocked": False,
         "payout_trigger": True,
         "comparison": "invoice_ttc_vs_nivel_2_contract_only",
         "note": (
-            "Contrato marco > factura TTC: excedente anclado a reserva; "
-            "sin OVERALLOCATED_LEDGER; payout_trigger desbloqueado."
+            "Línea contrato > factura TTC: excedente en reserva_tesoreria; "
+            "sin OVERALLOCATED_LEDGER; payout desbloqueado."
         ),
     }
 
@@ -168,7 +174,7 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
             "currency": CURRENCY,
         },
         "consolidated_ledger": {
-            "scope": "master_ledger.nivel_1 + master_ledger.nivel_2",
+            "scope": "capital_total = suma componentes master_ledger (cruce vs factura TTC)",
             "nivel_1_tesoreria_operativa_eur": nivel_1_total,
             "nivel_2_contrato_marco_eur": nivel_2_total,
             "capital_consolidado_eur": capital_consolidado,
@@ -181,12 +187,14 @@ def build_financial_reconciliation_report() -> dict[str, Any]:
             "reference": E2E_REFERENCE,
             "swift_mt103_used": False,
             "explanation": (
-                "Protocolo DIVINEO-V10: si capital consolidado ≥ factura → MATCHED/OK; "
-                "si no, matching 1:1 factura vs Nivel 2. "
-                f"Factura F-2026-001 TTC: {invoice_total:,.2f} EUR; "
-                f"Nivel 2 (contrato): {nivel_2_total:,.2f} EUR; "
-                f"Nivel 1 (tesorería operativa): {nivel_1_total:,.2f} EUR; "
-                f"capital consolidado: {capital_consolidado:,.2f} EUR."
+                "F-2026-001 TTC de referencia: {it} EUR. Capital consolidado: {cc} EUR. "
+                "Si capital >= factura TTC → MATCHED y excedente en reserva_tesoreria. "
+                "Línea contrato en ledger: {n2} EUR; componente operativo: {n1} EUR."
+            ).format(
+                it=f"{invoice_total:,.2f}",
+                cc=f"{capital_consolidado:,.2f}",
+                n2=f"{nivel_2_total:,.2f}",
+                n1=f"{nivel_1_total:,.2f}",
             ),
         },
         "payment_coordinates": {
@@ -246,6 +254,11 @@ def build_compliance_status_summary() -> dict[str, Any]:
             ),
             "treasury_reserve_eur": _normalize_amount(
                 reconciliation.get("treasury_reserve_eur"),
+                0.0,
+            ),
+            "reserva_tesoreria_eur": _normalize_amount(
+                reconciliation.get("reserva_tesoreria_eur")
+                or reconciliation.get("treasury_reserve_eur"),
                 0.0,
             ),
             "buffer_reserve_eur": _normalize_amount(

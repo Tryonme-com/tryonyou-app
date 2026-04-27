@@ -54,10 +54,14 @@ class TestResolveCustomerFromSession(unittest.TestCase):
 
 class TestRecordBillingMeterEvent(unittest.TestCase):
     def setUp(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
         os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
 
     def test_fails_without_customer(self) -> None:
         result = record_billing_meter_event(event_name="mirror_session")
@@ -110,10 +114,14 @@ class TestRecordBillingMeterEvent(unittest.TestCase):
 
 class TestCreatePaymentIntent(unittest.TestCase):
     def setUp(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
         os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
 
     def test_includes_siren_in_metadata(self) -> None:
         mock_pi = MagicMock()
@@ -157,10 +165,14 @@ class TestCreatePaymentIntent(unittest.TestCase):
 
 class TestCreateInvoice(unittest.TestCase):
     def setUp(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
         os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
 
     def test_fails_without_customer(self) -> None:
         result = create_invoice()

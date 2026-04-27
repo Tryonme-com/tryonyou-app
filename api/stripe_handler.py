@@ -14,8 +14,9 @@ Fixes applied:
   - Every PaymentIntent and Invoice carries ``siren`` in metadata for
     legal traceability (requested by Isabella @ Stripe Support).
 
-Requires env vars:
-  STRIPE_SECRET_KEY  — sk_live_… or sk_test_…
+Requires env vars (producción: prioridad cuenta Paris, misma lógica que ``stripe_fr_resolve``):
+  STRIPE_SECRET_KEY_FR  — preferido (sk_live_…)
+  STRIPE_SECRET_KEY  — legado; no mezclar con IDs po_/pi_ de test en Live
 """
 
 from __future__ import annotations
@@ -36,16 +37,26 @@ def _stripe_require_live_payment_intents() -> bool:
     return raw in ("1", "true", "yes")
 
 
+def _resolve_stripe_secret_for_handler() -> str:
+    """Resolución alineada con producción: FR → NUEVA → legado (evita tubo test en Live)."""
+    return (
+        os.getenv("STRIPE_SECRET_KEY_FR", "").strip()
+        or os.getenv("STRIPE_SECRET_KEY_NUEVA", "").strip()
+        or os.getenv("STRIPE_SECRET_KEY", "").strip()
+    )
+
+
 def _init_stripe() -> None:
     """Set the module-level Stripe API key from the environment."""
-    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    sk = _resolve_stripe_secret_for_handler()
     if not sk.startswith(("sk_live_", "sk_test_")):
         raise EnvironmentError(
-            "STRIPE_SECRET_KEY must be set and start with sk_live_ or sk_test_"
+            "Defina STRIPE_SECRET_KEY_FR o STRIPE_SECRET_KEY (sk_live_ o sk_test_). "
+            "En Live use la clave de la cuenta donde existan los payouts reales, no un entorno de prueba."
         )
     if _stripe_require_live_payment_intents() and not sk.startswith("sk_live_"):
         raise EnvironmentError(
-            "STRIPE_REQUIRE_LIVE=1 requires STRIPE_SECRET_KEY with prefix sk_live_"
+            "STRIPE_REQUIRE_LIVE=1 requiere sk_live_ (p. ej. STRIPE_SECRET_KEY_FR)."
         )
     stripe.api_key = sk
 
