@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 echo "🏛️ [IA/ERIC] Iniciando SUPERCOMMIT MAX V10 (Soberanía de Dominio)..."
 
 # 1. Construcción real (Destruye el error de Google)
@@ -7,8 +8,13 @@ npm run build
 
 # 2. Blindaje en GitHub LVT-ENG
 git add .
-git commit -m "V10 OMEGA: Build final, token inyectado y patente PCT/EP2025/067317"
-git push origin main --force
+git commit -m "$(cat <<'EOF'
+chore(release): build final y despliegue soberano
+
+@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén
+EOF
+)"
+git push origin main
 
 # 3. Despliegue Máximo a Producción (Dominio Oficial)
 if [ -z "$VERCEL_TOKEN" ]; then
