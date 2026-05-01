@@ -1,0 +1,47 @@
+{
+  "name": "Gestor Falla V9 - cobros y comisiones",
+  "model_hint": "Codex 5.3 High",
+  "triggers": [
+    {
+      "type": "webhook",
+      "name": "Cobro recibido",
+      "method": "POST",
+      "content_type": "application/json",
+      "payload_contract": {
+        "required": ["nombre", "bruto", "concepto"],
+        "optional": ["id_fallero", "referencia_externa", "fecha"],
+        "conceptos_permitidos": ["cuota", "loteria", "evento"]
+      }
+    },
+    {
+      "type": "schedule",
+      "name": "Revision diaria de cobros",
+      "timezone": "Europe/Madrid",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0"
+    }
+  ],
+  "runtime": {
+    "command": "python3 gestor_falla_v9.py --input {{input_path}} --memory data/falla_memorias.json",
+    "env": {
+      "FALLA_COMISION_PCT": "0.08",
+      "FALLA_CUOTA_BASE": "50",
+      "FALLA_MEMORY_PATH": "data/falla_memorias.json"
+    }
+  },
+  "memory": {
+    "path": "data/falla_memorias.json",
+    "duplicate_strategy": "fingerprint + referencia_externa",
+    "secret_policy": "No registrar secretos ni credenciales en la memoria de cobros."
+  },
+  "outputs": [
+    "fecha",
+    "id_fallero",
+    "fallero",
+    "concepto",
+    "importe_bruto",
+    "comision_aplicada",
+    "neto_resultante",
+    "saldo_pendiente",
+    "estado"
+  ]
+}
