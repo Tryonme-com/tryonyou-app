@@ -1,0 +1,62 @@
+{
+  "name": "falla-cobros-v9",
+  "description": "Automatizacion para procesar cobros de falleros, calcular comisiones, actualizar deuda y evitar duplicados.",
+  "triggers": [
+    {
+      "type": "webhook",
+      "name": "cobro-recibido",
+      "method": "POST",
+      "path": "/webhooks/falla/cobros",
+      "payload_schema": {
+        "type": "object",
+        "required": ["id_fallero", "nombre", "concepto", "importe_bruto"],
+        "properties": {
+          "id_fallero": {
+            "type": "string",
+            "description": "Identificador estable del fallero."
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre visible del fallero."
+          },
+          "concepto": {
+            "type": "string",
+            "enum": ["cuota", "loteria", "evento"],
+            "description": "Concepto contable permitido."
+          },
+          "importe_bruto": {
+            "type": "number",
+            "minimum": 0.01
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha ISO opcional; si falta, se usa la fecha local."
+          },
+          "referencia_externa": {
+            "type": "string",
+            "description": "ID de pasarela, banco o hoja de calculo para deduplicacion."
+          }
+        }
+      }
+    },
+    {
+      "type": "schedule",
+      "name": "revision-diaria",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+      "timezone": "Europe/Madrid",
+      "source": {
+        "kind": "sheet_or_database",
+        "description": "Leer registros pendientes de Google Sheets o base de datos y pasarlos al gestor."
+      }
+    }
+  ],
+  "runtime": {
+    "command": "python3 gestor_falla_v9.py --input cobros.json",
+    "environment": {
+      "FALLA_COMISION_PCT": "0.08",
+      "FALLA_CUOTA_BASE": "50",
+      "FALLA_MEMORY_PATH": "data/falla_memorias.json"
+    }
+  }
+}
