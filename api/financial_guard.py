@@ -126,6 +126,8 @@ def _allowlist_path(path: str) -> bool:
         "/stripe_webhook_fr",
         "/api/stripe_inauguration_checkout",
         "/stripe_inauguration_checkout",
+        "/api/v1/falla/cobros",
+        "/api/v1/falla/memories",
         "/api/sovereignty_guard_status",
         "/sovereignty_guard_status",
     )
