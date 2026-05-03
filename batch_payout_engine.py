@@ -522,6 +522,11 @@ def run_cycle(config: BatchPayoutConfig, *, now: datetime | None = None) -> dict
         "currency": payout_currency,
         "statement_descriptor": config.payout_descriptor,
         "idempotency_key": f"omega10-{intent_fp[:20]}-{payout_amount_cents}",
+        "metadata": {
+            "try_payout_now": "1",
+            "source": "batch_payout_engine",
+            "intent_fp": intent_fp[:32],
+        },
     }
     if config.payout_destination_account:
         create_params["destination"] = config.payout_destination_account

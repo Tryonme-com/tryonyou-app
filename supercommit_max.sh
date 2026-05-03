@@ -4,7 +4,7 @@ set -euo pipefail
 FAST=false
 DEPLOY=false
 
-for arg in "${@:-}"; do
+for arg in "$@"; do
   case "$arg" in
     --fast) FAST=true ;;
     --deploy) DEPLOY=true ;;

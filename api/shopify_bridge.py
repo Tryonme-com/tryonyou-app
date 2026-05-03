@@ -6,8 +6,8 @@ Contrato tipo «servicio FastAPI» sin uvicorn: funciones puras invocadas desde 
 
 1) Borrador de pedido (Admin REST): crea draft_order con variante piloto única
    (sin tallas en payload ni nota visible al comprador más allá del sello Divineo).
-   Requiere: SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_STORE_DOMAIN (*.myshopify.com),
-   SHOPIFY_ZERO_SIZE_VARIANT_ID (numérico).
+   Requiere: SHOPIFY_ADMIN_ACCESS_TOKEN (o SHOPIFY_ACCESS_TOKEN), SHOPIFY_STORE_DOMAIN (*.myshopify.com),
+   SHOPIFY_ZERO_SIZE_VARIANT_ID (numérico) para el borrador por defecto.
 
 2) Fallback: URL de producto / checkout configurada (SHOPIFY_PERFECT_CHECKOUT_URL o dominio + path).
 
@@ -21,6 +21,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any
 
 SIREN_SELL = "943 610 196"
 PATENTE = "PCT/EP2025/067317"
@@ -44,15 +45,28 @@ def _shopify_admin_host() -> str:
     return h
 
 
-def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | None:
-    """POST /admin/api/{ver}/draft_orders.json → invoice_url si credenciales válidas."""
-    token = os.environ.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
+def _admin_resolve_token() -> str:
+    return (
+        os.environ.get("SHOPIFY_ADMIN_ACCESS_TOKEN", "").strip()
+        or os.environ.get("SHOPIFY_ACCESS_TOKEN", "").strip()
+    )
+
+
+def admin_draft_order_create(
+    lead_id: int,
+    fabric_sensation: str,
+    variant_id: int,
+) -> dict[str, str | int | None] | None:
+    """
+    POST /admin/api/{ver}/draft_orders.json con ``variant_id`` explícito.
+
+    Devuelve ``invoice_url``, ``draft_order_id`` (gid numérico admin) o ``None`` si falla.
+    """
+    token = _admin_resolve_token()
     host = _shopify_admin_host()
-    variant_raw = os.environ.get("SHOPIFY_ZERO_SIZE_VARIANT_ID", "").strip()
-    if not token or not host or not variant_raw.isdigit():
+    if not token or not host:
         return None
     if ".myshopify.com" not in host:
-        # Admin API oficial exige host myshopify; si usas dominio custom, define el myshopify en env.
         return None
     ver = os.environ.get("SHOPIFY_ADMIN_API_VERSION", "2024-10").strip() or "2024-10"
     url = f"https://{host}/admin/api/{ver}/draft_orders.json"
@@ -64,7 +78,7 @@ def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | 
     )
     body = {
         "draft_order": {
-            "line_items": [{"variant_id": int(variant_raw), "quantity": 1}],
+            "line_items": [{"variant_id": int(variant_id), "quantity": 1}],
             "note": note,
             "tags": (
                 "TryOnYou,ZeroSize,PCT_EP2025_067317,Divineo,"
@@ -82,12 +96,99 @@ def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | 
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError, ValueError):
         return None
-    inv = data.get("draft_order", {}).get("invoice_url")
-    return inv if isinstance(inv, str) and inv.startswith("http") else None
+    d = data.get("draft_order") or {}
+    inv = d.get("invoice_url")
+    invoice_url = inv if isinstance(inv, str) and inv.startswith("http") else None
+    did = d.get("id")
+    try:
+        draft_order_id = int(did) if did is not None else None
+    except (TypeError, ValueError):
+        draft_order_id = None
+    if not invoice_url and not draft_order_id:
+        return None
+    return {
+        "invoice_url": invoice_url,
+        "draft_order_id": draft_order_id,
+        "name": str(d.get("name") or ""),
+    }
+
+
+def admin_fetch_product_line_candidates(*, limit: int = 8) -> list[dict[str, Any]]:
+    """
+    GET ``products.json`` (Admin REST): hasta ``limit`` productos, primera variante de cada uno.
+
+    Permisos típicos: ``read_products``. Si faltan credenciales o host, lista vacía.
+    """
+    token = _admin_resolve_token()
+    host = _shopify_admin_host()
+    if not token or not host or ".myshopify.com" not in host:
+        return []
+    ver = os.environ.get("SHOPIFY_ADMIN_API_VERSION", "2024-10").strip() or "2024-10"
+    cap = max(1, min(int(limit), 50))
+    q = urllib.parse.urlencode({"limit": str(cap), "fields": "id,title,handle,variants"})
+    url = f"https://{host}/admin/api/{ver}/products.json?{q}"
+    req = urllib.request.Request(
+        url,
+        headers={"X-Shopify-Access-Token": token, "Accept": "application/json"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError, ValueError):
+        return []
+    products = data.get("products")
+    if not isinstance(products, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for p in products:
+        if not isinstance(p, dict):
+            continue
+        pid = p.get("id")
+        title = str(p.get("title") or "").strip() or "Producto"
+        handle = str(p.get("handle") or "").strip()
+        variants = p.get("variants")
+        if not isinstance(variants, list) or not variants:
+            continue
+        v0 = variants[0]
+        if not isinstance(v0, dict):
+            continue
+        try:
+            vid = int(v0.get("id"))
+        except (TypeError, ValueError):
+            continue
+        price_raw = v0.get("price")
+        try:
+            price = float(str(price_raw).replace(",", "."))
+        except (TypeError, ValueError):
+            price = 0.0
+        vtitle = str(v0.get("title") or "").strip()
+        out.append(
+            {
+                "variant_id": vid,
+                "product_id": int(pid) if pid is not None else None,
+                "name": title if not vtitle or vtitle == "Default Title" else f"{title} — {vtitle}",
+                "price": price,
+                "handle": handle,
+            }
+        )
+    return out
+
+
+def admin_draft_order_invoice_url(lead_id: int, fabric_sensation: str) -> str | None:
+    """POST /admin/api/{ver}/draft_orders.json → invoice_url si credenciales válidas."""
+    variant_raw = os.environ.get("SHOPIFY_ZERO_SIZE_VARIANT_ID", "").strip()
+    if not variant_raw.isdigit():
+        return None
+    created = admin_draft_order_create(lead_id, fabric_sensation, int(variant_raw))
+    if not created:
+        return None
+    inv = created.get("invoice_url")
+    return inv if isinstance(inv, str) else None
 
 
 def build_shopify_perfect_selection_url(lead_id: int, fabric_sensation: str) -> str | None:

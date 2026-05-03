@@ -5,6 +5,11 @@ FinanceBridge — Stripe LIVE (payout) + comprobación Qonto / tesorería / audi
 - Clave Stripe: prioridad api/stripe_fr_resolve.py (FR, luego legado).
   Acepta sk_live_ (secreta) o rk_live_ (restricted) con permisos de payouts.
 - Payout real: solo si FINANCE_BRIDGE_LIVE_PAYOUT=1.
+- Reintentos Stripe: FINANCE_BRIDGE_PAYOUT_USE_RETRIES=1 (cli), FINANCE_BRIDGE_MAX_ATTEMPTS,
+  FINANCE_BRIDGE_RETRY_DELAY_SECONDS, FINANCE_BRIDGE_IDEMPOTENCY_KEY (opcional).
+- Tras crear payout: FINANCE_BRIDGE_POLL_UNTIL_PAID=1 hace polling con
+  ``stripe.Payout.retrieve`` hasta ``status=paid`` (o fallo/cancelación).
+- Metadata Stripe incluye ``try_payout_now=1`` para trazabilidad operativa.
 - Puerta audit_log_v11.txt: exige señal MATCHED vía scripts/parse_audit_log_v11.py
   (función audit_reconciliation_matched); FINANCE_BRIDGE_SKIP_AUDIT_LOG=1 solo en lab.
 
@@ -18,6 +23,8 @@ import importlib.util
 import logging
 import os
 import sys
+import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -169,10 +176,22 @@ class FinancialEngine:
         if not self.check_treasury_reserve(amount_cents):
             return None
 
+        idem = (os.getenv("FINANCE_BRIDGE_IDEMPOTENCY_KEY") or "").strip() or f"finbridge-{amount_cents}-{uuid.uuid4().hex[:24]}"
+        created = self._execute_stripe_payout_only(amount_cents, currency, idempotency_key=idem)
+        return self._maybe_poll_payout_to_paid(created) if created is not None else None
+
+    def _execute_stripe_payout_only(
+        self,
+        amount_cents: int,
+        currency: str,
+        *,
+        idempotency_key: str,
+    ) -> Any | None:
         meta: dict[str, str] = {
             "sync": "pending",
             "source": "logic.finance_bridge",
             "target": "qonto_linked",
+            "try_payout_now": "1",
         }
         if self.bridge_id:
             meta["bridge_id"] = self.bridge_id
@@ -183,6 +202,7 @@ class FinancialEngine:
                 currency=currency.lower(),
                 statement_descriptor="TRYONYOU-APP-LIVE"[:22],
                 metadata=meta,
+                idempotency_key=idempotency_key[:255],
             )
             logger.info("Payout iniciado: %s", getattr(payout, "id", payout))
             return payout
@@ -214,6 +234,85 @@ class FinancialEngine:
         except Exception as exc:
             logger.error("Error inesperado en Stripe Payout: %s", exc)
             return None
+
+    def _wait_stripe_payout_paid(self, payout_id: str) -> str:
+        """
+        Poll ``Payout.retrieve`` hasta ``paid``, ``failed``, ``canceled`` o timeout.
+        Devuelve el ``status`` final (p. ej. ``paid``) o ``timeout``.
+        """
+        interval = float((os.getenv("FINANCE_BRIDGE_PAYOUT_POLL_INTERVAL_SEC") or "15").strip() or "15")
+        max_sec = float((os.getenv("FINANCE_BRIDGE_PAYOUT_POLL_MAX_SEC") or str(72 * 3600)).strip() or str(72 * 3600))
+        deadline = time.time() + max(60.0, max_sec)
+        interval = max(3.0, interval)
+        last_status = "unknown"
+        while time.time() < deadline:
+            try:
+                po = stripe.Payout.retrieve(payout_id)
+                last_status = str(getattr(po, "status", "") or "")
+                if last_status == "paid":
+                    logger.info("Payout %s en estado paid.", payout_id)
+                    return "paid"
+                if last_status in ("failed", "canceled"):
+                    logger.error("Payout %s terminó en estado %s.", payout_id, last_status)
+                    return last_status
+                logger.info("Payout %s estado=%s; reintento en %.0fs …", payout_id, last_status, interval)
+            except stripe.error.StripeError as exc:
+                logger.warning("Retrieve payout %s: %s", payout_id, getattr(exc, "user_message", None) or exc)
+            time.sleep(interval)
+        logger.error("Timeout esperando paid para payout %s (último estado=%s).", payout_id, last_status)
+        return "timeout"
+
+    def _maybe_poll_payout_to_paid(self, payout: Any) -> Any:
+        if (os.getenv("FINANCE_BRIDGE_POLL_UNTIL_PAID") or "").strip() != "1":
+            return payout
+        pid = getattr(payout, "id", None)
+        if not pid:
+            return payout
+        final = self._wait_stripe_payout_paid(str(pid))
+        if final != "paid":
+            logger.warning(
+                "Payout %s creado pero estado final de polling=%s (revisar Dashboard Stripe / banco).",
+                pid,
+                final,
+            )
+        return payout
+
+    def execute_payout_with_retries(
+        self,
+        amount_cents: int,
+        currency: str = "eur",
+        *,
+        max_attempts: int | None = None,
+        delay_seconds: float | None = None,
+    ) -> Any | None:
+        """
+        Tras validar tesorería una sola vez, reintenta Stripe.Payout.create hasta éxito o agotar intentos.
+        Usa una idempotency_key fija por sesión para no duplicar payouts si Stripe aceptó en red parcial.
+        """
+        if (os.getenv("FINANCE_BRIDGE_LIVE_PAYOUT") or "").strip() != "1":
+            logger.warning(
+                "Payout no ejecutado: defina FINANCE_BRIDGE_LIVE_PAYOUT=1 para crear payout real en Stripe."
+            )
+            return None
+        if not self.check_treasury_reserve(amount_cents):
+            return None
+        n = max_attempts if max_attempts is not None else max(1, int((os.getenv("FINANCE_BRIDGE_MAX_ATTEMPTS") or "25").strip() or "25"))
+        delay = delay_seconds if delay_seconds is not None else float((os.getenv("FINANCE_BRIDGE_RETRY_DELAY_SECONDS") or "12").strip() or "12")
+        idem = (os.getenv("FINANCE_BRIDGE_IDEMPOTENCY_KEY") or "").strip() or f"finbridge-retry-{amount_cents}-{uuid.uuid4().hex[:32]}"
+        for attempt in range(1, n + 1):
+            payout = self._execute_stripe_payout_only(amount_cents, currency, idempotency_key=idem)
+            if payout is not None and getattr(payout, "id", None):
+                return self._maybe_poll_payout_to_paid(payout)
+            logger.warning(
+                "Reintento payout Stripe (%s/%s) tras %ss (idem prefix=%s…)",
+                attempt,
+                n,
+                delay,
+                idem[:16],
+            )
+            if attempt < n:
+                time.sleep(max(1.0, delay))
+        return None
 
     def sync_qonto_metadata(self, payout_id: str, *, amount_cents: int | None = None) -> bool:
         """
@@ -258,7 +357,12 @@ if __name__ == "__main__":
     monto_a_cobrar = int((os.getenv("FINANCE_BRIDGE_AMOUNT_CENTS") or "150000").strip())
 
     print("--- INICIANDO PROTOCOLO DE DESBLOQUEO FINANCIERO ---")
-    payout_result = engine.execute_payout(monto_a_cobrar)
+    use_retries = (os.getenv("FINANCE_BRIDGE_PAYOUT_USE_RETRIES") or "").strip() == "1"
+    payout_result = (
+        engine.execute_payout_with_retries(monto_a_cobrar)
+        if use_retries
+        else engine.execute_payout(monto_a_cobrar)
+    )
 
     if payout_result:
         engine.sync_qonto_metadata(payout_result.id, amount_cents=monto_a_cobrar)
