@@ -1,66 +1,82 @@
+from __future__ import annotations
+
+import argparse
 import os
 import shutil
 import tempfile
+from pathlib import Path
+from typing import Sequence
 
-# Configuración del paquete de venta
-_DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop", "TRYONYOU_COMMERCIAL_PACKAGE")
-EXPORT_DIR = _DESKTOP if os.access(os.path.dirname(_DESKTOP) or ".", os.W_OK) else os.path.join(
-    tempfile.gettempdir(), "TRYONYOU_COMMERCIAL_PACKAGE"
-)
-
-# Archivos clave que validan tu PoC técnica
-ASSETS_TO_INCLUDE = [
+# Archivos clave que validan la PoC técnica.
+ASSETS_TO_INCLUDE = (
     "🔍 VALIDACIÓN DE PILOTO - TRYONYOU.pdf",
     "Estructura de Subtítulos y Metadatos para Traducción.pdf",
-]
+)
 
 EMAIL_TEMPLATE = """\
-ASUNTO: Partnership Opportunity: Reducing Retail Returns by 40% - TryOnYou Pilot
+SUBJECT: Partnership Opportunity: TryOnYou Technical Pilot
 
 Dear Innovation Manager,
 
-The fashion retail industry currently faces a 30-40% return rate, creating significant operational waste.
-At TryOnYou, we have successfully validated a PoC that solves this through AI-driven
-biometric matching and emotional intelligence, ensuring a 99.7% fit guarantee.
+TryOnYou is preparing a focused retail pilot for AI-assisted biometric fit
+guidance and customer confidence at the point of purchase.
 
-We are looking for a forward-thinking partner to launch a 30-day pilot.
-If we do not reduce your return rates to zero, there is no cost.
+We are looking for a forward-thinking partner to validate the workflow against
+real catalogue, sizing and return-friction data. The attached package includes
+the technical validation material and the project manifesto for review.
 
-Please find attached our technical validation and project manifesto.
-Are you available for a 10-minute demo this week to see the system in action?
+Would you be available for a 10-minute demo this week to see the system in
+action and define the pilot KPIs together?
 
 Best regards,
-[Tu Nombre]
+[Your Name]
 TryOnYou - Paris 2026
 """
 
 
-def prepare_package() -> None:
-    os.makedirs(EXPORT_DIR, exist_ok=True)
+def default_export_dir() -> Path:
+    desktop = Path.home() / "Desktop"
+    if desktop.is_dir() and os.access(desktop, os.W_OK):
+        return desktop / "TRYONYOU_COMMERCIAL_PACKAGE"
+    return Path(tempfile.gettempdir()) / "TRYONYOU_COMMERCIAL_PACKAGE"
 
-    print("📦 Preparando paquete comercial...")
 
-    # 1. Copiar los documentos clave validados
-    for asset in ASSETS_TO_INCLUDE:
-        if os.path.exists(asset):
-            shutil.copy(asset, EXPORT_DIR)
-            print(f"✅ Añadido: {asset}")
+def prepare_package(
+    export_dir: str | Path | None = None,
+    source_dir: str | Path | None = None,
+    assets: Sequence[str] = ASSETS_TO_INCLUDE,
+) -> Path:
+    destination = Path(export_dir) if export_dir is not None else default_export_dir()
+    source_root = Path(source_dir) if source_dir is not None else Path.cwd()
+    destination.mkdir(parents=True, exist_ok=True)
+
+    print("Preparando paquete comercial...")
+
+    for asset in assets:
+        asset_path = source_root / asset
+        if asset_path.is_file():
+            shutil.copy2(asset_path, destination / asset_path.name)
+            print(f"Anadido: {asset}")
         else:
-            print(f"⚠️  No encontrado (omitido): {asset}")
+            print(f"No encontrado (omitido): {asset}")
 
-    # 2. Generar el archivo de texto con el cuerpo del email profesional
-    with open(os.path.join(EXPORT_DIR, "EMAIL_TEMPLATE.txt"), "w", encoding="utf-8") as f:
+    with (destination / "EMAIL_TEMPLATE.txt").open("w", encoding="utf-8") as f:
         f.write(EMAIL_TEMPLATE)
 
-    print(f"\n🚀 PAQUETE LISTO EN: {EXPORT_DIR}")
+    print(f"\nPAQUETE LISTO EN: {destination}")
     print("Pasos siguientes:")
-    print("1. Abre la carpeta creada en tu escritorio.")
+    print("1. Abre la carpeta generada.")
     print("2. Abre 'EMAIL_TEMPLATE.txt', personaliza tu nombre y cópialo.")
     print("3. Envía el email a los Innovation Managers desde tu cuenta profesional.")
+    return destination
 
 
 def main() -> int:
-    prepare_package()
+    parser = argparse.ArgumentParser(description="Prepara el paquete comercial de TryOnYou.")
+    parser.add_argument("--output-dir", help="Directorio de salida del paquete.")
+    args = parser.parse_args()
+
+    prepare_package(export_dir=args.output_dir)
     return 0
 
 
