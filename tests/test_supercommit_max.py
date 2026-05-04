@@ -53,6 +53,63 @@ class TestSupercommitMax(unittest.TestCase):
             self.assertNotIn("server.key", staged)
             self.assertNotIn("logs/run.log", staged)
 
+    def test_clean_repo_reports_already_synced_success(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+            (repo / "safe.txt").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "add", "safe.txt"], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+
+            env = os.environ.copy()
+            env["SKIP_TELEGRAM"] = "1"
+            result = subprocess.run(
+                ["bash", str(SCRIPT), "--fast", "--msg", "test"],
+                cwd=repo,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertIn("Nada que commitear", result.stdout)
+            self.assertIn("ya sincronizado", result.stdout)
+
+    def test_secret_only_changes_report_safe_success_without_staging(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+            (repo / "safe.txt").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "add", "safe.txt"], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            (repo / ".env").write_text("SECRET=1\n", encoding="utf-8")
+
+            env = os.environ.copy()
+            env["SKIP_TELEGRAM"] = "1"
+            result = subprocess.run(
+                ["bash", str(SCRIPT), "--fast", "--msg", "test"],
+                cwd=repo,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertIn("No hay cambios seguros", result.stdout)
+            self.assertIn("sin cambios seguros pendientes", result.stdout)
+            staged = subprocess.check_output(
+                ["git", "diff", "--cached", "--name-only"],
+                cwd=repo,
+                text=True,
+            ).splitlines()
+            self.assertEqual(staged, [])
+
     def test_commit_message_requires_protocol_seals(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("@CertezaAbsoluta", text)

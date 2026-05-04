@@ -53,18 +53,26 @@ notify_success() {
   local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
   local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
 
+  echo "[supercommit_max] ${text}"
+
   if [[ -z "$token" || -z "$chat_id" || -n "${SKIP_TELEGRAM:-}" ]]; then
     echo "[supercommit_max] Notificación Telegram omitida (faltan variables o SKIP_TELEGRAM activo)."
     return 0
   fi
 
-  python3 - "$token" "$chat_id" "$text" <<'PY'
+  TRYONYOU_NOTIFY_TOKEN="$token" \
+  TRYONYOU_NOTIFY_CHAT_ID="$chat_id" \
+  TRYONYOU_NOTIFY_TEXT="$text" \
+  python3 - <<'PY'
 import json
+import os
 import sys
 import urllib.parse
 import urllib.request
 
-token, chat_id, text = sys.argv[1:4]
+token = os.environ["TRYONYOU_NOTIFY_TOKEN"]
+chat_id = os.environ["TRYONYOU_NOTIFY_CHAT_ID"]
+text = os.environ["TRYONYOU_NOTIFY_TEXT"]
 payload = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
 request = urllib.request.Request(
     f"https://api.telegram.org/bot{token}/sendMessage",
@@ -77,6 +85,16 @@ try:
 except Exception as exc:  # noqa: BLE001 - notificación no debe romper el commit/push.
     print(f"[supercommit_max] Telegram no confirmado: {exc}", file=sys.stderr)
 PY
+}
+
+current_branch() {
+  local branch
+  branch="$(git branch --show-current)"
+  if [[ -z "$branch" ]]; then
+    echo "[supercommit_max] No se pudo resolver la rama actual." >&2
+    exit 3
+  fi
+  printf '%s\n' "$branch"
 }
 
 safe_stage() {
@@ -94,14 +112,18 @@ safe_stage() {
 }
 
 if [[ -z "$(git status --porcelain)" ]]; then
+  branch="$(current_branch)"
   echo "[supercommit_max] Nada que commitear."
+  notify_success "Supercommit_Max OK: bunker Oberkampf 75011 ya sincronizado con galeria web en rama ${branch}."
   exit 0
 fi
 
 safe_stage
 
 if [[ -z "$(git diff --cached --name-only)" ]]; then
+  branch="$(current_branch)"
   echo "[supercommit_max] No hay cambios seguros para commitear."
+  notify_success "Supercommit_Max OK: bunker Oberkampf 75011 sin cambios seguros pendientes en rama ${branch}."
   exit 0
 fi
 
@@ -128,11 +150,6 @@ if [[ "$DEPLOY" == "true" ]]; then
   npm run deployall
 fi
 
-branch="$(git branch --show-current)"
-if [[ -z "$branch" ]]; then
-  echo "[supercommit_max] No se pudo resolver la rama actual." >&2
-  exit 3
-fi
-
+branch="$(current_branch)"
 git push -u origin "$branch"
 notify_success "Supercommit_Max OK: bunker Oberkampf 75011 sincronizado con galeria web en rama ${branch}."
