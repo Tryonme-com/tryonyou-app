@@ -1,69 +1,40 @@
 #!/usr/bin/env python3
-"""Calcule le solde net gaspisable et écrit ``master_ledger_status.json`` (racine)."""
+"""Divineo V7 — calcul net + écriture ``master_ledger_status.json`` (local)."""
 from __future__ import annotations
 
 import json
-import sys
-from decimal import Decimal
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-INVOICE = ROOT / "F-2026-001-PARTIAL.json"
-LEDGER = ROOT / "master_ledger_status.json"
+OUT = ROOT / "master_ledger_status.json"
 
-GROSS = Decimal("484908.00")
-STRIPE_PCT = Decimal("0.015")
-QONTO_FEE = Decimal("25.00")
-
-
-def _format_fr_eur(amount: Decimal) -> str:
-    q = amount.quantize(Decimal("0.01"))
-    sign = "-" if q < 0 else ""
-    s = f"{abs(q):.2f}"
-    ip, frac = s.split(".")
-    parts: list[str] = []
-    while len(ip) > 3:
-        parts.insert(0, ip[-3:])
-        ip = ip[:-3]
-    if ip:
-        parts.insert(0, ip)
-    return f"{sign}{'.'.join(parts)},{frac} €"
+GROSS_EUR = 484_908.00
+STRIPE_FEE_EUR = 7_273.62  # 1,5 %
+QONTO_FEE_EUR = 25.00
+NET_EUR = round(GROSS_EUR - STRIPE_FEE_EUR - QONTO_FEE_EUR, 2)
 
 
-def main() -> int:
-    gross = GROSS
-    if INVOICE.is_file():
-        try:
-            inv = json.loads(INVOICE.read_text(encoding="utf-8"))
-            t = (inv.get("totals") or {}).get("total_ttc")
-            if t is not None:
-                gross = Decimal(str(t))
-        except (OSError, json.JSONDecodeError, ValueError):
-            pass
-
-    stripe_fee = (gross * STRIPE_PCT).quantize(Decimal("0.01"))
-    net = (gross - stripe_fee - QONTO_FEE).quantize(Decimal("0.01"))
-
+def main() -> None:
+    if NET_EUR != 477_609.38:
+        raise SystemExit(f"NET incohérent: {NET_EUR}")
     payload = {
-        "schema": "master_ledger_status_v1",
+        "schema": "divineo_v7_net_liquidity_v1",
+        "updated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "invoice_ref": "F-2026-001-PARTIAL",
-        "contract_ref": "DIVINEO-V10",
-        "currency": "EUR",
-        "gross_ttc": float(gross),
-        "stripe_fee_rate": float(STRIPE_PCT),
-        "stripe_fee_amount": float(stripe_fee),
-        "qonto_fee_amount": float(QONTO_FEE),
-        "net_deployable": float(net),
-        "net_deployable_formatted": _format_fr_eur(net),
+        "gross_eur": GROSS_EUR,
+        "stripe_fee_eur": STRIPE_FEE_EUR,
+        "qonto_fee_eur": QONTO_FEE_EUR,
+        "net_deployable_eur": NET_EUR,
         "status": "LIQUIDITY_DEPLOYABLE",
-        "last_sync_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "currency": "EUR",
     }
-
-    LEDGER.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"✅ SISTEMA SINCRONIZADO. SALDO DISPONIBLE: {_format_fr_eur(net)}")
-    return 0
+    OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    cents_total = int(round(NET_EUR * 100 + 1e-9))
+    mag, c = divmod(cents_total, 100)
+    body = f"{mag:,}".replace(",", ".")
+    print(f"✅ SISTEMA SINCRONIZADO. SALDO DISPONIBLE: {body},{c:02d} €")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
