@@ -26,6 +26,17 @@ def _load_audit_module():
 
 
 class TestAuditReconciliationMatched(unittest.TestCase):
+    def test_validate_ledger_liquidity_ok(self) -> None:
+        mod = _load_audit_module()
+        self.assertTrue(mod.validate_ledger_liquidity("10.000,50", "9.999,50"))
+
+    def test_validate_ledger_liquidity_blocks_deficit(self) -> None:
+        mod = _load_audit_module()
+        with self.assertRaises(mod.LiquidityConstraint) as ctx:
+            mod.validate_ledger_liquidity(100.0, 125.25)
+        self.assertIn("Liquidez insuficiente", str(ctx.exception))
+        self.assertIn("Deficit: 25.25", str(ctx.exception))
+
     def test_explicit_line_matched(self) -> None:
         mod = _load_audit_module()
         with tempfile.NamedTemporaryFile("w+", suffix=".txt", delete=False, encoding="utf-8") as f:
@@ -47,6 +58,22 @@ class TestAuditReconciliationMatched(unittest.TestCase):
             ok, reason = mod.audit_reconciliation_matched(path)
             self.assertFalse(ok)
             self.assertEqual(reason, "negative_signal_in_log")
+        finally:
+            os.unlink(path)
+
+    def test_matched_marker_blocked_by_insufficient_liquidity_payload(self) -> None:
+        mod = _load_audit_module()
+        with tempfile.NamedTemporaryFile("w+", suffix=".txt", delete=False, encoding="utf-8") as f:
+            f.write(
+                '{"reconciliation_status": "OK", "ledger_balance_eur": 100, '
+                '"total_pending_payouts_eur": 125}\n'
+                "FINANCE_BRIDGE_AUDIT: MATCHED\n"
+            )
+            path = f.name
+        try:
+            ok, reason = mod.audit_reconciliation_matched(path)
+            self.assertFalse(ok)
+            self.assertTrue(reason.startswith("insufficient_liquidity:"))
         finally:
             os.unlink(path)
 

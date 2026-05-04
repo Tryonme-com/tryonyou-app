@@ -30,6 +30,7 @@ import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 # Stripe
 _RE_PI = re.compile(r"\b(pi_[A-Za-z0-9_]+)")
@@ -60,6 +61,99 @@ _RE_AUDIT_NEGATIVE = re.compile(
     r"|(?:^|\n)\s*FINANCE_BRIDGE_AUDIT:\s*(?:FAIL|BLOCK)\s*(?:\n|$)",
 )
 
+_LEDGER_BALANCE_KEYS = (
+    "ledger_balance",
+    "ledger_balance_eur",
+    "available_balance",
+    "available_balance_eur",
+    "saldo_disponible",
+    "saldo_disponible_eur",
+)
+_PENDING_PAYOUT_KEYS = (
+    "total_pending_payouts",
+    "total_pending_payouts_eur",
+    "pending_payouts",
+    "pending_payouts_eur",
+    "pending_sum",
+    "pending_sum_eur",
+)
+
+
+class LiquidityConstraint(Exception):
+    """Excepcion disparada cuando el ledger no cubre los payouts pendientes."""
+
+
+def _coerce_money(value: Any, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: booleano no es un importe valido")
+    if isinstance(value, (int, float)):
+        return round(float(value), 2)
+    if isinstance(value, str):
+        normalized = value.strip().replace(" ", "")
+        if "," in normalized and "." in normalized:
+            normalized = normalized.replace(".", "").replace(",", ".")
+        else:
+            normalized = normalized.replace(",", ".")
+        return round(float(normalized), 2)
+    raise ValueError(f"{field_name}: importe no numerico")
+
+
+def validate_ledger_liquidity(
+    ledger_balance: Any,
+    total_pending_payouts: Any,
+) -> bool:
+    """Bloquea salida de fondos si el balance real no cubre pagos pendientes."""
+    balance = _coerce_money(ledger_balance, "ledger_balance")
+    pending = _coerce_money(total_pending_payouts, "total_pending_payouts")
+    available_liquidity = round(balance - pending, 2)
+
+    if available_liquidity < 0:
+        raise LiquidityConstraint(
+            "Error: Liquidez insuficiente. "
+            f"Balance: {balance:.2f}, Pendiente: {pending:.2f}. "
+            f"Deficit: {abs(available_liquidity):.2f}"
+        )
+    return True
+
+
+def _find_first_amount(payload: dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        if key in payload:
+            return payload[key]
+    for nested_key in ("liquidity", "ledger", "treasury", "reconciliation"):
+        nested = payload.get(nested_key)
+        if isinstance(nested, dict):
+            found = _find_first_amount(nested, keys)
+            if found is not None:
+                return found
+    return None
+
+
+def iter_liquidity_payloads(text: str) -> list[dict[str, Any]]:
+    """Extrae payloads JSON que declaran balance ledger y payouts pendientes."""
+    payloads: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        raw = line.strip()
+        if not (raw.startswith("{") and raw.endswith("}")):
+            continue
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        ledger_balance = _find_first_amount(payload, _LEDGER_BALANCE_KEYS)
+        pending_payouts = _find_first_amount(payload, _PENDING_PAYOUT_KEYS)
+        if ledger_balance is None or pending_payouts is None:
+            continue
+        payloads.append(
+            {
+                "ledger_balance": ledger_balance,
+                "total_pending_payouts": pending_payouts,
+            }
+        )
+    return payloads
+
 
 def audit_reconciliation_matched(audit_path: Path | str) -> tuple[bool, str]:
     """
@@ -74,6 +168,14 @@ def audit_reconciliation_matched(audit_path: Path | str) -> tuple[bool, str]:
         return False, "empty_file"
     if _RE_AUDIT_NEGATIVE.search(text):
         return False, "negative_signal_in_log"
+    for payload in iter_liquidity_payloads(text):
+        try:
+            validate_ledger_liquidity(
+                payload["ledger_balance"],
+                payload["total_pending_payouts"],
+            )
+        except (LiquidityConstraint, ValueError) as exc:
+            return False, f"insufficient_liquidity:{exc}"
     if _RE_AUDIT_POSITIVE.search(text):
         return True, "matched_marker_found"
     return False, "no_positive_audit_gate_marker"
