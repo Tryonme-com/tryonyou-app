@@ -1,11 +1,10 @@
 {
-  "invoice_ref": "F-2026-001-PARTIAL",
-  "gross_ttc_eur": "484908.00",
-  "stripe_fee_rate": "0.015",
-  "stripe_commission_eur": "7273.62",
-  "qonto_fees_eur": "25.00",
-  "net_deployable_eur": "477609.38",
+  "invoice_reference": "F-2026-001-PARTIAL",
+  "gross_ttc_eur": 484908.0,
+  "stripe_fee_rate": 0.015,
+  "stripe_commission_eur": 7273.62,
+  "qonto_commission_eur": 25.0,
+  "net_deployable_eur": 477609.38,
   "status": "LIQUIDITY_DEPLOYABLE",
-  "updated_utc": "2026-05-04T08:13:03.970777Z",
-  "source_script": "update_net_liquidity.py"
+  "updated_utc": "2026-05-04T08:20:28.673368Z"
 }
