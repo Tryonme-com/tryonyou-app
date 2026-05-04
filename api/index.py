@@ -33,6 +33,9 @@ _i = _safe_import('bunker_full_orchestrator', ['orchestrate_beta_waitlist', 'orc
 orchestrate_beta_waitlist = _i['orchestrate_beta_waitlist']
 orchestrate_mirror_shadow_dwell = _i['orchestrate_mirror_shadow_dwell']
 
+_i = _safe_import('lead_capture', ['handle_lead_submission'])
+handle_lead_submission = _i['handle_lead_submission']
+
 _i = _safe_import('financial_guard', ['guard_stripe_call', 'log_sovereignty_event'])
 guard_stripe_call = _i['guard_stripe_call']
 log_sovereignty_event = _i['log_sovereignty_event']
@@ -1165,6 +1168,15 @@ def leads_capture():
     intent = str(body.get("intent", "")).strip()
     source = str(body.get("source", "app")).strip()
 
+    # Persist via Sheets → SQLite fallback
+    capture_result: dict = {}
+    if handle_lead_submission is not None:
+        capture_result = handle_lead_submission({
+            "name": body.get("name"),
+            "email": body.get("email"),
+            "company": body.get("company"),
+        })
+
     try:
         result = orchestrate_beta_waitlist({
             "intent": intent,
@@ -1174,12 +1186,14 @@ def leads_capture():
         return _cors(jsonify({
             "status": "ok",
             "lead_persisted": True,
+            "capture": capture_result,
             **result,
         })), 200
     except Exception as e:
         return _cors(jsonify({
             "status": "ok",
-            "lead_persisted": False,
+            "lead_persisted": capture_result.get("status") == "success",
+            "capture": capture_result,
             "message": str(e),
         })), 200
 
