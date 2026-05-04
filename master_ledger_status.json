@@ -1,4 +1,6 @@
 {
+  "mode": "SIMULATION",
+  "disclaimer": "Cifras modelo (factura + comisiones fijas). No lee saldo real Stripe/Qonto.",
   "invoice_ref": "F-2026-001-PARTIAL",
   "contract": "DIVINEO-V10",
   "currency": "EUR",
@@ -9,7 +11,12 @@
   },
   "net_deployable": 477609.38,
   "status": "LIQUIDITY_DEPLOYABLE",
-  "computed_at_utc": "2026-05-04T12:32:58.112257Z",
-  "computed_at_paris": "2026-05-04T14:32:58+02:00",
+  "destination_account": {
+    "provider": "Qonto (simulación)",
+    "iban_last4_env": null,
+    "hint": "Cuenta destino real: la vinculada en Qonto/Stripe en prod; aquí solo *…4 si hay QONTO_IBAN en .env"
+  },
+  "computed_at_utc": "2026-05-04T13:30:21.990504Z",
+  "computed_at_paris": "2026-05-04T15:30:21+02:00",
   "source": "update_net_liquidity.py"
 }
