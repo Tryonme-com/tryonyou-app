@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -29,6 +30,12 @@ class TestAssetSettlementManager(unittest.TestCase):
         result = manager.execute_global_reconciliation()
         self.assertTrue(result)
 
+    def test_execute_global_reconciliation_failure_path(self) -> None:
+        manager = AssetSettlementManager()
+        with patch.object(manager, "execute_global_reconciliation", return_value=False):
+            result = manager.execute_global_reconciliation()
+        self.assertFalse(result)
+
     def test_final_deployment_check_runs_without_error(self) -> None:
         manager = AssetSettlementManager()
         # Should complete without raising any exception
@@ -36,6 +43,10 @@ class TestAssetSettlementManager(unittest.TestCase):
 
     def test_main_returns_zero_on_success(self) -> None:
         self.assertEqual(main(), 0)
+
+    def test_main_returns_one_on_failure(self) -> None:
+        with patch("GLOBAL_SETTLEMENT_CORE.AssetSettlementManager.execute_global_reconciliation", return_value=False):
+            self.assertEqual(main(), 1)
 
 
 if __name__ == "__main__":

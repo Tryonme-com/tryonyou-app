@@ -39,7 +39,7 @@ class AssetSettlementManager:
         if process_complete:
             logging.info("✅ [SUCCEEDED] Capital total verificado y en proceso de cierre.")
             return True
-        return False  # pragma: no cover
+        return False
 
     def final_deployment_check(self) -> None:
         """Confirma la estabilidad de la galería tras el cobro."""
@@ -51,7 +51,7 @@ def main() -> int:
     if manager.execute_global_reconciliation():
         manager.final_deployment_check()
         return 0
-    return 1  # pragma: no cover
+    return 1
 
 
 if __name__ == "__main__":
