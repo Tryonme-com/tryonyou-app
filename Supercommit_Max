@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# TRYONYOU — wrapper histórico: delega en supercommit_max seguro.
+# Wrapper histórico: conserva el nombre solicitado y delega en el flujo seguro.
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec "$ROOT/supercommit_max.sh" "$@"
