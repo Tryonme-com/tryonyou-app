@@ -19,6 +19,7 @@ class TestSupercommitMaxScript(unittest.TestCase):
         source = SUPERCOMMIT.read_text(encoding="utf-8")
         self.assertIn("git ls-files -z --modified --deleted --others --exclude-standard", source)
         self.assertIn('git push -u origin "$BRANCH"', source)
+        self.assertIn(".env.example) return 0", source)
         self.assertNotIn("git add -A", source)
         self.assertNotIn("git add .", source)
         self.assertNotIn("git push origin main", source)

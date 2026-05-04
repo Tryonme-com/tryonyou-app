@@ -50,6 +50,7 @@ append_required_stamps() {
 is_safe_path() {
   local path="$1"
   case "$path" in
+    .env.example) return 0 ;;
     .env|.env.*|*/.env|*/.env.*) return 1 ;;
     node_modules/*|*/node_modules/*) return 1 ;;
     dist/*|*/dist/*) return 1 ;;
