@@ -27,6 +27,7 @@ class TestSupercommitMax(unittest.TestCase):
         text = SCRIPT.read_text(encoding="utf-8")
         for token in (".env", ".env.*", "logs/*", "*.pem", "*.key", "*.p12", "*.pfx", "*.crt"):
             self.assertIn(token, text)
+        self.assertIn('"$path" == ".env.example"', text)
 
     def test_push_uses_designated_current_branch(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")

@@ -92,6 +92,9 @@ seal_message() {
 
 is_sensitive_path() {
   local path="$1"
+  if [[ "$path" == ".env.example" || "$path" == */.env.example ]]; then
+    return 1
+  fi
   case "$path" in
     .env|.env.*|*/.env|*/.env.*|logs/*|*.pem|*.key|*.p12|*.pfx|*.crt)
       return 0
