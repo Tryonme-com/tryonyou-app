@@ -1,0 +1,31 @@
+{
+    "header": {
+        "emisor": "TryOnYou v100",
+        "receptor": "BPIfrance / Innovación",
+        "fecha": "2026-05-04T00:37:40.251074+00:00",
+        "entity": "EI - ESPINAR RODRIGUEZ, RUBEN",
+        "siret": "94361019600017",
+        "siren": "943 610 196",
+        "patent": "PCT/EP2025/067317",
+        "repository": "github.com/Tryonme-com/tryonyou-app"
+    },
+    "nodos_auditados": [
+        "Lafayette",
+        "Le Bon Marché",
+        "La Défense"
+    ],
+    "evidencia_tecnica": {
+        "fit_index_avg": 1.145,
+        "uptime_cloud_run": "99.98%",
+        "latencia_renderizado_ms": 142,
+        "transacciones_exitosas": 27,
+        "error_rate_webgl": 0.0
+    },
+    "estado_financiero": {
+        "Lafayette_Hito_2": 27500.0,
+        "La_Defense_Micro": 1240.0,
+        "Le_Bon_Marche_Licencia": 4500.0,
+        "Total_Pendiente_Liquidacion": 33240.0
+    },
+    "estatus_payout": "CONFIRMED_IN_TRANSIT"
+}

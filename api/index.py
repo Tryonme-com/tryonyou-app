@@ -91,6 +91,11 @@ get_treasury_status = _i['get_treasury_status']
 get_payouts_list = _i['get_payouts_list']
 record_payout = _i['record_payout']
 
+_i = _safe_import('bpifrance_auditor', ['recolectar_logs_reales', 'generar_proforma_consolidada', 'exportar_evidencia'])
+recolectar_logs_reales = _i['recolectar_logs_reales']
+generar_proforma_consolidada = _i['generar_proforma_consolidada']
+exportar_evidencia_bpi = _i['exportar_evidencia']
+
 _i = _safe_import('territory_expansion', ['get_expansion_nodes', 'get_territory_summary', 'generate_node_contract'])
 get_expansion_nodes = _i['get_expansion_nodes']
 get_territory_summary = _i['get_territory_summary']
@@ -1462,6 +1467,61 @@ def compliance_status():
     return _cors(jsonify(summary)), 200
 
 
+# ── V100 BPIfrance Audit ─────────────────────────────────────────────
+
+@app.route("/api/v1/bpifrance/audit", methods=["OPTIONS"])
+def bpifrance_audit_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/bpifrance/audit", methods=["GET"])
+def bpifrance_audit():
+    if exportar_evidencia_bpi is None:
+        return _cors(jsonify({"status": "error", "message": "bpifrance_auditor_unavailable"})), 500
+    evidence = exportar_evidencia_bpi(write_file=False)
+    return _cors(jsonify({"status": "ok", **evidence})), 200
+
+
+@app.route("/api/v1/bpifrance/audit/export", methods=["OPTIONS"])
+def bpifrance_audit_export_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/bpifrance/audit/export", methods=["POST"])
+def bpifrance_audit_export():
+    if exportar_evidencia_bpi is None:
+        return _cors(jsonify({"status": "error", "message": "bpifrance_auditor_unavailable"})), 500
+    evidence = exportar_evidencia_bpi(write_file=True)
+    filepath = evidence.pop("_file", None)
+    return _cors(jsonify({"status": "ok", "file": filepath, **evidence})), 201
+
+
+@app.route("/api/v1/bpifrance/metrics", methods=["OPTIONS"])
+def bpifrance_metrics_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/bpifrance/metrics", methods=["GET"])
+def bpifrance_metrics():
+    if recolectar_logs_reales is None:
+        return _cors(jsonify({"status": "error", "message": "bpifrance_auditor_unavailable"})), 500
+    metrics = recolectar_logs_reales()
+    return _cors(jsonify({"status": "ok", **metrics})), 200
+
+
+@app.route("/api/v1/bpifrance/proforma", methods=["OPTIONS"])
+def bpifrance_proforma_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/bpifrance/proforma", methods=["GET"])
+def bpifrance_proforma():
+    if generar_proforma_consolidada is None:
+        return _cors(jsonify({"status": "error", "message": "bpifrance_auditor_unavailable"})), 500
+    proforma = generar_proforma_consolidada()
+    return _cors(jsonify({"status": "ok", **proforma})), 200
+
+
 # ── V11 Treasury: Payout Monitoring & Capital Blindaje ───────────────
 
 @app.route("/api/v1/treasury/status", methods=["OPTIONS"])
@@ -1721,6 +1781,7 @@ def health():
         "territory_expansion_target_eur": territory["expansion_target_eur"],
         "treasury_reserve_eur": treasury["reserve_eur"],
         "treasury_capital_label": treasury["capital_label"],
+        "bpifrance_audit_available": exportar_evidencia_bpi is not None,
     })), 200
 
 
