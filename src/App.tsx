@@ -39,6 +39,7 @@ const SECTION_KICKERS: Record<
     footer: string;
     heroPanel: string;
     pilots: string;
+    valuation: string;
   }
 > = {
   fr: {
@@ -54,6 +55,7 @@ const SECTION_KICKERS: Record<
     footer: "Identité légale",
     heroPanel: "Pilot desk",
     pilots: "Réseau pilote",
+    valuation: "Valorisation IP",
   },
   en: {
     hero: "Enterprise retail",
@@ -68,6 +70,7 @@ const SECTION_KICKERS: Record<
     footer: "Legal identity",
     heroPanel: "Pilot desk",
     pilots: "Pilot network",
+    valuation: "IP valuation",
   },
   es: {
     hero: "Retail enterprise",
@@ -82,6 +85,7 @@ const SECTION_KICKERS: Record<
     footer: "Identidad legal",
     heroPanel: "Pilot desk",
     pilots: "Red piloto",
+    valuation: "Valoración IP",
   },
 };
 
@@ -1433,6 +1437,45 @@ export default function App() {
                 {staticCopy.ethicsIcon}
               </span>
               <p>{copy.ethics.seal}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="valuation">
+          <div className="section-shell">
+            <div className="section-copy reveal">
+              <p className="section-kicker">{kickers.valuation}</p>
+              <h2>{copy.valuation.sectionTitle}</h2>
+              <p className="section-lead">{copy.valuation.lead}</p>
+            </div>
+
+            <div className="valuation-grid reveal">
+              <article className="metric-card">
+                <p className="metric-card__value">{new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(33240 * 12)}</p>
+                <p className="metric-card__label">{copy.valuation.arrLabel}</p>
+              </article>
+              <article className="metric-card">
+                <p className="metric-card__value">8.5×</p>
+                <p className="metric-card__label">{copy.valuation.multiplierLabel}</p>
+              </article>
+              <article className="metric-card metric-card--highlight">
+                <p className="metric-card__value">{new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(33240 * 12 * 8.5)}</p>
+                <p className="metric-card__label">{copy.valuation.valuationLabel}</p>
+              </article>
+              <article className="metric-card">
+                <p className="metric-card__value">6 {locale === "fr" ? "mois" : locale === "es" ? "meses" : "months"}</p>
+                <p className="metric-card__label">{copy.valuation.exitLabel}</p>
+              </article>
+            </div>
+
+            <div className="valuation-assets reveal">
+              <p className="section-footnote">
+                {copy.valuation.assetsLabel}: Lafayette · Le Bon Marché · La Défense
+              </p>
+              <div className="ethics-seal">
+                <span className="ethics-seal__mark" aria-hidden="true">{staticCopy.ethicsIcon}</span>
+                <p>{copy.valuation.statusLabel}: READY FOR EXIT</p>
+              </div>
             </div>
           </div>
         </section>

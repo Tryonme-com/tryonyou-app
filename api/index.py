@@ -96,6 +96,10 @@ get_expansion_nodes = _i['get_expansion_nodes']
 get_territory_summary = _i['get_territory_summary']
 generate_node_contract = _i['generate_node_contract']
 
+_i = _safe_import('valuation_sentinel', ['get_valuation_report', 'get_valuation_summary'])
+get_valuation_report = _i['get_valuation_report']
+get_valuation_summary = _i['get_valuation_summary']
+
 _i = _safe_import('empire_payout_trans', ['get_flow_summary', 'register_checkout_success', 'register_payment_intent', 'register_payout_transition'])
 get_flow_summary = _i['get_flow_summary']
 register_checkout_success = _i['register_checkout_success']
@@ -1518,6 +1522,30 @@ def treasury_record_payout():
     return _cors(jsonify({"status": "ok", "payout": entry})), 201
 
 
+# ── V11 Valuation Sentinel: Live Market Valuation ────────────────────
+
+@app.route("/api/v1/valuation/report", methods=["OPTIONS"])
+def valuation_report_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/valuation/report", methods=["GET"])
+def valuation_report():
+    report = get_valuation_report()
+    return _cors(jsonify({"status": "ok", **report})), 200
+
+
+@app.route("/api/v1/valuation/summary", methods=["OPTIONS"])
+def valuation_summary_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/valuation/summary", methods=["GET"])
+def valuation_summary():
+    summary = get_valuation_summary()
+    return _cors(jsonify({"status": "ok", **summary})), 200
+
+
 # ── V11 Territory: Multi-Node Expansion & Licensing ─────────────────
 
 @app.route("/api/v1/territory/nodes", methods=["OPTIONS"])
@@ -1721,6 +1749,8 @@ def health():
         "territory_expansion_target_eur": territory["expansion_target_eur"],
         "treasury_reserve_eur": treasury["reserve_eur"],
         "treasury_capital_label": treasury["capital_label"],
+        "valuation_available": get_valuation_summary is not None,
+        "valuation_market_eur": (get_valuation_summary() or {}).get("market_valuation_eur") if get_valuation_summary else None,
     })), 200
 
 

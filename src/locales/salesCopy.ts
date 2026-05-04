@@ -122,6 +122,16 @@ export type SalesCopy = {
     }[];
     seal: string;
   };
+  valuation: {
+    sectionTitle: string;
+    lead: string;
+    arrLabel: string;
+    multiplierLabel: string;
+    valuationLabel: string;
+    statusLabel: string;
+    assetsLabel: string;
+    exitLabel: string;
+  };
   overlayReserve: string;
   overlayCombos: string;
   overlayMuseum: string;
@@ -302,6 +312,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       cookies: "Cookies",
       security: "Sécurité",
     },
+    valuation: {
+      sectionTitle: "Valorisation en direct",
+      lead: "Projection de marché fondée sur les revenus confirmés des nœuds parisiens et un multiplicateur ARR sectoriel.",
+      arrLabel: "ARR projeté",
+      multiplierLabel: "Multiplicateur",
+      valuationLabel: "Valorisation de marché",
+      statusLabel: "Statut",
+      assetsLabel: "Actifs confirmés",
+      exitLabel: "Horizon de sortie",
+    },
     overlayReserve: "Réserver",
     overlayCombos: "Voir variantes",
     overlayMuseum: "Sauvegarder",
@@ -481,6 +501,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       cookies: "Cookies",
       security: "Security",
     },
+    valuation: {
+      sectionTitle: "Live valuation",
+      lead: "Market projection based on confirmed revenue from Paris nodes and a sector ARR multiplier.",
+      arrLabel: "Projected ARR",
+      multiplierLabel: "Multiplier",
+      valuationLabel: "Market valuation",
+      statusLabel: "Status",
+      assetsLabel: "Confirmed assets",
+      exitLabel: "Exit horizon",
+    },
     overlayReserve: "Reserve",
     overlayCombos: "View options",
     overlayMuseum: "Save",
@@ -659,6 +689,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
       terms: "Términos",
       cookies: "Cookies",
       security: "Seguridad",
+    },
+    valuation: {
+      sectionTitle: "Valoración en directo",
+      lead: "Proyección de mercado basada en ingresos confirmados de los nodos parisinos y un multiplicador ARR sectorial.",
+      arrLabel: "ARR proyectado",
+      multiplierLabel: "Multiplicador",
+      valuationLabel: "Valoración de mercado",
+      statusLabel: "Estado",
+      assetsLabel: "Activos confirmados",
+      exitLabel: "Horizonte de salida",
     },
     overlayReserve: "Reservar",
     overlayCombos: "Ver variantes",

@@ -2222,4 +2222,39 @@ button {
   }
 }
 
+/* ── Valuation Sentinel Section ─────────────────────────── */
+
+.valuation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.valuation-grid .metric-card--highlight {
+  border: 1px solid var(--gold, #d4af37);
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.18);
+}
+
+.valuation-grid .metric-card--highlight .metric-card__value {
+  color: var(--gold, #d4af37);
+}
+
+.valuation-assets {
+  margin-top: 28px;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .valuation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .valuation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* B2B landing v12 — cache bust */
