@@ -1,10 +1,12 @@
 {
-  "invoice_reference": "F-2026-001-PARTIAL",
+  "source_invoice": "F-2026-001-PARTIAL.json",
+  "contract": "DIVINEO-V10",
+  "milestone": "Hito 1 / Jalon 1",
+  "currency": "EUR",
   "gross_ttc_eur": 484908.0,
   "stripe_fee_rate": 0.015,
   "stripe_commission_eur": 7273.62,
   "qonto_commission_eur": 25.0,
   "net_deployable_eur": 477609.38,
-  "status": "LIQUIDITY_DEPLOYABLE",
-  "updated_utc": "2026-05-04T08:20:28.673368Z"
+  "status": "LIQUIDITY_DEPLOYABLE"
 }

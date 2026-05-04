@@ -1,41 +1,43 @@
 {
-  "invoice_reference": "F-2026-001-PARTIAL",
-  "issue_date": "2026-05-04",
-  "currency": "EUR",
+  "invoice_number": "F-2026-001-PARTIAL",
+  "type": "facture_b2b",
   "jurisdiction": "FR",
+  "currency": "EUR",
   "emitter": {
-    "name": "Rubén Espinar Rodríguez",
+    "legal_name": "Rubén Espinar Rodríguez (EI)",
     "legal_form": "EI",
     "siren": "943610196",
     "siren_formatted": "943 610 196",
-    "address_lines": [
-      "France"
-    ]
+    "address_hint": "Paris, France"
   },
   "client": {
-    "name": "Galeries Lafayette Haussmann",
+    "legal_name": "Galeries Lafayette Haussmann",
     "siret": "55212921100011",
-    "siret_formatted": "552 129 211 00011",
-    "address_lines": [
-      "40 Boulevard Haussmann",
-      "75009 Paris",
-      "France"
-    ]
+    "siret_formatted": "552 129 211 00011"
   },
-  "lines": [
+  "line_items": [
     {
       "description": "Pago del hito 1: Licencia PauPeacockEngine V12",
       "quantity": 1,
-      "unit_ht_eur": 404090.0,
-      "total_ht_eur": 404090.0,
-      "vat_rate": 0.2,
-      "vat_amount_eur": 80818.0,
-      "total_ttc_eur": 484908.0
+      "unit_ht": 404090.0,
+      "total_ht": 404090.0
     }
   ],
   "totals": {
-    "total_ht_eur": 404090.0,
-    "total_vat_eur": 80818.0,
-    "total_ttc_eur": 484908.0
+    "base_ht": 404090.0,
+    "base_ht_formatted": "404.090,00 €",
+    "tva_rate": 0.2,
+    "tva_amount": 80818.0,
+    "tva_amount_formatted": "80.818,00 €",
+    "total_ttc": 484908.0,
+    "total_ttc_formatted": "484.908,00 €"
+  },
+  "references": {
+    "contract": "DIVINEO-V10",
+    "milestone": "Hito 1 / Jalon 1"
+  },
+  "pdf_export_hint": {
+    "title": "Facture F-2026-001-PARTIAL",
+    "locale": "fr_FR"
   }
 }

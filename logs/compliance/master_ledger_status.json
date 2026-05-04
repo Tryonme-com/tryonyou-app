@@ -1,0 +1,13 @@
+{
+  "schema": "master_ledger_status_v1",
+  "generated_at_utc": "2026-05-04T09:11:49.187944Z",
+  "currency": "EUR",
+  "gross_ttc_eur": 484908.0,
+  "stripe_fee_eur": 7273.62,
+  "stripe_fee_rate": 0.015,
+  "qonto_fee_eur": 25.0,
+  "net_deployable_eur": 477609.38,
+  "status": "LIQUIDITY_DEPLOYABLE",
+  "invoice_ref": "F-2026-001-PARTIAL",
+  "note": "Cálculo contable local; validar contra extractos Stripe/Qonto antes de desembolso."
+}
