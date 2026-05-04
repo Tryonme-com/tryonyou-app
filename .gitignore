@@ -9,6 +9,10 @@ node_modules/
 !.env.example
 .env_security_lock
 
+# Evidencia/estado financiero local (no versionar datos bancarios)
+capital_450k_evidence.json
+dossier_fatality_state.json
+
 # Frontend build (Vercel reconstruye en deploy)
 dist/
 
