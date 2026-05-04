@@ -1,0 +1,53 @@
+{
+    "invoice_number": "F-2026-001-PARTIAL",
+    "invoice_type": "Facture Partielle — Jalon 1",
+    "reference_e2e": "DIVINEO-V10-PCT2025-067317",
+    "date_emission": "2026-05-04",
+    "date_echeance": "2026-05-04",
+    "devise": "EUR",
+
+    "issuer": {
+        "name": "Rubén Espinar Rodríguez (EI)",
+        "entity": "EI - ESPINAR RODRIGUEZ",
+        "siren": "943 610 196",
+        "siret": "94361019600017",
+        "address": "Rue d'Argenteuil, 75001 Paris, France",
+        "patent": "PCT/EP2025/067317",
+        "iban": "FR761695800001576292349652",
+        "bic": "QNTOFRP1XXX",
+        "bank": "QONTO SA"
+    },
+
+    "client": {
+        "name": "Galeries Lafayette Haussmann",
+        "siret": "552 129 211 00011",
+        "address": "40 Boulevard Haussmann, 75009 Paris, France"
+    },
+
+    "concept": "Paiement Jalon 1 — Licence PauPeacockEngine V12. Déploiement omnicanal Try-On virtuel + moteur IA de recommandation vestimentaire. Premier versement partiel par étapes (Milestone 1).",
+
+    "amounts": {
+        "base_imponible_ht_eur": 404090.00,
+        "tva_rate_pct": 20.0,
+        "tva_eur": 80818.00,
+        "total_ttc_eur": 484908.00
+    },
+
+    "payment_method": "SEPA_BUSINESS_TRANSFER",
+    "payment_coordinates": {
+        "iban": "FR761695800001576292349652",
+        "bic": "QNTOFRP1XXX",
+        "bank": "QONTO SA",
+        "beneficiary": "EI - ESPINAR RODRIGUEZ"
+    },
+
+    "legal_references": {
+        "patent": "PCT/EP2025/067317",
+        "protocol": "Soberanía V10 Omega",
+        "contract_cadre": "F-2026-001",
+        "founder": "Rubén Espinar Rodríguez"
+    },
+
+    "status": "VALIDATED_BY_BANK_AUDIT",
+    "qonto_match_status": "FORCE_MATCH_READY"
+}

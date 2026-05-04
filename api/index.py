@@ -102,6 +102,12 @@ register_checkout_success = _i['register_checkout_success']
 register_payment_intent = _i['register_payment_intent']
 register_payout_transition = _i['register_payout_transition']
 
+_i = _safe_import('update_net_liquidity', ['build_master_ledger_status', 'get_ledger_status', 'persist_ledger_status', 'compute_net_liquidity'])
+build_master_ledger_status = _i['build_master_ledger_status']
+get_ledger_status = _i['get_ledger_status']
+persist_ledger_status = _i['persist_ledger_status']
+compute_net_liquidity = _i['compute_net_liquidity']
+
 _i = _safe_import('core_engine', ['trace_event', 'mirror_snap_payload', 'perfect_selection_payload', 'model_access_payload', 'kill_switch_status_payload', 'kill_switch_payload'])
 trace_event = _i['trace_event']
 mirror_snap_payload = _i['mirror_snap_payload']
@@ -1678,6 +1684,69 @@ def pau_sovereignty():
         "siren_formatted": PAU_SIREN_FORMATTED,
     }))), 200
 
+# ── Capital Liberation: Net Liquidity + Ledger Status ────────────────
+
+@app.route("/api/v1/capital/net-liquidity", methods=["OPTIONS"])
+def net_liquidity_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/capital/net-liquidity", methods=["GET"])
+def net_liquidity():
+    if compute_net_liquidity is None:
+        return _cors(jsonify({"status": "error", "message": "net_liquidity_unavailable"})), 500
+    breakdown = compute_net_liquidity()
+    return _cors(jsonify({"status": "ok", **breakdown})), 200
+
+
+@app.route("/api/v1/capital/ledger-status", methods=["OPTIONS"])
+def ledger_status_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/capital/ledger-status", methods=["GET"])
+def ledger_status():
+    if get_ledger_status is None:
+        return _cors(jsonify({"status": "error", "message": "ledger_status_unavailable"})), 500
+    status = get_ledger_status()
+    return _cors(jsonify({"status": "ok", **status})), 200
+
+
+@app.route("/api/v1/capital/sync", methods=["OPTIONS"])
+def capital_sync_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/capital/sync", methods=["POST"])
+def capital_sync():
+    if persist_ledger_status is None or get_ledger_status is None:
+        return _cors(jsonify({"status": "error", "message": "capital_sync_unavailable"})), 500
+    persist_ledger_status()
+    status = get_ledger_status()
+    return _cors(jsonify({
+        "status": "ok",
+        "message": f"SISTEMA SINCRONIZADO. SALDO DISPONIBLE: {status.get('net_deployable_eur', 0):,.2f} EUR",
+        "ledger": status,
+    })), 200
+
+
+@app.route("/api/v1/capital/invoice-partial", methods=["OPTIONS"])
+def invoice_partial_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/capital/invoice-partial", methods=["GET"])
+def invoice_partial():
+    invoice_path = Path(__file__).resolve().parent.parent / "docs" / "legal" / "compliance" / "F-2026-001-PARTIAL.json"
+    if not invoice_path.exists():
+        return _cors(jsonify({"status": "error", "message": "invoice_not_found"})), 404
+    try:
+        data = json.loads(invoice_path.read_text(encoding="utf-8"))
+        return _cors(jsonify({"status": "ok", "invoice": data})), 200
+    except Exception as exc:
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
+
+
 @app.route("/api/health", methods=["GET"])
 @app.route("/health", methods=["GET"])
 def health():
@@ -1721,6 +1790,9 @@ def health():
         "territory_expansion_target_eur": territory["expansion_target_eur"],
         "treasury_reserve_eur": treasury["reserve_eur"],
         "treasury_capital_label": treasury["capital_label"],
+        "capital_liberation_available": get_ledger_status is not None,
+        "capital_net_deployable_eur": (get_ledger_status() or {}).get("net_deployable_eur") if get_ledger_status else None,
+        "capital_status": (get_ledger_status() or {}).get("status") if get_ledger_status else None,
     })), 200
 
 
