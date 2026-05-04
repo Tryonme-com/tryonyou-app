@@ -1499,8 +1499,13 @@ def treasury_payouts_list():
 @app.route("/api/v1/treasury/payouts", methods=["POST"])
 def treasury_record_payout():
     body = request.get_json(force=True, silent=True) or {}
-    amount = body.get("amount_eur")
-    if not amount or not isinstance(amount, (int, float)) or amount <= 0:
+    raw_amount = body.get("amount_eur")
+    try:
+        amount = float(str(raw_amount).strip().replace(",", "."))
+    except (TypeError, ValueError):
+        amount = None
+
+    if amount is None or amount <= 0:
         return _cors(jsonify({
             "status": "error",
             "message": "amount_eur_required_positive",
