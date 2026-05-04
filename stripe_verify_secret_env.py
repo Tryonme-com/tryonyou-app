@@ -75,6 +75,35 @@ def _verify_stripe_account(key: str, kind: str) -> int:
     return 0
 
 
+def verificar_conexion() -> bool:
+    """
+    Verifica la conexión con Stripe recuperando el balance de la cuenta.
+
+    Lee la clave secreta desde variables de entorno (nunca hardcodeada).
+    Orden de resolución: STRIPE_SECRET_KEY_FR → STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY.
+
+    Returns:
+        True si la conexión es exitosa, False en caso de error.
+    """
+    import stripe
+
+    sk = resolve_stripe_secret()
+    if not sk:
+        print(
+            "Error: define STRIPE_SECRET_KEY_FR, STRIPE_SECRET_KEY_NUEVA o STRIPE_SECRET_KEY.",
+            file=sys.stderr,
+        )
+        return False
+    stripe.api_key = sk
+    try:
+        stripe.Balance.retrieve()
+        print("Conexión con Stripe establecida correctamente.")
+        return True
+    except Exception as e:
+        print(f"Error de conexión: {e}")
+        return False
+
+
 def main() -> int:
     key, kind = resolve_api_key()
     if not key:

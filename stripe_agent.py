@@ -26,6 +26,17 @@ import stripe
 
 from stripe_fr_resolve import resolve_stripe_secret_fr
 
+SIREN = "943 610 196"
+PATENT = "PCT/EP2025/067317"
+
+
+def _merge_default_metadata(metadata: dict[str, str] | None) -> dict[str, str]:
+    """Return a metadata dict that always includes SIREN and patent as fallback values."""
+    base: dict[str, str] = {"siren": SIREN, "patent": PATENT, "platform": "TryOnYou"}
+    if metadata:
+        base.update(metadata)
+    return base
+
 
 _list_cache_lock = threading.Lock()
 _list_cache: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -132,8 +143,7 @@ def create_product(
         params: dict[str, Any] = {"name": name}
         if description:
             params["description"] = description
-        if metadata:
-            params["metadata"] = metadata
+        params["metadata"] = _merge_default_metadata(metadata)
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
     except stripe.error.StripeError as exc:
@@ -250,8 +260,7 @@ def create_price(
         }
         if recurring:
             params["recurring"] = recurring
-        if metadata:
-            params["metadata"] = metadata
+        params["metadata"] = _merge_default_metadata(metadata)
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
     except stripe.error.StripeError as exc:
