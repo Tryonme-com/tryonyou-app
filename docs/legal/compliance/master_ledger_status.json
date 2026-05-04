@@ -1,0 +1,27 @@
+{
+    "ledger_id": "MASTER-LEDGER-OMEGA-V10",
+    "ts": "2026-05-04T08:10:14.749658+00:00",
+    "entity": "EI - ESPINAR RODRIGUEZ, RUBEN",
+    "siren": "943 610 196",
+    "siret": "94361019600017",
+    "patent": "PCT/EP2025/067317",
+    "iban": "FR761695800001576292349652",
+    "bic": "QNTOFRP1XXX",
+    "bank": "QONTO SA",
+    "milestone": "Jalon 1 — Licence PauPeacockEngine V12",
+    "client": "Galeries Lafayette Haussmann",
+    "client_siret": "552 129 211 00011",
+    "gross_eur": 484908.0,
+    "fees": {
+        "stripe_pct": 1.5,
+        "stripe_eur": 7273.62,
+        "qonto_eur": 25.0,
+        "total_fees_eur": 7298.62
+    },
+    "net_deployable_eur": 477609.38,
+    "status": "LIQUIDITY_DEPLOYABLE",
+    "invoice_ref": "F-2026-001-PARTIAL",
+    "reference_e2e": "DIVINEO-V10-PCT2025-067317",
+    "qonto_match": "FORCE_MATCH_COMPLETED",
+    "compliance_message": "Ce virement de 484 908,00 € correspond au premier jalon (Milestone 1) du contrat DIVINEO-V10. La facture jointe F-2026-001-PARTIAL régularise la discordance de montant avec le contrat-cadre global."
+}
