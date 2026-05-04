@@ -4,6 +4,8 @@ import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
 import RealTimeAvatar from "./components/RealTimeAvatar";
+import MirrorBlackScreenQR from "./components/MirrorBlackScreenQR";
+import FrictionToFlowOverlay from "./components/FrictionToFlowOverlay";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
 import { enforceV9IdentityLabel } from "./lib/privacyFirewall";
@@ -14,6 +16,7 @@ import {
 } from "./lib/firebaseApplet";
 import { trackCoreEvent } from "./lib/coreEngineClient";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
+import { getLafayetteStripeCheckoutUrl } from "./lib/lafayetteCheckout";
 import { SALES_COPY, SUPPORTED_LOCALES, type AppLocale } from "./locales/salesCopy";
 import "./index.css";
 import "./App.css";
