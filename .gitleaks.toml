@@ -1,0 +1,26 @@
+# Gitleaks configuration — TryOnYou Protocolo Soberanía V10
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+# Si un token real se filtra: REVÓCALO en el servicio origen de inmediato
+# (BotFather para Telegram, Dashboard para Stripe/Firebase/Vercel).
+
+title = "TryOnYou gitleaks config"
+
+[extend]
+# Use the default ruleset shipped with gitleaks
+useDefault = true
+
+[allowlist]
+description = "Allowlist for test fixtures and example files"
+
+# Test files use obviously fake keys (sk_test_fake123, sk_live_test, etc.)
+paths = [
+  '''tests/''',
+  '''\.env\.example$''',
+  '''ABVETOS_INTELLIGENCE_SYSTEM\.env\.example$''',
+]
+
+# Suppress placeholder/example patterns that are not real secrets
+regexes = [
+  # Generic placeholder values
+  '''(?i)(your[_-]?token|example|placeholder|<token>|xxxx|fake|dummy|test123|abc123)''',
+]
