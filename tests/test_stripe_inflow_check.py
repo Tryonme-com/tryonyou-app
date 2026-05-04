@@ -42,10 +42,11 @@ class TestCheckRealInflowNoKey(unittest.TestCase):
 
 class TestCheckRealInflowWithKey(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_live_dummy"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_INFLOW_ALLOW_TEST_KEY", None)
 
     def test_no_high_volume_returns_empty(self) -> None:
         mock_list = MagicMock()
@@ -102,12 +103,28 @@ class TestCheckRealInflowWithKey(unittest.TestCase):
         mock_list.data = []
         with patch("stripe.BalanceTransaction.list", return_value=mock_list):
             check_real_inflow()
-        self.assertEqual(stripe.api_key, "sk_test_dummy")
+        self.assertEqual(stripe.api_key, "sk_live_dummy")
+
+    def test_rejects_test_key_by_default(self) -> None:
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        with patch("stripe.BalanceTransaction.list") as mock_fn:
+            result = check_real_inflow()
+        self.assertEqual(result, [])
+        mock_fn.assert_not_called()
+
+    def test_allows_test_key_with_explicit_opt_in(self) -> None:
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        os.environ["STRIPE_INFLOW_ALLOW_TEST_KEY"] = "1"
+        mock_list = MagicMock()
+        mock_list.data = [_make_bt(200_000, "available", "charge")]
+        with patch("stripe.BalanceTransaction.list", return_value=mock_list):
+            result = check_real_inflow()
+        self.assertEqual(len(result), 1)
 
 
 class TestMain(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_live_dummy"
 
     def tearDown(self) -> None:
         os.environ.pop("STRIPE_SECRET_KEY_FR", None)

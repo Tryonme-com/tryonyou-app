@@ -14,6 +14,7 @@ Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from stripe_verify_secret_env import resolve_stripe_secret
@@ -21,6 +22,7 @@ from stripe_verify_secret_env import resolve_stripe_secret
 # Importe mínimo para considerar un movimiento de «alto volumen» (en céntimos).
 # 1 000 € = 100 000 céntimos.
 HIGH_VOLUME_THRESHOLD_CENTS = 100_000
+ALLOW_TEST_KEY_ENV = "STRIPE_INFLOW_ALLOW_TEST_KEY"
 
 
 def check_real_inflow(limit: int = 20) -> list[dict]:
@@ -37,6 +39,12 @@ def check_real_inflow(limit: int = 20) -> list[dict]:
     if not sk:
         print(
             "Define STRIPE_SECRET_KEY_FR (Paris) o STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY.",
+            file=sys.stderr,
+        )
+        return []
+    if sk.startswith("sk_test_") and os.environ.get(ALLOW_TEST_KEY_ENV) != "1":
+        print(
+            f"Clave sk_test_ rechazada para inflow real; define {ALLOW_TEST_KEY_ENV}=1 solo en pruebas locales.",
             file=sys.stderr,
         )
         return []
