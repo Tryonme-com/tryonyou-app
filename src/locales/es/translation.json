@@ -1,0 +1,186 @@
+{
+  "localeLabel": "Idioma",
+  "nav": {
+    "home": "Home",
+    "technology": "Tecnología",
+    "solutions": "Soluciones",
+    "pilots": "Pilotos",
+    "about": "Sobre nosotros",
+    "legal": "Legal",
+    "demo": "Solicitar demo"
+  },
+  "hero": {
+    "title": "El probador virtual que reduce devoluciones y aumenta la conversión.",
+    "lead": "TRYONYOU ayuda a los retailers de moda a mostrar el fit correcto sobre el cuerpo real del cliente mediante un gemelo digital, un motor preciso de talla y una simulación realista de la prenda.",
+    "cta": "Solicitar demo",
+    "trustStrip": [
+      "PCT/EP2025/067317",
+      "Hasta 10.000 usuarios simultáneos",
+      "99,7 % de precisión biométrica declarada",
+      "Hasta -85 % devoluciones"
+    ]
+  },
+  "problem": {
+    "title": "El problema",
+    "body": "Cada compra fallida por talla incorrecta erosiona margen, aumenta costes logísticos y debilita la confianza del cliente. En moda, no basta con mostrar una prenda: hay que ayudar al cliente a entender cómo le quedará, qué talla necesita y si puede comprar con seguridad.",
+    "closing": "La mayoría de las experiencias de talla siguen basándose en tablas genéricas. TRYONYOU las reemplaza por certeza individual."
+  },
+  "solution": {
+    "title": "La solución en 3 pasos",
+    "support": "No es un simple avatar. Es un motor de decisión para fit, sizing y visualización de prenda pensado para retail enterprise.",
+    "steps": [
+      {
+        "title": "El cliente crea su perfil corporal",
+        "body": "A partir de imágenes guiadas y datos mínimos, TRYONYOU genera un perfil preciso para estimar medidas y comportamiento de fit."
+      },
+      {
+        "title": "TRYONYOU crea un gemelo digital utilizable",
+        "body": "El sistema transforma esa información en un modelo digital orientado a sizing, recomendación y visualización."
+      },
+      {
+        "title": "La marca muestra talla y ajuste con claridad",
+        "body": "El retailer puede recomendar la talla correcta, mostrar cómo cae la prenda y reducir la incertidumbre antes de la compra."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Beneficios clave",
+    "cards": [
+      {
+        "eyebrow": "Más conversión",
+        "title": "Menos duda en el momento de compra",
+        "body": "Cuando el cliente entiende talla y fit, el paso a checkout es más probable y la PDP trabaja mejor."
+      },
+      {
+        "eyebrow": "Menos devoluciones",
+        "title": "Menos errores de talla, menos coste operativo",
+        "body": "TRYONYOU ayuda a reducir devoluciones asociadas a fit y elección de talla en categorías sensibles."
+      },
+      {
+        "eyebrow": "Más confianza",
+        "title": "Una experiencia más segura y más útil",
+        "body": "La recomendación personalizada aumenta la percepción de control, reduce fricción y mejora la relación con la marca."
+      }
+    ],
+    "closing": "La promesa no es solo una mejor experiencia. La promesa es una mejor economía unitaria por pedido."
+  },
+  "technology": {
+    "title": "Tecnología",
+    "body": "TRYONYOU combina captura guiada, modelado corporal, inteligencia de talla y simulación de prenda en una sola capa de decisión. El resultado es un Digital Fit Engine capaz de traducir datos visuales y de producto en recomendaciones de talla, representación de fit y señales accionables para el retailer.",
+    "modules": ["Captura", "Digital Twin", "Sizing Intelligence", "Garment Simulation"],
+    "pauLabel": "PAU, personal AI stylist by TRYONYOU"
+  },
+  "trust": {
+    "title": "Prueba y confianza",
+    "body": "Una prueba sobria, orientada a validación interna y despliegue enterprise.",
+    "metrics": [
+      {
+        "value": "-85 %",
+        "label": "Hasta -85 % de devoluciones y +25 % de conversión en perímetros validados."
+      },
+      {
+        "value": "99,7 %",
+        "label": "Precisión biométrica declarada de 99,7 %."
+      },
+      {
+        "value": "10.000",
+        "label": "Arquitectura preparada para hasta 10.000 usuarios simultáneos."
+      },
+      {
+        "value": "PCT",
+        "label": "Zero-Size Protocol — solicitud internacional PCT/EP2025/067317."
+      }
+    ],
+    "note": "No usar logos sin autorización escrita."
+  },
+  "finalCta": {
+    "title": "Si su equipo quiere reducir devoluciones, aumentar conversión y validar un piloto con un caso de negocio claro, hablemos.",
+    "cta": "Solicitar demo",
+    "microcopy": "Respuesta orientativa en 48 horas laborables. Reunión adaptada a retail, e-commerce o grandes almacenes."
+  },
+  "demoForm": {
+    "title": "Solicitar demo",
+    "support": "Cuéntenos su caso y prepararemos una demo adaptada a su operación, su canal y su prioridad de negocio.",
+    "submit": "Solicitar demo",
+    "businessTypeOptions": ["Retailer", "E-commerce", "Gran almacén", "Marketplace"],
+    "fieldLabels": {
+      "fullName": "Nombre y apellido",
+      "corporateEmail": "Email corporativo",
+      "company": "Empresa",
+      "role": "Cargo",
+      "businessType": "Tipo de negocio",
+      "primaryMarket": "Mercado principal",
+      "challenge": "Qué quiere resolver",
+      "volume": "Volumen aproximado",
+      "horizon": "Horizonte de proyecto",
+      "consent": "Acepto ser contactado en relación con mi solicitud."
+    },
+    "optionalLabel": "Opcional",
+    "consentHint": "Consentimiento de contacto obligatorio.",
+    "submitting": "Enviando…",
+    "successTitle": "Gracias.",
+    "successBody": "Su solicitud de demo ha sido enviada. Nuestro equipo le contactará pronto.",
+    "error": "No hemos podido enviar su solicitud en este momento.",
+    "retry": "Por favor, inténtelo de nuevo en unos instantes."
+  },
+  "expansion": {
+    "sectionTitle": "Red de implantación",
+    "activeBadge": "Activo",
+    "pendingBadge": "Próxima apertura",
+    "bannerTitle": "Expansión en curso",
+    "bannerBody": "Nuevos puntos de experiencia abren sus puertas. La red soberana se extiende por París.",
+    "locations": [
+      { "name": "Le Bon Marché Rive Gauche", "district": "75007", "status": "active" },
+      { "name": "Le Marais", "district": "75003", "status": "pending" },
+      { "name": "La Défense", "district": "92060", "status": "pending" }
+    ]
+  },
+  "ethics": {
+    "sectionTitle": "Manifiesto ético",
+    "principles": [
+      {
+        "title": "Protección biométrica",
+        "body": "Los datos corporales nunca salen del dispositivo del cliente. Sin almacenamiento de siluetas, sin explotación por terceros."
+      },
+      {
+        "title": "Transparencia algorítmica",
+        "body": "Cada recomendación de talla es trazable. El cliente entiende por qué se le sugiere un ajuste."
+      },
+      {
+        "title": "Dignidad del cuerpo",
+        "body": "Cero comentarios sobre peso, cero proyección normativa. El motor ajusta la prenda al cuerpo, nunca al revés."
+      },
+      {
+        "title": "Soberanía de los datos",
+        "body": "El retailer recibe señales de ajuste, nunca datos biométricos brutos. El cliente sigue siendo el propietario."
+      }
+    ],
+    "seal": "Manifiesto Ético V11 — Protocolo de Soberanía"
+  },
+  "footer": {
+    "companyLine": "Divineo · SIRET 94361019600017 · París, Francia",
+    "privacy": "Privacidad",
+    "biometricData": "Datos biométricos",
+    "terms": "Términos",
+    "cookies": "Cookies",
+    "security": "Seguridad"
+  },
+  "overlayReserve": "Reservar",
+  "overlayCombos": "Ver variantes",
+  "overlayMuseum": "Guardar",
+  "overlayShare": "Compartir",
+  "pauGuideGreeting": "Hola, soy PAU, personal AI stylist by TRYONYOU.",
+  "pauGuideWelcome": "Bienvenida a Le Bon Marché Rive Gauche, donde la lealtad del Bolsillo Oculto guía cada elección.",
+  "pauGuideScan": "Guío al cliente en la captura y la creación de su perfil corporal.",
+  "pauGuideSnap": "Muestro cómo cae la prenda antes de comprar.",
+  "pauGuideNext": "Ayudo a decidir con más claridad sobre talla y fit.",
+  "pauGuideClosing": "Rends-le-moi avec un sourire",
+  "mirror": {
+    "reserve": "Reservar en Salón de Probadores",
+    "selection": "Mi Selección de Autor",
+    "scanning": "Analizando silueta biométrica...",
+    "success": "Ajuste de alta precisión validado.",
+    "error": "Variación biométrica detectada. Ajuste su postura.",
+    "brand_fallback": "Elegancia Burberry como alternativa de excepción."
+  }
+}

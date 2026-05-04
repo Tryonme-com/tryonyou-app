@@ -1,0 +1,186 @@
+{
+  "localeLabel": "Langue",
+  "nav": {
+    "home": "Home",
+    "technology": "Technologie",
+    "solutions": "Solutions",
+    "pilots": "Pilotes",
+    "about": "À propos",
+    "legal": "Mentions légales",
+    "demo": "Demander une démo"
+  },
+  "hero": {
+    "title": "L'essayage virtuel qui réduit les retours et augmente la conversion.",
+    "lead": "TRYONYOU aide les retailers de mode à montrer le bon fit sur le vrai corps du client grâce à un jumeau numérique, un moteur de taille précis et une simulation textile réaliste.",
+    "cta": "Demander une démo",
+    "trustStrip": [
+      "PCT/EP2025/067317",
+      "Jusqu'à 10 000 utilisateurs simultanés",
+      "99,7 % de précision biométrique déclarée",
+      "Jusqu'à -85 % de retours"
+    ]
+  },
+  "problem": {
+    "title": "Le problème",
+    "body": "Chaque achat raté à cause d'une taille incorrecte érode la marge, augmente les coûts logistiques et affaiblit la confiance du client. Dans la mode, il ne suffit pas de montrer un vêtement : il faut aider le client à comprendre comment il lui ira, quelle taille il lui faut et s'il peut acheter en toute confiance.",
+    "closing": "La plupart des expériences de taille reposent encore sur des grilles génériques. TRYONYOU les remplace par une certitude individuelle."
+  },
+  "solution": {
+    "title": "La solution en 3 étapes",
+    "support": "Ce n'est pas un simple avatar. C'est un moteur de décision pour le fit, le sizing et la visualisation du vêtement pensé pour le retail enterprise.",
+    "steps": [
+      {
+        "title": "Le client crée son profil corporel",
+        "body": "À partir d'images guidées et de données minimales, TRYONYOU génère un profil précis pour estimer les mesures et le comportement du fit."
+      },
+      {
+        "title": "TRYONYOU crée un jumeau numérique exploitable",
+        "body": "Le système transforme ces informations en un modèle numérique orienté sizing, recommandation et visualisation."
+      },
+      {
+        "title": "La marque montre la taille et l'ajustement avec clarté",
+        "body": "Le retailer peut recommander la bonne taille, montrer comment tombe le vêtement et réduire l'incertitude avant l'achat."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Bénéfices clés",
+    "cards": [
+      {
+        "eyebrow": "Plus de conversion",
+        "title": "Moins d'hésitation au moment d'acheter",
+        "body": "Quand le client comprend la taille et le fit, le passage au checkout est plus probable et la PDP travaille mieux."
+      },
+      {
+        "eyebrow": "Moins de retours",
+        "title": "Moins d'erreurs de taille, moins de coût opérationnel",
+        "body": "TRYONYOU aide à réduire les retours liés au fit et au choix de taille dans les catégories sensibles."
+      },
+      {
+        "eyebrow": "Plus de confiance",
+        "title": "Une expérience plus sûre et plus utile",
+        "body": "La recommandation personnalisée augmente la perception de contrôle, réduit la friction et améliore la relation avec la marque."
+      }
+    ],
+    "closing": "La promesse n'est pas seulement une meilleure expérience. La promesse est une meilleure économie unitaire par commande."
+  },
+  "technology": {
+    "title": "Technologie",
+    "body": "TRYONYOU combine capture guidée, modélisation corporelle, intelligence de taille et simulation de vêtement dans une seule couche de décision. Le résultat est un Digital Fit Engine capable de traduire des données visuelles et produit en recommandations de taille, représentation du fit et signaux actionnables pour le retailer.",
+    "modules": ["Capture", "Digital Twin", "Sizing Intelligence", "Garment Simulation"],
+    "pauLabel": "PAU, personal AI stylist by TRYONYOU"
+  },
+  "trust": {
+    "title": "Preuve et confiance",
+    "body": "Une preuve sobre, orientée validation interne et déploiement enterprise.",
+    "metrics": [
+      {
+        "value": "-85 %",
+        "label": "Jusqu'à -85 % de retours et +25 % de conversion sur des périmètres validés."
+      },
+      {
+        "value": "99,7 %",
+        "label": "Précision biométrique déclarée de 99,7 %."
+      },
+      {
+        "value": "10 000",
+        "label": "Architecture préparée pour jusqu'à 10 000 utilisateurs simultanés."
+      },
+      {
+        "value": "PCT",
+        "label": "Zero-Size Protocol — demande internationale PCT/EP2025/067317."
+      }
+    ],
+    "note": "Ne pas utiliser de logos sans autorisation écrite."
+  },
+  "finalCta": {
+    "title": "Si votre équipe veut réduire les retours, augmenter la conversion et valider un pilote avec un business case clair, parlons-en.",
+    "cta": "Demander une démo",
+    "microcopy": "Réponse indicative sous 48 heures ouvrées. Réunion adaptée au retail, à l'e-commerce ou aux grands magasins."
+  },
+  "demoForm": {
+    "title": "Demander une démo",
+    "support": "Parlez-nous de votre cas et nous préparerons une démo adaptée à votre opération, à votre canal et à votre priorité business.",
+    "submit": "Demander une démo",
+    "businessTypeOptions": ["Retailer", "E-commerce", "Grand magasin", "Marketplace"],
+    "fieldLabels": {
+      "fullName": "Nom et prénom",
+      "corporateEmail": "Email professionnel",
+      "company": "Entreprise",
+      "role": "Fonction",
+      "businessType": "Type d'activité",
+      "primaryMarket": "Marché principal",
+      "challenge": "Ce que vous voulez résoudre",
+      "volume": "Volume approximatif",
+      "horizon": "Horizon du projet",
+      "consent": "J'accepte d'être contacté au sujet de ma demande."
+    },
+    "optionalLabel": "Optionnel",
+    "consentHint": "Consentement de contact obligatoire.",
+    "submitting": "Envoi en cours…",
+    "successTitle": "Merci.",
+    "successBody": "Votre demande de démo a bien été envoyée. Notre équipe vous contactera rapidement.",
+    "error": "Impossible d'envoyer la demande pour le moment.",
+    "retry": "Veuillez réessayer dans quelques instants."
+  },
+  "expansion": {
+    "sectionTitle": "Réseau d'implantation",
+    "activeBadge": "Actif",
+    "pendingBadge": "Prochaine ouverture",
+    "bannerTitle": "Expansion en cours",
+    "bannerBody": "De nouveaux points d'expérience ouvrent leurs portes. Le réseau souverain s'étend à travers Paris.",
+    "locations": [
+      { "name": "Le Bon Marché Rive Gauche", "district": "75007", "status": "active" },
+      { "name": "Le Marais", "district": "75003", "status": "pending" },
+      { "name": "La Défense", "district": "92060", "status": "pending" }
+    ]
+  },
+  "ethics": {
+    "sectionTitle": "Manifeste éthique",
+    "principles": [
+      {
+        "title": "Protection biométrique",
+        "body": "Les données corporelles ne quittent jamais l'appareil du client. Aucun stockage de silhouettes, aucune exploitation tierce."
+      },
+      {
+        "title": "Transparence algorithmique",
+        "body": "Chaque recommandation de taille est traçable. Le client comprend pourquoi un ajustement lui est proposé."
+      },
+      {
+        "title": "Dignité du corps",
+        "body": "Zéro commentaire sur le poids, zéro projection normative. Le moteur ajuste le vêtement au corps, jamais l'inverse."
+      },
+      {
+        "title": "Souveraineté des données",
+        "body": "Le détaillant reçoit des signaux d'ajustement, jamais les données biométriques brutes. Le client reste propriétaire."
+      }
+    ],
+    "seal": "Manifeste Éthique V11 — Protocole de Souveraineté"
+  },
+  "footer": {
+    "companyLine": "Divineo · SIRET 94361019600017 · Paris, France",
+    "privacy": "Confidentialité",
+    "biometricData": "Données biométriques",
+    "terms": "Conditions",
+    "cookies": "Cookies",
+    "security": "Sécurité"
+  },
+  "overlayReserve": "Réserver",
+  "overlayCombos": "Voir variantes",
+  "overlayMuseum": "Sauvegarder",
+  "overlayShare": "Partager",
+  "pauGuideGreeting": "Bonjour, je suis PAU, personal AI stylist by TRYONYOU.",
+  "pauGuideWelcome": "Bienvenue au salon Le Bon Marché Rive Gauche, où la loyauté du Bolsillo Oculto guide chaque choix.",
+  "pauGuideScan": "Je guide le client dans la capture et la création de son profil corporel.",
+  "pauGuideSnap": "Je montre comment le vêtement tombe avant l'achat.",
+  "pauGuideNext": "J'aide à décider avec plus de clarté sur la taille et le fit.",
+  "pauGuideClosing": "Rends-le-moi avec un sourire",
+  "mirror": {
+    "reserve": "Réserver en Salon d'Essayage",
+    "selection": "Ma Sélection Signature",
+    "scanning": "Analyse de la silhouette en cours...",
+    "success": "Ajustement haute précision validé.",
+    "error": "Écart biométrique détecté. Veuillez ajuster la posture.",
+    "brand_fallback": "L'élégance Burberry en alternative d'exception."
+  }
+}
