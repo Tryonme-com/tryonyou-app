@@ -49,6 +49,9 @@ notify_success() {
 
 is_sensitive_path() {
   case "$1" in
+    .env.example|*/.env.example)
+      return 1
+      ;;
     .env|.env.*|*/.env|*/.env.*|*.pem|*.key|*.p12|*.pfx|*.crt|node_modules/*|dist/*|logs/*)
       return 0
       ;;
@@ -78,6 +81,11 @@ fi
 if [[ -z "$(git status --porcelain)" ]]; then
   echo "[supercommit_max] Nada que commitear."
   notify_success "TryOnYou Supercommit_Max OK: sin cambios pendientes en $(git branch --show-current)."
+  exit 0
+fi
+
+if [[ "${SUPERCOMMIT_VALIDATE_ONLY:-}" == "1" ]]; then
+  echo "[supercommit_max] Validación OK; commit omitido por SUPERCOMMIT_VALIDATE_ONLY=1."
   exit 0
 fi
 
