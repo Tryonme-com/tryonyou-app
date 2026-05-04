@@ -48,7 +48,7 @@ def check_real_inflow(limit: int = 20) -> list[dict]:
     print("--- ESCANEANDO ENTRADAS REALES DE CAPITAL ---")
     try:
         balance_transactions = stripe.BalanceTransaction.list(limit=limit)
-    except Exception as e:
+    except stripe.error.StripeError as e:
         print(f"Error al consultar BalanceTransaction.list: {e}", file=sys.stderr)
         return []
 
