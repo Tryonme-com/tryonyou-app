@@ -260,8 +260,8 @@ def fetch_stripe_treasury_snapshot(*, payout_list_limit: int = 5) -> dict[str, A
 
     stripe.api_key = sk
     kw = stripe_api_call_kwargs()
-    acct = resolve_stripe_connect_account_fr()
-    scope = "connect:" + acct if acct.startswith("acct_") else "platform"
+    acct = str(resolve_stripe_connect_account_fr() or "").strip()
+    scope = f"connect:{acct}" if acct.startswith("acct_") else "platform"
 
     try:
         bal = stripe.Balance.retrieve(**kw)
