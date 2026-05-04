@@ -6,27 +6,42 @@
  * Bajo Protocolo de Soberanía V10 - Founder: Rubén
  */
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import {
+  loadNinaMeshFromResponseStream,
+  meshUrlFromEnv,
+} from "../divineo/loadNinaMeshStream";
 import { initFirebaseApplet } from "./firebaseApplet";
 
-const app = initFirebaseApplet();
-const storage = app ? getStorage(app) : null;
-const biometricRef = storage
-  ? ref(storage, "biometria/nina_perfecta_mesh.json")
-  : null;
+const SOVEREIGN_MESH_STORAGE_PATH = "biometria/nina_perfecta_mesh.json";
 
-export const loadSovereignMesh = async (): Promise<unknown> => {
-  if (!biometricRef) {
-    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE. Firebase Storage no inicializado.");
-    return undefined;
+async function resolveSovereignMeshUrl(): Promise<string | null> {
+  const envUrl = meshUrlFromEnv();
+  if (envUrl) return envUrl;
+
+  const app = initFirebaseApplet();
+  if (!app) {
+    console.error(
+      "ERROR: BUNKER DE DATOS NO ALCANZABLE. Firebase Storage no inicializado.",
+    );
+    return null;
   }
+
+  const storage = getStorage(app);
+  return getDownloadURL(ref(storage, SOVEREIGN_MESH_STORAGE_PATH));
+}
+
+export const loadSovereignMesh = async (): Promise<unknown | undefined> => {
   try {
-    const url = await getDownloadURL(biometricRef);
-    const response = await fetch(url);
-    const meshData: unknown = await response.json();
-    console.log("PA, PA, PA - MALLA DE 111MB CARGADA. PROYECTANDO CERTEZA.");
+    const url = await resolveSovereignMeshUrl();
+    if (!url) {
+      return undefined;
+    }
+
+    const meshData = await loadNinaMeshFromResponseStream(url);
+    console.log("PA, PA, PA - MALLA SOBERANA CARGADA POR STREAM.");
     return meshData;
   } catch (error) {
-    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE.", error);
+    console.error("ERROR: BUNKER DE DATOS NO ALCANZABLE.", error);
     return undefined;
   }
 };
