@@ -58,6 +58,9 @@ stage_safe_changes() {
   local path
   while IFS= read -r path; do
     case "$path" in
+      .env.example|*/.env.example)
+        git add -- "$path"
+        ;;
       .env|.env.*|*/.env|*/.env.*|*.pem|*.key|*.p12|*.pfx|*.crt|logs/*|*/logs/*|node_modules/*|dist/*)
         echo "[supercommit_max] Excluido del stage seguro: $path"
         ;;
