@@ -106,12 +106,12 @@ class TestCrearProductosV10Errors(unittest.TestCase):
         price_mock = MagicMock()
         price_mock.id = "price_ok"
 
-        call_count = {"n": 0}
+        call_count = {"count": 0}
 
         def product_side_effect(**kwargs: object) -> MagicMock:
-            call_count["n"] += 1
+            call_count["count"] += 1
             # Fail only on the subscription product (last call)
-            if call_count["n"] > len(update_stripe._PRODUCTOS):
+            if call_count["count"] > len(update_stripe._PRODUCTOS):
                 raise Exception("subscription error")
             return prod_mock
 
@@ -127,11 +127,11 @@ class TestCrearProductosV10Errors(unittest.TestCase):
         price_mock = MagicMock()
         price_mock.id = "price_ok"
 
-        call_count = {"n": 0}
+        call_count = {"count": 0}
 
         def product_side_effect(**kwargs: object) -> MagicMock:
-            call_count["n"] += 1
-            if call_count["n"] == 1:
+            call_count["count"] += 1
+            if call_count["count"] == 1:
                 raise Exception("first product error")
             return prod_mock
 

@@ -40,7 +40,7 @@ def crear_productos_v10() -> int:
                 currency="eur",
                 product=prod.id,
             )
-            print(f"✅ Creado: {p['name']} ({int(p['amount']) / 100:.2f}€)")
+            print(f"✅ Creado: {p['name']} ({p['amount'] / 100:.2f}€)")
         except Exception as e:
             print(f"❌ Error en {p['name']}: {e}")
             errors += 1
