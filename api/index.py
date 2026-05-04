@@ -498,9 +498,11 @@ def _advbet_payload(*, session_id: str, amount_eur: float) -> dict[str, object]:
     }
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 def home():
-    return "API Active"
+    if request.method == "GET":
+        return "API Active"
+    return jsonify({"status": "error", "message": "Not Found"}), 404
 
 
 def _cors(resp):

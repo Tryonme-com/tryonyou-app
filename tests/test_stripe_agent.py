@@ -113,6 +113,7 @@ class TestRetrieveProduct(unittest.TestCase):
 class TestListProducts(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        stripe_agent.clear_stripe_list_cache()
 
     def test_list_products_success(self) -> None:
         mock_iter = [MagicMock(id="prod_1"), MagicMock(id="prod_2")]

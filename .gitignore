@@ -44,7 +44,10 @@ billing/VENTA_V10_PROFORMA.json
 logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
-logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+logs/SISTEMA_SUSPENDIDO.jsonl
+logs/*.jsonl
+logs/*.log
+update_stripe.py
 update_stripe_v10.py
 activate_royalties_v10.py
 monetizacion_trace_demo.log

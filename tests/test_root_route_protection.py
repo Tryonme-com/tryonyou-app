@@ -27,7 +27,9 @@ class TestRootRouteProtection(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json, {"status": "error", "message": "Not Found"})
+        data = response.json
+        self.assertEqual(data.get("status"), "error")
+        self.assertEqual(data.get("message"), "Not Found")
         self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")
 
     def test_vercel_routes_forward_mutating_root_to_api(self) -> None:
