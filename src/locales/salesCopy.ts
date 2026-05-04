@@ -131,6 +131,9 @@ export type SalesCopy = {
     statusLabel: string;
     assetsLabel: string;
     exitLabel: string;
+    monthSingular: string;
+    monthPlural: string;
+    reviewStatus: string;
   };
   overlayReserve: string;
   overlayCombos: string;
@@ -314,13 +317,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     },
     valuation: {
       sectionTitle: "Valorisation en direct",
-      lead: "Projection de marché fondée sur les revenus confirmés des nœuds parisiens et un multiplicateur ARR sectoriel.",
+      lead: "Scénario de marché fondé sur les hypothèses opérationnelles des nœuds parisiens et un multiplicateur ARR sectoriel, prêt pour revue financière.",
       arrLabel: "ARR projeté",
       multiplierLabel: "Multiplicateur",
       valuationLabel: "Valorisation de marché",
       statusLabel: "Statut",
-      assetsLabel: "Actifs confirmés",
+      assetsLabel: "Nœuds de référence",
       exitLabel: "Horizon de sortie",
+      monthSingular: "mois",
+      monthPlural: "mois",
+      reviewStatus: "PRÊT POUR REVUE",
     },
     overlayReserve: "Réserver",
     overlayCombos: "Voir variantes",
@@ -503,13 +509,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     },
     valuation: {
       sectionTitle: "Live valuation",
-      lead: "Market projection based on confirmed revenue from Paris nodes and a sector ARR multiplier.",
+      lead: "Market scenario based on Paris node operating assumptions and a sector ARR multiplier, ready for financial review.",
       arrLabel: "Projected ARR",
       multiplierLabel: "Multiplier",
       valuationLabel: "Market valuation",
       statusLabel: "Status",
-      assetsLabel: "Confirmed assets",
+      assetsLabel: "Reference nodes",
       exitLabel: "Exit horizon",
+      monthSingular: "month",
+      monthPlural: "months",
+      reviewStatus: "READY FOR REVIEW",
     },
     overlayReserve: "Reserve",
     overlayCombos: "View options",
@@ -692,13 +701,16 @@ export const SALES_COPY: Record<AppLocale, SalesCopy> = {
     },
     valuation: {
       sectionTitle: "Valoración en directo",
-      lead: "Proyección de mercado basada en ingresos confirmados de los nodos parisinos y un multiplicador ARR sectorial.",
+      lead: "Escenario de mercado basado en hipótesis operativas de los nodos parisinos y un multiplicador ARR sectorial, listo para revisión financiera.",
       arrLabel: "ARR proyectado",
       multiplierLabel: "Multiplicador",
       valuationLabel: "Valoración de mercado",
       statusLabel: "Estado",
-      assetsLabel: "Activos confirmados",
+      assetsLabel: "Nodos de referencia",
       exitLabel: "Horizonte de salida",
+      monthSingular: "mes",
+      monthPlural: "meses",
+      reviewStatus: "LISTO PARA REVISIÓN",
     },
     overlayReserve: "Reservar",
     overlayCombos: "Ver variantes",

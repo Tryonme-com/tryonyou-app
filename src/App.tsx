@@ -13,6 +13,7 @@ import {
   initFirebaseAppCheckIfConfigured,
 } from "./lib/firebaseApplet";
 import { trackCoreEvent } from "./lib/coreEngineClient";
+import { calculateValuationSentinel } from "./lib/valuationSentinel";
 import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import { SALES_COPY, SUPPORTED_LOCALES, type AppLocale } from "./locales/salesCopy";
 import "./index.css";
@@ -527,6 +528,20 @@ export default function App() {
   const copy = SALES_COPY[locale];
   const kickers = SECTION_KICKERS[locale];
   const staticCopy = STATIC_COPY[locale];
+  const valuationSnapshot = useMemo(() => calculateValuationSentinel(), []);
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "EUR",
+        maximumFractionDigits: 0,
+      }),
+    [locale],
+  );
+  const monthLabel =
+    valuationSnapshot.exitHorizonMonths === 1
+      ? copy.valuation.monthSingular
+      : copy.valuation.monthPlural;
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -1451,30 +1466,36 @@ export default function App() {
 
             <div className="valuation-grid reveal">
               <article className="metric-card">
-                <p className="metric-card__value">{new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(33240 * 12)}</p>
+                <p className="metric-card__value">
+                  {currencyFormatter.format(valuationSnapshot.projectedArrEur)}
+                </p>
                 <p className="metric-card__label">{copy.valuation.arrLabel}</p>
               </article>
               <article className="metric-card">
-                <p className="metric-card__value">8.5×</p>
+                <p className="metric-card__value">{valuationSnapshot.arrMultiplier}x</p>
                 <p className="metric-card__label">{copy.valuation.multiplierLabel}</p>
               </article>
               <article className="metric-card metric-card--highlight">
-                <p className="metric-card__value">{new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(33240 * 12 * 8.5)}</p>
+                <p className="metric-card__value">
+                  {currencyFormatter.format(valuationSnapshot.marketValuationEur)}
+                </p>
                 <p className="metric-card__label">{copy.valuation.valuationLabel}</p>
               </article>
               <article className="metric-card">
-                <p className="metric-card__value">6 {locale === "fr" ? "mois" : locale === "es" ? "meses" : "months"}</p>
+                <p className="metric-card__value">
+                  {valuationSnapshot.exitHorizonMonths} {monthLabel}
+                </p>
                 <p className="metric-card__label">{copy.valuation.exitLabel}</p>
               </article>
             </div>
 
             <div className="valuation-assets reveal">
               <p className="section-footnote">
-                {copy.valuation.assetsLabel}: Lafayette · Le Bon Marché · La Défense
+                {copy.valuation.assetsLabel}: {valuationSnapshot.referenceNodes.join(" · ")}
               </p>
-              <div className="ethics-seal">
+              <div className="ethics-seal valuation-status">
                 <span className="ethics-seal__mark" aria-hidden="true">{staticCopy.ethicsIcon}</span>
-                <p>{copy.valuation.statusLabel}: READY FOR EXIT</p>
+                <p>{copy.valuation.statusLabel}: {copy.valuation.reviewStatus}</p>
               </div>
             </div>
           </div>
