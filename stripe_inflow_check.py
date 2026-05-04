@@ -28,7 +28,8 @@ def check_real_inflow(limit: int = 20) -> list[dict]:
     Escanea las últimas `limit` transacciones de balance en Stripe.
 
     Devuelve lista de movimientos con amount > HIGH_VOLUME_THRESHOLD_CENTS.
-    Imprime resultados en stdout; no lanza git ni toca el .env.
+    Imprime resultados en stdout; no lanza git ni toca el .env. Este escaneo
+    no sustituye la evidencia bancaria/Qonto requerida para liberar capital.
 
     La clave Stripe se resuelve desde el entorno (nunca incrustada en código):
       STRIPE_SECRET_KEY_FR → STRIPE_SECRET_KEY_NUEVA → STRIPE_SECRET_KEY

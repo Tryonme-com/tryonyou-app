@@ -1,4 +1,3 @@
-liberar_fondos_pau.py
 import json
 import os
 from datetime import datetime
@@ -39,10 +38,10 @@ def ejecutar_orquestacion_financiera():
     # 3. ACTUALIZACIÓN DEL MASTER LEDGER
     ledger_update = {
         "account_id": "acct_1TP8bNEcp6PrE3M",
-        "status": "LIQUIDITY_DEPLOYABLE",
+        "status": "PENDING_QONTO_VERIFICATION",
         "last_audit": datetime.now().isoformat(),
-        "net_balance_eur": round(saldo_neto_gastable, 2),
-        "compliance_msg": "Match exitoso con F-2026-001-PARTIAL"
+        "net_candidate_eur": round(saldo_neto_gastable, 2),
+        "compliance_msg": "Pendiente de evidencia bancaria/Qonto verificable para activar liquidez"
     }
 
     # Generar archivos de evidencia para el Arquitecto
@@ -63,7 +62,7 @@ Merci de libérer les fonds immédiatement.
 
     print(f"\n✅ PASO 1: Factura JSON generada.")
     print(f"✅ PASO 2: Master Ledger sincronizado.")
-    print(f"✅ PASO 3: Saldo neto certificado: {ledger_update['net_balance_eur']} €")
+    print(f"✅ PASO 3: Neto candidato calculado: {ledger_update['net_candidate_eur']} €")
     print("\n--- COPIA ESTE MENSAJE PARA EL CHAT DE QONTO ---")
     print(mensaje_frances)
     print("-----------------------------------------------")
