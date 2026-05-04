@@ -161,6 +161,13 @@ def admin_fetch_product_line_candidates(*, limit: int = 8) -> list[dict[str, Any
             vid = int(v0.get("id"))
         except (TypeError, ValueError):
             continue
+        if pid is None:
+            product_id: int | None = None
+        else:
+            try:
+                product_id = int(pid)
+            except (TypeError, ValueError):
+                continue
         price_raw = v0.get("price")
         try:
             price = float(str(price_raw).replace(",", "."))
@@ -170,7 +177,7 @@ def admin_fetch_product_line_candidates(*, limit: int = 8) -> list[dict[str, Any
         out.append(
             {
                 "variant_id": vid,
-                "product_id": int(pid) if pid is not None else None,
+                "product_id": product_id,
                 "name": title if not vtitle or vtitle == "Default Title" else f"{title} — {vtitle}",
                 "price": price,
                 "handle": handle,
