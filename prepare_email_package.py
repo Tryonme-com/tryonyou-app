@@ -1,10 +1,11 @@
 import os
 import shutil
+import tempfile
 
 # Configuración del paquete de venta
 _DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop", "TRYONYOU_COMMERCIAL_PACKAGE")
 EXPORT_DIR = _DESKTOP if os.access(os.path.dirname(_DESKTOP) or ".", os.W_OK) else os.path.join(
-    os.environ.get("TMPDIR", "/tmp"), "TRYONYOU_COMMERCIAL_PACKAGE"
+    tempfile.gettempdir(), "TRYONYOU_COMMERCIAL_PACKAGE"
 )
 
 # Archivos clave que validan tu PoC técnica
@@ -44,6 +45,8 @@ def prepare_package() -> None:
         if os.path.exists(asset):
             shutil.copy(asset, EXPORT_DIR)
             print(f"✅ Añadido: {asset}")
+        else:
+            print(f"⚠️  No encontrado (omitido): {asset}")
 
     # 2. Generar el archivo de texto con el cuerpo del email profesional
     with open(os.path.join(EXPORT_DIR, "EMAIL_TEMPLATE.txt"), "w", encoding="utf-8") as f:
