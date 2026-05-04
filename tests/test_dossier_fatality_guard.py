@@ -42,7 +42,7 @@ class DossierFatalityGuardTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "PENDING_VALIDATION")
         self.assertFalse(result["activated"])
-        self.assertIn("outside_tuesday_0800", result["reasons"])
+        self.assertIn("outside_tuesday_0800_window", result["reasons"])
 
     def test_missing_flag_blocks_activation(self) -> None:
         self.write_evidence()
@@ -53,7 +53,7 @@ class DossierFatalityGuardTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "PENDING_VALIDATION")
         self.assertFalse(result["activated"])
-        self.assertIn("missing_confirmed_flag", result["reasons"])
+        self.assertIn("missing_explicit_capital_confirmation", result["reasons"])
 
     def test_invalid_amount_blocks_activation(self) -> None:
         self.write_evidence(amount_cents=44_999_999)
@@ -65,7 +65,7 @@ class DossierFatalityGuardTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "PENDING_VALIDATION")
         self.assertFalse(result["activated"])
-        self.assertIn("invalid_evidence_amount", result["reasons"])
+        self.assertIn("capital_below_450k", result["reasons"])
 
     def test_valid_window_flag_and_evidence_activate(self) -> None:
         self.write_evidence()

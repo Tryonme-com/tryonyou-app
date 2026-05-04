@@ -25,8 +25,9 @@ class SupercommitMaxScriptTests(unittest.TestCase):
     def test_supercommit_excludes_sensitive_files(self) -> None:
         script = _script()
 
-        for pattern in (":!.env", ":!.env.*", ":!*.pem", ":!*.key", ":!logs/**"):
+        for pattern in (".env|.env.*", "*.pem", "*.key", "logs|logs/*"):
             self.assertIn(pattern, script)
+        self.assertIn("git ls-files --others --exclude-standard -z", script)
 
     def test_supercommit_uses_env_telegram_token_only(self) -> None:
         script = _script()
