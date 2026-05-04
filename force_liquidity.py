@@ -27,6 +27,19 @@ def _run(script: str, *args: str) -> int:
 
 
 def main() -> int:
+    guard_now = os.environ.get("DOSSIER_FATALITY_NOW", "").strip()
+    guard_args = ["--json"]
+    if guard_now:
+        guard_args.extend(["--now", guard_now])
+    guard_result = _run("dossier_fatality_guard.py", *guard_args)
+    if guard_result != 0:
+        print(
+            "[force_liquidity] Dossier Fatality no activado: falta ventana martes 08:00, "
+            "flag de confirmación o evidencia bancaria/Qonto verificable.",
+            file=sys.stderr,
+        )
+        return guard_result
+
     r = _run("force_qonto_collection.py", "--once")
     if r != 0:
         print(
