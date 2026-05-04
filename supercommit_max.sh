@@ -52,6 +52,76 @@ ok()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 warn()  { printf "${YELLOW}  ⚠ %s${NC}\n" "$1"; }
 fail()  { printf "${RED}  ✗ %s${NC}\n" "$1"; exit 1; }
 
+_notify_success() {
+  local msg="$1"
+  local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+  local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
+
+  if [[ -n "${SKIP_TELEGRAM:-}" || -n "${TRYONYOU_DEPLOY_SKIP_TELEGRAM:-}" ]]; then
+    warn "Telegram omitido por flag de entorno."
+    return 0
+  fi
+  if [[ -z "$token" || -z "$chat_id" ]]; then
+    warn "Telegram omitido: faltan TRYONYOU_DEPLOY_BOT_TOKEN/TELEGRAM_* o chat_id."
+    return 0
+  fi
+
+  TRYONYOU_NOTIFY_TOKEN="$token" TRYONYOU_NOTIFY_CHAT_ID="$chat_id" TRYONYOU_NOTIFY_TEXT="$msg" python3 - <<'PY'
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+token = os.environ.get("TRYONYOU_NOTIFY_TOKEN", "").strip()
+chat_id = os.environ.get("TRYONYOU_NOTIFY_CHAT_ID", "").strip()
+text = os.environ.get("TRYONYOU_NOTIFY_TEXT", "").strip()
+
+payload = json.dumps({"chat_id": chat_id, "text": text}).encode("utf-8")
+req = urllib.request.Request(
+    f"https://api.telegram.org/bot{token}/sendMessage",
+    data=payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        if resp.status >= 400:
+            raise RuntimeError(f"telegram_http_{resp.status}")
+except Exception as exc:
+    print(f"  ⚠ Telegram no confirmado: {exc}", file=sys.stderr)
+    sys.exit(0)
+PY
+}
+
+_safe_git_stage() {
+  local paths
+  paths="$(git ls-files --cached --modified --deleted --others --exclude-standard | python3 -c '
+import sys
+
+blocked_exact = {".env", "node_modules", "dist", "logs"}
+blocked_prefixes = ("node_modules/", "dist/", "logs/")
+blocked_suffixes = (".pem", ".key", ".p12", ".pfx", ".crt")
+
+for raw in sys.stdin:
+    path = raw.strip()
+    if not path:
+        continue
+    if path in blocked_exact or path.startswith(blocked_prefixes):
+        continue
+    if path.startswith(".env.") and path != ".env.example":
+        continue
+    if path.endswith(blocked_suffixes):
+        continue
+    print(path)
+')"
+
+  if [[ -z "$paths" ]]; then
+    return 0
+  fi
+  printf '%s\n' "$paths" | git add --pathspec-from-file=-
+}
+
 # ── Parseo de argumentos ────────────────────────────────────────
 MODE_DEPLOY=false
 MODE_FAST=false
@@ -73,7 +143,7 @@ done
 STAMPS="@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 Bajo Protocolo de Soberanía V10 - Founder: Rubén"
 
 if [[ -z "$CUSTOM_MSG" ]]; then
-  COMMIT_MSG="🔱 OMEGA_DEPLOY: Full CI/CD Pipeline Merged.
+  SUPERCOMMIT_MESSAGE="🔱 OMEGA_DEPLOY: Full CI/CD Pipeline Merged.
 🥀 Honor Protocol: Goldschmied/Valentino/Ospina.
 ✨ Status: VIVOS.
 🚀 Divineo Absoluto en París.
@@ -81,9 +151,9 @@ ${STAMPS}"
 else
   # Si el usuario ya incluyó los sellos, no duplicar
   if [[ "$CUSTOM_MSG" == *"@CertezaAbsoluta"* ]]; then
-    COMMIT_MSG="$CUSTOM_MSG"
+    SUPERCOMMIT_MESSAGE="$CUSTOM_MSG"
   else
-    COMMIT_MSG="${CUSTOM_MSG}
+    SUPERCOMMIT_MESSAGE="${CUSTOM_MSG}
 ${STAMPS}"
   fi
 fi
@@ -137,7 +207,12 @@ print('  ✓ Vault y manifest alineados (patente + SIRET)')
 # ══════════════════════════════════════════════════════════════════
 _banner
 
-_stamps_ok "$COMMIT_MSG" || fail "Mensaje de commit sin sellos requeridos."
+_stamps_ok "$SUPERCOMMIT_MESSAGE" || fail "Mensaje de commit sin sellos requeridos."
+
+if [[ -n "${SUPERCOMMIT_VALIDATE_ONLY:-}" ]]; then
+  ok "Mensaje de commit validado; modo SUPERCOMMIT_VALIDATE_ONLY activo."
+  exit 0
+fi
 
 # ── Fase 1: Validaciones & Build (salvo --fast) ────────────────
 if [[ "$MODE_FAST" == false ]]; then
@@ -183,20 +258,22 @@ fi
 # ── Fase 2: Git commit + push ──────────────────────────────────
 step "💎 Consolidación Git"
 
-git add -A
+_safe_git_stage
 
 did_commit=0
 if git diff --cached --quiet; then
   warn "Nada nuevo en el índice (sin commit en esta pasada)."
 else
-  git commit -m "$COMMIT_MSG"
+  env -u COMMIT_MSG git commit -m "$SUPERCOMMIT_MESSAGE"
   did_commit=1
   ok "Commit creado"
 fi
 
 if [[ "$did_commit" -eq 1 ]]; then
   step "🚀 Lanzando proyectil al servidor..."
-  git push
+  branch="$(git branch --show-current)"
+  [[ -n "$branch" ]] || fail "No se pudo resolver la rama actual."
+  git push -u origin "$branch"
   ok "Push completado"
 elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   ahead="$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
@@ -204,7 +281,9 @@ elif git rev-parse --verify "@{u}" >/dev/null 2>&1; then
   case "$ahead" in *[!0-9]*) ahead=0 ;; esac
   if [[ "$ahead" -gt 0 ]]; then
     step "🚀 Rama ${ahead} commit(s) por delante — pushing..."
-    git push
+    branch="$(git branch --show-current)"
+    [[ -n "$branch" ]] || fail "No se pudo resolver la rama actual."
+    git push -u origin "$branch"
     ok "Push completado"
   else
     warn "Sin push: la rama está al día con el remoto."
@@ -232,3 +311,5 @@ printf "  ✨ STATUS: LINEAL | PODERÍO: 100%% | DIVINEO: MÁXIMO\n"
 printf "  🔱 Patente PCT/EP2025/067317 — Soberanía V10 — VIVOS\n"
 printf "  ════════════════════════════════════════════════════════════\n"
 printf "${NC}\n"
+
+_notify_success "✅ TryOnYou Supercommit_Max completado: búnker Oberkampf 75011 sincronizado con galería web. PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén"

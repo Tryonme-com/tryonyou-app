@@ -89,20 +89,44 @@ class TestScriptExists(unittest.TestCase):
 class TestStampValidation(unittest.TestCase):
     """v10.17 auto-appends stamps when --msg lacks them; explicit stamps are preserved."""
 
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.mkdtemp()
+        _init_git_repo(self.tmpdir)
+        self.script_copy = os.path.join(self.tmpdir, "supercommit_max.sh")
+        shutil.copy2(_SCRIPT, self.script_copy)
+        subprocess.run(["git", "add", "supercommit_max.sh"], cwd=self.tmpdir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add script copy"],
+            cwd=self.tmpdir, check=True, capture_output=True,
+        )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _run(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["bash", self.script_copy] + list(args),
+            cwd=self.tmpdir,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**os.environ, "HOME": self.tmpdir},
+        )
+
     def test_explicit_stamps_preserved(self) -> None:
-        result = _run_script("--fast", "--msg", VALID_MSG)
+        result = self._run("--fast", "--msg", VALID_MSG)
         self.assertNotIn("Falta", result.stderr)
 
     def test_auto_appended_stamps_pass_validation(self) -> None:
-        result = _run_script("--fast", "--msg", "Custom sin sellos")
+        result = self._run("--fast", "--msg", "Custom sin sellos")
         self.assertNotIn("Falta", result.stderr)
 
     def test_default_msg_does_not_fail_on_stamps(self) -> None:
-        result = _run_script("--fast")
+        result = self._run("--fast")
         self.assertNotIn("Falta", result.stderr)
 
     def test_default_msg_not_exit_1_due_to_stamps(self) -> None:
-        result = _run_script("--fast")
+        result = self._run("--fast")
         if result.returncode == 1:
             self.fail(f"Default message failed stamp validation. stderr={result.stderr!r}")
 
@@ -248,6 +272,48 @@ class TestCommitLogic(unittest.TestCase):
             cwd=self.tmpdir, capture_output=True, text=True,
         )
         self.assertIn("OMEGA_DEPLOY", log.stdout)
+
+    def test_sensitive_env_files_are_not_staged(self) -> None:
+        with open(os.path.join(self.tmpdir, ".env"), "w") as fh:
+            fh.write("SECRET=must_not_commit\n")
+        with open(os.path.join(self.tmpdir, ".env.production"), "w") as fh:
+            fh.write("SECRET=must_not_commit\n")
+        with open(os.path.join(self.tmpdir, ".env.example"), "w") as fh:
+            fh.write("PUBLIC_TEMPLATE=\n")
+
+        result = self._run("--fast", "--msg", VALID_MSG)
+        self.assertNotIn("Falta", result.stderr)
+
+        tracked = subprocess.run(
+            ["git", "ls-files"],
+            cwd=self.tmpdir,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.splitlines()
+        self.assertIn(".env.example", tracked)
+        self.assertNotIn(".env", tracked)
+        self.assertNotIn(".env.production", tracked)
+
+    def test_push_uses_origin_upstream_when_ahead(self) -> None:
+        remote = os.path.join(self.tmpdir, "remote.git")
+        subprocess.run(["git", "init", "--bare", remote], check=True, capture_output=True)
+        subprocess.run(["git", "remote", "add", "origin", remote], cwd=self.tmpdir, check=True, capture_output=True)
+
+        new_file = os.path.join(self.tmpdir, "push_marker.txt")
+        with open(new_file, "w") as fh:
+            fh.write("push\n")
+        result = self._run("--fast", "--msg", VALID_MSG)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        upstream = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+            cwd=self.tmpdir,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        self.assertEqual(upstream, "origin/main")
 
 
 if __name__ == "__main__":
