@@ -20,6 +20,7 @@ from stripe_handler import (
     _resolve_customer_from_session,
     create_invoice,
     create_payment_intent,
+    execute_secure_charge,
     record_billing_meter_event,
 )
 
@@ -161,6 +162,84 @@ class TestCreatePaymentIntent(unittest.TestCase):
                 amount_cents=100, session_context=ctx,
             )
         self.assertEqual(mock_create.call_args[1]["customer"], "cus_ctx")
+
+
+class TestExecuteSecureCharge(unittest.TestCase):
+    def setUp(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
+        os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_REQUIRE_LIVE", None)
+
+    def tearDown(self) -> None:
+        os.environ.pop("STRIPE_SECRET_KEY", None)
+        os.environ.pop("STRIPE_SECRET_KEY_FR", None)
+        os.environ.pop("STRIPE_SECRET_KEY_NUEVA", None)
+        os.environ.pop("STRIPE_REQUIRE_LIVE", None)
+
+    def test_rejects_test_key_when_live_charge_required(self) -> None:
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
+        result = execute_secure_charge(
+            amount_cents=12_500,
+            payment_method="pm_card_visa",
+        )
+        self.assertFalse(result["ok"])
+        self.assertIn("sk_live", result["error"])
+
+    def test_confirms_payment_intent_with_live_key(self) -> None:
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_live_dummy"
+        mock_pi = MagicMock()
+        mock_pi.id = "pi_live"
+        mock_pi.status = "succeeded"
+        mock_pi.livemode = True
+        with patch("stripe_handler.stripe.PaymentIntent.create", return_value=mock_pi) as mock_create:
+            result = execute_secure_charge(
+                amount_cents=12_500,
+                payment_method="pm_card_visa",
+                customer="cus_live",
+                idempotency_key="charge-oberkampf-1",
+                description="TryOnYou secure charge",
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["payment_intent_id"], "pi_live")
+        call_kwargs = mock_create.call_args[1]
+        self.assertEqual(call_kwargs["amount"], 12_500)
+        self.assertEqual(call_kwargs["currency"], "eur")
+        self.assertEqual(call_kwargs["payment_method"], "pm_card_visa")
+        self.assertIs(call_kwargs["confirm"], True)
+        self.assertEqual(call_kwargs["customer"], "cus_live")
+        self.assertEqual(call_kwargs["idempotency_key"], "charge-oberkampf-1")
+        self.assertEqual(call_kwargs["metadata"]["siren"], SIREN)
+        self.assertEqual(call_kwargs["metadata"]["charge_flow"], "execute_secure_charge")
+
+    def test_sandbox_charge_can_opt_out_of_live_requirement(self) -> None:
+        os.environ["STRIPE_SECRET_KEY"] = "sk_test_dummy"
+        mock_pi = MagicMock()
+        mock_pi.id = "pi_test"
+        mock_pi.status = "requires_action"
+        mock_pi.livemode = False
+        with patch("stripe_handler.stripe.PaymentIntent.create", return_value=mock_pi):
+            result = execute_secure_charge(
+                amount_cents=10_000,
+                payment_method="pm_card_visa",
+                require_live=False,
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["livemode"])
+
+    def test_rejects_invalid_charge_inputs_before_stripe_call(self) -> None:
+        os.environ["STRIPE_SECRET_KEY_FR"] = "sk_live_dummy"
+        with patch("stripe_handler.stripe.PaymentIntent.create") as mock_create:
+            amount_result = execute_secure_charge(amount_cents=0, payment_method="pm_card_visa")
+            method_result = execute_secure_charge(amount_cents=100, payment_method="card_visa")
+
+        self.assertFalse(amount_result["ok"])
+        self.assertEqual(amount_result["error"], "invalid_amount_cents")
+        self.assertFalse(method_result["ok"])
+        self.assertEqual(method_result["error"], "invalid_payment_method_expected_pm_prefix")
+        mock_create.assert_not_called()
 
 
 class TestCreateInvoice(unittest.TestCase):

@@ -46,7 +46,7 @@ def _resolve_stripe_secret_for_handler() -> str:
     )
 
 
-def _init_stripe() -> None:
+def _init_stripe(*, require_live: bool | None = None) -> None:
     """Set the module-level Stripe API key from the environment."""
     sk = _resolve_stripe_secret_for_handler()
     if not sk.startswith(("sk_live_", "sk_test_")):
@@ -54,7 +54,8 @@ def _init_stripe() -> None:
             "Defina STRIPE_SECRET_KEY_FR o STRIPE_SECRET_KEY (sk_live_ o sk_test_). "
             "En Live use la clave de la cuenta donde existan los payouts reales, no un entorno de prueba."
         )
-    if _stripe_require_live_payment_intents() and not sk.startswith("sk_live_"):
+    live_required = _stripe_require_live_payment_intents() if require_live is None else require_live
+    if live_required and not sk.startswith("sk_live_"):
         raise EnvironmentError(
             "STRIPE_REQUIRE_LIVE=1 requiere sk_live_ (p. ej. STRIPE_SECRET_KEY_FR)."
         )
@@ -91,6 +92,80 @@ def _legal_metadata(extra: dict[str, str] | None = None) -> dict[str, str]:
     if extra:
         base.update(extra)
     return base
+
+
+def _valid_amount_cents(amount_cents: int) -> bool:
+    return (
+        isinstance(amount_cents, int)
+        and not isinstance(amount_cents, bool)
+        and amount_cents > 0
+    )
+
+
+def execute_secure_charge(
+    *,
+    amount_cents: int,
+    payment_method: str,
+    currency: str = "eur",
+    customer: str | None = None,
+    session_context: dict[str, Any] | None = None,
+    extra_metadata: dict[str, str] | None = None,
+    description: str = "",
+    idempotency_key: str | None = None,
+    require_live: bool = True,
+) -> dict[str, Any]:
+    """Execute a confirmed Stripe charge through PaymentIntent.
+
+    This is intentionally stricter than ``create_payment_intent``: it confirms
+    the intent server-side and, by default, refuses test keys or non-live
+    PaymentIntents. Use ``require_live=False`` only in unit tests or sandbox
+    drills.
+    """
+    if not _valid_amount_cents(amount_cents):
+        return {"ok": False, "error": "invalid_amount_cents"}
+    if not isinstance(payment_method, str) or not payment_method.strip().startswith("pm_"):
+        return {"ok": False, "error": "invalid_payment_method_expected_pm_prefix"}
+
+    try:
+        _init_stripe(require_live=require_live)
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+    resolved_customer = customer or _resolve_customer_from_session(session_context)
+    meta = _legal_metadata(extra_metadata)
+    meta["charge_flow"] = "execute_secure_charge"
+
+    try:
+        params: dict[str, Any] = {
+            "amount": amount_cents,
+            "currency": currency.lower(),
+            "payment_method": payment_method.strip(),
+            "confirm": True,
+            "metadata": meta,
+        }
+        if resolved_customer:
+            params["customer"] = resolved_customer
+        if description:
+            params["description"] = description
+        if idempotency_key:
+            params["idempotency_key"] = idempotency_key
+
+        pi = stripe.PaymentIntent.create(**params)
+        livemode = bool(getattr(pi, "livemode", False))
+        if require_live and not livemode:
+            return {"ok": False, "error": "payment_intent_not_live_mode"}
+        return {
+            "ok": True,
+            "payment_intent_id": pi.id,
+            "status": getattr(pi, "status", ""),
+            "livemode": livemode,
+            "amount_cents": amount_cents,
+            "currency": currency.lower(),
+        }
+    except stripe.error.StripeError as exc:
+        return {"ok": False, "error": str(exc.user_message or exc)}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 def record_billing_meter_event(

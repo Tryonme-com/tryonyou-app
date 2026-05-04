@@ -3,7 +3,7 @@
 Guard de capital TryOnYou: no activa Dossier Fatality sin evidencia verificable.
 
 Condiciones obligatorias:
-  - ventana operativa martes 08:00 UTC (configurable por CLI para tests);
+  - ventana operativa martes 08:00 Europe/Paris (configurable por CLI para tests);
   - TRYONYOU_CAPITAL_450K_CONFIRMED=1;
   - evidencia JSON local con fuente bancaria/Qonto y mínimo 45.000.000 céntimos EUR.
 
@@ -20,11 +20,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_EVIDENCE_PATH = ROOT / "capital_450k_evidence.json"
 MIN_CAPITAL_CENTS = 45_000_000
 ALLOWED_SOURCES = {"qonto", "bank", "bank_transfer", "qonto_transaction"}
+PARIS_TZ = ZoneInfo("Europe/Paris")
 
 
 @dataclass(frozen=True)
@@ -53,9 +55,14 @@ def parse_now(raw: str | None = None) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def is_tuesday_0800_utc(now: datetime) -> bool:
-    current = now.astimezone(timezone.utc)
+def is_tuesday_0800_paris(now: datetime) -> bool:
+    current = now.astimezone(PARIS_TZ)
     return current.weekday() == 1 and current.hour == 8 and current.minute == 0
+
+
+def is_tuesday_0800_utc(now: datetime) -> bool:
+    """Compat alias: the operative window is now Tuesday 08:00 Europe/Paris."""
+    return is_tuesday_0800_paris(now)
 
 
 def _amount_cents(data: dict[str, Any]) -> int:
@@ -91,8 +98,8 @@ def evaluate_guard(now: datetime, evidence_path: Path | None = None) -> GuardRes
         (os.environ.get("DOSSIER_FATALITY_EVIDENCE_PATH") or "").strip()
         or str(DEFAULT_EVIDENCE_PATH)
     )
-    if not is_tuesday_0800_utc(now):
-        return GuardResult("PENDING_VALIDATION", "outside_tuesday_0800_utc")
+    if not is_tuesday_0800_paris(now):
+        return GuardResult("PENDING_VALIDATION", "outside_tuesday_0800_europe_paris")
 
     if (os.environ.get("TRYONYOU_CAPITAL_450K_CONFIRMED") or "").strip() != "1":
         return GuardResult("PENDING_VALIDATION", "confirmation_flag_missing")

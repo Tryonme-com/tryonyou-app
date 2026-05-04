@@ -11,7 +11,7 @@ from unittest.mock import patch
 from dossier_fatality_guard import evaluate_guard
 
 
-WINDOW = datetime(2026, 5, 5, 8, 0, tzinfo=timezone.utc)
+WINDOW = datetime(2026, 5, 5, 6, 0, tzinfo=timezone.utc)
 
 
 def _write_evidence(path: Path, amount_cents: int = 45_000_000, source: str = "qonto") -> None:
@@ -41,10 +41,10 @@ class TestDossierFatalityGuard(unittest.TestCase):
                 },
                 clear=False,
             ):
-                result = evaluate_guard(datetime(2026, 5, 4, 8, 0, tzinfo=timezone.utc))
+                result = evaluate_guard(datetime(2026, 5, 4, 6, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result.status, "PENDING_VALIDATION")
-        self.assertEqual(result.reason, "outside_tuesday_0800_utc")
+        self.assertEqual(result.reason, "outside_tuesday_0800_europe_paris")
 
     def test_pending_without_explicit_confirmation_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
