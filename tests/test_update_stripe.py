@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
@@ -166,3 +166,10 @@ class TestMain(unittest.TestCase):
         with patch("stripe.Product.create", side_effect=Exception("fail")):
             result = update_stripe.main()
         self.assertNotEqual(result, 0)
+
+    def test_main_returns_two_when_stripe_secret_is_missing(self) -> None:
+        with patch("update_stripe.require_stripe_secret", side_effect=SystemExit(2)), \
+             patch("stripe.Product.create") as mock_product_create:
+            result = update_stripe.main()
+        self.assertEqual(result, 2)
+        mock_product_create.assert_not_called()

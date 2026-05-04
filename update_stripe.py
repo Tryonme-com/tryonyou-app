@@ -28,7 +28,11 @@ _PRODUCTOS: list[dict[str, object]] = [
 
 def crear_productos_v10() -> int:
     """Crea los productos/precios V10 en Stripe. Devuelve 0 si todo fue bien, 1 si hubo algún error."""
-    stripe.api_key = require_stripe_secret()
+    try:
+        stripe.api_key = require_stripe_secret()
+    except SystemExit as exc:
+        return exc.code if isinstance(exc.code, int) else 1
+
     print("🚀 Iniciando inyección de productos en Stripe...")
     errors = 0
 
