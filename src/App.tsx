@@ -18,8 +18,10 @@ import { SALES_COPY, SUPPORTED_LOCALES, type AppLocale } from "./locales/salesCo
 import "./index.css";
 import "./App.css";
 
-/** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais). */
-const PAU_POSTAL_NODES = new Set(["75009", "75004"]);
+type PauPostalNode = "75009" | "75004" | "75011";
+
+/** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais / Oberkampf). */
+const PAU_POSTAL_NODES = new Set<PauPostalNode>(["75009", "75004", "75011"]);
 
 /** Estado operativo bunker / preview (narrativa V10). */
 const OPERATIONAL_STATE_DIAMANTE = "DIAMANTE" as const;
@@ -97,6 +99,7 @@ const STATIC_COPY: Record<
     monitoring: string;
     districtLafayette: string;
     districtMarais: string;
+    districtOberkampf: string;
     districtFallback: string;
     districtLabel: string;
     heroSecondary: string;
@@ -122,6 +125,7 @@ const STATIC_COPY: Record<
     monitoring: "Monitoring",
     districtLafayette: "Galeries Lafayette · 75009",
     districtMarais: "BHV Marais · 75004",
+    districtOberkampf: "Bunker Oberkampf · 75011",
     districtFallback: "Réseau souverain TRYONYOU",
     districtLabel: "District actif",
     heroSecondary: "Sovereign Fit",
@@ -146,6 +150,7 @@ const STATIC_COPY: Record<
     monitoring: "Monitoring",
     districtLafayette: "Galeries Lafayette · 75009",
     districtMarais: "BHV Marais · 75004",
+    districtOberkampf: "Oberkampf bunker · 75011",
     districtFallback: "TRYONYOU sovereign network",
     districtLabel: "Active district",
     heroSecondary: "Sovereign Fit",
@@ -170,6 +175,7 @@ const STATIC_COPY: Record<
     monitoring: "Monitorización",
     districtLafayette: "Galeries Lafayette · 75009",
     districtMarais: "BHV Marais · 75004",
+    districtOberkampf: "Búnker Oberkampf · 75011",
     districtFallback: "Red soberana TRYONYOU",
     districtLabel: "Distrito activo",
     heroSecondary: "Sovereign Fit",
@@ -238,7 +244,7 @@ function readPostalFromWindowOrUrl(): string {
 
 /**
  * UserCheck truthy → autorizado (App Check debug + Pau).
- * Código postal 75009 o 75004 (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
+ * Código postal piloto (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
  */
 function isPauAuthorized(): boolean {
   const w = window as Window & { UserCheck?: unknown };
@@ -255,38 +261,41 @@ function forceUserCheckIfPilotCold(): void {
   if (win.UserCheck != null && win.UserCheck !== false && win.UserCheck !== "") return;
   const postal = readPostalFromWindowOrUrl();
   const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
-  const loc: "75009" | "75004" =
-    vite === "75004" || postal === "75004"
-      ? "75004"
-      : vite === "75009" || postal === "75009"
-        ? "75009"
-        : "75009";
+  const loc: PauPostalNode =
+    vite === "75011" || postal === "75011"
+      ? "75011"
+      : vite === "75004" || postal === "75004"
+        ? "75004"
+        : vite === "75009" || postal === "75009"
+          ? "75009"
+          : "75009";
   win.UserCheck = {
     isAuthorized: true,
     role: "SOUVERAIN",
-    nodos: ["75009", "75004"],
+    nodos: ["75009", "75004", "75011"],
     contrato: "194.800€",
     location: loc,
-    contract: loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
+    contract: loc === "75011" ? "OBERKAMPF_BUNKER" : loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
     source: "pau_v10_forced_pilot",
     operationalState: OPERATIONAL_STATE_DIAMANTE,
-    pilotVenue: loc === "75004" ? "BHV_MARAIS" : "GALERIES_LAFAYETTE",
+    pilotVenue:
+      loc === "75011" ? "BUNKER_OBERKAMPF" : loc === "75004" ? "BHV_MARAIS" : "GALERIES_LAFAYETTE",
   };
   setWindowOperationalStateDiamante();
 }
 
-/** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
-function resolveActiveDistrict(): "75009" | "75004" | "" {
+/** Lafayette 75009, Marais 75004 u Oberkampf 75011 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
+function resolveActiveDistrict(): PauPostalNode | "" {
   const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
-  if (vite === "75009" || vite === "75004") return vite;
+  if (vite === "75009" || vite === "75004" || vite === "75011") return vite;
   const w = window as Window & { UserCheck?: unknown };
   const uc = w.UserCheck;
   if (uc && typeof uc === "object" && uc !== null) {
     const loc = String((uc as { location?: string }).location ?? "").trim();
-    if (loc === "75009" || loc === "75004") return loc;
+    if (loc === "75009" || loc === "75004" || loc === "75011") return loc;
   }
   const postal = readPostalFromWindowOrUrl();
-  if (postal === "75009" || postal === "75004") return postal;
+  if (postal === "75009" || postal === "75004" || postal === "75011") return postal;
   return "";
 }
 
@@ -537,6 +546,7 @@ export default function App() {
     const w = window as Window & {
       initPauAlpha?: () => void;
       launchMarais?: () => void;
+      launchOberkampf?: () => void;
     };
     const bumpPau = () => {
       setPauDistrictTick((n) => n + 1);
@@ -549,7 +559,7 @@ export default function App() {
       win.UserCheck = {
         isAuthorized: true,
         role: "SOUVERAIN",
-        nodos: ["75009", "75004"],
+        nodos: ["75009", "75004", "75011"],
         contrato: "194.800€",
         location: "75004",
         contract: "MARAIS_88K",
@@ -560,21 +570,39 @@ export default function App() {
       bumpPau();
       console.log("✅ [BOOM]: Marais 75004 — pavo activo (contrat bunker 88k).");
     };
+    w.launchOberkampf = () => {
+      const win = window as Window & { UserCheck?: unknown };
+      win.UserCheck = {
+        isAuthorized: true,
+        role: "SOUVERAIN",
+        nodos: ["75009", "75004", "75011"],
+        contrato: "194.800€",
+        location: "75011",
+        contract: "OBERKAMPF_BUNKER",
+        operationalState: OPERATIONAL_STATE_DIAMANTE,
+        pilotVenue: "BUNKER_OBERKAMPF",
+      };
+      setWindowOperationalStateDiamante();
+      bumpPau();
+      console.log("✅ [BOOM]: Oberkampf 75011 — búnker sincronizado con la galería.");
+    };
     bumpPau();
     window.requestAnimationFrame(() => bumpPau());
     return () => {
       delete w.initPauAlpha;
       delete w.launchMarais;
+      delete w.launchOberkampf;
     };
   }, []);
 
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
+  const isOberkampfNode = activeDistrict === "75011";
 
-  /** Galeries Lafayette (75009) y BHV Marais (75004) → estado DIAMANTE + relanzar initPauAlpha. */
+  /** Nodos piloto parisinos → estado DIAMANTE + relanzar initPauAlpha. */
   useEffect(() => {
     const d = resolveActiveDistrict();
-    if (d !== "75009" && d !== "75004") return;
+    if (!d || !PAU_POSTAL_NODES.has(d)) return;
     setWindowOperationalStateDiamante();
     const w = window as Window & { initPauAlpha?: () => void };
     queueMicrotask(() => w.initPauAlpha?.());
@@ -908,11 +936,28 @@ export default function App() {
     theSnap();
   };
 
+  const pauOrbClassName = `app-pau ${
+    isMaraisNode ? "app-pau--marais" : "app-pau--lafayette"
+  }`;
+  const pauOrbTitle = !mirrorPoweredOn
+    ? "P.A.U. — desactivado por kill-switch remoto"
+    : pauStarted
+      ? isMaraisNode
+        ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+        : isOberkampfNode
+          ? "P.A.U. — Oberkampf 75011 · búnker sincronizado"
+          : activeDistrict === "75009"
+            ? "P.A.U. — Lafayette 75009"
+            : "P.A.U. — Lafayette / Marais / Oberkampf (UserCheck)"
+      : "P.A.U. — requiere nodo 75009, 75004, 75011 o window.UserCheck";
+
   const activeDistrictLabel = isMaraisNode
     ? staticCopy.districtMarais
     : activeDistrict === "75009"
       ? staticCopy.districtLafayette
-      : staticCopy.districtFallback;
+      : isOberkampfNode
+        ? staticCopy.districtOberkampf
+        : staticCopy.districtFallback;
 
   return (
     <div ref={appRef} className="app-shell">
@@ -1491,20 +1536,10 @@ export default function App() {
       >
         <button
           type="button"
-          className={isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"}
+          className={pauOrbClassName}
           disabled={!pauStarted || !mirrorPoweredOn}
           onClick={onPauOrbClick}
-          title={
-            !mirrorPoweredOn
-              ? "P.A.U. — desactivado por kill-switch remoto"
-              : pauStarted
-                ? isMaraisNode
-                  ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                  : activeDistrict === "75009"
-                    ? "P.A.U. — Lafayette 75009"
-                    : "P.A.U. — Lafayette / Marais (UserCheck)"
-                : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
-          }
+          title={pauOrbTitle}
           aria-label="P.A.U. — snap et orchestration Jules"
           style={{
             opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
@@ -1512,9 +1547,11 @@ export default function App() {
           }}
         >
           <RealTimeAvatar
-            variant={isMaraisNode ? "marais" : "lafayette"}
+            variant={isMaraisNode || isOberkampfNode ? "marais" : "lafayette"}
             disabled={!pauStarted || !mirrorPoweredOn}
-            videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+            videoId={
+              isOberkampfNode ? "oberkampf-bunker-v10" : isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"
+            }
           />
         </button>
       </motion.div>
