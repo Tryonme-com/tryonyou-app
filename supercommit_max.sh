@@ -41,7 +41,7 @@ mapfile -t CHANGED_FILES < <(
     git diff --name-only
     git diff --name-only --cached
     git ls-files --others --exclude-standard
-  } | sort -u | grep -Ev '(^|/)(node_modules|dist|\.vercel|__pycache__|logs)(/|$)|(^|/)\.env($|[./])|secret|token|credential|\.pem$|\.key$' || true
+  } | sort -u | grep -Ev '(^|/)(node_modules|dist|\.vercel|__pycache__|logs)(/|$)|(^|/)\.env($|[./])|secret|token|credential|\.pem$|\.key$' | grep -E '(^|/)\.env\.example$|^[^[:space:]]+$' || true
 )
 
 if [[ "${#CHANGED_FILES[@]}" -eq 0 ]]; then
