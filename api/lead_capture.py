@@ -64,6 +64,11 @@ def _sqlite_db_path() -> Path:
     return Path(":memory:")
 
 
+def _clean_optional_text(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
 def _persist_sqlite(name: str | None, email: str | None, company: str | None) -> dict[str, Any]:
     """Insert a lead row into the SQLite database and return a status dict."""
     db_path = _sqlite_db_path()
@@ -99,9 +104,9 @@ def handle_lead_submission(data: dict[str, Any]) -> dict[str, Any]:
          ``credentials.json`` is found).
       2. SQLite fallback (repo root or /tmp).
     """
-    name: str | None = data.get("name") or None
-    email: str | None = data.get("email") or None
-    company: str | None = data.get("company") or None
+    name = _clean_optional_text(data.get("name"))
+    email = _clean_optional_text(data.get("email"))
+    company = _clean_optional_text(data.get("company"))
 
     # 1. Google Sheets (optional)
     if _SHEETS_AVAILABLE and _credentials_path() is not None:

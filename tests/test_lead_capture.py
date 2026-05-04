@@ -145,7 +145,17 @@ class TestLeadsEndpoint(unittest.TestCase):
         self.client = app.test_client()
 
     def test_post_leads_returns_ok(self) -> None:
-        with patch("api.index.handle_lead_submission", return_value={"status": "success", "method": "sqlite_fallback"}):
+        with (
+            patch(
+                "api.index.handle_lead_submission",
+                return_value={
+                    "status": "success",
+                    "method": "sqlite_fallback",
+                    "db_path": "/tmp/Divineo_Leads_DB.sqlite",
+                },
+            ),
+            patch("api.index.orchestrate_beta_waitlist", return_value={"make_ok": False}),
+        ):
             resp = self.client.post(
                 "/api/v1/leads",
                 json={"name": "Frank", "email": "f@f.com", "intent": "reserve"},
@@ -155,6 +165,48 @@ class TestLeadsEndpoint(unittest.TestCase):
         self.assertEqual(data["status"], "ok")
         self.assertIn("capture", data)
         self.assertEqual(data["capture"]["method"], "sqlite_fallback")
+        self.assertNotIn("db_path", data["capture"])
+        self.assertFalse(data["make_ok"])
+
+    def test_post_leads_requires_json_object(self) -> None:
+        resp = self.client.post(
+            "/api/v1/leads",
+            data='["not", "an", "object"]',
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.get_json()["message"], "invalid_json_object")
+
+    def test_post_leads_requires_email(self) -> None:
+        resp = self.client.post("/api/v1/leads", json={"name": "No Email"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.get_json()["message"], "missing_required_fields")
+
+    def test_post_leads_succeeds_when_orchestrator_unavailable(self) -> None:
+        with (
+            patch(
+                "api.index.handle_lead_submission",
+                return_value={"status": "success", "method": "sqlite_fallback"},
+            ),
+            patch("api.index.orchestrate_beta_waitlist", None),
+        ):
+            resp = self.client.post("/api/v1/leads", json={"email": "lead@example.com"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["lead_persisted"])
+        self.assertEqual(data["orchestration_error"], "waitlist_orchestrator_unavailable")
+
+    def test_post_leads_reports_capture_failure(self) -> None:
+        with patch(
+            "api.index.handle_lead_submission",
+            return_value={"status": "error", "message": "SQLite persistence failed"},
+        ):
+            resp = self.client.post("/api/v1/leads", json={"email": "lead@example.com"})
+        self.assertEqual(resp.status_code, 500)
+        data = resp.get_json()
+        self.assertEqual(data["status"], "error")
+        self.assertFalse(data["lead_persisted"])
 
 
 if __name__ == "__main__":

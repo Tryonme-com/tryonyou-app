@@ -1164,38 +1164,74 @@ def leads_options():
 
 @app.route("/api/v1/leads", methods=["POST"])
 def leads_capture():
-    body = request.get_json(force=True, silent=True) or {}
+    body = request.get_json(silent=True) or {}
+    if not isinstance(body, dict):
+        return _cors(jsonify({
+            "status": "error",
+            "message": "invalid_json_object",
+        })), 400
+
+    email = str(body.get("email", "")).strip()
+    if not email:
+        return _cors(jsonify({
+            "status": "error",
+            "message": "missing_required_fields",
+            "fields": ["email"],
+        })), 400
+
     intent = str(body.get("intent", "")).strip()
-    source = str(body.get("source", "app")).strip()
+    source = str(body.get("source", "app")).strip() or "app"
+    protocol = str(body.get("protocol", "zero_size")).strip() or "zero_size"
+    lead_payload = {
+        "name": body.get("name"),
+        "email": email,
+        "company": body.get("company"),
+        "intent": intent,
+        "source": source,
+        "protocol": protocol,
+    }
 
-    # Persist via Sheets → SQLite fallback
-    capture_result: dict = {}
+    capture_result: dict = {"status": "error", "message": "lead_capture_unavailable"}
     if handle_lead_submission is not None:
-        capture_result = handle_lead_submission({
-            "name": body.get("name"),
-            "email": body.get("email"),
-            "company": body.get("company"),
-        })
+        try:
+            capture_result = handle_lead_submission(lead_payload)
+        except Exception as exc:  # noqa: BLE001
+            capture_result = {"status": "error", "message": str(exc)}
 
-    try:
-        result = orchestrate_beta_waitlist({
-            "intent": intent,
-            "source": source,
-            "protocol": body.get("protocol", "zero_size"),
-        })
+    public_capture = {
+        key: value
+        for key, value in capture_result.items()
+        if key in {"status", "method", "message"}
+    }
+    lead_persisted = capture_result.get("status") == "success"
+    if not lead_persisted:
         return _cors(jsonify({
-            "status": "ok",
-            "lead_persisted": True,
-            "capture": capture_result,
-            **result,
-        })), 200
-    except Exception as e:
-        return _cors(jsonify({
-            "status": "ok",
-            "lead_persisted": capture_result.get("status") == "success",
-            "capture": capture_result,
-            "message": str(e),
-        })), 200
+            "status": "error",
+            "lead_persisted": False,
+            "capture": public_capture,
+        })), 500
+
+    orchestration_result: dict = {}
+    orchestration_error = ""
+    if orchestrate_beta_waitlist is None:
+        orchestration_error = "waitlist_orchestrator_unavailable"
+    else:
+        try:
+            orchestration_result = orchestrate_beta_waitlist({
+                **lead_payload,
+                "user_agent": request.headers.get("User-Agent", ""),
+                "ts": body.get("ts"),
+            })
+        except Exception as exc:  # noqa: BLE001
+            orchestration_error = str(exc)
+
+    return _cors(jsonify({
+        "status": "ok",
+        "lead_persisted": True,
+        "capture": public_capture,
+        "orchestration_error": orchestration_error,
+        **orchestration_result,
+    })), 200
 
 
 @app.route("/api/v1/mirror/snap", methods=["OPTIONS"])
