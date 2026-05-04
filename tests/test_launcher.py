@@ -52,11 +52,13 @@ class TestGenerateActionKit(unittest.TestCase):
             self.assertEqual(content, _FR_EMAIL)
 
     def test_idempotent_second_call(self) -> None:
-        """Calling generate_action_kit twice must not raise."""
+        """Calling generate_action_kit twice must not raise and must preserve content."""
         with tempfile.TemporaryDirectory() as tmp:
             generate_action_kit(output_dir=tmp)
             generate_action_kit(output_dir=tmp)
-            self.assertTrue((Path(tmp) / _EMAIL_FILENAME).is_file())
+            email_path = Path(tmp) / _EMAIL_FILENAME
+            self.assertTrue(email_path.is_file())
+            self.assertEqual(email_path.read_text(encoding="utf-8"), _FR_EMAIL)
 
     def test_returns_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

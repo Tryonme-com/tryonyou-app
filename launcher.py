@@ -34,7 +34,7 @@ réduisons pas vos retours à zéro, le service ne vous est pas facturé.
 Seriez-vous disponible pour une démonstration de 10 minutes cette semaine ?
 
 Cordialement,
-[Tu Nombre]
+[Votre Nom]
 """
 
 
