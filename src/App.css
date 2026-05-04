@@ -2311,3 +2311,181 @@ button {
   font-family: "Cormorant Garamond", serif;
   letter-spacing: 2px;
 }
+
+/* ── Digital Mirror Panel ──────────────────────────────────────── */
+
+.mirror-panel {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 380px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(18, 18, 22, 0.97);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  z-index: 9000;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.1);
+}
+
+.mirror-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mirror-panel__header h2 {
+  font-family: "Cinzel", serif;
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.mirror-panel__close {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.mirror-panel__close:hover {
+  color: #d4af37;
+}
+
+.mirror-panel__scanning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: #d4af37;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.mirror-panel__pulse {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.25);
+  border: 2px solid #d4af37;
+}
+
+.mirror-panel__empty {
+  text-align: center;
+  padding: 24px 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+}
+
+.mirror-panel__empty .button {
+  margin-top: 16px;
+}
+
+.mirror-panel__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mirror-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  color: #f0f0f0;
+}
+
+.mirror-suggestion:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.mirror-suggestion--active {
+  border-color: #d4af37;
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.mirror-suggestion__name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.mirror-suggestion__price {
+  font-size: 12px;
+  color: #d4af37;
+  font-weight: 500;
+}
+
+.mirror-suggestion__fit {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: capitalize;
+}
+
+.mirror-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mirror-action {
+  font-size: 12px !important;
+  padding: 10px 16px !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase;
+}
+
+.mirror-panel__brand-triggers {
+  padding-top: 8px;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.button--balmain {
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a) !important;
+  border: 1px solid #d4af37 !important;
+  color: #d4af37 !important;
+  font-weight: 700 !important;
+  letter-spacing: 4px !important;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.button--balmain:hover {
+  background: linear-gradient(135deg, #2a2a2a, #3a3a3a) !important;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.3);
+}
+
+.mirror-panel__feedback {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .mirror-panel {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    bottom: 70px;
+  }
+}
