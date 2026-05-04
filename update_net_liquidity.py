@@ -1,40 +1,48 @@
 #!/usr/bin/env python3
-"""Divineo V7 — calcul net + écriture ``master_ledger_status.json`` (local)."""
+"""Divineo V7 — calcule le net gaspable et écrit ``master_ledger_status.json`` (racine du dépôt)."""
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+_TZ_PARIS = ZoneInfo("Europe/Paris")
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "master_ledger_status.json"
 
-GROSS_EUR = 484_908.00
-STRIPE_FEE_EUR = 7_273.62  # 1,5 %
-QONTO_FEE_EUR = 25.00
-NET_EUR = round(GROSS_EUR - STRIPE_FEE_EUR - QONTO_FEE_EUR, 2)
+GROSS_TTC = 484_908.00
+STRIPE_COM = round(GROSS_TTC * 0.015, 2)
+QONTO_COM = 25.00
+NET = round(GROSS_TTC - STRIPE_COM - QONTO_COM, 2)
 
 
-def main() -> None:
-    if NET_EUR != 477_609.38:
-        raise SystemExit(f"NET incohérent: {NET_EUR}")
+def main() -> int:
+    if abs(STRIPE_COM - 7273.62) > 0.01 or abs(NET - 477_609.38) > 0.01:
+        print("ERR: totaux incohérents", file=sys.stderr)
+        return 2
+
     payload = {
-        "schema": "divineo_v7_net_liquidity_v1",
-        "updated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "invoice_ref": "F-2026-001-PARTIAL",
-        "gross_eur": GROSS_EUR,
-        "stripe_fee_eur": STRIPE_FEE_EUR,
-        "qonto_fee_eur": QONTO_FEE_EUR,
-        "net_deployable_eur": NET_EUR,
-        "status": "LIQUIDITY_DEPLOYABLE",
+        "contract": "DIVINEO-V10",
         "currency": "EUR",
+        "gross_ttc": GROSS_TTC,
+        "commissions": {
+            "stripe_1_5pct": -STRIPE_COM,
+            "qonto_flat": -QONTO_COM,
+        },
+        "net_deployable": NET,
+        "status": "LIQUIDITY_DEPLOYABLE",
+        "computed_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "computed_at_paris": datetime.now(_TZ_PARIS).isoformat(timespec="seconds"),
+        "source": "update_net_liquidity.py",
     }
     OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    cents_total = int(round(NET_EUR * 100 + 1e-9))
-    mag, c = divmod(cents_total, 100)
-    body = f"{mag:,}".replace(",", ".")
-    print(f"✅ SISTEMA SINCRONIZADO. SALDO DISPONIBLE: {body},{c:02d} €")
+    print("✅ SISTEMA SINCRONIZADO. SALDO DISPONIBLE: 477.609,38 €")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

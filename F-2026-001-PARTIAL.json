@@ -2,6 +2,7 @@
   "invoice_number": "F-2026-001-PARTIAL",
   "type": "facture_b2b",
   "jurisdiction": "FR",
+  "place_of_supply": "Paris",
   "currency": "EUR",
   "emitter": {
     "legal_name": "Rubén Espinar Rodríguez (EI)",

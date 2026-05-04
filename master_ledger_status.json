@@ -1,11 +1,15 @@
 {
-  "schema": "divineo_v7_net_liquidity_v1",
-  "updated_at_utc": "2026-05-04T11:54:29.436610Z",
   "invoice_ref": "F-2026-001-PARTIAL",
-  "gross_eur": 484908.0,
-  "stripe_fee_eur": 7273.62,
-  "qonto_fee_eur": 25.0,
-  "net_deployable_eur": 477609.38,
+  "contract": "DIVINEO-V10",
+  "currency": "EUR",
+  "gross_ttc": 484908.0,
+  "commissions": {
+    "stripe_1_5pct": -7273.62,
+    "qonto_flat": -25.0
+  },
+  "net_deployable": 477609.38,
   "status": "LIQUIDITY_DEPLOYABLE",
-  "currency": "EUR"
+  "computed_at_utc": "2026-05-04T12:32:58.112257Z",
+  "computed_at_paris": "2026-05-04T14:32:58+02:00",
+  "source": "update_net_liquidity.py"
 }
