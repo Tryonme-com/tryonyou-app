@@ -27,6 +27,12 @@ def _run(script: str, *args: str) -> int:
 
 
 def main() -> int:
+    guard = _run("dossier_fatality_guard.py")
+    if guard == 0:
+        print("[force_liquidity] Dossier Fatality: activado con evidencia verificable.")
+    else:
+        print("[force_liquidity] Dossier Fatality: pendiente; no se activa protección sin evidencia.")
+
     r = _run("force_qonto_collection.py", "--once")
     if r != 0:
         print(
