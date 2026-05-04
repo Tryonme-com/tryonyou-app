@@ -1,0 +1,41 @@
+{
+  "invoice_reference": "F-2026-001-PARTIAL",
+  "issue_date": "2026-05-04",
+  "currency": "EUR",
+  "jurisdiction": "FR",
+  "emitter": {
+    "name": "Rubén Espinar Rodríguez",
+    "legal_form": "EI",
+    "siren": "943610196",
+    "siren_formatted": "943 610 196",
+    "address_lines": [
+      "France"
+    ]
+  },
+  "client": {
+    "name": "Galeries Lafayette Haussmann",
+    "siret": "55212921100011",
+    "siret_formatted": "552 129 211 00011",
+    "address_lines": [
+      "40 Boulevard Haussmann",
+      "75009 Paris",
+      "France"
+    ]
+  },
+  "lines": [
+    {
+      "description": "Pago del hito 1: Licencia PauPeacockEngine V12",
+      "quantity": 1,
+      "unit_ht_eur": 404090.0,
+      "total_ht_eur": 404090.0,
+      "vat_rate": 0.2,
+      "vat_amount_eur": 80818.0,
+      "total_ttc_eur": 484908.0
+    }
+  ],
+  "totals": {
+    "total_ht_eur": 404090.0,
+    "total_vat_eur": 80818.0,
+    "total_ttc_eur": 484908.0
+  }
+}
