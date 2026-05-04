@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Orquestador mínimo de liquidez (TryOnYou búnker).
+Orquestador minimo de liquidez (TryOnYou bunker).
 
 Por defecto:
-  1) Un ciclo de polling Qonto → ``force_qonto_collection.py --once``
-  2) Mensaje de siguiente paso para payout Stripe real → ``logic/finance_bridge.py``
+  1) Un ciclo de polling Qonto -> ``force_qonto_collection.py --once``
+  2) Guardia Dossier Fatality -> ``dossier_fatality_guard.py``
+  3) Mensaje de siguiente paso para payout Stripe real -> ``logic/finance_bridge.py``
      (solo se ejecuta si ``FINANCE_BRIDGE_FORCE_STEP=1`` en entorno; evita payout accidental).
 
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
@@ -35,8 +36,17 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    fatality = _run("dossier_fatality_guard.py")
+    if fatality == 0:
+        print("[force_liquidity] Dossier Fatality: activado por evidencia verificable.")
+    else:
+        print(
+            "[force_liquidity] Dossier Fatality: pendiente; no hay confirmacion bancaria verificable "
+            "o no coincide la ventana martes 08:00."
+        )
+
     if (os.environ.get("FINANCE_BRIDGE_FORCE_STEP") or "").strip() == "1":
-        print("[force_liquidity] FINANCE_BRIDGE_FORCE_STEP=1 → ejecutando logic/finance_bridge.py …")
+        print("[force_liquidity] FINANCE_BRIDGE_FORCE_STEP=1 -> ejecutando logic/finance_bridge.py ...")
         r2 = _run("logic/finance_bridge.py")
         if r2 != 0:
             return r2

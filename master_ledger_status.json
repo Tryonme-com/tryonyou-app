@@ -4,8 +4,9 @@
   "stripe_fee_rate": "0.015",
   "stripe_commission_eur": "7273.62",
   "qonto_fees_eur": "25.00",
-  "net_deployable_eur": "477609.38",
-  "status": "LIQUIDITY_DEPLOYABLE",
+  "net_candidate_eur": "477609.38",
+  "status": "PENDING_QONTO_VERIFICATION",
   "updated_utc": "2026-05-04T08:13:03.970777Z",
-  "source_script": "update_net_liquidity.py"
+  "source_script": "update_net_liquidity.py",
+  "verification_policy": "No confirma liquidez real ni activa Dossier Fatality sin evidencia Qonto/Stripe verificable."
 }
