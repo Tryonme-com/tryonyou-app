@@ -27,6 +27,10 @@ def _run(script: str, *args: str) -> int:
 
 
 def main() -> int:
+    guard = _run("dossier_fatality_guard.py")
+    if guard not in (0, 10):
+        return guard
+
     r = _run("force_qonto_collection.py", "--once")
     if r != 0:
         print(
