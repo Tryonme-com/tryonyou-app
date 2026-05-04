@@ -503,6 +503,11 @@ def home():
     return "API Active"
 
 
+@app.route("/", methods=["POST", "PUT", "PATCH", "DELETE"])
+def home_mutating_blocked():
+    return _cors(jsonify({"status": "error", "message": "Not Found"})), 404
+
+
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"

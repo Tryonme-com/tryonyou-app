@@ -110,7 +110,7 @@ class TestRetrieveProduct(unittest.TestCase):
         self.assertIn("invalid_product_id", result.get("error", ""))
 
 
-class TestListProducts(unittest.TestCase):
+class TestListProducts(StripeAgentTestCase):
     def setUp(self) -> None:
         os.environ["STRIPE_SECRET_KEY_FR"] = "sk_test_dummy"
 

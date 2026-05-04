@@ -26,6 +26,17 @@ import stripe
 
 from stripe_fr_resolve import resolve_stripe_secret_fr
 
+SIREN = "943 610 196"
+PATENT = "PCT/EP2025/067317"
+
+
+def _merge_default_metadata(metadata: dict[str, str] | None) -> dict[str, str]:
+    """Return a metadata dict that always includes SIREN and patent as fallback values."""
+    merged: dict[str, str] = dict(metadata or {})
+    merged.setdefault("siren", SIREN)
+    merged.setdefault("patent", PATENT)
+    return merged
+
 
 _list_cache_lock = threading.Lock()
 _list_cache: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -132,8 +143,7 @@ def create_product(
         params: dict[str, Any] = {"name": name}
         if description:
             params["description"] = description
-        if metadata:
-            params["metadata"] = metadata
+        params["metadata"] = _merge_default_metadata(metadata)
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
     except stripe.error.StripeError as exc:
@@ -182,12 +192,23 @@ def list_products(
         dict with 'ok' and 'products' list on success.
     """
     stripe.api_key = _get_stripe_client()
+    params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
+    if active is not None:
+        params["active"] = active
+    cache_key = _list_cache_key(
+        "products",
+        active=active,
+        limit=params["limit"],
+        paginate=paginate,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
-        if active is not None:
-            params["active"] = active
         result = stripe.Product.list(**params)
-        return {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        out = {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        _cache_set(cache_key, out)
+        return out
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
@@ -250,8 +271,7 @@ def create_price(
         }
         if recurring:
             params["recurring"] = recurring
-        if metadata:
-            params["metadata"] = metadata
+        params["metadata"] = _merge_default_metadata(metadata)
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
     except stripe.error.StripeError as exc:
