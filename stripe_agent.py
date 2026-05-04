@@ -135,9 +135,9 @@ def create_product(
         params: dict[str, Any] = {"name": name}
         if description:
             params["description"] = description
-        merged_meta: dict[str, str] = {"siren": _SIREN, "patent": _PATENT}
-        if metadata:
-            merged_meta.update(metadata)
+        merged_meta: dict[str, str] = dict(metadata) if metadata else {}
+        merged_meta["siren"] = _SIREN
+        merged_meta["patent"] = _PATENT
         params["metadata"] = merged_meta
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
@@ -261,9 +261,9 @@ def create_price(
         }
         if recurring:
             params["recurring"] = recurring
-        merged_meta: dict[str, str] = {"siren": _SIREN, "patent": _PATENT}
-        if metadata:
-            merged_meta.update(metadata)
+        merged_meta: dict[str, str] = dict(metadata) if metadata else {}
+        merged_meta["siren"] = _SIREN
+        merged_meta["patent"] = _PATENT
         params["metadata"] = merged_meta
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
