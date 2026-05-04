@@ -503,6 +503,14 @@ def home():
     return "API Active"
 
 
+@app.route("/", methods=["POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+def home_mutating():
+    from flask import jsonify
+    resp = jsonify({"status": "error", "message": "Not Found"})
+    resp.status_code = 404
+    return resp
+
+
 def _cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
@@ -522,6 +530,8 @@ def _ensure_sovereignty_payload(payload):
 def _apply_global_sovereignty_headers(resp):
     resp = _cors(resp)
     if resp.status_code == 204:
+        return resp
+    if resp.status_code >= 400:
         return resp
     content_type = (resp.headers.get("Content-Type") or "").lower()
     if "application/json" not in content_type:

@@ -152,7 +152,7 @@ def balance_total_soberano() -> float:
     transferencia_ip = TRANSFERENCIA_IP_UNIT * 2
     total = ATRASOS_PILOTO + nodos_activos + transferencia_ip + SUBVENCION_BFT
 
-    print("--- [ESTADO FINANCIERO TOTAL: TRYONYOU V12] ---")
+    print("--- [ESTADO FINANCIERO TOTAL: TRYONYOU V10] ---")
     print(f"CAPITAL TOTAL RECLAMADO: {total:,.2f} €")
     print(
         "ESTADO: Pipeline de cobro al 100% de capacidad. "

@@ -60,6 +60,12 @@ def _run_py(script: str) -> int:
     return r.returncode
 
 
+def _missing_module(module: str) -> int:
+    """Print a clear error when an optional module is not installed and return 1."""
+    print(f"❌ Error: módulo '{module}' no encontrado. Ejecuta la instalación o inyección primero.")
+    return 1
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description="TryOnYou V10 — orquestador final (menú de scripts).",
@@ -115,30 +121,42 @@ def main() -> int:
     _path()
 
     if args.cmd == "produccion":
-        from ejecutor_v10 import main as m
-
+        try:
+            from ejecutor_v10 import main as m
+        except ImportError:
+            return _missing_module("ejecutor_v10")
         return m()
     if args.cmd == "espejo":
-        from unificar_v10 import ejecutar_secuencia_maestra
-
+        try:
+            from unificar_v10 import ejecutar_secuencia_maestra
+        except ImportError:
+            return _missing_module("unificar_v10")
         return ejecutar_secuencia_maestra()
     if args.cmd == "bunker":
-        from arranque_bunker_soberania import arranque_bunker
-
+        try:
+            from arranque_bunker_soberania import arranque_bunker
+        except ImportError:
+            return _missing_module("arranque_bunker_soberania")
         return arranque_bunker()
     if args.cmd == "protocolo-despliegue":
-        from protocolo_v10_despliegue import ejecutar_despliegue
-
+        try:
+            from protocolo_v10_despliegue import ejecutar_despliegue
+        except ImportError:
+            return _missing_module("protocolo_v10_despliegue")
         return ejecutar_despliegue()
     if args.cmd == "formalizar":
-        from formalizar_soberania_v10 import formalizar_soberania
-
+        try:
+            from formalizar_soberania_v10 import formalizar_soberania
+        except ImportError:
+            return _missing_module("formalizar_soberania_v10")
         formalizar_soberania()
         return 0
     if args.cmd == "monitor":
         import os
-        from monitor_liquidacion_v10 import MonitorLiquidacion, _enviar_telegram
-
+        try:
+            from monitor_liquidacion_v10 import MonitorLiquidacion, _enviar_telegram
+        except ImportError:
+            return _missing_module("monitor_liquidacion_v10")
         mon = MonitorLiquidacion()
         txt = mon.informe_diario()
         print(txt)
@@ -150,38 +168,54 @@ def main() -> int:
             _enviar_telegram(txt)
         return 0
     if args.cmd == "reporte-matutino":
-        from reporte_diario_soberania_v10 import main as m
-
+        try:
+            from reporte_diario_soberania_v10 import main as m
+        except ImportError:
+            return _missing_module("reporte_diario_soberania_v10")
         return m()
     if args.cmd == "bpifrance":
-        from solicitud_liquidez_bpifrance_v10 import main as m
-
+        try:
+            from solicitud_liquidez_bpifrance_v10 import main as m
+        except ImportError:
+            return _missing_module("solicitud_liquidez_bpifrance_v10")
         return m()
     if args.cmd == "bpifrance-envio":
-        from preparar_envio_bpifrance_v10 import preparar_envio_final
-
+        try:
+            from preparar_envio_bpifrance_v10 import preparar_envio_final
+        except ImportError:
+            return _missing_module("preparar_envio_bpifrance_v10")
         preparar_envio_final()
         return 0
     if args.cmd == "bpifrance-token":
-        from generar_secreto_bpifrance_v10 import generar_secreto_bpifrance
-
+        try:
+            from generar_secreto_bpifrance_v10 import generar_secreto_bpifrance
+        except ImportError:
+            return _missing_module("generar_secreto_bpifrance_v10")
         generar_secreto_bpifrance()
         return 0
     if args.cmd == "rescate":
-        from operacion_rescate_soberania_v10 import main as m
-
+        try:
+            from operacion_rescate_soberania_v10 import main as m
+        except ImportError:
+            return _missing_module("operacion_rescate_soberania_v10")
         return m()
     if args.cmd == "sellar-lafayette":
-        from operacion_soberania_total_v10 import main as m
-
+        try:
+            from operacion_soberania_total_v10 import main as m
+        except ImportError:
+            return _missing_module("operacion_soberania_total_v10")
         return m()
     if args.cmd == "tesoreria":
-        from gestion_tesoreria import main as m
-
+        try:
+            from gestion_tesoreria import main as m
+        except ImportError:
+            return _missing_module("gestion_tesoreria")
         return m()
     if args.cmd == "metricas":
-        from reporte_metricas_lafayette_v10 import reporte_metricas_lafayette
-
+        try:
+            from reporte_metricas_lafayette_v10 import reporte_metricas_lafayette
+        except ImportError:
+            return _missing_module("reporte_metricas_lafayette_v10")
         reporte_metricas_lafayette()
         return 0
     if args.cmd == "divineo":
@@ -191,33 +225,47 @@ def main() -> int:
     if args.cmd == "certeza":
         return _run_py("motor_certeza_absoluta_v10.py")
     if args.cmd == "telegram-senal":
-        from telegram_senal_soberania import enviar_senal_soberana
-
+        try:
+            from telegram_senal_soberania import enviar_senal_soberana
+        except ImportError:
+            return _missing_module("telegram_senal_soberania")
         return enviar_senal_soberana()
     if args.cmd == "gcs-contrato":
-        from despliegue_gcs_soberano_v10 import subir_codice_v10
-
+        try:
+            from despliegue_gcs_soberano_v10 import subir_codice_v10
+        except ImportError:
+            return _missing_module("despliegue_gcs_soberano_v10")
         return subir_codice_v10()
     if args.cmd == "gcs-core":
-        from desplegar_v10_core_gcs import desplegar_configuracion
-
+        try:
+            from desplegar_v10_core_gcs import desplegar_configuracion
+        except ImportError:
+            return _missing_module("desplegar_v10_core_gcs")
         return desplegar_configuracion()
     if args.cmd == "sacmuseum":
-        from sacmuseum_empire import run_sacmuseum_sovereignty
-
+        try:
+            from sacmuseum_empire import run_sacmuseum_sovereignty
+        except ImportError:
+            return _missing_module("sacmuseum_empire")
         run_sacmuseum_sovereignty()
         return 0
     if args.cmd == "auditoria":
-        from auditoria_impacto_matinal import main as m
-
+        try:
+            from auditoria_impacto_matinal import main as m
+        except ImportError:
+            return _missing_module("auditoria_impacto_matinal")
         return m()
     if args.cmd == "liquidez":
-        from auditoria_impacto_matinal import main as m
-
+        try:
+            from auditoria_impacto_matinal import main as m
+        except ImportError:
+            return _missing_module("auditoria_impacto_matinal")
         return m(["--liquidez"])
     if args.cmd == "reconciliar":
-        from auditoria_impacto_matinal import main as m
-
+        try:
+            from auditoria_impacto_matinal import main as m
+        except ImportError:
+            return _missing_module("auditoria_impacto_matinal")
         return m(["--reconciliar-agresivo"])
 
     return 2

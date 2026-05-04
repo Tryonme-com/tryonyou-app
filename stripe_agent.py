@@ -27,6 +27,9 @@ import stripe
 from stripe_fr_resolve import resolve_stripe_secret_fr
 
 
+_SIREN = "943 610 196"
+_PATENT = "PCT/EP2025/067317"
+
 _list_cache_lock = threading.Lock()
 _list_cache: dict[str, tuple[float, dict[str, Any]]] = {}
 
@@ -132,8 +135,10 @@ def create_product(
         params: dict[str, Any] = {"name": name}
         if description:
             params["description"] = description
+        merged_meta: dict[str, str] = {"siren": _SIREN, "patent": _PATENT}
         if metadata:
-            params["metadata"] = metadata
+            merged_meta.update(metadata)
+        params["metadata"] = merged_meta
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
     except stripe.error.StripeError as exc:
@@ -181,13 +186,19 @@ def list_products(
     Returns:
         dict with 'ok' and 'products' list on success.
     """
+    cache_key = _list_cache_key("products", active=active, limit=limit, paginate=paginate)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
     stripe.api_key = _get_stripe_client()
     try:
         params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
         if active is not None:
             params["active"] = active
         result = stripe.Product.list(**params)
-        return {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        payload = {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        _cache_set(cache_key, payload)
+        return payload
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
@@ -250,8 +261,10 @@ def create_price(
         }
         if recurring:
             params["recurring"] = recurring
+        merged_meta: dict[str, str] = {"siren": _SIREN, "patent": _PATENT}
         if metadata:
-            params["metadata"] = metadata
+            merged_meta.update(metadata)
+        params["metadata"] = merged_meta
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
     except stripe.error.StripeError as exc:
