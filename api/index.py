@@ -91,6 +91,10 @@ get_treasury_status = _i['get_treasury_status']
 get_payouts_list = _i['get_payouts_list']
 record_payout = _i['record_payout']
 
+_i = _safe_import('logic.falla_commission_manager', ['GestorFallaV9', 'FallaPaymentError'])
+GestorFallaV9 = _i['GestorFallaV9']
+FallaPaymentError = _i['FallaPaymentError']
+
 _i = _safe_import('territory_expansion', ['get_expansion_nodes', 'get_territory_summary', 'generate_node_contract'])
 get_expansion_nodes = _i['get_expansion_nodes']
 get_territory_summary = _i['get_territory_summary']
@@ -1516,6 +1520,41 @@ def treasury_record_payout():
         source="api_v1_treasury_payouts",
     )
     return _cors(jsonify({"status": "ok", "payout": entry})), 201
+
+
+@app.route("/api/v1/falla/cobros", methods=["OPTIONS"])
+def falla_cobros_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/falla/cobros", methods=["POST"])
+def falla_cobros():
+    if GestorFallaV9 is None:
+        return _cors(jsonify({"status": "error", "message": "falla_manager_unavailable"})), 500
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        asiento = GestorFallaV9().ejecutar_cobro(body)
+        code = 200 if asiento.get("duplicado") else 201
+        return _cors(jsonify({"status": asiento.get("status", "ok"), "asiento": asiento})), code
+    except Exception as exc:
+        if FallaPaymentError is not None and isinstance(exc, FallaPaymentError):
+            return _cors(jsonify({"status": "error", "message": str(exc)})), 400
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
+
+
+@app.route("/api/v1/falla/cobros/resumen", methods=["OPTIONS"])
+def falla_cobros_resumen_options():
+    return _cors(Response(status=204))
+
+
+@app.route("/api/v1/falla/cobros/resumen", methods=["GET"])
+def falla_cobros_resumen():
+    if GestorFallaV9 is None:
+        return _cors(jsonify({"status": "error", "message": "falla_manager_unavailable"})), 500
+    try:
+        return _cors(jsonify(GestorFallaV9().resumen())), 200
+    except Exception as exc:
+        return _cors(jsonify({"status": "error", "message": str(exc)})), 500
 
 
 # ── V11 Territory: Multi-Node Expansion & Licensing ─────────────────
