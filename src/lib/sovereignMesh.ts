@@ -16,7 +16,7 @@ const biometricRef = storage
 
 export const loadSovereignMesh = async (): Promise<unknown> => {
   if (!biometricRef) {
-    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE.");
+    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE. Firebase Storage no inicializado.");
     return undefined;
   }
   try {
@@ -26,7 +26,7 @@ export const loadSovereignMesh = async (): Promise<unknown> => {
     console.log("PA, PA, PA - MALLA DE 111MB CARGADA. PROYECTANDO CERTEZA.");
     return meshData;
   } catch (error) {
-    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE.");
+    console.error("ERROR: BÚNKER DE DATOS NO ALCANZABLE.", error);
     return undefined;
   }
 };
