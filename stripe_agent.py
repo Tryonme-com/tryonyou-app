@@ -192,12 +192,24 @@ def list_products(
         dict with 'ok' and 'products' list on success.
     """
     stripe.api_key = _get_stripe_client()
+    params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
+    if active is not None:
+        params["active"] = active
+    cache_key = _list_cache_key(
+        "products",
+        active=active,
+        limit=params["limit"],
+        paginate=paginate,
+        list_func_id=id(stripe.Product.list),
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
-        if active is not None:
-            params["active"] = active
         result = stripe.Product.list(**params)
-        return {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        out = {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        _cache_set(cache_key, out)
+        return out
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
