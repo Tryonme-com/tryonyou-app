@@ -1,0 +1,31 @@
+{
+  "name": "Gestor Falla V9 - comisiones y cobros",
+  "model": "Codex 5.3 High",
+  "triggers": [
+    {
+      "type": "webhook",
+      "description": "Recibe un POST JSON cada vez que una app, pasarela o formulario notifica un cobro.",
+      "method": "POST",
+      "expected_payload": {
+        "id_fallero": "FALLERO-001",
+        "nombre": "Pau",
+        "concepto": "Cuota Abril",
+        "importe_bruto": 100.0,
+        "fecha": "2026-05-05",
+        "referencia_externa": "stripe_pi_123"
+      }
+    },
+    {
+      "type": "schedule",
+      "description": "Revision diaria de hoja de calculo o base de datos de cobros.",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+      "timezone": "Europe/Madrid"
+    }
+  ],
+  "runtime": {
+    "command": "python3 gestor_falla_v9.py --input -",
+    "memory_path_env": "FALLA_MEMORY_PATH",
+    "commission_env": "FALLA_COMISION_PCT",
+    "quota_env": "FALLA_CUOTA_BASE"
+  }
+}
