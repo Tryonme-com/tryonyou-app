@@ -28,8 +28,6 @@ append_waitlist_json = _mod.append_waitlist_json
 orchestrate_beta_waitlist = _mod.orchestrate_beta_waitlist
 orchestrate_bunker_full_orchestrator = _mod.orchestrate_bunker_full_orchestrator
 orchestrate_mirror_shadow_dwell = _mod.orchestrate_mirror_shadow_dwell
-BunkerOrchestrator = _mod.BunkerOrchestrator
-orchestrator = _mod.orchestrator
 
 __all__ = [
     "VETOS_PRIORITY_BETA",
@@ -37,6 +35,12 @@ __all__ = [
     "orchestrate_beta_waitlist",
     "orchestrate_bunker_full_orchestrator",
     "orchestrate_mirror_shadow_dwell",
-    "BunkerOrchestrator",
-    "orchestrator",
 ]
+
+if hasattr(_mod, "BunkerOrchestrator"):
+    BunkerOrchestrator = _mod.BunkerOrchestrator
+    __all__.append("BunkerOrchestrator")
+
+if hasattr(_mod, "orchestrator"):
+    orchestrator = _mod.orchestrator
+    __all__.append("orchestrator")
