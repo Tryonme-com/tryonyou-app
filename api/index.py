@@ -531,6 +531,8 @@ def _apply_global_sovereignty_headers(resp):
     try:
         payload = resp.get_json(silent=True)
         if isinstance(payload, dict):
+            if resp.status_code == 404 and payload == {"status": "error", "message": "Not Found"}:
+                return resp
             payload = _ensure_sovereignty_payload(payload)
             body = json.dumps(payload, ensure_ascii=False)
             resp.set_data(body)
