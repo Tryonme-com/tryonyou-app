@@ -127,6 +127,13 @@ get_orchestrator_status = _i['get_orchestrator_status']
 get_pilot_kpis = _i['get_pilot_kpis']
 trigger_global_authority = _i['trigger_global_authority']
 
+_i = _safe_import('resend_outreach', ['is_outreach_configured', 'send_brand_proposal', 'send_batch_proposals', 'get_brand_list', 'get_outreach_logs'])
+is_outreach_configured = _i['is_outreach_configured']
+send_brand_proposal = _i['send_brand_proposal']
+send_batch_proposals = _i['send_batch_proposals']
+get_brand_list = _i['get_brand_list']
+get_outreach_logs = _i['get_outreach_logs']
+
 app = Flask(__name__)
 
 @app.route('/api/debug-boot')
@@ -1916,6 +1923,74 @@ def invoice_partial():
         return _cors(jsonify({"status": "error", "message": str(exc)})), 500
 
 
+# ── Resend Brand Outreach Routes ─────────────────────────────────────────────
+
+@app.route("/api/v1/outreach/brands", methods=["OPTIONS"])
+def outreach_brands_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/outreach/brands", methods=["GET"])
+def outreach_brands():
+    if not get_brand_list:
+        return _cors(jsonify({"error": "outreach_module_not_available"})), 503
+    return _cors(jsonify({
+        "brands": get_brand_list(),
+        "total": len(get_brand_list()),
+        "configured": is_outreach_configured() if is_outreach_configured else False,
+    })), 200
+
+@app.route("/api/v1/outreach/send", methods=["OPTIONS"])
+def outreach_send_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/outreach/send", methods=["POST"])
+def outreach_send():
+    if not send_brand_proposal:
+        return _cors(jsonify({"error": "outreach_module_not_available"})), 503
+    body = request.get_json(force=True, silent=True) or {}
+    brand = str(body.get("brand", "")).strip()
+    email = str(body.get("email", "")).strip()
+    lang = str(body.get("lang", "en")).strip()
+    segment = str(body.get("segment", "Luxury RTW")).strip()
+    if not brand or not email:
+        return _cors(jsonify({"error": "brand and email are required"})), 400
+    result = send_brand_proposal(brand, email, lang=lang, segment=segment)
+    status_code = 200 if result.get("ok") else 422
+    return _cors(jsonify(result)), status_code
+
+@app.route("/api/v1/outreach/batch", methods=["OPTIONS"])
+def outreach_batch_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/outreach/batch", methods=["POST"])
+def outreach_batch():
+    if not send_batch_proposals:
+        return _cors(jsonify({"error": "outreach_module_not_available"})), 503
+    body = request.get_json(force=True, silent=True) or {}
+    targets = body.get("targets", [])
+    lang = str(body.get("lang", "en")).strip()
+    if not isinstance(targets, list) or not targets:
+        return _cors(jsonify({"error": "targets array is required (each with brand + email)"})), 400
+    result = send_batch_proposals(targets, lang=lang)
+    return _cors(jsonify(result)), 200
+
+@app.route("/api/v1/outreach/logs", methods=["OPTIONS"])
+def outreach_logs_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/outreach/logs", methods=["GET"])
+def outreach_logs():
+    if not get_outreach_logs:
+        return _cors(jsonify({"error": "outreach_module_not_available"})), 503
+    limit = request.args.get("limit", "50")
+    try:
+        limit_int = max(1, min(int(limit), 500))
+    except ValueError:
+        limit_int = 50
+    entries = get_outreach_logs(limit=limit_int)
+    return _cors(jsonify({"logs": entries, "count": len(entries)})), 200
+
+
 @app.route("/api/health", methods=["GET"])
 @app.route("/health", methods=["GET"])
 def health():
@@ -1974,6 +2049,8 @@ def health():
         "orchestrator_architecture": "Pegaso V9.2.6",
         "qonto_swift_webhook_available": True,
         "smtp_bounce_handler_available": True,
+        "resend_outreach_available": is_outreach_configured() if is_outreach_configured else False,
+        "outreach_brand_count": len(get_brand_list()) if get_brand_list else 0,
     })), 200
 
 

@@ -5,6 +5,7 @@ import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
 import { DigitalMirrorPanel } from "./components/DigitalMirrorPanel";
 import { OrchestrationPanel } from "./components/OrchestrationPanel";
+import { BrandOutreachPanel } from "./components/BrandOutreachPanel";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -1451,6 +1452,12 @@ export default function App() {
         <section className="section" id="orchestration">
           <div className="section-shell">
             <OrchestrationPanel locale={locale} />
+          </div>
+        </section>
+
+        <section className="section" id="outreach">
+          <div className="section-shell">
+            <BrandOutreachPanel locale={locale} />
           </div>
         </section>
       </main>
