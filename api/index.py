@@ -127,6 +127,14 @@ get_orchestrator_status = _i['get_orchestrator_status']
 get_pilot_kpis = _i['get_pilot_kpis']
 trigger_global_authority = _i['trigger_global_authority']
 
+_i = _safe_import('brand_outreach_campaign', ['send_brand_email', 'execute_campaign', 'get_campaign_log', 'get_campaign_status', 'get_brands_list', 'BRANDS_60'])
+send_brand_email = _i['send_brand_email']
+execute_campaign = _i['execute_campaign']
+get_campaign_log = _i['get_campaign_log']
+get_campaign_status = _i['get_campaign_status']
+get_brands_list = _i['get_brands_list']
+BRANDS_60 = _i['BRANDS_60']
+
 app = Flask(__name__)
 
 @app.route('/api/debug-boot')
@@ -1974,6 +1982,8 @@ def health():
         "orchestrator_architecture": "Pegaso V9.2.6",
         "qonto_swift_webhook_available": True,
         "smtp_bounce_handler_available": True,
+        "brand_outreach_campaign_available": get_campaign_status is not None,
+        "campaign_brands_total": len(BRANDS_60 or []),
     })), 200
 
 
@@ -2047,6 +2057,72 @@ def model_access_token():
         return _cors(jsonify(result)), status
     except Exception as exc:
         return _cors(jsonify({"status": "error", "message": str(exc)})), 500
+
+
+# ── Brand Outreach Campaign Routes ───────────────────────────────────────────
+
+@app.route("/api/v1/campaign/status", methods=["OPTIONS"])
+def campaign_status_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/campaign/status", methods=["GET"])
+def campaign_status():
+    if not get_campaign_status:
+        return _cors(jsonify({"error": "campaign_module_not_available"})), 503
+    return _cors(jsonify(get_campaign_status())), 200
+
+@app.route("/api/v1/campaign/brands", methods=["OPTIONS"])
+def campaign_brands_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/campaign/brands", methods=["GET"])
+def campaign_brands():
+    if not get_brands_list:
+        return _cors(jsonify({"error": "campaign_module_not_available"})), 503
+    return _cors(jsonify({"brands": get_brands_list(), "total": len(BRANDS_60 or [])})), 200
+
+@app.route("/api/v1/campaign/send", methods=["OPTIONS"])
+def campaign_send_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/campaign/send", methods=["POST"])
+def campaign_send():
+    if not send_brand_email:
+        return _cors(jsonify({"error": "campaign_module_not_available"})), 503
+    body = request.get_json(force=True, silent=True) or {}
+    brand = body.get("brand", "").strip()
+    email = body.get("email", "").strip()
+    subject = body.get("subject")
+    if not brand or not email:
+        return _cors(jsonify({"error": "brand and email are required"})), 400
+    result = send_brand_email(brand, email, subject)
+    status_code = 200 if result.get("ok") else 502
+    return _cors(jsonify(result)), status_code
+
+@app.route("/api/v1/campaign/execute", methods=["OPTIONS"])
+def campaign_execute_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/campaign/execute", methods=["POST"])
+def campaign_execute():
+    if not execute_campaign:
+        return _cors(jsonify({"error": "campaign_module_not_available"})), 503
+    body = request.get_json(force=True, silent=True) or {}
+    brands = body.get("brands")
+    contacts = body.get("contacts")
+    result = execute_campaign(brands, contacts)
+    return _cors(jsonify(result)), 200
+
+@app.route("/api/v1/campaign/log", methods=["OPTIONS"])
+def campaign_log_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/campaign/log", methods=["GET"])
+def campaign_log():
+    if not get_campaign_log:
+        return _cors(jsonify({"error": "campaign_module_not_available"})), 503
+    entries = get_campaign_log()
+    return _cors(jsonify({"entries": entries, "total": len(entries)})), 200
 
 
 @app.route("/api/__jules__/control/kill-switch", methods=["OPTIONS"])
