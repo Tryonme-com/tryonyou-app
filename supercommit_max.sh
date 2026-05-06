@@ -75,7 +75,7 @@ if [[ "$FAST" != "true" ]]; then
   npm run build
 fi
 
-git add -A -- \
+git add -A -- . \
   ':!.env' \
   ':!.env.local' \
   ':!.env.*.local' \
