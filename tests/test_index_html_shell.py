@@ -44,7 +44,7 @@ class TestIndexHtmlShell(unittest.TestCase):
 
         self.assertIn("Stirpe Lafayette", html)
         self.assertIn("MIRROR SOVEREIGN V10", html)
-        self.assertNotIn("Lafayet", html)
+        self.assertNotIn("Stirpe Lafayet -", html)
         self.assertNotIn("SOVERAIGN", html)
 
 
