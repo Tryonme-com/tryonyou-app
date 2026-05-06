@@ -515,7 +515,7 @@ export default function App() {
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
 
   const appRef = useRef<HTMLDivElement | null>(null);
-  const metricRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const metricRefs = useRef<Array<HTMLElement | null>>([]);
   const animatedMetricsRef = useRef<Set<number>>(new Set());
 
   /** window.UserCheck truthy, o nodo postal 75009 / 75004 (Lafayette / Marais) → Pau activo. */
