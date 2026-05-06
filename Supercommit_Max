@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper legacy seguro: todo commit/push/deploy pasa por supercommit_max.sh.
+# Entry point solicitado por operacion: delega en el flujo seguro versionado.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

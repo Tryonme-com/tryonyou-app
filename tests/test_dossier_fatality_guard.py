@@ -4,14 +4,16 @@ import json
 import os
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from unittest.mock import patch
 
 from dossier_fatality_guard import evaluate_guard
 
 
-WINDOW = datetime(2026, 5, 5, 8, 0, tzinfo=timezone.utc)
+PARIS_TZ = ZoneInfo("Europe/Paris")
+WINDOW = datetime(2026, 5, 5, 8, 0, tzinfo=PARIS_TZ)
 
 
 def _write_evidence(path: Path, amount_cents: int = 45_000_000, source: str = "qonto") -> None:
@@ -41,10 +43,10 @@ class TestDossierFatalityGuard(unittest.TestCase):
                 },
                 clear=False,
             ):
-                result = evaluate_guard(datetime(2026, 5, 4, 8, 0, tzinfo=timezone.utc))
+                result = evaluate_guard(datetime(2026, 5, 4, 8, 0, tzinfo=PARIS_TZ))
 
         self.assertEqual(result.status, "PENDING_VALIDATION")
-        self.assertEqual(result.reason, "outside_tuesday_0800_utc")
+        self.assertEqual(result.reason, "outside_tuesday_0800_paris")
 
     def test_pending_without_explicit_confirmation_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -96,6 +98,26 @@ class TestDossierFatalityGuard(unittest.TestCase):
 
         self.assertEqual(result.status, "PENDING_VALIDATION")
         self.assertEqual(result.reason, "source_not_bank_or_qonto")
+
+    def test_pending_with_non_eur_currency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            evidence = Path(tmp) / "capital.json"
+            _write_evidence(evidence)
+            data = json.loads(evidence.read_text(encoding="utf-8"))
+            data["currency"] = "USD"
+            evidence.write_text(json.dumps(data), encoding="utf-8")
+            with patch.dict(
+                os.environ,
+                {
+                    "TRYONYOU_CAPITAL_450K_CONFIRMED": "1",
+                    "DOSSIER_FATALITY_EVIDENCE_PATH": str(evidence),
+                },
+                clear=False,
+            ):
+                result = evaluate_guard(WINDOW)
+
+        self.assertEqual(result.status, "PENDING_VALIDATION")
+        self.assertEqual(result.reason, "currency_not_eur")
 
     def test_active_with_window_flag_and_bank_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

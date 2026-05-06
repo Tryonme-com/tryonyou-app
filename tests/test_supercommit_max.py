@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "supercommit_max.sh"
+ENTRYPOINT = ROOT / "Supercommit_Max"
+LEGACY_WRAPPER = ROOT / "SUPERCOMMIT.sh"
 
 
 class TestSupercommitMax(unittest.TestCase):
@@ -59,6 +61,13 @@ class TestSupercommitMax(unittest.TestCase):
         self.assertIn("@lo+erestu", text)
         self.assertIn("PCT/EP2025/067317", text)
         self.assertIn("Bajo Protocolo de Soberanía V10 - Founder: Rubén", text)
+
+    def test_supercommit_entrypoints_delegate_to_safe_script(self) -> None:
+        for wrapper in (ENTRYPOINT, LEGACY_WRAPPER):
+            text = wrapper.read_text(encoding="utf-8")
+            self.assertIn('exec "$ROOT/supercommit_max.sh" "$@"', text)
+            self.assertNotIn("git push origin main", text)
+            self.assertNotIn("git add .", text)
 
 
 if __name__ == "__main__":

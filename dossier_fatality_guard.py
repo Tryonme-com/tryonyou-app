@@ -3,7 +3,7 @@
 Guard de capital TryOnYou: no activa Dossier Fatality sin evidencia verificable.
 
 Condiciones obligatorias:
-  - ventana operativa martes 08:00 UTC (configurable por CLI para tests);
+  - ventana operativa martes 08:00 Europe/Paris (configurable por CLI para tests);
   - TRYONYOU_CAPITAL_450K_CONFIRMED=1;
   - evidencia JSON local con fuente bancaria/Qonto y mínimo 45.000.000 céntimos EUR.
 
@@ -15,16 +15,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_EVIDENCE_PATH = ROOT / "capital_450k_evidence.json"
 MIN_CAPITAL_CENTS = 45_000_000
 ALLOWED_SOURCES = {"qonto", "bank", "bank_transfer", "qonto_transaction"}
+PARIS_TZ = ZoneInfo("Europe/Paris")
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,8 @@ def parse_now(raw: str | None = None) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def is_tuesday_0800_utc(now: datetime) -> bool:
-    current = now.astimezone(timezone.utc)
+def is_tuesday_0800_paris(now: datetime) -> bool:
+    current = now.astimezone(PARIS_TZ)
     return current.weekday() == 1 and current.hour == 8 and current.minute == 0
 
 
@@ -91,8 +92,8 @@ def evaluate_guard(now: datetime, evidence_path: Path | None = None) -> GuardRes
         (os.environ.get("DOSSIER_FATALITY_EVIDENCE_PATH") or "").strip()
         or str(DEFAULT_EVIDENCE_PATH)
     )
-    if not is_tuesday_0800_utc(now):
-        return GuardResult("PENDING_VALIDATION", "outside_tuesday_0800_utc")
+    if not is_tuesday_0800_paris(now):
+        return GuardResult("PENDING_VALIDATION", "outside_tuesday_0800_paris")
 
     if (os.environ.get("TRYONYOU_CAPITAL_450K_CONFIRMED") or "").strip() != "1":
         return GuardResult("PENDING_VALIDATION", "confirmation_flag_missing")
@@ -103,12 +104,15 @@ def evaluate_guard(now: datetime, evidence_path: Path | None = None) -> GuardRes
 
     source = str(data.get("source", "")).strip().lower()
     reference = str(data.get("reference", "")).strip()
+    currency = str(data.get("currency", "")).strip().upper()
     amount_cents = _amount_cents(data)
 
     if source not in ALLOWED_SOURCES:
         return GuardResult("PENDING_VALIDATION", "source_not_bank_or_qonto", amount_cents, source)
     if not reference:
         return GuardResult("PENDING_VALIDATION", "reference_missing", amount_cents, source)
+    if currency != "EUR":
+        return GuardResult("PENDING_VALIDATION", "currency_not_eur", amount_cents, source)
     if amount_cents < MIN_CAPITAL_CENTS:
         return GuardResult("PENDING_VALIDATION", "amount_below_450k_eur", amount_cents, source)
 
@@ -117,7 +121,7 @@ def evaluate_guard(now: datetime, evidence_path: Path | None = None) -> GuardRes
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Guard Dossier Fatality 450k TryOnYou")
-    parser.add_argument("--now", help="ISO timestamp UTC para ejecución controlada/tests")
+    parser.add_argument("--now", help="ISO timestamp para ejecucion controlada/tests")
     parser.add_argument("--evidence", default=str(DEFAULT_EVIDENCE_PATH), help="Ruta JSON de evidencia bancaria/Qonto")
     parser.add_argument("--json", action="store_true", help="Imprimir salida JSON")
     args = parser.parse_args(argv)
