@@ -56,5 +56,5 @@ python3 gestor_falla_v9.py \
 | `fallero_id` | `id_fallero` |
 | `fecha` | `fecha_hora`, `created_at` |
 
-La memoria se guarda por defecto en `falla_memories.json` o en la ruta indicada por
-`FALLA_MEMORIA_PATH`.
+La memoria se guarda por defecto en `data/falla_memorias.json` o en la ruta indicada por
+`FALLA_MEMORY_PATH`. Tambien se acepta `FALLA_MEMORIA_PATH` como alias legacy.

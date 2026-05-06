@@ -118,13 +118,19 @@ def _empty_memory() -> dict[str, Any]:
 class GestorFallaV9:
     def __init__(
         self,
-        comision_pct: Decimal | float | str = DEFAULT_COMISION_PCT,
-        cuota_base: Decimal | float | str = DEFAULT_CUOTA_BASE,
+        comision_pct: Decimal | float | str | None = None,
+        cuota_base: Decimal | float | str | None = None,
         memoria_path: str | Path | None = None,
     ) -> None:
-        self.comision_pct = _rate_from(comision_pct, "comision_pct")
-        self.cuota_base = _decimal_from(cuota_base, "cuota_base")
-        default_path = os.environ.get("FALLA_MEMORIA_PATH", "falla_memories.json")
+        raw_rate = comision_pct or os.environ.get("FALLA_COMISION_PCT", DEFAULT_COMISION_PCT)
+        raw_quota = cuota_base or os.environ.get("FALLA_CUOTA_BASE", DEFAULT_CUOTA_BASE)
+        self.comision_pct = _rate_from(raw_rate, "comision_pct")
+        self.cuota_base = _decimal_from(raw_quota, "cuota_base")
+        default_path = (
+            os.environ.get("FALLA_MEMORY_PATH")
+            or os.environ.get("FALLA_MEMORIA_PATH")
+            or "data/falla_memorias.json"
+        )
         self.memoria_path = Path(memoria_path or default_path)
 
     def ejecutar_cobro(
@@ -317,9 +323,14 @@ def load_records(path: Path) -> list[dict[str, Any]]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Procesa cobros Falla V9.")
     parser.add_argument("--input", help="CSV/JSON con registros de cobro.")
-    parser.add_argument("--memoria", help="Ruta de memoria JSON persistente.")
-    parser.add_argument("--comision-pct", default=str(DEFAULT_COMISION_PCT))
-    parser.add_argument("--cuota-base", default=str(DEFAULT_CUOTA_BASE))
+    parser.add_argument(
+        "--memoria",
+        "--memory",
+        dest="memoria",
+        help="Ruta de memoria JSON persistente.",
+    )
+    parser.add_argument("--comision-pct", default=None)
+    parser.add_argument("--cuota-base", default=None)
     parser.add_argument("--nombre", help="Nombre del fallero para un cobro directo.")
     parser.add_argument("--bruto", help="Importe bruto para un cobro directo.")
     parser.add_argument("--concepto", help="Concepto: cuota, loteria/loteria o evento.")

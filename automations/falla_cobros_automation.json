@@ -1,0 +1,29 @@
+{
+  "name": "falla-cobros-v9",
+  "description": "Procesa cobros de falleros, calcula comision fija y actualiza memoria contable.",
+  "triggers": [
+    {
+      "type": "webhook",
+      "method": "POST",
+      "payload": "application/json",
+      "description": "Entrada desde Stripe, Make.com u otra pasarela cuando se confirma un cobro."
+    },
+    {
+      "type": "schedule",
+      "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+      "timezone": "Europe/Madrid",
+      "description": "Revision diaria de CSV/JSON exportado desde hoja o base intermedia."
+    }
+  ],
+  "command": "python3 gestor_falla_v9.py --input ${FALLA_INPUT_PATH} --memoria ${FALLA_MEMORY_PATH} --pretty",
+  "environment": {
+    "FALLA_COMISION_PCT": "0.08",
+    "FALLA_CUOTA_BASE": "50.00",
+    "FALLA_MEMORY_PATH": "data/falla_memorias.json"
+  },
+  "input_contract": {
+    "required": ["nombre", "bruto", "concepto"],
+    "optional": ["id_transaccion", "fallero_id", "fecha"],
+    "conceptos_validos": ["cuota", "loteria", "evento"]
+  }
+}
