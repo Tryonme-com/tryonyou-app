@@ -75,14 +75,15 @@ if [[ "$FAST" != "true" ]]; then
   npm run build
 fi
 
-git add -A -- . \
-  ':!.env' \
-  ':!.env.local' \
-  ':!.env.*.local' \
-  ':!.vercel' \
-  ':!node_modules' \
-  ':!dist' \
-  ':!logs'
+git add -A
+git reset -q -- \
+  .env \
+  .env.local \
+  .env.*.local \
+  .vercel \
+  node_modules \
+  dist \
+  logs 2>/dev/null || true
 
 if [[ -n "$(git diff --cached --name-only)" ]]; then
   git commit -m "$(cat <<EOF
