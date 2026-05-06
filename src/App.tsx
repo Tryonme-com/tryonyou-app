@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
+import { DigitalMirrorPanel } from "./components/DigitalMirrorPanel";
+import { OrchestrationPanel } from "./components/OrchestrationPanel";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -507,6 +509,7 @@ export default function App() {
   const [formStatus, setFormStatus] = useState<FormStatus>({ type: "idle" });
   const [preScanVisible, setPreScanVisible] = useState(false);
   const [pendingSnap, setPendingSnap] = useState(false);
+  const [mirrorPanelVisible, setMirrorPanelVisible] = useState(false);
   const [metricValues, setMetricValues] = useState<string[]>(() =>
     SALES_COPY.fr.trust.metrics.map((metric) => metric.value),
   );
@@ -758,28 +761,30 @@ export default function App() {
       void postPerfectCheckout(elasticLabel);
       return;
     }
+    if (key === "balmain") {
+      void trackCoreEvent("balmain_trigger", { fabric_sensation: elasticLabel });
+      setMirrorPanelVisible(true);
+      return;
+    }
     void postLead(key);
-    const messageCopy: Record<AppLocale, Record<Exclude<OfrendaKey, "selection">, string>> = {
+    const messageCopy: Record<AppLocale, Record<Exclude<OfrendaKey, "selection" | "balmain">, string>> = {
       fr: {
         reserve: "QR cabine VIP — Lafayette, essai en courtoisie Divineo.",
         combo: "Lignes alternatives chargées — composition Zero-Size.",
         save: "Silhouette enregistrée sous protocole chiffré (aucune taille exposée).",
         share: "Partage généré — métadonnées d’ajustage neutralisées.",
-        balmain: "Balmain activado bajo protocolo soberano con identidad V9.",
       },
       en: {
         reserve: "VIP fitting QR — Lafayette, Divineo courtesy session enabled.",
         combo: "Alternative lines loaded — Zero-Size composition ready.",
         save: "Silhouette stored under encrypted protocol (no visible size exposed).",
         share: "Share generated — fit metadata neutralized.",
-        balmain: "Balmain enabled under sovereign protocol with V9 identity.",
       },
       es: {
         reserve: "QR de cabina VIP — Lafayette, prueba en cortesía Divineo.",
         combo: "Líneas alternativas cargadas — composición Zero-Size.",
         save: "Silueta guardada bajo protocolo cifrado (sin talla expuesta).",
         share: "Compartido generado — metadatos de ajuste neutralizados.",
-        balmain: "Balmain activado bajo protocolo soberano con identidad V9.",
       },
     };
     window.alert(messageCopy[locale][key]);
@@ -1442,6 +1447,12 @@ export default function App() {
             <p className="manifesto-bottom reveal">{staticCopy.manifesto}</p>
           </div>
         </section>
+
+        <section className="section" id="orchestration">
+          <div className="section-shell">
+            <OrchestrationPanel locale={locale} />
+          </div>
+        </section>
       </main>
 
       <footer id="legal" className="site-footer">
@@ -1520,6 +1531,12 @@ export default function App() {
       </motion.div>
 
       <PreScanHook visible={preScanVisible} onDismiss={handlePreScanDismiss} />
+
+      <DigitalMirrorPanel
+        locale={locale}
+        visible={mirrorPanelVisible}
+        onClose={() => setMirrorPanelVisible(false)}
+      />
     </div>
   );
 }

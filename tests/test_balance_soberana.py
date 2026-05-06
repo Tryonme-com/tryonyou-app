@@ -72,7 +72,7 @@ class TestBalanceTotalSoberano(unittest.TestCase):
         finally:
             sys.stdout = sys.__stdout__
         output = captured.getvalue()
-        self.assertIn("ESTADO FINANCIERO TOTAL: TRYONYOU V10", output)
+        self.assertIn("ESTADO FINANCIERO TOTAL: TRYONYOU V12", output)
 
 
 class TestBalanceSoberanaConstants(unittest.TestCase):
