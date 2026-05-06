@@ -65,7 +65,17 @@ if [[ "$FAST" != "true" ]]; then
   npm run build
 fi
 
-mapfile -d '' CHANGED_PATHS < <(git ls-files --modified --others --deleted --exclude-standard -z)
+mapfile -d '' DISCOVERED_PATHS < <(git ls-files --modified --others --deleted --exclude-standard -z)
+CHANGED_PATHS=()
+for path in "${DISCOVERED_PATHS[@]}"; do
+  case "$path" in
+    .env|.env.local|.env.*.local|.env.production|.env.development|.vercel/*|node_modules/*|dist/*|logs/*|.pytest_cache/*|__pycache__/*)
+      ;;
+    *)
+      CHANGED_PATHS+=("$path")
+      ;;
+  esac
+done
 if ((${#CHANGED_PATHS[@]} > 0)); then
   git add -- "${CHANGED_PATHS[@]}"
 fi
