@@ -11,9 +11,11 @@ from flask import Flask, Response, jsonify, request
 
 _ROOT = Path(__file__).resolve().parent.parent
 _API_DIR = Path(__file__).resolve().parent
-for _p in (_ROOT, _API_DIR):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+for _p in (_API_DIR, _ROOT):
+    _path = str(_p)
+    if _path in sys.path:
+        sys.path.remove(_path)
+    sys.path.insert(0, _path)
 
 _BOOT_ERRORS = []
 
@@ -498,8 +500,10 @@ def _advbet_payload(*, session_id: str, amount_eur: float) -> dict[str, object]:
     }
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 def home():
+    if request.method != "GET":
+        return _cors(jsonify({"status": "error", "message": "Not Found"})), 404
     return "API Active"
 
 
