@@ -4,6 +4,7 @@ import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import { PauFloatingGuide } from "./components/PauFloatingGuide";
 import { PreScanHook } from "./components/PreScanHook";
 import { DigitalMirrorPanel } from "./components/DigitalMirrorPanel";
+import { OrchestrationPanel } from "./components/OrchestrationPanel";
 import RealTimeAvatar from "./components/RealTimeAvatar";
 import { ORO_DIVINEO, SOVEREIGN_FIT_LABEL } from "./divineo/divineoV11Config";
 import { getDivineoCheckoutUrl } from "./divineo/envBootstrap";
@@ -1444,6 +1445,12 @@ export default function App() {
         <section className="section">
           <div className="section-shell">
             <p className="manifesto-bottom reveal">{staticCopy.manifesto}</p>
+          </div>
+        </section>
+
+        <section className="section" id="orchestration">
+          <div className="section-shell">
+            <OrchestrationPanel locale={locale} />
           </div>
         </section>
       </main>
