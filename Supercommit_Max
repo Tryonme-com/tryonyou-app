@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper legacy: la operacion segura vive en supercommit_max.sh.
+# Entrada solicitada por operacion: delega en el flujo seguro versionado.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

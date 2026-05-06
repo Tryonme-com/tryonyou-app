@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# supercommit_max.sh — add/commit/push con sellos TryOnYou + checks opcionales + deploy opcional.
+# supercommit_max.sh - checks opcionales, commit con sellos TryOnYou, push seguro y deploy opcional.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,8 +8,7 @@ cd "$ROOT"
 FAST_MODE=false
 DEPLOY_MODE=false
 COMMIT_MSG_RAW=""
-
-DEFAULT_MSG="OMEGA_DEPLOY: sincronización del búnker Oberkampf (75011) con la galería web."
+DEFAULT_MSG="OMEGA_DEPLOY: sincronizacion del bunker Oberkampf (75011) con la galeria web."
 
 REQUIRED_STAMPS=(
   "@CertezaAbsoluta"
@@ -25,9 +24,9 @@ Uso:
   bash supercommit_max.sh "mensaje libre"
 
 Opciones:
-  --fast    omite tests/build y hace solo add+commit+push
-  --deploy  tras commit/push ejecuta despliegue Vercel (requiere VERCEL_TOKEN)
-  --msg     mensaje de commit base (los sellos requeridos se autoañaden si faltan)
+  --fast       Omite tests/typecheck/build previos.
+  --deploy     Ejecuta npm run deployall tras commit/push.
+  --msg TEXT   Mensaje base. Los sellos TryOnYou se anaden si faltan.
 EOF
 }
 
@@ -47,30 +46,50 @@ log_step() {
 }
 
 notify_success() {
+  local text="${1:-}"
   local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
   local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
-  local branch short_sha message
+  local branch short_sha
+
+  token="$(printf '%s' "$token" | tr -d '[:space:]')"
+  chat_id="$(printf '%s' "$chat_id" | tr -d '[:space:]')"
 
   if [[ -z "$token" || -z "$chat_id" ]]; then
-    echo "ℹ️  Notificación Telegram omitida (falta token/chat_id en entorno)."
+    echo "[supercommit_max] Notificacion Telegram omitida: falta token/chat en entorno."
     return 0
   fi
 
-  branch="$(git rev-parse --abbrev-ref HEAD)"
-  short_sha="$(git rev-parse --short HEAD)"
-  message="✅ TryOnYou Supercommit_Max OK | branch=${branch} | sha=${short_sha}"
-
-  if ! command -v curl >/dev/null 2>&1; then
-    echo "⚠️ No hay curl para enviar notificación Telegram."
-    return 0
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')"
+  short_sha="$(git rev-parse --short HEAD 2>/dev/null || printf 'unknown')"
+  if [[ -z "$text" ]]; then
+    text="TryOnYou Supercommit_Max OK | branch=${branch} | sha=${short_sha}"
   fi
 
-  if curl -fsS --connect-timeout 3 --max-time 6 -X POST "https://api.telegram.org/bot${token}/sendMessage" \
-    --data-urlencode "chat_id=${chat_id}" \
-    --data-urlencode "text=${message}" >/dev/null; then
-    echo "✅ Notificación Telegram de éxito enviada."
-  else
-    echo "⚠️ No se pudo enviar notificación Telegram."
+  if ! TRYONYOU_NOTIFY_TEXT="$text" TRYONYOU_NOTIFY_TOKEN="$token" TRYONYOU_NOTIFY_CHAT_ID="$chat_id" python3 - <<'PY'
+import json
+import os
+import urllib.error
+import urllib.request
+
+token = os.environ["TRYONYOU_NOTIFY_TOKEN"]
+chat_id = os.environ["TRYONYOU_NOTIFY_CHAT_ID"]
+text = os.environ["TRYONYOU_NOTIFY_TEXT"]
+payload = json.dumps({"chat_id": chat_id, "text": text}).encode("utf-8")
+request = urllib.request.Request(
+    f"https://api.telegram.org/bot{token}/sendMessage",
+    data=payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(request, timeout=10) as response:
+        if response.status >= 300:
+            raise SystemExit(f"telegram_status_{response.status}")
+except (urllib.error.URLError, TimeoutError) as exc:
+    raise SystemExit(f"telegram_error:{exc}")
+PY
+  then
+    echo "[supercommit_max] Notificacion Telegram fallida; commit/push conservados."
   fi
 }
 
@@ -85,10 +104,10 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --msg)
-      if [[ $# -lt 2 ]]; then
-        echo "❌ --msg requiere un argumento." >&2
-        usage
-        exit 1
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "[supercommit_max] --msg requiere texto." >&2
+        usage >&2
+        exit 2
       fi
       COMMIT_MSG_RAW="$2"
       shift 2
@@ -113,9 +132,9 @@ if [[ -z "$COMMIT_MSG_RAW" ]]; then
 fi
 FINAL_MSG="$(append_missing_stamps "$COMMIT_MSG_RAW")"
 
-# Falla rápido en --deploy sin token para evitar operaciones pesadas innecesarias.
-if [[ "$DEPLOY_MODE" == true && -z "${VERCEL_TOKEN:-}" ]]; then
-  echo "❌ VERCEL_TOKEN no está definido." >&2
+branch_name="$(git rev-parse --abbrev-ref HEAD)"
+if [[ -z "$branch_name" || "$branch_name" == "HEAD" ]]; then
+  echo "[supercommit_max] No hay rama git actual." >&2
   exit 1
 fi
 
@@ -130,51 +149,37 @@ if [[ "$FAST_MODE" == false ]]; then
   npm run build
 fi
 
-log_step "Git add"
-
-# En repos grandes, evita un `git add -A` costoso cuando no hay cambios.
 if [[ -z "$(git status --porcelain)" ]]; then
-  echo "ℹ️  nada nuevo: sin commit."
-  if [[ "$DEPLOY_MODE" == true ]]; then
-    log_step "Deploy Vercel"
-    if ! command -v vercel >/dev/null 2>&1; then
-      npm i -g vercel@latest
-    fi
-    vercel deploy --prod --yes --token "$VERCEL_TOKEN"
-  fi
-  notify_success
-  echo "✅ Supercommit_Max finalizado."
-  exit 0
-fi
-
-git add -A
-
-committed=false
-if git diff --cached --quiet; then
-  echo "ℹ️  nada nuevo: sin commit."
+  echo "[supercommit_max] Nada que commitear."
+  notify_success "TryOnYou Supercommit_Max OK: sin cambios pendientes en ${branch_name}."
 else
-  log_step "Git commit"
-  git commit -m "$FINAL_MSG"
-  committed=true
-fi
+  log_step "Git add seguro"
+  git add -A .
+  git reset -q -- \
+    .env \
+    .env.local \
+    .env.*.local \
+    .vercel \
+    node_modules \
+    dist \
+    logs \
+    2>/dev/null || true
 
-branch_name="$(git rev-parse --abbrev-ref HEAD)"
-if [[ "$committed" == true ]]; then
-  if git remote get-url origin >/dev/null 2>&1; then
+  if git diff --cached --quiet; then
+    echo "[supercommit_max] No hay cambios seguros para commitear tras aplicar exclusiones."
+    notify_success "TryOnYou Supercommit_Max OK: cambios no versionables omitidos en ${branch_name}."
+  else
+    log_step "Git commit"
+    git commit -m "$FINAL_MSG"
+
     log_step "Git push"
     git push -u origin "$branch_name"
-  else
-    echo "ℹ️  No existe remote 'origin'; commit local completado."
+
+    notify_success "TryOnYou Supercommit_Max OK: ${COMMIT_MSG_RAW} en ${branch_name}."
   fi
 fi
 
 if [[ "$DEPLOY_MODE" == true ]]; then
-  log_step "Deploy Vercel"
-  if ! command -v vercel >/dev/null 2>&1; then
-    npm i -g vercel@latest
-  fi
-  vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+  log_step "Deployall"
+  npm run deployall
 fi
-
-notify_success
-echo "✅ Supercommit_Max finalizado."

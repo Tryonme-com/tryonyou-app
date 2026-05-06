@@ -1,132 +1,259 @@
 #!/usr/bin/env python3
-"""
-dossier_fatality_guard.py
+"""Guard rail for the 450k EUR Dossier Fatality activation.
 
-Guardia de seguridad para activar Dossier Fatality solo cuando:
-1) Es martes a las 08:00 (hora local), y
-2) Existe evidencia verificable de entrada de 450000.00 EUR.
+The script prepares the requested automation without pretending that a bank
+movement happened. Activation requires the Tuesday 08:00 window, an explicit
+arm flag, and verifiable Qonto/banking evidence for at least 450,000 EUR.
 
-Sin ambas condiciones, el estado queda en PENDING_VALIDATION.
+Patente: PCT/EP2025/067317
+Bajo Protocolo de Soberania V10 - Founder: Ruben
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 TARGET_AMOUNT = 450000.00
-TARGET_WEEKDAY = 1  # Monday=0, Tuesday=1
-TARGET_HOUR = 8
-
+TARGET_AMOUNT_CENTS = 45_000_000
+DEFAULT_TIMEZONE = "Europe/Paris"
 ROOT = Path(__file__).resolve().parent
 EMERGENCY_PAYOUT_FILE = ROOT / ".emergency_payout"
 STATUS_FILE = ROOT / "dossier_fatality_status.json"
 
 
-@dataclass
-class GuardResult:
-    status: str
-    reason: str
-    amount_confirmed: float
-    schedule_ok: bool
+@dataclass(frozen=True)
+class FatalityEvidence:
+    amount_cents: int
+    currency: str
+    reference: str
+    source: str
 
-
-def _parse_amount_file(path: Path) -> float:
-    if not path.exists():
-        return 0.0
-
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line.startswith("AMOUNT="):
-            try:
-                return float(line.split("=", 1)[1].strip())
-            except ValueError:
-                return 0.0
-    return 0.0
+    @property
+    def valid(self) -> bool:
+        return (
+            self.amount_cents >= TARGET_AMOUNT_CENTS
+            and self.currency.upper() == "EUR"
+            and bool(self.reference.strip())
+        )
 
 
 def parse_now(value: str) -> datetime:
-    """Parse ISO datetime string into datetime object."""
     return datetime.fromisoformat(value)
 
 
-def _is_tuesday_0800(now: datetime) -> bool:
-    return now.weekday() == TARGET_WEEKDAY and now.hour == TARGET_HOUR
-
-
 def env_confirmed_450k() -> bool:
-    return os.getenv("TRYONYOU_CAPITAL_450K_CONFIRMED", "").strip().lower() in {"1", "true", "yes"}
+    return os.getenv("TRYONYOU_CAPITAL_450K_CONFIRMED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
 
-def evaluate_guard(now: datetime | None = None, capital_confirmed: bool | None = None) -> GuardResult:
-    now = now or datetime.now()
-    amount_in_file = _parse_amount_file(EMERGENCY_PAYOUT_FILE)
+def _parse_amount(raw: Any, *, euros: bool = False) -> int:
+    if raw is None:
+        return 0
+    if isinstance(raw, int):
+        return raw * 100 if euros else raw
+    if isinstance(raw, float):
+        return int(round(raw * 100))
+    text = str(raw).strip().replace(" ", "").replace("_", "")
+    if not text:
+        return 0
+    if "," in text and "." not in text:
+        text = text.replace(",", ".")
+    try:
+        value = int(text)
+        return value * 100 if euros else value
+    except ValueError:
+        try:
+            return int(round(float(text) * 100))
+        except ValueError:
+            return 0
 
-    # Confirmación explícita desde entorno para evitar afirmaciones no verificadas.
-    env_confirmed = env_confirmed_450k() if capital_confirmed is None else capital_confirmed
-    amount_ok = abs(amount_in_file - TARGET_AMOUNT) < 0.0001
-    schedule_ok = _is_tuesday_0800(now)
 
-    if schedule_ok and amount_ok and env_confirmed:
-        return GuardResult(
-            status="DOSSIER_FATALITY_ARMED",
-            reason="Ventana martes 08:00 + monto 450000 EUR validado y confirmado.",
-            amount_confirmed=amount_in_file,
-            schedule_ok=True,
+def _evidence_from_mapping(data: dict[str, Any], source: str) -> FatalityEvidence:
+    amount_cents = _parse_amount(
+        data.get("amount_cents")
+        or data.get("target_amount_cents")
+        or data.get("qonto_amount_cents")
+    )
+    if amount_cents == 0:
+        amount_cents = _parse_amount(
+            data.get("amount_eur")
+            or data.get("target_amount_eur")
+            or data.get("qonto_amount_eur")
+            or data.get("amount"),
+            euros=True,
         )
-
-    reason_parts = []
-    if not schedule_ok:
-        reason_parts.append("Fuera de ventana martes 08:00")
-    if not amount_ok:
-        reason_parts.append("Monto no verificable en .emergency_payout")
-    if not env_confirmed:
-        reason_parts.append("Falta TRYONYOU_CAPITAL_450K_CONFIRMED=1")
-
-    return GuardResult(
-        status="PENDING_VALIDATION",
-        reason="; ".join(reason_parts),
-        amount_confirmed=amount_in_file,
-        schedule_ok=schedule_ok,
+    return FatalityEvidence(
+        amount_cents=amount_cents,
+        currency=str(data.get("currency") or data.get("qonto_currency") or "EUR"),
+        reference=str(
+            data.get("reference")
+            or data.get("transaction_id")
+            or data.get("qonto_transaction_id")
+            or data.get("bank_reference")
+            or ""
+        ),
+        source=source,
     )
 
 
-def persist_result(result: GuardResult, now: datetime | None = None) -> None:
-    now = now or datetime.now()
-    payload = {
-        "status": result.status,
-        "reason": result.reason,
-        "amount_confirmed": result.amount_confirmed,
-        "target_amount": TARGET_AMOUNT,
-        "schedule_ok": result.schedule_ok,
-        "timestamp": now.isoformat(),
+def _evidence_from_emergency_file() -> FatalityEvidence:
+    if not EMERGENCY_PAYOUT_FILE.exists():
+        return FatalityEvidence(0, "EUR", "", str(EMERGENCY_PAYOUT_FILE))
+    data: dict[str, str] = {}
+    for line in EMERGENCY_PAYOUT_FILE.read_text(encoding="utf-8").splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            data[key.strip().lower()] = value.strip()
+    return _evidence_from_mapping(
+        {
+            "amount_eur": data.get("amount"),
+            "currency": data.get("currency", "EUR"),
+            "reference": data.get("reference") or data.get("transaction_id"),
+        },
+        str(EMERGENCY_PAYOUT_FILE),
+    )
+
+
+def load_evidence(path: str | None = None) -> FatalityEvidence:
+    if path:
+        evidence_path = Path(path)
+        try:
+            data = json.loads(evidence_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return FatalityEvidence(0, "EUR", "", str(evidence_path))
+        if isinstance(data, dict):
+            return _evidence_from_mapping(data, str(evidence_path))
+        return FatalityEvidence(0, "EUR", "", str(evidence_path))
+
+    env_payload = (os.environ.get("DOSSIER_FATALITY_EVIDENCE_JSON") or "").strip()
+    if env_payload:
+        try:
+            data = json.loads(env_payload)
+        except json.JSONDecodeError:
+            data = {}
+        if isinstance(data, dict):
+            return _evidence_from_mapping(data, "DOSSIER_FATALITY_EVIDENCE_JSON")
+
+    env_evidence = _evidence_from_mapping(
+        {
+            "amount_cents": os.environ.get("DOSSIER_FATALITY_AMOUNT_CENTS"),
+            "amount_eur": os.environ.get("DOSSIER_FATALITY_AMOUNT_EUR"),
+            "currency": os.environ.get("DOSSIER_FATALITY_CURRENCY") or "EUR",
+            "reference": os.environ.get("DOSSIER_FATALITY_REFERENCE") or "",
+        },
+        "environment",
+    )
+    if env_evidence.amount_cents or env_evidence.reference:
+        return env_evidence
+
+    return _evidence_from_emergency_file()
+
+
+def _timezone(name: str) -> ZoneInfo:
+    try:
+        return ZoneInfo(name)
+    except ZoneInfoNotFoundError:
+        return ZoneInfo("UTC")
+
+
+def is_activation_window(now: datetime | None = None, timezone_name: str | None = None) -> bool:
+    tz = _timezone(timezone_name or os.environ.get("DOSSIER_FATALITY_TIMEZONE") or DEFAULT_TIMEZONE)
+    local_now = (now or datetime.now(tz)).astimezone(tz)
+    return local_now.weekday() == 1 and local_now.hour == 8
+
+
+def activation_report(
+    *,
+    now: datetime | None = None,
+    evidence_path: str | None = None,
+    timezone_name: str | None = None,
+    force_arm: bool | None = None,
+) -> dict[str, Any]:
+    armed = (
+        force_arm
+        if force_arm is not None
+        else (os.environ.get("DOSSIER_FATALITY_ARM") or "").strip() == "1"
+    )
+    evidence = load_evidence(evidence_path)
+    in_window = is_activation_window(now=now, timezone_name=timezone_name)
+
+    if not in_window:
+        status = "PENDING_VALIDATION"
+        reason = "outside_tuesday_0800_window"
+    elif not armed:
+        status = "PENDING_VALIDATION"
+        reason = "fatality_not_armed"
+    elif not evidence.valid:
+        status = "PENDING_VALIDATION"
+        reason = "missing_or_invalid_450k_evidence"
+    else:
+        status = "DOSSIER_FATALITY_READY"
+        reason = "qonto_evidence_verified_for_activation"
+
+    return {
+        "status": status,
+        "reason": reason,
+        "target_amount_cents": TARGET_AMOUNT_CENTS,
+        "evidence": {
+            "amount_cents": evidence.amount_cents,
+            "currency": evidence.currency.upper(),
+            "reference_present": bool(evidence.reference.strip()),
+            "source": evidence.source,
+        },
+        "armed": bool(armed),
+        "activation_window": in_window,
+        "patent": "PCT/EP2025/067317",
+        "protocol": "Bajo Protocolo de Soberania V10 - Founder: Ruben",
     }
-    STATUS_FILE.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def evaluate_dossier_fatality_window(
     now_dt: datetime | None = None,
     capital_confirmed: bool = False,
 ) -> dict[str, object]:
-    """API de compatibilidad usada por tests/herramientas previas."""
-    result = evaluate_guard(now=now_dt, capital_confirmed=capital_confirmed)
+    report = activation_report(now=now_dt, force_arm=capital_confirmed)
+    activation_allowed = report["status"] == "DOSSIER_FATALITY_READY"
     return {
-        "status": "ACTIVATION_ALLOWED" if result.status == "DOSSIER_FATALITY_ARMED" else "PENDING_VALIDATION",
-        "activation_allowed": result.status == "DOSSIER_FATALITY_ARMED",
-        "reason": result.reason,
-        "amount_confirmed": result.amount_confirmed,
+        "status": "ACTIVATION_ALLOWED" if activation_allowed else "PENDING_VALIDATION",
+        "activation_allowed": activation_allowed,
+        "reason": report["reason"],
+        "amount_confirmed": report["evidence"]["amount_cents"] / 100,
+        "schedule_ok": report["activation_window"],
     }
 
 
+def persist_result(report: dict[str, Any], now: datetime | None = None) -> None:
+    payload = dict(report)
+    payload["timestamp"] = (now or datetime.now()).isoformat()
+    STATUS_FILE.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def main() -> int:
-    result = evaluate_guard()
-    persist_result(result)
-    print(f"[DOSSIER_FATALITY] status={result.status}")
-    print(f"[DOSSIER_FATALITY] reason={result.reason}")
-    return 0 if result.status == "DOSSIER_FATALITY_ARMED" else 2
+    parser = argparse.ArgumentParser(description="Validate Dossier Fatality 450k activation.")
+    parser.add_argument("--evidence", help="Path to Qonto/bank evidence JSON.")
+    parser.add_argument("--timezone", default=None, help="IANA timezone, default Europe/Paris.")
+    parser.add_argument("--json", action="store_true", help="Emit JSON only.")
+    parser.add_argument("--persist", action="store_true", help="Write dossier_fatality_status.json.")
+    args = parser.parse_args()
+
+    report = activation_report(evidence_path=args.evidence, timezone_name=args.timezone)
+    if args.persist:
+        persist_result(report)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+    else:
+        print(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__":

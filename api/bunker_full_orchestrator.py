@@ -1,17 +1,11 @@
 """
-<<<<<<< HEAD
-Bunker Full Orchestrator — Make.com (Slack) + waitlist + Supabase opcional (estado V11).
+Bunker Full Orchestrator - Make.com, waitlist local y Supabase opcional.
 
-- Waitlist / mirror shadow: sin dependencias extra.
-- Supabase: solo si ``SUPABASE_URL`` y ``SUPABASE_KEY`` (o ``SUPABASE_SERVICE_ROLE_KEY``)
-  están definidos y el paquete ``supabase`` instalado.
+Payloads JSON estables para escenarios Make.com. Supabase se carga de forma
+lazy solo si existen variables y dependencia instalada.
 
-Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
+Patente: PCT/EP2025/067317 - @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
-=======
-Bunker Full Orchestrator — Make.com (Slack) + persistencia waitlist en leads_empire/waitlist.json.
-Patente: PCT/EP2025/067317 — payloads JSON estables para escenarios Make.
->>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
 """
 
 from __future__ import annotations
@@ -24,24 +18,19 @@ from typing import Any
 
 import requests
 
-<<<<<<< HEAD
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
 VETOS_PRIORITY_BETA = 0.92
 
 _supabase_client: Any | None = None
 
 
 def _get_supabase_client() -> Any | None:
-    """Cliente Supabase lazy; None si falta env o el paquete no está instalado."""
+    """Cliente Supabase lazy; None si falta env o el paquete no esta instalado."""
     global _supabase_client
     if _supabase_client is not None:
         return _supabase_client
     url = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (
-        (os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "")
-        .strip()
-    )
+    key = (os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
     if not url or not key:
         return None
     try:
@@ -53,18 +42,18 @@ def _get_supabase_client() -> Any | None:
 
 
 class BunkerOrchestrator:
-    """Orquestación de estado soberano hacia Supabase (tabla ``users`` por defecto)."""
+    """Orquestacion de estado soberano hacia Supabase."""
 
     def __init__(self) -> None:
-        self.status = "SOUVERAINETÉ:1"
+        self.status = "SOUVERAINETE:1"
 
     @property
     def supabase(self) -> Any:
         client = _get_supabase_client()
         if client is None:
             raise RuntimeError(
-                "Supabase no configurado: SUPABASE_URL + SUPABASE_KEY (o "
-                "SUPABASE_SERVICE_ROLE_KEY) y pip install supabase"
+                "Supabase no configurado: SUPABASE_URL + SUPABASE_KEY "
+                "(o SUPABASE_SERVICE_ROLE_KEY) y pip install supabase"
             )
         return client
 
@@ -76,40 +65,25 @@ class BunkerOrchestrator:
             raise RuntimeError(
                 "Supabase no disponible: revisa variables de entorno y dependencia supabase"
             )
-        return (
-            sb.table("users")
-            .update({"status": self.status})
-            .eq("id", user_id)
-            .execute()
-        )
+        return sb.table("users").update({"status": self.status}).eq("id", user_id).execute()
 
 
 orchestrator = BunkerOrchestrator()
 
-=======
-REPO_ROOT = Path(__file__).resolve().parent
-
-VETOS_PRIORITY_BETA = 0.92
-
->>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
 
 def _make_post(payload: dict[str, Any]) -> bool:
     url = (os.getenv("MAKE_WEBHOOK_URL") or "").strip()
     if not url:
         return False
     try:
-        r = requests.post(url, json=payload, timeout=25)
-        return r.status_code == 200
+        response = requests.post(url, json=payload, timeout=25)
+        return response.status_code == 200
     except OSError:
         return False
 
 
 def append_waitlist_json(entry: dict[str, Any]) -> tuple[bool, str | None]:
-<<<<<<< HEAD
-    """Intenta ``leads_empire/waitlist.json``; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
-=======
-    """Intenta `leads_empire/waitlist.json`; si el FS es de solo lectura (p. ej. Vercel), usa TMPDIR."""
->>>>>>> ea0ea5d0b13accd3b7386d0d33ce0bc7846d4852
+    """Intenta leads_empire/waitlist.json; si no se puede, usa TMPDIR."""
     stamped = {
         **entry,
         "stored_at": datetime.now(timezone.utc).isoformat(),
@@ -140,11 +114,11 @@ def append_waitlist_json(entry: dict[str, Any]) -> tuple[bool, str | None]:
 
 
 def orchestrate_beta_waitlist(body: dict[str, Any]) -> dict[str, Any]:
-    """Webhook Make + append waitlist (sin prioridad fija; rutas legacy)."""
+    """Webhook Make + append waitlist para beta."""
     payload = {
         "event": "beta_waitlist",
         "channel": "general-tryonyou",
-        "message": "🚀 NUEVO LEAD — Únete a la beta (TryOnYou)",
+        "message": "NUEVO LEAD - Unete a la beta (TryOnYou)",
         "email": body.get("email"),
         "source": body.get("source", "app_v10"),
         "user_agent": body.get("user_agent"),
@@ -160,20 +134,16 @@ def orchestrate_beta_waitlist(body: dict[str, Any]) -> dict[str, Any]:
 
 
 def orchestrate_bunker_full_orchestrator(body: dict[str, Any]) -> dict[str, Any]:
-    """
-    Ruta /api/bunker_full_orchestrator — Make + waitlist con prioridad VetosCore 0.92.
-    """
+    """Ruta /api/bunker_full_orchestrator - Make + waitlist con prioridad VetosCore."""
     try:
-        priority = float(
-            body.get("priority", body.get("vetos_priority", VETOS_PRIORITY_BETA))
-        )
+        priority = float(body.get("priority", body.get("vetos_priority", VETOS_PRIORITY_BETA)))
     except (TypeError, ValueError):
         priority = VETOS_PRIORITY_BETA
 
     payload = {
         "event": "bunker_full_orchestrator",
         "channel": "general-tryonyou",
-        "message": "🚀 BUNKER FULL — Beta (prioridad VetosCore 0.92)",
+        "message": "BUNKER FULL - Beta prioridad VetosCore 0.92",
         "priority": priority,
         "vetos_priority": priority,
         "score": priority,
@@ -193,12 +163,12 @@ def orchestrate_bunker_full_orchestrator(body: dict[str, Any]) -> dict[str, Any]
 
 
 def orchestrate_mirror_shadow_dwell(body: dict[str, Any]) -> dict[str, Any]:
-    """Shadow Mirror Test: permanencia en mirror_sanctuary → Slack vía Make."""
+    """Shadow Mirror Test: permanencia en mirror_sanctuary via Make."""
     dwell = body.get("dwell_ms", 0)
     payload = {
         "event": "mirror_shadow_dwell",
         "channel": "general-tryonyou",
-        "message": f"🪞 Mirror Sanctuary — permanencia {dwell} ms",
+        "message": f"Mirror Sanctuary - permanencia {dwell} ms",
         "dwell_ms": dwell,
         "dwell_sec": body.get("dwell_sec"),
         "page": body.get("page", "mirror_sanctuary_v10.html"),
