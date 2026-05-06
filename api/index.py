@@ -498,9 +498,13 @@ def _advbet_payload(*, session_id: str, amount_eur: float) -> dict[str, object]:
     }
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 def home():
-    return "API Active"
+    if request.method == "GET":
+        return "API Active"
+    resp = _cors(jsonify({"status": "error", "message": "Not Found"}))
+    resp.headers["X-Skip-Sovereignty-Payload"] = "1"
+    return resp, 404
 
 
 def _cors(resp):
@@ -521,6 +525,8 @@ def _ensure_sovereignty_payload(payload):
 @app.after_request
 def _apply_global_sovereignty_headers(resp):
     resp = _cors(resp)
+    if resp.headers.pop("X-Skip-Sovereignty-Payload", None):
+        return resp
     if resp.status_code == 204:
         return resp
     content_type = (resp.headers.get("Content-Type") or "").lower()

@@ -29,14 +29,27 @@ from stripe_fr_resolve import resolve_stripe_secret_fr
 
 _list_cache_lock = threading.Lock()
 _list_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+_LEGAL_METADATA: dict[str, str] = {
+    "siren": "943 610 196",
+    "patent": "PCT/EP2025/067317",
+}
+
+
+def _with_legal_metadata(metadata: dict[str, str] | None = None) -> dict[str, str]:
+    merged = dict(metadata or {})
+    for key, value in _LEGAL_METADATA.items():
+        merged.setdefault(key, value)
+    return merged
 
 
 def _list_cache_ttl_seconds() -> float:
-    raw = (os.getenv("STRIPE_LIST_CACHE_TTL_SECONDS") or "120").strip()
+    raw = (os.getenv("STRIPE_LIST_CACHE_TTL_SECONDS") or "").strip()
+    if not raw:
+        return 0.0
     try:
         v = float(raw)
     except ValueError:
-        v = 120.0
+        v = 0.0
     return max(0.0, v)
 
 
@@ -129,11 +142,9 @@ def create_product(
     """
     stripe.api_key = _get_stripe_client()
     try:
-        params: dict[str, Any] = {"name": name}
+        params: dict[str, Any] = {"name": name, "metadata": _with_legal_metadata(metadata)}
         if description:
             params["description"] = description
-        if metadata:
-            params["metadata"] = metadata
         product = stripe.Product.create(**params)
         return {"ok": True, "product_id": product.id, "product": product}
     except stripe.error.StripeError as exc:
@@ -182,12 +193,23 @@ def list_products(
         dict with 'ok' and 'products' list on success.
     """
     stripe.api_key = _get_stripe_client()
+    params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
+    if active is not None:
+        params["active"] = active
+    cache_key = _list_cache_key(
+        "products",
+        active=active,
+        limit=params["limit"],
+        paginate=paginate,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
-        if active is not None:
-            params["active"] = active
         result = stripe.Product.list(**params)
-        return {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        out = {"ok": True, "products": _stripe_list_items(result, paginate=paginate)}
+        _cache_set(cache_key, out)
+        return out
     except stripe.error.StripeError as exc:
         return {"ok": False, "error": str(exc.user_message or exc)}
     except Exception as exc:
@@ -247,11 +269,10 @@ def create_price(
             "product": product_id,
             "unit_amount": unit_amount,
             "currency": currency.lower(),
+            "metadata": _with_legal_metadata(metadata),
         }
         if recurring:
             params["recurring"] = recurring
-        if metadata:
-            params["metadata"] = metadata
         price = stripe.Price.create(**params)
         return {"ok": True, "price_id": price.id, "price": price}
     except stripe.error.StripeError as exc:
