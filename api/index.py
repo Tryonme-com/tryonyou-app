@@ -525,6 +525,8 @@ def _apply_global_sovereignty_headers(resp):
     resp = _cors(resp)
     if resp.status_code == 204:
         return resp
+    if request.path == "/" and request.method != "GET":
+        return resp
     content_type = (resp.headers.get("Content-Type") or "").lower()
     if "application/json" not in content_type:
         return resp
