@@ -122,6 +122,11 @@ persist_event = _i['persist_event'] or (lambda *a, **kw: None)
 persist_session = _i['persist_session'] or (lambda *a, **kw: None)
 save_control_state = _i['save_control_state'] or (lambda *a, **kw: None)
 
+_i = _safe_import('divineo_global_orchestrator', ['get_orchestrator_status', 'get_pilot_kpis', 'trigger_global_authority'])
+get_orchestrator_status = _i['get_orchestrator_status']
+get_pilot_kpis = _i['get_pilot_kpis']
+trigger_global_authority = _i['trigger_global_authority']
+
 app = Flask(__name__)
 
 @app.route('/api/debug-boot')
@@ -1965,10 +1970,46 @@ def health():
             "enregistrer_ma_silhouette",
             "partager_le_look",
         ],
+        "divineo_global_orchestrator": get_orchestrator_status is not None,
+        "orchestrator_architecture": "Pegaso V9.2.6",
         "qonto_swift_webhook_available": True,
         "smtp_bounce_handler_available": True,
     })), 200
 
+
+
+# ── Divineo Global Orchestrator Routes ──────────────────────────────────────
+
+@app.route("/api/v1/orchestrator/status", methods=["OPTIONS"])
+def orchestrator_status_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/orchestrator/status", methods=["GET"])
+def orchestrator_status():
+    if not get_orchestrator_status:
+        return _cors(jsonify({"error": "orchestrator_not_available"})), 503
+    return _cors(jsonify(get_orchestrator_status())), 200
+
+@app.route("/api/v1/orchestrator/kpis", methods=["OPTIONS"])
+def orchestrator_kpis_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/orchestrator/kpis", methods=["GET"])
+def orchestrator_kpis():
+    if not get_pilot_kpis:
+        return _cors(jsonify({"error": "orchestrator_not_available"})), 503
+    return _cors(jsonify({"kpis": get_pilot_kpis()})), 200
+
+@app.route("/api/v1/orchestrator/execute", methods=["OPTIONS"])
+def orchestrator_execute_options():
+    return _cors(Response("", status=204))
+
+@app.route("/api/v1/orchestrator/execute", methods=["POST"])
+def orchestrator_execute():
+    if not trigger_global_authority:
+        return _cors(jsonify({"error": "orchestrator_not_available"})), 503
+    result = trigger_global_authority()
+    return _cors(jsonify(result)), 200
 
 
 # ── Core Engine V11 Routes ──────────────────────────────────────────────────

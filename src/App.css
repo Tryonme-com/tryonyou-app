@@ -2489,3 +2489,102 @@ button {
     bottom: 70px;
   }
 }
+
+/* ── Orchestration Panel ─────────────────────────────────── */
+.orchestration-panel {
+  background: rgba(20, 22, 25, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 32px;
+  backdrop-filter: blur(12px);
+}
+
+.orchestration-panel--loading {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.orchestration-panel__subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin: 8px 0 24px;
+  letter-spacing: 0.5px;
+}
+
+.orchestration-panel__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.orchestration-panel__card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.orchestration-panel__card--wide {
+  grid-column: 1 / -1;
+}
+
+.orchestration-panel__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.orchestration-panel__value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.orchestration-panel__brands {
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #d4af37;
+}
+
+.orchestration-panel__kpis {
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  padding-top: 16px;
+}
+
+.orchestration-panel__kpi-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orchestration-panel__kpi-item {
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .orchestration-panel__grid {
+    grid-template-columns: 1fr;
+  }
+  .orchestration-panel__card--wide {
+    grid-column: 1;
+  }
+  .orchestration-panel {
+    padding: 20px;
+  }
+}
