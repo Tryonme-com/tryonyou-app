@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper legacy: el flujo seguro vive en supercommit_max.sh.
+# Entrypoint canonico solicitado por el protocolo del bunker.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec "$ROOT/supercommit_max.sh" "$@"
