@@ -146,13 +146,13 @@ def ledger_soberano() -> dict[str, object]:
 
 def balance_total_soberano() -> float:
     """
-    Calcula el capital total reclamado en el pipeline de cobro soberano V10.
+    Calcula el capital total reclamado en el pipeline de cobro soberano V12.
     """
     nodos_activos = NODO_LVMH + NODO_WESTFIELD
     transferencia_ip = TRANSFERENCIA_IP_UNIT * 2
     total = ATRASOS_PILOTO + nodos_activos + transferencia_ip + SUBVENCION_BFT
 
-    print("--- [ESTADO FINANCIERO TOTAL: TRYONYOU V10] ---")
+    print("--- [ESTADO FINANCIERO TOTAL: TRYONYOU V12] ---")
     print(f"CAPITAL TOTAL RECLAMADO: {total:,.2f} €")
     print(
         "ESTADO: Pipeline de cobro al 100% de capacidad. "
