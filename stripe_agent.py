@@ -201,6 +201,7 @@ def list_products(
             active=active,
             limit=params["limit"],
             paginate=paginate,
+            source_id=id(stripe.Product.list),
         )
         cached = _cache_get(cache_key)
         if cached is not None:
@@ -332,6 +333,7 @@ def list_prices(
         active=active,
         limit=params["limit"],
         paginate=paginate,
+        source_id=id(stripe.Price.list),
     )
     cached = _cache_get(cache_key)
     if cached is not None:
