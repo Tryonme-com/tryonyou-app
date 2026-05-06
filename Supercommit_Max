@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# TryOnYou legacy entrypoint: keep the operator command stable.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$ROOT/supercommit_max.sh" "$@"
