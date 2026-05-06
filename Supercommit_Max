@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper legacy: delega en el flujo seguro con sellos, rama actual y push -u.
+# Entrypoint operativo del bunker: delega en supercommit_max.sh.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec "$ROOT/supercommit_max.sh" "$@"
