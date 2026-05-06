@@ -525,6 +525,8 @@ def _ensure_sovereignty_payload(payload):
 @app.after_request
 def _apply_global_sovereignty_headers(resp):
     resp = _cors(resp)
+    if request.path == "/" and request.method != "GET" and resp.status_code == 404:
+        return resp
     if resp.status_code == 204:
         return resp
     content_type = (resp.headers.get("Content-Type") or "").lower()
