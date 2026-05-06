@@ -49,6 +49,32 @@ def resolve_api_key() -> tuple[str, str]:
     return "", ""
 
 
+def verificar_conexion() -> bool:
+    """
+    Verifica la conexión con Stripe usando stripe.Balance.retrieve().
+
+    Retorna True si la clave es válida y la API responde correctamente,
+    False en cualquier otro caso.
+    """
+    import stripe
+
+    sk = resolve_stripe_secret()
+    if not sk:
+        print(
+            "verificar_conexion: sin clave Stripe en el entorno "
+            "(STRIPE_SECRET_KEY_FR / STRIPE_SECRET_KEY_NUEVA / STRIPE_SECRET_KEY).",
+            file=sys.stderr,
+        )
+        return False
+    stripe.api_key = sk
+    try:
+        stripe.Balance.retrieve()
+        return True
+    except stripe.error.StripeError as e:
+        print(f"verificar_conexion: error al llamar a stripe.Balance.retrieve — {e}", file=sys.stderr)
+        return False
+
+
 def _verify_stripe_account(key: str, kind: str) -> int:
     import stripe
 
