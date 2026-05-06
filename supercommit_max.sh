@@ -76,8 +76,12 @@ fi
 
 git add -A -- .
 git reset -q -- .env .env.* .vercel node_modules dist logs 2>/dev/null || true
+if ! git diff --quiet -- .env.example; then
+  git add -f .env.example
+fi
 
-if git diff --cached --name-only -z | xargs -0 -r rg -n "[0-9]{8,12}:[A-Za-z0-9_-]{20,}" >/dev/null; then
+STAGED_FILES="$(git diff --cached --name-only)"
+if [[ -n "$STAGED_FILES" ]] && git diff --cached --name-only -z | xargs -0 rg -n "[0-9]{8,12}:[A-Za-z0-9_-]{20,}" >/dev/null; then
   echo "[supercommit_max] Posible token de Telegram detectado en staging. Abortando." >&2
   exit 1
 fi
