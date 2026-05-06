@@ -53,6 +53,9 @@ notify_success() {
   local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
   local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
 
+  token="${token//[[:space:]]/}"
+  chat_id="${chat_id//[[:space:]]/}"
+
   if [[ -z "$token" || -z "$chat_id" || -n "${SKIP_TELEGRAM:-}" ]]; then
     echo "[supercommit_max] Notificación Telegram omitida (faltan variables o SKIP_TELEGRAM activo)."
     return 0
@@ -93,8 +96,15 @@ safe_stage() {
   done < <(git ls-files --modified --others --deleted --exclude-standard)
 }
 
+branch="$(git branch --show-current)"
+if [[ -z "$branch" ]]; then
+  echo "[supercommit_max] No se pudo resolver la rama actual." >&2
+  exit 3
+fi
+
 if [[ -z "$(git status --porcelain)" ]]; then
   echo "[supercommit_max] Nada que commitear."
+  notify_success "Supercommit_Max OK: bunker Oberkampf 75011 ya estaba sincronizado con galeria web en rama ${branch}."
   exit 0
 fi
 
@@ -126,12 +136,6 @@ git commit -m "$SUPERCOMMIT_MESSAGE"
 if [[ "$DEPLOY" == "true" ]]; then
   echo "[supercommit_max] deployall (puede desplegar si hay VERCEL_TOKEN)."
   npm run deployall
-fi
-
-branch="$(git branch --show-current)"
-if [[ -z "$branch" ]]; then
-  echo "[supercommit_max] No se pudo resolver la rama actual." >&2
-  exit 3
 fi
 
 git push -u origin "$branch"
