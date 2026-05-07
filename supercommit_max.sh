@@ -92,13 +92,22 @@ if [[ -z "$(git status --porcelain)" ]]; then
   echo "[supercommit_max] Nada que commitear."
   notify_success "TryOnYou Supercommit_Max OK: bunker Oberkampf sincronizado, galeria sin cambios pendientes (${branch})."
 else
-  git add -A -- . \
-    ':!node_modules/**' \
-    ':!dist/**' \
-    ':!build/**' \
-    ':!.env' \
-    ':!.env.*' \
-    ':!*.log'
+  git add -u -- .
+  git reset -q -- .env .env.* dist node_modules build '*.log' 2>/dev/null || true
+
+  safe_untracked=()
+  while IFS= read -r -d '' path; do
+    case "$path" in
+      .env|.env.*|node_modules/*|dist/*|build/*|*.log)
+        continue
+        ;;
+    esac
+    safe_untracked+=("$path")
+  done < <(git ls-files --others --exclude-standard -z)
+
+  if [[ "${#safe_untracked[@]}" -gt 0 ]]; then
+    git add -- "${safe_untracked[@]}"
+  fi
 
   git commit -m "$(cat <<EOF
 ${CUSTOM_MESSAGE}

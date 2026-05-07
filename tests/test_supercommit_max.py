@@ -18,7 +18,8 @@ class TestSupercommitMaxStaticGuards(unittest.TestCase):
         self.assertNotIn("git add .", script)
         self.assertNotIn("git add .", legacy)
         self.assertIn('git push -u origin "$branch"', script)
-        self.assertIn("git add -A -- .", script)
+        self.assertIn("git add -u -- .", script)
+        self.assertIn("git ls-files --others --exclude-standard -z", script)
 
     def test_entrypoints_delegate_to_safe_script(self) -> None:
         entrypoint = ROOT / "Supercommit_Max"
