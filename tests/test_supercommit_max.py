@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -33,7 +34,7 @@ class TestSupercommitMaxStaticGuards(unittest.TestCase):
         self.assertIn("TRYONYOU_DEPLOY_BOT_TOKEN", script)
         self.assertIn("TRYONYOU_DEPLOY_CHAT_ID", script)
         self.assertIn("TELEGRAM_BOT_TOKEN", script)
-        self.assertNotIn("8788913760", script)
+        self.assertIsNone(re.search(r"\d{8,}:[A-Za-z0-9_-]{20,}", script))
 
 
 if __name__ == "__main__":
