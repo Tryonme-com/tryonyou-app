@@ -80,6 +80,8 @@ def _cache_get(key: str) -> dict[str, Any] | None:
 def _cache_set(key: str, payload: dict[str, Any]) -> None:
     if _list_cache_ttl_seconds() <= 0:
         return
+    if payload.get("products") == [] or payload.get("prices") == []:
+        return
     with _list_cache_lock:
         _list_cache[key] = (time.monotonic(), payload)
 
