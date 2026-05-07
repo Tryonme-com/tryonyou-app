@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper historico seguro: no instala dependencias, no hace git add . y no empuja main.
+# Wrapper historico seguro: sin instalacion forzada, staging amplio ni push a main.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
