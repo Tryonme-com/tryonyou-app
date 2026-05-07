@@ -45,6 +45,9 @@ logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
 logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+logs/core_engine_events.jsonl
+logs/core_engine_sessions.jsonl
+logs/sovereignty_access_audit.jsonl
 update_stripe_v10.py
 activate_royalties_v10.py
 monetizacion_trace_demo.log
