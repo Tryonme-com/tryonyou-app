@@ -70,7 +70,7 @@ export default function Hero() {
             <img
               src="/images/gemelo-digital.jpg"
               alt="Jumeau numérique TRYONYOU — gemelo digital biométrique"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
               loading="eager"
             />
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-[10px] tracking-[0.24em] uppercase text-[var(--color-or)]">

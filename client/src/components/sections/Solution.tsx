@@ -65,11 +65,12 @@ export default function Solution() {
 
         <div className="mt-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-6 reveal-up">
-            <div className="mirror-frame aspect-[4/5] overflow-hidden">
+            <div className="mirror-frame overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <img
                 src="/images/mirror-smart.jpg"
                 alt="Miroir intelligent TRYONYOU en boutique — sélection parfaite"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
+                style={{ background: 'var(--color-noir)' }}
                 loading="lazy"
               />
             </div>

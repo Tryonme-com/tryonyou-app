@@ -55,11 +55,12 @@ export default function Problem() {
         {/* Image asymmetric */}
         <div className="mt-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
           <div className="lg:col-span-7 lg:col-start-2 reveal-up">
-            <div className="mirror-frame aspect-[16/10] overflow-hidden">
+            <div className="mirror-frame overflow-hidden" style={{ aspectRatio: '4/5' }}>
               <img
                 src="/images/retour-echange.jpg"
                 alt="File d'attente au comptoir Retour & Échange — symptôme du fit incertain"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
+                style={{ background: 'var(--color-noir)' }}
                 loading="lazy"
               />
             </div>
