@@ -27,6 +27,11 @@ export const LANG_PACKS: Record<Lang, {
   recalculating: string;
   validatedBy: string;
   collection: string;
+  phaseCalibration: string;
+  phaseAnalysis: string;
+  phaseMaterializing: string;
+  phaseReady: string;
+  faceCamera: string;
 }> = {
   fr: {
     brand: "TRYONYOU",
@@ -51,6 +56,11 @@ export const LANG_PACKS: Record<Lang, {
     recalculating: "Robert recalcule…",
     validatedBy: "Validé par le moteur Jules — Divineo Glow",
     collection: "Collection Lafayette",
+    phaseCalibration: "Calibration",
+    phaseAnalysis: "Analyse de silhouette",
+    phaseMaterializing: "Matérialisation de la pièce",
+    phaseReady: "Projection prête",
+    faceCamera: "Placez-vous face à la caméra, à 1,5 m",
   },
   en: {
     brand: "TRYONYOU",
@@ -75,6 +85,11 @@ export const LANG_PACKS: Record<Lang, {
     recalculating: "Robert recalculating…",
     validatedBy: "Validated by Jules engine — Divineo Glow",
     collection: "Lafayette Collection",
+    phaseCalibration: "Calibration",
+    phaseAnalysis: "Silhouette analysis",
+    phaseMaterializing: "Materializing garment",
+    phaseReady: "Projection ready",
+    faceCamera: "Face the camera, about 1.5 m away",
   },
   es: {
     brand: "TRYONYOU",
@@ -99,5 +114,10 @@ export const LANG_PACKS: Record<Lang, {
     recalculating: "Robert recalcula…",
     validatedBy: "Validado por el motor Jules — Divineo Glow",
     collection: "Colección Lafayette",
+    phaseCalibration: "Calibración",
+    phaseAnalysis: "Análisis de silueta",
+    phaseMaterializing: "Materializando la prenda",
+    phaseReady: "Proyección lista",
+    faceCamera: "Sitúate frente a la cámara, a 1,5 m",
   },
 };

@@ -1,23 +1,44 @@
 /**
  * TRYONYOU — /tryon
  *
- * Live virtual try-on experience.
- *   • Webcam (1280×720, mirrored)
- *   • MediaPipe Pose loaded from CDN
- *   • Procedural SVG garment overlay anchored to MediaPipe landmarks
- *   • Right side panel with garment metadata + cycle button + lang selector
+ * Cinematic four-phase try-on experience:
+ *   1) CAMERA  — webcam opens, user sees themselves clean, no overlay.
+ *   2) WIREFRAME — body silhouette becomes a low-poly gold mesh (no measurements ever displayed).
+ *   3) SWIRL — golden particle storm wraps around the avatar.
+ *   4) REVEAL — the swirl dissipates, the garment overlay materializes on the real body.
  *
- * Style: Maison Couture Nocturne — gold-on-graphite, editorial.
+ * No numerical body data is ever surfaced to the UI; the only score the user sees is the
+ * symbolic "Ajustement : Parfait" label once the garment has been projected.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "wouter";
-import { FEATURED, type Garment, getGarmentBySku, FABRICS } from "@/lib/catalog";
+import { Link } from "wouter";
+import { FEATURED, FABRICS } from "@/lib/catalog";
 import { LANG_PACKS, type Lang } from "@/lib/i18n";
 import { loadOverlayImage } from "@/lib/garmentOverlays";
 import { drawGarmentOverlay } from "@/lib/overlayRenderer";
+import {
+  GoldenSwirl,
+  bodyBox,
+  drawTriangulatedAvatar,
+  easeInOutCubic,
+  easeOutCubic,
+  isPoseUsable,
+} from "@/lib/cinematic";
 
-type Phase = "permission" | "scanning" | "measuring" | "fitting";
+// Phases of the cinematic pipeline.
+//   - permission : pre-camera consent screen
+//   - camera     : webcam visible, MediaPipe warming up
+//   - wireframe  : gold low-poly avatar drawn over body
+//   - swirl      : particles converge & envelop body
+//   - reveal     : garment overlay materializes (final state)
+type Phase = "permission" | "camera" | "wireframe" | "swirl" | "reveal";
+
+// Phase durations (ms)
+const T_CAMERA_MIN = 1400;     // give the user a moment to see themselves
+const T_WIREFRAME = 2400;
+const T_SWIRL = 2800;
+const T_REVEAL_FADE_IN = 900;  // garment fades in over this period
 
 declare global {
   interface Window {
@@ -64,12 +85,9 @@ function LangSelector({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
 }
 
 export default function TryOn() {
-  const [location] = useLocation();
   const [lang, setLang] = useState<Lang>("fr");
   const [phase, setPhase] = useState<Phase>("permission");
-  const [scanProgress, setScanProgress] = useState(0);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
   const [transitioning, setTransitioning] = useState(false);
 
   // Resolve initial sku from query string (?sku=EG-LAF-001)
@@ -82,9 +100,7 @@ export default function TryOn() {
   }, []);
   const [currentIdx, setCurrentIdx] = useState(initialIdx);
 
-  // FitScore — synthesized client-side based on body+fabric
-  const [fitScore, setFitScore] = useState(0);
-
+  // Refs for the render loop
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -93,6 +109,8 @@ export default function TryOn() {
   const poseReadyRef = useRef(false);
   const lastSendRef = useRef(0);
   const overlaysRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Smoothed anchor (used by the garment overlay during the REVEAL phase).
   const anchorRef = useRef({
     cx: 0,
     sy: 0,
@@ -102,21 +120,22 @@ export default function TryOn() {
     detected: false,
     lastDetectedTime: 0,
   });
+
+  // Phase machine references
   const phaseRef = useRef<Phase>("permission");
   const idxRef = useRef(currentIdx);
-  const measurementsRef = useRef({
-    shoulderWidthPx: 0,
-    torsoHeightPx: 0,
-    hipWidthPx: 0,
-    frameWidthPx: 1280,
-    frameHeightPx: 720,
-  });
+  const cameraStartRef = useRef(0);
+  const wireframeStartRef = useRef(0);
+  const swirlStartRef = useRef(0);
+  const revealStartRef = useRef(0);
+  const swirlRef = useRef<GoldenSwirl>(new GoldenSwirl(280));
+  // First time we have a usable pose since the camera started.
+  const firstPoseAtRef = useRef(0);
 
   const t = LANG_PACKS[lang];
   const garment = FEATURED[currentIdx];
   const fabric = FABRICS[garment.fabricKey];
 
-  // Sync refs
   useEffect(() => {
     idxRef.current = currentIdx;
   }, [currentIdx]);
@@ -124,7 +143,7 @@ export default function TryOn() {
     phaseRef.current = phase;
   }, [phase]);
 
-  // Preload all overlays on mount (background)
+  // Preload garment overlays in the background.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -145,28 +164,9 @@ export default function TryOn() {
     };
   }, []);
 
-  // Compute synthetic FitScore from body + fabric whenever measurements update
-  const computeFitScore = useCallback((): number => {
-    const m = measurementsRef.current;
-    const a = anchorRef.current;
-    if (!a.detected) return 88; // Demo mode baseline
-    if (!fabric) return 92;
-
-    // Body presence quality
-    const bodyConfidence = Math.min(
-      1,
-      m.shoulderWidthPx > 80 ? 1 : m.shoulderWidthPx / 80,
-    );
-
-    // Drape × elasticity affinity — higher silk-like fabric → higher score
-    const drapeBonus = fabric.drapeCoefficient * 6;
-    const elasticBonus = (fabric.elasticityPct / 25) * 4;
-    const recoveryBonus = (fabric.recoveryPct / 100) * 3;
-    const score = 86 + drapeBonus + elasticBonus + recoveryBonus;
-    return Math.round(Math.max(78, Math.min(99, score * bodyConfidence)));
-  }, [fabric]);
-
-  // Render loop
+  // ------------------------------------------------------------------
+  // RENDER LOOP
+  // ------------------------------------------------------------------
   const renderFrame = useCallback(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -187,148 +187,134 @@ export default function TryOn() {
     ctx.clearRect(0, 0, W, H);
 
     const a = anchorRef.current;
-    const now = Date.now();
-    const hasBody = a.detected && now - a.lastDetectedTime < 2000;
-    const portrait = H > W;
+    const now = performance.now();
+    const wallNow = Date.now();
+    const hasBody = a.detected && wallNow - a.lastDetectedTime < 1500;
+    const lm = window.__tryon_landmarks;
+    const usablePose = isPoseUsable(lm);
 
-    let cx: number,
-      sy: number,
-      hy: number,
-      sw: number,
-      angle: number;
-    if (hasBody) {
-      cx = a.cx;
-      sy = a.sy;
-      hy = a.hy;
-      sw = a.sw;
-      angle = a.angle;
-    } else {
-      cx = W / 2;
-      sy = portrait ? H * 0.38 : H * 0.3;
-      hy = portrait ? H * 0.68 : H * 0.65;
-      sw = portrait ? W * 0.35 : W * 0.22;
-      angle = 0;
+    if (usablePose && firstPoseAtRef.current === 0) {
+      firstPoseAtRef.current = now;
     }
 
-    // Halo behind garment
-    const haloR = hasBody ? sw * 2.5 : W * 0.35;
-    const halo = ctx.createRadialGradient(cx, sy + (hy - sy) * 0.4, sw * 0.2, cx, sy + (hy - sy) * 0.4, haloR);
-    halo.addColorStop(0, "rgba(201, 168, 76, 0.08)");
-    halo.addColorStop(0.5, "rgba(201, 168, 76, 0.03)");
-    halo.addColorStop(1, "rgba(201, 168, 76, 0)");
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, W, H);
+    // -------- Phase transitions (driven by elapsed time + pose availability) --------
+    if (phaseRef.current === "camera") {
+      const sinceStart = now - cameraStartRef.current;
+      if (sinceStart > T_CAMERA_MIN && usablePose) {
+        wireframeStartRef.current = now;
+        setPhase("wireframe");
+      }
+    } else if (phaseRef.current === "wireframe") {
+      const sinceStart = now - wireframeStartRef.current;
+      if (sinceStart > T_WIREFRAME) {
+        swirlStartRef.current = now;
+        swirlRef.current.start(now);
+        setPhase("swirl");
+      }
+    } else if (phaseRef.current === "swirl") {
+      const sinceStart = now - swirlStartRef.current;
+      if (sinceStart > T_SWIRL) {
+        revealStartRef.current = now;
+        setPhase("reveal");
+      }
+    }
 
-    // Garment overlay
-    const g = FEATURED[idxRef.current];
-    const img = overlaysRef.current.get(g.id);
-    if (phaseRef.current === "fitting" && img) {
-      const score = computeFitScore();
-      const baseAnchor = hasBody
-        ? { cx, shoulderY: sy, hipY: hy, shoulderW: sw, angle, hasBody }
-        : {
-            cx: W / 2,
-            shoulderY: (portrait ? H * 0.38 : H * 0.28) + Math.sin(now * 0.0015) * 6,
-            hipY: (portrait ? H * 0.68 : H * 0.62) + Math.sin(now * 0.0015) * 6,
-            shoulderW: portrait ? W * 0.35 : W * 0.24,
-            angle: 0,
-            hasBody: false,
-          };
-      try {
-        drawGarmentOverlay(ctx, img, baseAnchor, g, score, W, H);
-      } catch (e) {
-        console.warn("[TRYONYOU] overlay error:", e);
+    // -------- Visual layers per phase --------
+    const portrait = H > W;
+    const fallbackBox = {
+      cx: W / 2,
+      cy: H * 0.5,
+      width: portrait ? W * 0.55 : W * 0.32,
+      height: H * 0.65,
+    };
+    const live = lm ? bodyBox(lm, W, H) : null;
+    const box = live ?? fallbackBox;
+
+    // Soft halo behind the body (always present from wireframe onward — adds magic).
+    if (phaseRef.current !== "camera" && phaseRef.current !== "permission") {
+      const haloR = Math.max(box.width, box.height) * 0.7;
+      const halo = ctx.createRadialGradient(box.cx, box.cy, 0, box.cx, box.cy, haloR);
+      halo.addColorStop(0, "rgba(201, 168, 76, 0.10)");
+      halo.addColorStop(0.6, "rgba(201, 168, 76, 0.04)");
+      halo.addColorStop(1, "rgba(201, 168, 76, 0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(box.cx, box.cy, haloR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (phaseRef.current === "wireframe") {
+      const since = now - wireframeStartRef.current;
+      const fadeIn = Math.min(1, since / 600);
+      const pulse = 0.5 + 0.5 * Math.sin(now * 0.004);
+      if (usablePose && lm) {
+        drawTriangulatedAvatar(ctx, lm, W, H, easeOutCubic(fadeIn), pulse);
       }
-      // Periodically refresh fitScore state for the side panel
-      if (Math.floor(now / 500) % 2 === 0) {
-        setFitScore((prev) => (Math.abs(prev - score) > 1 ? score : prev));
+    } else if (phaseRef.current === "swirl") {
+      const sinceStart = now - swirlStartRef.current;
+      const swirlT = Math.min(1, sinceStart / T_SWIRL);
+      // Wireframe fades out during the first 60% of the swirl.
+      const wireFade = Math.max(0, 1 - swirlT / 0.6);
+      if (usablePose && lm && wireFade > 0.05) {
+        drawTriangulatedAvatar(ctx, lm, W, H, wireFade, 1);
       }
-      if (!hasBody) {
+      // Particles
+      swirlRef.current.update(ctx, box, now, T_SWIRL);
+    } else if (phaseRef.current === "reveal") {
+      const sinceReveal = now - revealStartRef.current;
+      const revealT = Math.min(1, sinceReveal / T_REVEAL_FADE_IN);
+      const eased = easeInOutCubic(revealT);
+
+      // Brief residual sparkle as the swirl exhales (first 300 ms of reveal).
+      if (sinceReveal < 700 && usablePose) {
+        const residualAlpha = 1 - Math.min(1, sinceReveal / 700);
         ctx.save();
-        ctx.fillStyle = "rgba(201, 168, 76, 0.7)";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(
-          "Mode Smart — placez-vous face à la caméra pour l'ancrage AR",
-          W / 2,
-          H - 25,
-        );
+        ctx.globalAlpha = residualAlpha * 0.6;
+        swirlRef.current.update(ctx, box, now, T_SWIRL * 0.5);
         ctx.restore();
       }
-    } else if (phaseRef.current === "measuring") {
-      ctx.save();
-      ctx.globalAlpha = 0.7;
-      ctx.fillStyle = "#C9A84C";
-      ctx.font = "12px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        hasBody ? "CORPS DÉTECTÉ — extraction des mesures…" : "RECHERCHE DU CORPS…",
-        W / 2,
-        H - 40,
-      );
-      ctx.restore();
-    }
 
-    // Skeleton (when body detected)
-    if (hasBody && window.__tryon_landmarks) {
-      const lm = window.__tryon_landmarks;
-      const limbs: [number, number][] = [
-        [11, 13],
-        [13, 15],
-        [12, 14],
-        [14, 16],
-        [23, 25],
-        [25, 27],
-        [24, 26],
-        [26, 28],
-      ];
-      ctx.strokeStyle = "rgba(0, 210, 255, 0.35)";
-      ctx.lineWidth = 2;
-      for (const [a2, b] of limbs) {
-        const A = lm[a2];
-        const B = lm[b];
-        if (A && B && A.visibility > 0.25 && B.visibility > 0.25) {
-          ctx.beginPath();
-          ctx.moveTo(A.x * W, A.y * H);
-          ctx.lineTo(B.x * W, B.y * H);
-          ctx.stroke();
+      // Garment overlay (fades in)
+      const g = FEATURED[idxRef.current];
+      const img = overlaysRef.current.get(g.id);
+      if (img) {
+        const baseAnchor = hasBody
+          ? {
+              cx: a.cx,
+              shoulderY: a.sy,
+              hipY: a.hy,
+              shoulderW: a.sw,
+              angle: a.angle,
+              hasBody: true,
+            }
+          : {
+              cx: W / 2,
+              shoulderY: (portrait ? H * 0.38 : H * 0.28) +
+                Math.sin(now * 0.0015) * 6,
+              hipY: (portrait ? H * 0.68 : H * 0.62) +
+                Math.sin(now * 0.0015) * 6,
+              shoulderW: portrait ? W * 0.35 : W * 0.24,
+              angle: 0,
+              hasBody: false,
+            };
+        ctx.save();
+        ctx.globalAlpha = eased;
+        try {
+          // We pass a synthetic fitScore≥95 so the renderer applies the gold specular highlight.
+          drawGarmentOverlay(ctx, img, baseAnchor, g, 96, W, H);
+        } catch (e) {
+          console.warn("[TRYONYOU] overlay error:", e);
         }
-      }
-      // Torso quadrilateral in gold
-      ctx.strokeStyle = "rgba(201, 168, 76, 0.5)";
-      ctx.lineWidth = 2.5;
-      const torso: [number, number][] = [
-        [11, 12],
-        [11, 23],
-        [12, 24],
-        [23, 24],
-      ];
-      for (const [a2, b] of torso) {
-        const A = lm[a2];
-        const B = lm[b];
-        if (A && B && A.visibility > 0.25 && B.visibility > 0.25) {
-          ctx.beginPath();
-          ctx.moveTo(A.x * W, A.y * H);
-          ctx.lineTo(B.x * W, B.y * H);
-          ctx.stroke();
-        }
+        ctx.restore();
       }
     }
 
-    // Scanline gold
-    const sy2 = ((now % 3000) / 3000) * H;
-    const grad = ctx.createLinearGradient(0, sy2 - 2, 0, sy2 + 2);
-    grad.addColorStop(0, "rgba(201, 168, 76, 0)");
-    grad.addColorStop(0.5, "rgba(201, 168, 76, 0.12)");
-    grad.addColorStop(1, "rgba(201, 168, 76, 0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, sy2 - 15, W, 30);
-
-    // Send frame to MediaPipe
+    // Send frame to MediaPipe (continuously once initialized).
     if (poseReadyRef.current && poseRef.current && video.readyState >= 2) {
-      const interval = phaseRef.current === "fitting" || phaseRef.current === "measuring" ? 50 : 150;
-      if (now - lastSendRef.current > interval) {
-        lastSendRef.current = now;
+      const interval =
+        phaseRef.current === "camera" || phaseRef.current === "wireframe" ? 80 : 130;
+      if (wallNow - lastSendRef.current > interval) {
+        lastSendRef.current = wallNow;
         try {
           poseRef.current.send({ image: video });
         } catch (e) {
@@ -338,9 +324,11 @@ export default function TryOn() {
     }
 
     rafRef.current = requestAnimationFrame(renderFrame);
-  }, [computeFitScore]);
+  }, []);
 
+  // ------------------------------------------------------------------
   // MediaPipe init
+  // ------------------------------------------------------------------
   const initPose = useCallback(async (): Promise<boolean> => {
     try {
       await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js");
@@ -365,12 +353,8 @@ export default function TryOn() {
         const lHip = L[23];
         const rHip = L[24];
         if (
-          !lShoulder ||
-          !rShoulder ||
-          !lHip ||
-          !rHip ||
-          lShoulder.visibility < 0.3 ||
-          rShoulder.visibility < 0.3
+          !lShoulder || !rShoulder || !lHip || !rHip ||
+          lShoulder.visibility < 0.3 || rShoulder.visibility < 0.3
         ) return;
         const c = canvasRef.current;
         const W = c?.width || 1280;
@@ -395,17 +379,6 @@ export default function TryOn() {
           lastDetectedTime: Date.now(),
         };
         window.__tryon_landmarks = L;
-
-        const lhx = lHip.x * W;
-        const rhx = rHip.x * W;
-        const hipW = Math.abs(rhx - lhx);
-        measurementsRef.current = {
-          shoulderWidthPx: sw,
-          torsoHeightPx: Math.max(0, hy - sy),
-          hipWidthPx: hipW > 0 ? hipW : sw * 0.9,
-          frameWidthPx: W,
-          frameHeightPx: H,
-        };
       });
       await pose.initialize();
       poseRef.current = pose;
@@ -417,9 +390,10 @@ export default function TryOn() {
     }
   }, []);
 
+  // ------------------------------------------------------------------
+  // Camera startup
+  // ------------------------------------------------------------------
   const startCamera = useCallback(async () => {
-    setPhase("scanning");
-    setScanProgress(0);
     setPermissionDenied(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -437,57 +411,21 @@ export default function TryOn() {
       setPhase("permission");
       return;
     }
+    cameraStartRef.current = performance.now();
+    firstPoseAtRef.current = 0;
+    setPhase("camera");
     rafRef.current = requestAnimationFrame(renderFrame);
+    initPose();
 
-    const poseInit = initPose();
-    let progress = 0;
-    let resolved = false;
-    const id = setInterval(async () => {
-      if (progress < 85) {
-        progress += Math.random() * 5 + 3;
-      } else if (!resolved) {
-        resolved = true;
-        const timeout = new Promise<boolean>((r) => setTimeout(() => r(false), 8000));
-        await Promise.race([poseInit, timeout]);
-        progress = 100;
+    // Safety net: if MediaPipe never produces a usable pose within 7 s, advance anyway
+    // so the user still sees the cinematic flow with a virtual centered avatar.
+    setTimeout(() => {
+      if (phaseRef.current === "camera") {
+        wireframeStartRef.current = performance.now();
+        setPhase("wireframe");
       }
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(id);
-        setPhase("measuring");
-        setStatusMsg(t.measuring);
-      }
-      setScanProgress(Math.min(100, progress));
-    }, 200);
-  }, [initPose, renderFrame, t]);
-
-  // Measuring → Fitting transition
-  useEffect(() => {
-    if (phase !== "measuring") return;
-    setStatusMsg(t.measuring);
-    const start = Date.now();
-    const id = setInterval(() => {
-      const a = anchorRef.current;
-      const detected = a.detected && Date.now() - a.lastDetectedTime < 2000;
-      if (detected && measurementsRef.current.shoulderWidthPx > 50) {
-        setStatusMsg(t.bodyDetected);
-        setTimeout(() => {
-          setPhase("fitting");
-          setStatusMsg("");
-        }, 1200);
-        clearInterval(id);
-      } else if (Date.now() - start > 12000) {
-        // Demo fallback: enter fitting anyway
-        setStatusMsg(t.bodyDetected);
-        setTimeout(() => {
-          setPhase("fitting");
-          setStatusMsg("");
-        }, 800);
-        clearInterval(id);
-      }
-    }, 400);
-    return () => clearInterval(id);
-  }, [phase, t]);
+    }, 7000);
+  }, [initPose, renderFrame]);
 
   const cycleGarment = useCallback(() => {
     setTransitioning(true);
@@ -495,6 +433,19 @@ export default function TryOn() {
       setCurrentIdx((i) => (i + 1) % FEATURED.length);
       setTransitioning(false);
     }, 500);
+  }, []);
+
+  // Replay the cinematic sequence with the current garment.
+  const replayCinematic = useCallback(() => {
+    if (phaseRef.current === "permission") return;
+    cameraStartRef.current = performance.now();
+    setPhase("camera");
+    setTimeout(() => {
+      if (phaseRef.current === "camera") {
+        wireframeStartRef.current = performance.now();
+        setPhase("wireframe");
+      }
+    }, T_CAMERA_MIN + 200);
   }, []);
 
   // Cleanup
@@ -507,11 +458,21 @@ export default function TryOn() {
     };
   }, []);
 
-  const isPerfectFit = fitScore >= 95;
+  // Active-phase HUD label (top center, very subtle).
+  const phaseLabel: string | null =
+    phase === "camera"
+      ? t.phaseCalibration
+      : phase === "wireframe"
+      ? t.phaseAnalysis
+      : phase === "swirl"
+      ? t.phaseMaterializing
+      : phase === "reveal"
+      ? t.phaseReady
+      : null;
 
   return (
     <div className="relative w-full h-screen bg-[var(--color-noir)] overflow-hidden">
-      {/* Video & Canvas */}
+      {/* Video & canvas */}
       <video
         ref={videoRef}
         autoPlay
@@ -528,7 +489,10 @@ export default function TryOn() {
 
       {/* Top bar */}
       <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/70 to-transparent">
-        <Link href="/" className="text-[10px] tracking-[0.32em] uppercase text-white/60 hover:text-[var(--color-or)] transition-colors">
+        <Link
+          href="/"
+          className="text-[10px] tracking-[0.32em] uppercase text-white/60 hover:text-[var(--color-or)] transition-colors"
+        >
           ← {t.back}
         </Link>
         <div className="font-display text-[var(--color-or)] text-[18px] tracking-[0.32em]">
@@ -537,9 +501,24 @@ export default function TryOn() {
         <LangSelector lang={lang} setLang={setLang} />
       </header>
 
+      {/* Phase HUD (centered, very subtle) */}
+      {phaseLabel && phase !== "permission" && (
+        <div
+          key={phase}
+          className="absolute left-1/2 top-24 -translate-x-1/2 z-30 pointer-events-none"
+        >
+          <div className="flex items-center gap-3 px-4 py-2 rounded-sm bg-[var(--color-noir)]/55 backdrop-blur-sm border border-[var(--color-or)]/25 transition-all duration-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-or)] animate-pulse" />
+            <span className="text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]">
+              {phaseLabel}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Permission overlay */}
       {phase === "permission" && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--color-noir)]/90 backdrop-blur-md">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--color-noir)]/92 backdrop-blur-md">
           <div className="max-w-md text-center px-8">
             <div className="font-display text-[var(--color-or)] italic text-[42px] leading-tight mb-4">
               {t.permissionTitle}
@@ -556,96 +535,57 @@ export default function TryOn() {
         </div>
       )}
 
-      {/* Scanning overlay */}
-      {phase === "scanning" && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--color-noir)]/40 backdrop-blur-sm pointer-events-none">
-          <div className="text-center">
-            <div className="text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)] mb-4">
-              {t.scanning}
-            </div>
-            <div className="w-64 h-px bg-white/10 mx-auto overflow-hidden">
-              <div
-                className="h-full bg-[var(--color-or)] transition-all duration-300"
-                style={{ width: `${scanProgress}%` }}
-              />
-            </div>
-            <div className="font-display text-[var(--color-or)] text-[28px] mt-3">
-              {Math.round(scanProgress)}%
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Measuring status pill */}
-      {phase === "measuring" && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 px-5 py-3 rounded-sm bg-[var(--color-noir)]/80 backdrop-blur-sm border border-[var(--color-or)]/30">
-          <div className="flex items-center gap-3 text-[12px] text-[var(--color-or)] tracking-wide">
-            <span className="w-2 h-2 rounded-full bg-[var(--color-or)] animate-pulse" />
-            {statusMsg}
-          </div>
-        </div>
-      )}
-
-      {/* Side panel */}
-      {phase === "fitting" && (
+      {/* Side panel — only during reveal phase, animated in */}
+      {phase === "reveal" && (
         <aside
-          className={`absolute right-0 top-0 bottom-0 w-full sm:w-[380px] z-20 bg-[var(--color-noir)]/85 backdrop-blur-md border-l border-white/5 flex flex-col p-6 pt-20 transition-opacity duration-500 ${
-            transitioning ? "opacity-0" : "opacity-100"
+          className={`absolute right-0 top-0 bottom-0 w-full sm:w-[380px] z-20 bg-[var(--color-noir)]/85 backdrop-blur-md border-l border-white/5 flex flex-col p-6 pt-20 transition-all duration-700 ${
+            transitioning ? "opacity-0 translate-x-3" : "opacity-100 translate-x-0"
           }`}
+          style={{
+            animation: "tryonRevealIn 700ms cubic-bezier(0.16,1,0.3,1) both",
+          }}
         >
           <div className="mb-2 text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]/70">
             {t.collection}
           </div>
-          <h2 className="font-display text-white text-[28px] leading-tight mb-1">{garment.name}</h2>
+          <h2 className="font-display text-white text-[28px] leading-tight mb-1">
+            {garment.name}
+          </h2>
           <div className="text-[11px] tracking-widest uppercase text-white/40 mb-5">
             {garment.designer}
           </div>
 
-          {/* Fit panel */}
-          {isPerfectFit ? (
-            <div className="mb-5 p-4 rounded-sm bg-[var(--color-or)]/10 border border-[var(--color-or)]/30">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-or)] animate-pulse" />
-                <span className="font-display text-[18px] tracking-wide text-[var(--color-or)]">
-                  {t.perfectFit}
-                </span>
-              </div>
-              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[var(--color-or)] transition-all duration-700"
-                  style={{ width: "100%" }}
-                />
-              </div>
-              <p className="text-[10px] mt-2 italic text-[var(--color-or)]/60">{t.validatedBy}</p>
+          {/* Symbolic fit indicator (no numerical score visible to the user) */}
+          <div className="mb-5 p-4 rounded-sm bg-[var(--color-or)]/10 border border-[var(--color-or)]/30">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-or)] animate-pulse" />
+              <span className="font-display text-[18px] tracking-wide text-[var(--color-or)]">
+                {t.perfectFit}
+              </span>
             </div>
-          ) : (
-            <div className="mb-5 p-4 rounded-sm bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[10px] text-white/50 tracking-widest uppercase">
-                  {t.recalculating}
-                </span>
-              </div>
-              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-amber-400/60 transition-all duration-1000"
-                  style={{ width: `${Math.min(95, fitScore)}%` }}
-                />
-              </div>
-              <p className="text-[10px] mt-2 italic text-white/30">
-                {fitScore || "—"}%
-              </p>
+            <div className="w-full h-[2px] bg-white/10 overflow-hidden">
+              <div
+                className="h-full bg-[var(--color-or)] transition-all duration-1000"
+                style={{ width: "100%" }}
+              />
             </div>
-          )}
+            <p className="text-[10px] mt-2 italic text-[var(--color-or)]/60">
+              {t.validatedBy}
+            </p>
+          </div>
 
           {/* Fabric / drape grid */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div className="bg-white/5 p-3 rounded-sm">
-              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.fabric}</p>
+              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">
+                {t.fabric}
+              </p>
               <p className="text-[12px] text-white/70 leading-tight">{garment.fabricName}</p>
             </div>
             <div className="bg-white/5 p-3 rounded-sm">
-              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.drape}</p>
+              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">
+                {t.drape}
+              </p>
               <p className="text-[12px] text-white/70">
                 {fabric ? Math.round(fabric.drapeCoefficient * 100) : "—"}/100
               </p>
@@ -653,8 +593,12 @@ export default function TryOn() {
           </div>
 
           <div className="flex items-baseline justify-between mb-5">
-            <span className="text-[10px] tracking-widest uppercase text-white/40">{garment.ref}</span>
-            <span className="font-display text-[var(--color-or)] text-[22px]">€ {garment.price}</span>
+            <span className="text-[10px] tracking-widest uppercase text-white/40">
+              {garment.ref}
+            </span>
+            <span className="font-display text-[var(--color-or)] text-[22px]">
+              € {garment.price}
+            </span>
           </div>
 
           <div className="flex-1" />
@@ -666,12 +610,17 @@ export default function TryOn() {
             {t.reserveCabin}
           </button>
           <button
-            onClick={cycleGarment}
+            onClick={() => {
+              cycleGarment();
+              setTimeout(replayCinematic, 550);
+            }}
             className="w-full py-3 bg-white/5 border border-white/10 text-white/70 uppercase tracking-[0.2em] text-xs hover:bg-white/10 transition-all duration-300 mb-2"
           >
             {t.showMore} — {currentIdx + 1}/{FEATURED.length}
           </button>
-          <p className="text-center text-[10px] text-white/30 tracking-widest">{t.curated}</p>
+          <p className="text-center text-[10px] text-white/30 tracking-widest">
+            {t.curated}
+          </p>
 
           <div className="flex justify-center gap-2 mt-3 flex-wrap">
             {FEATURED.slice(0, 16).map((_, i) => (
@@ -691,6 +640,14 @@ export default function TryOn() {
         <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">{t.patent}</p>
         <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">© 2026 TRYONYOU</p>
       </footer>
+
+      {/* Phase keyframes */}
+      <style>{`
+        @keyframes tryonRevealIn {
+          0% { opacity: 0; transform: translateX(20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }
