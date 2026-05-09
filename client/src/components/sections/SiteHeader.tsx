@@ -1,24 +1,33 @@
 /**
  * Maison Couture Nocturne — sticky header.
- * Style file reminders:
- * - Asymmetric: logo left, nav center, CTA right
- * - Hairline gold separator on scroll
- * - All-caps Inter 11px / 0.18em tracking
+ *
+ * Smart navigation:
+ *   - On the home page (/) anchor links scroll to sections.
+ *   - On other pages, anchor links navigate back to /#section.
+ *   - Route links (Try-On, Catalogue, Foot Scan, Investors) go through wouter.
  */
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 
-const NAV = [
+const ANCHORS = [
   { id: "probleme", label: "Le problème" },
   { id: "solution", label: "La solution" },
-  { id: "demo", label: "Démo" },
   { id: "technologie", label: "Technologie" },
   { id: "pilote", label: "Pilote" },
-  { id: "contact", label: "Contact" },
+];
+
+const ROUTES = [
+  { href: "/tryon", label: "Try-On" },
+  { href: "/catalogue", label: "Catalogue" },
+  { href: "/footscan", label: "Foot Scan" },
+  { href: "/investors", label: "Investors" },
 ];
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [location, setLocation] = useLocation();
+  const isHome = location === "/" || location === "";
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 30);
@@ -27,23 +36,36 @@ export default function SiteHeader() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  const handleAnchor = (id: string) => (e: React.MouseEvent) => {
+  const goAnchor = (id: string) => (e: React.MouseEvent) => {
     e.preventDefault();
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     setOpen(false);
+    if (isHome) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      // Navigate home then scroll
+      setLocation("/");
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
   };
 
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-700 ${
-        scrolled
+        scrolled || !isHome
           ? "backdrop-blur-md bg-[rgba(10,8,7,0.82)] border-b border-[rgba(201,168,76,0.25)]"
           : "bg-transparent"
       }`}
     >
       <div className="container flex items-center justify-between h-[72px] md:h-[88px]">
-        <a href="#hero" onClick={handleAnchor("hero")} className="group flex items-center gap-3">
+        <Link
+          href="/"
+          className="group flex items-center gap-3"
+          onClick={() => setOpen(false)}
+        >
           <span
             className="text-[var(--color-or)] font-display italic tracking-tight text-[22px] md:text-[26px]"
             style={{ fontFamily: "var(--font-display)" }}
@@ -54,25 +76,39 @@ export default function SiteHeader() {
           <span className="hidden md:inline-block text-[10px] tracking-[0.32em] uppercase text-[var(--color-fog)]">
             Maison Tech&nbsp;·&nbsp;Paris
           </span>
-        </a>
+        </Link>
 
-        <nav className="hidden lg:flex items-center gap-8">
-          {NAV.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              onClick={handleAnchor(item.id)}
-              className="text-[12px] tracking-[0.18em] uppercase text-[var(--color-ivoire)]/80 hover:text-[var(--color-or)] transition-colors duration-500"
+        <nav className="hidden lg:flex items-center gap-7">
+          {ROUTES.map((r) => (
+            <Link
+              key={r.href}
+              href={r.href}
+              className={`text-[12px] tracking-[0.18em] uppercase transition-colors duration-500 ${
+                location.startsWith(r.href)
+                  ? "text-[var(--color-or)]"
+                  : "text-[var(--color-ivoire)]/80 hover:text-[var(--color-or)]"
+              }`}
             >
-              {item.label}
+              {r.label}
+            </Link>
+          ))}
+          <span className="w-[1px] h-3 bg-white/15" />
+          {ANCHORS.map((a) => (
+            <a
+              key={a.id}
+              href={`#${a.id}`}
+              onClick={goAnchor(a.id)}
+              className="text-[12px] tracking-[0.18em] uppercase text-[var(--color-ivoire)]/65 hover:text-[var(--color-or)] transition-colors duration-500"
+            >
+              {a.label}
             </a>
           ))}
         </nav>
 
         <div className="hidden lg:flex">
-          <a href="#contact" onClick={handleAnchor("contact")} className="btn-or">
-            Demander une démo
-          </a>
+          <Link href="/tryon" className="btn-or">
+            Lancer la démo
+          </Link>
         </div>
 
         <button
@@ -94,26 +130,42 @@ export default function SiteHeader() {
       {/* Mobile sheet */}
       <div
         className={`lg:hidden overflow-hidden transition-[max-height] duration-700 ${
-          open ? "max-h-[80vh]" : "max-h-0"
+          open ? "max-h-[90vh]" : "max-h-0"
         }`}
       >
         <div className="container py-6 border-t border-[rgba(201,168,76,0.2)] bg-[var(--color-noir)]/95 backdrop-blur-md">
-          <ul className="flex flex-col gap-4">
-            {NAV.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  onClick={handleAnchor(item.id)}
-                  className="block text-[14px] tracking-[0.18em] uppercase text-[var(--color-ivoire)]/85 hover:text-[var(--color-or)] py-2"
+          <ul className="flex flex-col gap-3">
+            {ROUTES.map((r) => (
+              <li key={r.href}>
+                <Link
+                  href={r.href}
+                  className="block text-[14px] tracking-[0.18em] uppercase text-[var(--color-or)] py-2"
+                  onClick={() => setOpen(false)}
                 >
-                  {item.label}
+                  {r.label}
+                </Link>
+              </li>
+            ))}
+            <li className="my-2 hairline" />
+            {ANCHORS.map((a) => (
+              <li key={a.id}>
+                <a
+                  href={`#${a.id}`}
+                  onClick={goAnchor(a.id)}
+                  className="block text-[14px] tracking-[0.18em] uppercase text-[var(--color-ivoire)]/80 py-2"
+                >
+                  {a.label}
                 </a>
               </li>
             ))}
             <li className="pt-3">
-              <a href="#contact" onClick={handleAnchor("contact")} className="btn-or w-full justify-center">
-                Demander une démo
-              </a>
+              <Link
+                href="/tryon"
+                className="btn-or w-full justify-center"
+                onClick={() => setOpen(false)}
+              >
+                Lancer la démo
+              </Link>
             </li>
           </ul>
         </div>
