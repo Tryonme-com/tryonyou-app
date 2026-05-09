@@ -72,18 +72,18 @@ export default function SiteHeader() {
           >
             TRYONYOU
           </span>
-          <span className="hidden md:inline-block w-[1px] h-4 bg-[rgba(201,168,76,0.5)]" />
-          <span className="hidden md:inline-block text-[10px] tracking-[0.32em] uppercase text-[var(--color-fog)]">
+          <span className="hidden xl:inline-block w-[1px] h-4 bg-[rgba(201,168,76,0.5)]" />
+          <span className="hidden xl:inline-block text-[10px] tracking-[0.32em] uppercase text-[var(--color-fog)]">
             Maison Tech&nbsp;·&nbsp;Paris
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-7">
+        <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
           {ROUTES.map((r) => (
             <Link
               key={r.href}
               href={r.href}
-              className={`text-[12px] tracking-[0.18em] uppercase transition-colors duration-500 ${
+              className={`text-[11px] xl:text-[12px] tracking-[0.18em] uppercase whitespace-nowrap transition-colors duration-500 ${
                 location.startsWith(r.href)
                   ? "text-[var(--color-or)]"
                   : "text-[var(--color-ivoire)]/80 hover:text-[var(--color-or)]"
@@ -92,13 +92,13 @@ export default function SiteHeader() {
               {r.label}
             </Link>
           ))}
-          <span className="w-[1px] h-3 bg-white/15" />
+          <span className="hidden xl:inline-block w-[1px] h-3 bg-white/15" />
           {ANCHORS.map((a) => (
             <a
               key={a.id}
               href={`#${a.id}`}
               onClick={goAnchor(a.id)}
-              className="text-[12px] tracking-[0.18em] uppercase text-[var(--color-ivoire)]/65 hover:text-[var(--color-or)] transition-colors duration-500"
+              className="hidden xl:inline-block text-[12px] tracking-[0.18em] uppercase whitespace-nowrap text-[var(--color-ivoire)]/65 hover:text-[var(--color-or)] transition-colors duration-500"
             >
               {a.label}
             </a>
@@ -106,7 +106,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="hidden lg:flex">
-          <Link href="/tryon" className="btn-or">
+          <Link href="/tryon" className="btn-or whitespace-nowrap">
             Lancer la démo
           </Link>
         </div>
