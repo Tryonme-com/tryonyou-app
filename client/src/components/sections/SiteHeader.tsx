@@ -20,6 +20,10 @@ const ANCHORS = [
 const ROUTES = [
   { href: "/tryon", label: "Try-On" },
   { href: "/catalogue", label: "Catalogue" },
+  { href: "/offre", label: "Offre", accent: true },
+];
+
+const SECONDARY_ROUTES = [
   { href: "/footscan", label: "Foot Scan" },
   { href: "/investors", label: "Investors" },
 ];
@@ -97,6 +101,8 @@ export default function SiteHeader() {
               className={`text-[11px] tracking-[0.22em] uppercase whitespace-nowrap transition-colors duration-500 ${
                 location.startsWith(r.href)
                   ? "text-[var(--color-or)]"
+                  : (r as any).accent
+                  ? "text-[var(--color-or)] hover:text-white"
                   : "text-[var(--color-ivoire)]/80 hover:text-[var(--color-or)]"
               }`}
             >
@@ -134,6 +140,18 @@ export default function SiteHeader() {
                 onMouseEnter={openMore}
                 onMouseLeave={scheduleCloseMore}
               >
+                {SECONDARY_ROUTES.map((r) => (
+                  <Link
+                    key={r.href}
+                    href={r.href}
+                    onClick={() => setMoreOpen(false)}
+                    className="block px-4 py-2.5 text-[11px] tracking-[0.22em] uppercase text-[var(--color-ivoire)]/75 hover:text-[var(--color-or)] hover:bg-[rgba(201,168,76,0.06)] transition-colors duration-300"
+                    role="menuitem"
+                  >
+                    {r.label}
+                  </Link>
+                ))}
+                <div className="my-1 border-t border-[rgba(201,168,76,0.15)]" />
                 {ANCHORS.map((a) => (
                   <a
                     key={a.id}
@@ -180,7 +198,7 @@ export default function SiteHeader() {
       >
         <div className="container py-6 border-t border-[rgba(201,168,76,0.2)] bg-[var(--color-noir)]/95 backdrop-blur-md">
           <ul className="flex flex-col gap-3">
-            {ROUTES.map((r) => (
+            {[...ROUTES, ...SECONDARY_ROUTES].map((r) => (
               <li key={r.href}>
                 <Link
                   href={r.href}

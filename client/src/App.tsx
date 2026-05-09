@@ -9,6 +9,7 @@ import TryOn from "./pages/TryOn";
 import Catalogue from "./pages/Catalogue";
 import FootScan from "./pages/FootScan";
 import Investors from "./pages/Investors";
+import Offre from "./pages/Offre";
 
 function Router() {
   return (
@@ -18,6 +19,8 @@ function Router() {
       <Route path={"/catalogue"} component={Catalogue} />
       <Route path={"/footscan"} component={FootScan} />
       <Route path={"/investors"} component={Investors} />
+      <Route path={"/offre"} component={Offre} />
+      <Route path={"/offer"} component={Offre} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
