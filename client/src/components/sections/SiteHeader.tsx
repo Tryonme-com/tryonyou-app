@@ -20,6 +20,7 @@ const ANCHORS = [
 const ROUTES = [
   { href: "/tryon", label: "Try-On" },
   { href: "/catalogue", label: "Catalogue" },
+  { href: "/manifeste", label: "Manifeste" },
   { href: "/offre", label: "Offre", accent: true },
 ];
 

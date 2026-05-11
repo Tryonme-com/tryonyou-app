@@ -58,6 +58,11 @@
   --color-or-deep: #9B7E2E;
   --color-ivoire: #F5EFE0;
   --color-fog: #B8B0A0;
+
+  /* Palette du Manifeste Galeries Lafayette */
+  --color-anthracite: #141619;
+  --color-or-luxe: #C5A46D;
+  --color-beige-clair: #F5EFE6;
 }
 
 :root {
@@ -408,6 +413,24 @@
     font-style: italic;
     font-weight: 400;
     color: var(--color-or);
+  }
+
+  /* Glassmorphism manifeste */
+  .glass-card {
+    background: linear-gradient(135deg, rgba(20, 22, 25, 0.78) 0%, rgba(20, 22, 25, 0.55) 100%);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid rgba(197, 164, 109, 0.22);
+    box-shadow: 0 18px 50px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(197, 164, 109, 0.04) inset;
+  }
+
+  /* Pavo Real golden dust effect */
+  @keyframes golden-dust {
+    0%, 100% { opacity: 0.55; transform: translateY(0) scale(1); }
+    50% { opacity: 0.95; transform: translateY(-6px) scale(1.05); }
+  }
+  .dust-particle {
+    animation: golden-dust 3.2s ease-in-out infinite;
   }
 
   /* Grain overlay for sections */
