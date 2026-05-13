@@ -445,3 +445,11 @@
     pointer-events: none;
   }
 }
+
+
+/* /tryon — projection panel reveal */
+@keyframes tryonRevealIn {
+  0%   { opacity: 0; transform: translateX(24px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateX(0); }
+}

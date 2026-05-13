@@ -41,3 +41,40 @@
 
 ## Phase 7 — Livraison
 - [ ] Rapport + checkpoint
+
+
+---
+
+# /tryon v2.5 — refonte UX zéro-chiffre + Robert Engine + biométrie filtrée
+
+## Modules techniques
+- [ ] `lib/robert-engine.ts` (copié depuis upload, intégré au build TS)
+- [ ] `lib/biometric.ts` — Filtre EMA stable, layer subtraction, gyroscope tilt, calcul métriques (sans chiffres exposés à l'UI), score de confiance
+- [ ] `lib/landmarkLabels.ts` — 33 landmarks groupés en chapitres FR
+
+## Refonte TryOn.tsx — flow 4 phases zéro-chiffre
+- [ ] Phase **SCAN** : caméra + wireframe doré + scan animé sur la silhouette, JAMAIS de cm. Status "Verrouillage biométrique"
+- [ ] Phase **MATCHING** : anneau de progression doré, "Analyse morphologique", "Comparaison avec la collection", défilement éclair de vignettes, "Ajustement parfait trouvé"
+- [ ] Phase **PROJECTION** : Robert Engine drape le vêtement en suivant les landmarks lissés. Temps réel.
+- [ ] Phase **BROWSE** : navigation entre garments avec mini re-MATCHING (~700 ms) entre transitions
+
+## Overlays UI
+- [ ] Indicateur "Robert Engine Active · [profil tissu]"
+- [ ] Panneau Zero-Size (barres de confiance — sans chiffres)
+- [ ] Mini-carte des 33 landmarks groupés FR, escamotable
+- [ ] Sélecteur tissu inline pendant BROWSE (5 chips ronds dorés)
+
+## Section B2B technique sous la caméra
+- [ ] 33 points biométriques en 22 ms
+- [ ] Filtrage Kalman/EMA stable
+- [ ] Robert Engine — physique de tissu temps réel
+- [ ] Protocole Zero-Size : zéro donnée manuelle
+- [ ] Brevet PCT/EP2025/067317
+
+## Déploiement
+- [ ] Build TRYONYOU_VERCEL=1
+- [ ] Copie médias dist/public/images/
+- [ ] Strip analytics
+- [ ] Deploy Vercel
+- [ ] Verify routes 200
+- [ ] webdev_save_checkpoint v2.5

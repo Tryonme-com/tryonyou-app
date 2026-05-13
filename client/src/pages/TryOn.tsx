@@ -1,22 +1,20 @@
 /**
- * TRYONYOU — /tryon
+ * TRYONYOU — /tryon (v2.5)
  *
- * Cinematic four-phase try-on experience.
+ * Parcours UX en 4 phases — ZÉRO chiffre exposé à l'utilisateur :
+ *   1. SCAN        — caméra + wireframe doré + scan animé sur la silhouette
+ *                    (33 landmarks MediaPipe lissés par EMA, jamais affichés en cm)
+ *   2. MATCHING    — anneau de progression doré + libellés successifs :
+ *                    « Analyse morphologique » → « Comparaison avec la collection »
+ *                    → vignettes filantes → « Ajustement parfait trouvé »
+ *   3. PROJECTION  — Robert Engine drape le vêtement choisi sur le corps,
+ *                    physique de tissu temps réel (drape, gravité, élasticité)
+ *   4. BROWSE      — l'utilisateur navigue, chaque tissu re-projeté avec mini-MATCHING
  *
- * Performance optimisations applied:
- *   - MediaPipe Pose is lazy-loaded only when the user enters this page (dynamic import of the
- *     CDN script via a helper that resolves after window.Pose is available).
- *   - Camera resolution is adaptive: 1280×720 on desktop, 640×480 on mobile.
- *   - Canvas is capped to viewport dimensions so it never renders more pixels than needed.
- *   - modelComplexity: 0 (lite model) — faster inference, good enough for body tracking.
- *   - selfieMode: true — MediaPipe handles the mirror flip internally, no extra transform needed
- *     (we keep CSS scaleX(-1) only on the video element for visual parity).
- *   - Pose results are applied synchronously in onResults; no artificial delays.
- *   - Frame-rate throttle: on mobile, pose.send() is called every 100 ms instead of 50 ms.
- *   - will-change: transform on the canvas element.
- *   - Particle system uses typed Float32Array + LUT (see cinematic.ts).
+ * Sous la caméra : section éditoriale B2B (33 pts en 22 ms, EMA stable, Robert,
+ * Zero-Size Protocol, brevet PCT/EP2025/067317).
  *
- * Style: Maison Couture Nocturne — gold-on-graphite.
+ * © 2025-2026 Rubén Espinar Rodríguez — Brevet PCT/EP2025/067317
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,7 +22,6 @@ import { Link } from "wouter";
 import { FEATURED, FABRICS } from "@/lib/catalog";
 import { LANG_PACKS, type Lang } from "@/lib/i18n";
 import { loadOverlayImage } from "@/lib/garmentOverlays";
-import { drawGarmentOverlay } from "@/lib/overlayRenderer";
 import {
   GoldenSwirl,
   bodyBox,
@@ -33,14 +30,30 @@ import {
   easeOutCubic,
   isPoseUsable,
 } from "@/lib/cinematic";
+import {
+  LandmarkFilter,
+  GyroCorrector,
+  detectLayer,
+  computeMetrics,
+  fitLabel,
+  POSE_INDEX,
+  type FilteredLandmark,
+  type ZeroSizeMetrics,
+} from "@/lib/biometric";
+import {
+  PILOT_FABRIC_PHYSICS,
+  robertRenderGarment,
+  type BodyAnchors,
+} from "@/lib/robert-engine";
+import { LANDMARK_CHAPTERS } from "@/lib/landmarkLabels";
 
-// Phase durations (ms)
-const T_CAMERA_MIN = 1400;
-const T_WIREFRAME = 2400;
-const T_SWIRL = 2800;
+// ─── Phase timings (ms) ──────────────────────────────────────────────────
+const T_SCAN_MIN = 1800;
+const T_MATCHING = 2600;
 const T_REVEAL_FADE_IN = 900;
+const T_BROWSE_REMATCH = 700;
 
-type Phase = "permission" | "camera" | "wireframe" | "swirl" | "reveal";
+type Phase = "permission" | "scan" | "matching" | "projection" | "browse";
 
 declare global {
   interface Window {
@@ -49,17 +62,13 @@ declare global {
   }
 }
 
-// Detect mobile once (used for resolution + pose interval)
 const IS_MOBILE =
   typeof window !== "undefined" &&
   (window.innerWidth < 768 || (navigator.hardwareConcurrency ?? 8) < 4);
 
-// --------------------------------------------------------------------------
-// Lazy MediaPipe loader — only fetches the CDN script when called
-// --------------------------------------------------------------------------
+// ─── Lazy MediaPipe loader ────────────────────────────────────────────────
 let poseScriptLoaded = false;
 let poseScriptPromise: Promise<void> | null = null;
-
 function lazyLoadPoseScript(): Promise<void> {
   if (poseScriptLoaded) return Promise.resolve();
   if (poseScriptPromise) return poseScriptPromise;
@@ -80,9 +89,7 @@ function lazyLoadPoseScript(): Promise<void> {
   return poseScriptPromise;
 }
 
-// --------------------------------------------------------------------------
-// Language selector
-// --------------------------------------------------------------------------
+// ─── Sélecteur de langue (compact) ─────────────────────────────────────────
 function LangSelector({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   const langs: { code: Lang; flag: string; label: string }[] = [
     { code: "fr", flag: "🇫🇷", label: "FR" },
@@ -108,14 +115,24 @@ function LangSelector({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
   );
 }
 
-// --------------------------------------------------------------------------
-// Main component
-// --------------------------------------------------------------------------
+// ─── Étapes de matching (libellés FR) ─────────────────────────────────────
+const MATCHING_STEPS = [
+  "Analyse morphologique",
+  "Comparaison avec la collection",
+  "Calcul des coefficients de drapé",
+  "Ajustement parfait trouvé",
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════════
 export default function TryOn() {
   const [lang, setLang] = useState<Lang>("fr");
   const [phase, setPhase] = useState<Phase>("permission");
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [transitioning, setTransitioning] = useState(false);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [matchingStep, setMatchingStep] = useState(0);
+  const [metrics, setMetrics] = useState<ZeroSizeMetrics | null>(null);
 
   const initialIdx = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -126,36 +143,52 @@ export default function TryOn() {
   }, []);
   const [currentIdx, setCurrentIdx] = useState(initialIdx);
 
+  // Refs DOM
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Refs render loop
   const rafRef = useRef<number>(0);
   const poseRef = useRef<any>(null);
   const poseReadyRef = useRef(false);
   const lastSendRef = useRef(0);
   const overlaysRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  const anchorRef = useRef({
-    cx: 0, sy: 0, hy: 0, sw: 0, angle: 0,
-    detected: false, lastDetectedTime: 0,
+  // Robert / biométrie
+  const filterRef = useRef(new LandmarkFilter(0.35));
+  const gyroRef = useRef(new GyroCorrector());
+  const filteredRef = useRef<FilteredLandmark[] | null>(null);
+  const shoulderHistRef = useRef<number[]>([]);
+  const torsoYHistRef = useRef<number[]>([]);
+  const detectionStartRef = useRef<number>(performance.now());
+  const metricsRef = useRef<ZeroSizeMetrics | null>(null);
+
+  // Anchor pour Robert
+  const anchorRef = useRef<BodyAnchors>({
+    cx: 0, shoulderY: 0, hipY: 0, shoulderW: 0, angle: 0, hasBody: false,
   });
 
+  // Phase machine
   const phaseRef = useRef<Phase>("permission");
   const idxRef = useRef(currentIdx);
-  const cameraStartRef = useRef(0);
-  const wireframeStartRef = useRef(0);
-  const swirlStartRef = useRef(0);
-  const revealStartRef = useRef(0);
+  const scanStartRef = useRef(0);
+  const matchingStartRef = useRef(0);
+  const projectionStartRef = useRef(0);
   const swirlRef = useRef<GoldenSwirl>(new GoldenSwirl());
+  const fitScoreRef = useRef(86);
 
   const t = LANG_PACKS[lang];
   const garment = FEATURED[currentIdx];
   const fabric = FABRICS[garment.fabricKey];
+  const robertProfile = PILOT_FABRIC_PHYSICS[garment.id];
+  const robertActive = !!robertProfile;
+  const isAccessory = garment.type === "accessoire";
 
   useEffect(() => { idxRef.current = currentIdx; }, [currentIdx]);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
 
-  // Preload garment overlays in the background
+  // Précharge des overlays
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -165,18 +198,16 @@ export default function TryOn() {
           try {
             const img = await loadOverlayImage(g);
             overlaysRef.current.set(g.id, img);
-          } catch (e) {
-            console.warn("[TRYONYOU] overlay load failed:", g.id, e);
-          }
+          } catch (e) { console.warn("[TRYONYOU] overlay load failed:", g.id, e); }
         }
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // ------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────
   // RENDER LOOP
-  // ------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────
   const renderFrame = useCallback(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -187,7 +218,6 @@ export default function TryOn() {
     const ctx = canvas.getContext("2d", { willReadFrequently: false });
     if (!ctx) return;
 
-    // Cap canvas to viewport to avoid over-rendering on mobile
     const vpW = Math.min(video.videoWidth || 1280, window.innerWidth);
     const vpH = Math.min(video.videoHeight || 720, window.innerHeight);
     if (canvas.width !== vpW || canvas.height !== vpH) {
@@ -196,33 +226,31 @@ export default function TryOn() {
     }
     const W = canvas.width;
     const H = canvas.height;
-
     ctx.clearRect(0, 0, W, H);
 
     const a = anchorRef.current;
     const now = performance.now();
-    const wallNow = Date.now();
-    const hasBody = a.detected && wallNow - a.lastDetectedTime < 1500;
-    const lm = window.__tryon_landmarks;
-    const usablePose = isPoseUsable(lm);
+    const filtered = filteredRef.current;
+    const usablePose = isPoseUsable(filtered as any);
 
-    // Phase transitions
-    if (phaseRef.current === "camera") {
-      const sinceStart = now - cameraStartRef.current;
-      if (sinceStart > T_CAMERA_MIN && usablePose) {
-        wireframeStartRef.current = now;
-        setPhase("wireframe");
+    // ─── Transitions de phase ───
+    if (phaseRef.current === "scan") {
+      const sinceStart = now - scanStartRef.current;
+      if (sinceStart > T_SCAN_MIN && usablePose) {
+        // Passe en MATCHING
+        matchingStartRef.current = now;
+        setMatchingStep(0);
+        setPhase("matching");
       }
-    } else if (phaseRef.current === "wireframe") {
-      if (now - wireframeStartRef.current > T_WIREFRAME) {
-        swirlStartRef.current = now;
+    } else if (phaseRef.current === "matching") {
+      const since = now - matchingStartRef.current;
+      const stepDur = T_MATCHING / MATCHING_STEPS.length;
+      const newStep = Math.min(MATCHING_STEPS.length - 1, Math.floor(since / stepDur));
+      if (newStep !== matchingStep) setMatchingStep(newStep);
+      if (since > T_MATCHING) {
+        projectionStartRef.current = now;
         swirlRef.current.start(now);
-        setPhase("swirl");
-      }
-    } else if (phaseRef.current === "swirl") {
-      if (now - swirlStartRef.current > T_SWIRL) {
-        revealStartRef.current = now;
-        setPhase("reveal");
+        setPhase("projection");
       }
     }
 
@@ -232,70 +260,108 @@ export default function TryOn() {
       width: portrait ? W * 0.55 : W * 0.32,
       height: H * 0.65,
     };
-    const live = lm ? bodyBox(lm, W, H) : null;
+    const live = filtered ? bodyBox(filtered as any, W, H) : null;
     const box = live ?? fallbackBox;
 
-    // Halo (wireframe onward)
-    if (phaseRef.current !== "camera" && phaseRef.current !== "permission") {
+    // ─── Halo ambiant (toutes phases > scan) ───
+    if (phaseRef.current !== "permission") {
       const haloR = Math.max(box.width, box.height) * 0.7;
       const halo = ctx.createRadialGradient(box.cx, box.cy, 0, box.cx, box.cy, haloR);
-      halo.addColorStop(0, "rgba(201,168,76,0.10)");
-      halo.addColorStop(0.6, "rgba(201,168,76,0.04)");
-      halo.addColorStop(1, "rgba(201,168,76,0)");
+      halo.addColorStop(0, "rgba(197,164,109,0.10)");
+      halo.addColorStop(0.6, "rgba(197,164,109,0.04)");
+      halo.addColorStop(1, "rgba(197,164,109,0)");
       ctx.fillStyle = halo;
       ctx.beginPath();
       ctx.arc(box.cx, box.cy, haloR, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    if (phaseRef.current === "wireframe") {
-      const since = now - wireframeStartRef.current;
+    // ─── PHASE SCAN : wireframe doré + barre de scan verticale ───
+    if (phaseRef.current === "scan") {
+      const since = now - scanStartRef.current;
       const fadeIn = Math.min(1, since / 600);
-      const pulse = 0.5 + 0.5 * lutSin(now * 0.004);
-      if (usablePose && lm) drawTriangulatedAvatar(ctx, lm, W, H, easeOutCubic(fadeIn), pulse);
-    } else if (phaseRef.current === "swirl") {
-      const swirlT = Math.min(1, (now - swirlStartRef.current) / T_SWIRL);
-      const wireFade = Math.max(0, 1 - swirlT / 0.6);
-      if (usablePose && lm && wireFade > 0.05) {
-        drawTriangulatedAvatar(ctx, lm, W, H, wireFade, 1);
+      const pulse = 0.5 + 0.5 * Math.sin(now * 0.004);
+      if (usablePose && filtered) {
+        drawTriangulatedAvatar(ctx, filtered as any, W, H, easeOutCubic(fadeIn), pulse);
       }
-      swirlRef.current.update(ctx, box, now, T_SWIRL);
-    } else if (phaseRef.current === "reveal") {
-      const sinceReveal = now - revealStartRef.current;
-      const eased = easeInOutCubic(Math.min(1, sinceReveal / T_REVEAL_FADE_IN));
+      // Ligne de scan verticale (effet "miroir intelligent")
+      const scanY = box.cy - box.height / 2 +
+        ((Math.sin(now * 0.002) + 1) / 2) * box.height;
+      const scanGrad = ctx.createLinearGradient(0, scanY - 30, 0, scanY + 30);
+      scanGrad.addColorStop(0, "rgba(197,164,109,0)");
+      scanGrad.addColorStop(0.5, "rgba(232,210,155,0.55)");
+      scanGrad.addColorStop(1, "rgba(197,164,109,0)");
+      ctx.fillStyle = scanGrad;
+      ctx.fillRect(box.cx - box.width * 0.6, scanY - 30, box.width * 1.2, 60);
+    }
 
-      // Residual sparkle
-      if (sinceReveal < 700 && usablePose) {
+    // ─── PHASE MATCHING : wireframe persiste + swirl léger ───
+    if (phaseRef.current === "matching") {
+      const since = now - matchingStartRef.current;
+      const tMatch = Math.min(1, since / T_MATCHING);
+      const wireFade = 1 - tMatch * 0.6;
+      if (usablePose && filtered) {
+        drawTriangulatedAvatar(ctx, filtered as any, W, H, wireFade, 0.7);
+      }
+      // Particules dorées discrètes pendant le matching
+      if (since < T_MATCHING * 0.8) {
+        if (since < 50) swirlRef.current.start(now);
         ctx.save();
-        ctx.globalAlpha = (1 - Math.min(1, sinceReveal / 700)) * 0.6;
-        swirlRef.current.update(ctx, box, now, T_SWIRL * 0.5);
+        ctx.globalAlpha = 0.55;
+        swirlRef.current.update(ctx, box, now, T_MATCHING * 1.2);
+        ctx.restore();
+      }
+    }
+
+    // ─── PHASE PROJECTION / BROWSE : Robert Engine ───
+    if (phaseRef.current === "projection" || phaseRef.current === "browse") {
+      const sinceProj = now - projectionStartRef.current;
+      const eased = easeInOutCubic(Math.min(1, sinceProj / T_REVEAL_FADE_IN));
+
+      // Étincelles résiduelles au tout début de la projection
+      if (sinceProj < 700 && usablePose) {
+        ctx.save();
+        ctx.globalAlpha = (1 - Math.min(1, sinceProj / 700)) * 0.7;
+        swirlRef.current.update(ctx, box, now, T_MATCHING * 0.8);
         ctx.restore();
       }
 
-      // Garment overlay
+      // Garment overlay via Robert Engine (physique de tissu temps réel)
       const g = FEATURED[idxRef.current];
       const img = overlaysRef.current.get(g.id);
       if (img) {
-        const baseAnchor = hasBody
-          ? { cx: a.cx, shoulderY: a.sy, hipY: a.hy, shoulderW: a.sw, angle: a.angle, hasBody: true }
+        const baseAnchor: BodyAnchors = a.hasBody
+          ? { ...a }
           : {
               cx: W / 2,
               shoulderY: (portrait ? H * 0.38 : H * 0.28) + Math.sin(now * 0.0015) * 6,
               hipY: (portrait ? H * 0.68 : H * 0.62) + Math.sin(now * 0.0015) * 6,
               shoulderW: portrait ? W * 0.35 : W * 0.24,
-              angle: 0, hasBody: false,
+              angle: 0,
+              hasBody: false,
             };
         ctx.save();
         ctx.globalAlpha = eased;
-        try { drawGarmentOverlay(ctx, img, baseAnchor, g, 96, W, H); }
-        catch (e) { console.warn("[TRYONYOU] overlay error:", e); }
+        try {
+          robertRenderGarment(
+            ctx,
+            img,
+            baseAnchor,
+            g.id,
+            fitScoreRef.current,
+            g.type === "accessoire",
+            W,
+            H
+          );
+        } catch (e) { console.warn("[TRYONYOU] robert error:", e); }
         ctx.restore();
       }
     }
 
-    // Send frame to MediaPipe — adaptive interval
+    // ─── Send frame to MediaPipe ───
     if (poseReadyRef.current && poseRef.current && video.readyState >= 2) {
       const interval = IS_MOBILE ? 100 : 50;
+      const wallNow = Date.now();
       if (wallNow - lastSendRef.current > interval) {
         lastSendRef.current = wallNow;
         try { poseRef.current.send({ image: video }); }
@@ -304,11 +370,11 @@ export default function TryOn() {
     }
 
     rafRef.current = requestAnimationFrame(renderFrame);
-  }, []);
+  }, [matchingStep]);
 
-  // ------------------------------------------------------------------
-  // MediaPipe init — lazy, lite model, selfieMode
-  // ------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────
+  // POSE INIT — résultats lissés via biometric.LandmarkFilter
+  // ──────────────────────────────────────────────────────────────────────
   const initPose = useCallback(async (): Promise<boolean> => {
     try {
       await lazyLoadPoseScript();
@@ -319,43 +385,61 @@ export default function TryOn() {
           `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`,
       });
       pose.setOptions({
-        modelComplexity: 0,          // lite model — faster on mobile
+        modelComplexity: 0,
         smoothLandmarks: true,
         enableSegmentation: false,
-        selfieMode: true,            // MediaPipe handles mirror internally
+        selfieMode: true,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5,
       });
       pose.onResults((results: any) => {
         if (!results.poseLandmarks || results.poseLandmarks.length < 25) return;
-        const L = results.poseLandmarks;
-        const lShoulder = L[11], rShoulder = L[12], lHip = L[23], rHip = L[24];
-        if (!lShoulder || !rShoulder || !lHip || !rHip ||
-            lShoulder.visibility < 0.3 || rShoulder.visibility < 0.3) return;
+        const raw = results.poseLandmarks;
+
+        // 1. Filtrage EMA stable (anti-jitter)
+        let filtered = filterRef.current.apply(raw);
+        // 2. Compensation gyroscope (perspective fix)
+        filtered = filtered.map((l) => gyroRef.current.correct(l));
+        filteredRef.current = filtered;
+        window.__tryon_landmarks = filtered;
+
+        const lSh = filtered[POSE_INDEX.L_SHOULDER];
+        const rSh = filtered[POSE_INDEX.R_SHOULDER];
+        const lHip = filtered[POSE_INDEX.L_HIP];
+        const rHip = filtered[POSE_INDEX.R_HIP];
+        if (!lSh || !rSh || !lHip || !rHip) return;
+        if (lSh.visibility < 0.3 || rSh.visibility < 0.3) return;
 
         const c = canvasRef.current;
         const W = c?.width || 1280;
         const H = c?.height || 720;
-        const lx = lShoulder.x * W, rx = rShoulder.x * W;
+        const lx = lSh.x * W, rx = rSh.x * W;
         const cx = (lx + rx) / 2;
-        const sy = ((lShoulder.y + rShoulder.y) / 2) * H;
+        const sy = ((lSh.y + rSh.y) / 2) * H;
         const hy = ((lHip.y + rHip.y) / 2) * H;
         const sw = Math.abs(rx - lx);
-        const angle = Math.atan2((rShoulder.y - lShoulder.y) * H, rx - lx);
-        const k = 0.35;
-        const prev = anchorRef.current;
-        const fresh = prev.detected && Date.now() - prev.lastDetectedTime < 1000;
+        const angle = Math.atan2((rSh.y - lSh.y) * H, rx - lx);
+
         anchorRef.current = {
-          cx: fresh ? prev.cx + (cx - prev.cx) * k : cx,
-          sy: fresh ? prev.sy + (sy - prev.sy) * k : sy,
-          hy: fresh ? prev.hy + (hy - prev.hy) * k : hy,
-          sw: fresh ? prev.sw + (sw - prev.sw) * k : sw,
-          angle: fresh ? prev.angle + (angle - prev.angle) * k : angle,
-          detected: true,
-          lastDetectedTime: Date.now(),
+          cx, shoulderY: sy, hipY: hy, shoulderW: sw, angle, hasBody: true,
         };
-        // Store full landmark array for wireframe drawing (synchronous, no delay)
-        window.__tryon_landmarks = L;
+
+        // 3. Layer subtraction — historique court pour détection
+        shoulderHistRef.current.push(sw);
+        torsoYHistRef.current.push((hy - sy) / Math.max(1, H));
+        if (shoulderHistRef.current.length > 30) shoulderHistRef.current.shift();
+        if (torsoYHistRef.current.length > 30) torsoYHistRef.current.shift();
+        const layer = detectLayer(shoulderHistRef.current, torsoYHistRef.current);
+
+        // 4. Calcul des métriques (stockées, jamais affichées en chiffres)
+        const m = computeMetrics(filtered, W, H, layer, detectionStartRef.current);
+        if (m) {
+          metricsRef.current = m;
+          // throttle setState pour éviter de re-render à 60Hz
+          if (Math.random() < 0.12) setMetrics(m);
+          // Fit score utilisé par Robert pour moduler l'opacité
+          fitScoreRef.current = Math.round(70 + m.lockScore * 28);
+        }
       });
       await pose.initialize();
       poseRef.current = pose;
@@ -367,9 +451,9 @@ export default function TryOn() {
     }
   }, []);
 
-  // ------------------------------------------------------------------
-  // Camera startup — adaptive resolution
-  // ------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────
+  // Démarrage caméra
+  // ──────────────────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
     setPermissionDenied(false);
     const constraints: MediaStreamConstraints = {
@@ -391,217 +475,661 @@ export default function TryOn() {
       setPhase("permission");
       return;
     }
-    cameraStartRef.current = performance.now();
-    setPhase("camera");
+    detectionStartRef.current = performance.now();
+    scanStartRef.current = performance.now();
+    filterRef.current.reset();
+    gyroRef.current.start();
+    setPhase("scan");
     rafRef.current = requestAnimationFrame(renderFrame);
-    initPose(); // fire-and-forget; render loop handles the fallback
+    initPose();
 
-    // Safety net: advance to wireframe after 7 s even without pose
+    // Filet de sécurité : bascule en matching après 7 s même sans pose
     setTimeout(() => {
-      if (phaseRef.current === "camera") {
-        wireframeStartRef.current = performance.now();
-        setPhase("wireframe");
+      if (phaseRef.current === "scan") {
+        matchingStartRef.current = performance.now();
+        setMatchingStep(0);
+        setPhase("matching");
       }
     }, 7000);
   }, [initPose, renderFrame]);
 
-  const cycleGarment = useCallback(() => {
-    setTransitioning(true);
+  // ──────────────────────────────────────────────────────────────────────
+  // BROWSE — passe à la pièce suivante avec mini re-MATCHING
+  // ──────────────────────────────────────────────────────────────────────
+  const projectGarment = useCallback((idx: number) => {
+    setCurrentIdx(idx);
+    // Mini-MATCHING court (~700 ms)
+    matchingStartRef.current = performance.now();
+    setMatchingStep(MATCHING_STEPS.length - 1);
+    setPhase("matching");
     setTimeout(() => {
-      setCurrentIdx((i) => (i + 1) % FEATURED.length);
-      setTransitioning(false);
-    }, 500);
+      if (phaseRef.current === "matching") {
+        projectionStartRef.current = performance.now();
+        swirlRef.current.start(performance.now());
+        setPhase("browse");
+      }
+    }, T_BROWSE_REMATCH);
   }, []);
 
-  const replayCinematic = useCallback(() => {
-    if (phaseRef.current === "permission") return;
-    cameraStartRef.current = performance.now();
-    setPhase("camera");
-    setTimeout(() => {
-      if (phaseRef.current === "camera") {
-        wireframeStartRef.current = performance.now();
-        setPhase("wireframe");
-      }
-    }, T_CAMERA_MIN + 200);
-  }, []);
+  const cycleNext = useCallback(() => {
+    projectGarment((idxRef.current + 1) % FEATURED.length);
+  }, [projectGarment]);
+  const cyclePrev = useCallback(() => {
+    projectGarment((idxRef.current - 1 + FEATURED.length) % FEATURED.length);
+  }, [projectGarment]);
+
+  // Quand projection se termine la première fois, on auto-passe en browse
+  useEffect(() => {
+    if (phase === "projection") {
+      const id = setTimeout(() => {
+        if (phaseRef.current === "projection") setPhase("browse");
+      }, 1800);
+      return () => clearTimeout(id);
+    }
+  }, [phase]);
+
+  // Listener global pour le sélecteur de profil tissu (FabricChips)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.idx === "number") projectGarment(detail.idx);
+    };
+    window.addEventListener("tryon-pick-garment", handler);
+    return () => window.removeEventListener("tryon-pick-garment", handler);
+  }, [projectGarment]);
 
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach((tk) => tk.stop());
+      gyroRef.current.stop();
     };
   }, []);
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Rendu
+  // ──────────────────────────────────────────────────────────────────────
   const phaseLabel: string | null =
-    phase === "camera" ? t.phaseCalibration
-    : phase === "wireframe" ? t.phaseAnalysis
-    : phase === "swirl" ? t.phaseMaterializing
-    : phase === "reveal" ? t.phaseReady
+    phase === "scan" ? "Verrouillage biométrique"
+    : phase === "matching" ? MATCHING_STEPS[matchingStep]
+    : phase === "projection" ? "Projection en cours"
+    : phase === "browse" ? "Robert Engine actif"
     : null;
 
   return (
-    <div className="relative w-full h-screen bg-[var(--color-noir)] overflow-hidden">
-      {/* Video — mirror via CSS; selfieMode handles MediaPipe flip */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{ transform: "scaleX(-1)" }}
-      />
-      {/* Canvas — will-change: transform for GPU compositing hint */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full z-10 pointer-events-none"
-        style={{ transform: "scaleX(-1)", objectFit: "cover", willChange: "transform" }}
-      />
+    <div className="relative w-full bg-[var(--color-noir)]">
+      {/* ── Zone caméra plein écran ── */}
+      <div className="relative w-full h-screen overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{ transform: "scaleX(-1)" }}
+        />
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+          style={{ transform: "scaleX(-1)", objectFit: "cover", willChange: "transform" }}
+        />
 
-      {/* Top bar */}
-      <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/70 to-transparent">
-        <Link
-          href="/"
-          className="text-[10px] tracking-[0.32em] uppercase text-white/60 hover:text-[var(--color-or)] transition-colors"
-        >
-          ← {t.back}
-        </Link>
-        <div className="font-display text-[var(--color-or)] text-[18px] tracking-[0.32em]">
-          {t.brand}
-        </div>
-        <LangSelector lang={lang} setLang={setLang} />
-      </header>
-
-      {/* Phase HUD */}
-      {phaseLabel && phase !== "permission" && (
-        <div
-          key={phase}
-          className="absolute left-1/2 top-24 -translate-x-1/2 z-30 pointer-events-none"
-        >
-          <div className="flex items-center gap-3 px-4 py-2 rounded-sm bg-[var(--color-noir)]/55 backdrop-blur-sm border border-[var(--color-or)]/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-or)] animate-pulse" />
-            <span className="text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]">
-              {phaseLabel}
-            </span>
+        {/* Top bar */}
+        <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/70 to-transparent">
+          <Link
+            href="/"
+            className="text-[10px] tracking-[0.32em] uppercase text-white/60 hover:text-[var(--color-or)] transition-colors"
+          >
+            ← {t.back}
+          </Link>
+          <div className="font-display text-[var(--color-or)] text-[18px] tracking-[0.32em]">
+            {t.brand}
           </div>
-        </div>
-      )}
+          <LangSelector lang={lang} setLang={setLang} />
+        </header>
 
-      {/* Permission overlay */}
-      {phase === "permission" && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--color-noir)]/92 backdrop-blur-md">
-          <div className="max-w-md text-center px-8">
-            <div className="font-display text-[var(--color-or)] italic text-[42px] leading-tight mb-4">
-              {t.permissionTitle}
-            </div>
-            <p className="text-[15px] text-white/70 leading-[1.7] mb-8">{t.permissionLede}</p>
-            {permissionDenied && (
-              <p className="text-[12px] text-red-400/80 mb-4">{t.permissionDenied}</p>
-            )}
-            <button onClick={startCamera} className="btn-or inline-flex">
-              {t.permissionCTA} <span aria-hidden>→</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Side panel — reveal phase only */}
-      {phase === "reveal" && (
-        <aside
-          className={`absolute right-0 top-0 bottom-0 w-full sm:w-[380px] z-20 bg-[var(--color-noir)]/85 backdrop-blur-md border-l border-white/5 flex flex-col p-6 pt-20 transition-all duration-700 ${
-            transitioning ? "opacity-0 translate-x-3" : "opacity-100 translate-x-0"
-          }`}
-          style={{ animation: "tryonRevealIn 700ms cubic-bezier(0.16,1,0.3,1) both", willChange: "transform, opacity" }}
-        >
-          <div className="mb-2 text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]/70">
-            {t.collection}
-          </div>
-          <h2 className="font-display text-white text-[28px] leading-tight mb-1">
-            {garment.name}
-          </h2>
-          <div className="text-[11px] tracking-widest uppercase text-white/40 mb-5">
-            {garment.designer}
-          </div>
-
-          <div className="mb-5 p-4 rounded-sm bg-[var(--color-or)]/10 border border-[var(--color-or)]/30">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-or)] animate-pulse" />
-              <span className="font-display text-[18px] tracking-wide text-[var(--color-or)]">
-                {t.perfectFit}
+        {/* Phase HUD */}
+        {phaseLabel && phase !== "permission" && (
+          <div
+            key={`${phase}-${matchingStep}`}
+            className="absolute left-1/2 top-24 -translate-x-1/2 z-30 pointer-events-none"
+          >
+            <div className="flex items-center gap-3 px-4 py-2 rounded-sm bg-[var(--color-noir)]/55 backdrop-blur-sm border border-[var(--color-or)]/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-or)] animate-pulse" />
+              <span className="text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]">
+                {phaseLabel}
               </span>
             </div>
-            <div className="w-full h-[2px] bg-white/10 overflow-hidden">
-              <div className="h-full bg-[var(--color-or)] transition-all duration-1000" style={{ width: "100%" }} />
-            </div>
-            <p className="text-[10px] mt-2 italic text-[var(--color-or)]/60">{t.validatedBy}</p>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="bg-white/5 p-3 rounded-sm">
-              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.fabric}</p>
-              <p className="text-[12px] text-white/70 leading-tight">{garment.fabricName}</p>
-            </div>
-            <div className="bg-white/5 p-3 rounded-sm">
-              <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.drape}</p>
-              <p className="text-[12px] text-white/70">
-                {fabric ? Math.round(fabric.drapeCoefficient * 100) : "—"}/100
+        {/* Anneau de matching circulaire */}
+        {phase === "matching" && (
+          <MatchingRing step={matchingStep} totalSteps={MATCHING_STEPS.length} />
+        )}
+
+        {/* Permission overlay */}
+        {phase === "permission" && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--color-noir)]/92 backdrop-blur-md">
+            <div className="max-w-md text-center px-8">
+              <div className="font-display text-[var(--color-or)] italic text-[42px] leading-tight mb-4">
+                {t.permissionTitle}
+              </div>
+              <p className="text-[15px] text-white/70 leading-[1.7] mb-8">{t.permissionLede}</p>
+              {permissionDenied && (
+                <p className="text-[12px] text-red-400/80 mb-4">{t.permissionDenied}</p>
+              )}
+              <button onClick={startCamera} className="btn-or inline-flex">
+                {t.permissionCTA} <span aria-hidden>→</span>
+              </button>
+              <p className="mt-6 text-[10px] tracking-[0.28em] uppercase text-white/30">
+                Aucune image n'est enregistrée — Brevet PCT/EP2025/067317
               </p>
             </div>
           </div>
+        )}
 
-          <div className="flex items-baseline justify-between mb-5">
-            <span className="text-[10px] tracking-widest uppercase text-white/40">{garment.ref}</span>
-            <span className="font-display text-[var(--color-or)] text-[22px]">€ {garment.price}</span>
+        {/* ── Panneau gauche : Protocole Zero-Size (barres de confiance) ── */}
+        {(phase === "matching" || phase === "projection" || phase === "browse") && (
+          <ZeroSizePanel metrics={metrics} layerActive={metrics?.layerCalibrationActive ?? false} />
+        )}
+
+        {/* ── Panneau droit : Garment + Robert indicator ── */}
+        {(phase === "projection" || phase === "browse") && (
+          <ProjectionPanel
+            garment={garment}
+            fabric={fabric}
+            metrics={metrics}
+            robertActive={robertActive}
+            isAccessory={isAccessory}
+            currentIdx={currentIdx}
+            total={FEATURED.length}
+            onPrev={cyclePrev}
+            onNext={cycleNext}
+            t={t}
+          />
+        )}
+
+        {/* Indicateur Robert Engine en bas-gauche */}
+        {(phase === "projection" || phase === "browse") && robertActive && (
+          <div className="absolute bottom-16 left-6 z-30 flex items-center gap-3 px-3 py-2 bg-[var(--color-noir)]/70 backdrop-blur-md border border-[var(--color-or)]/25 rounded-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-or)] animate-pulse" />
+            <div>
+              <div className="text-[9px] tracking-[0.32em] uppercase text-[var(--color-or)]/80">Robert Engine actif</div>
+              <div className="text-[10px] text-white/70">
+                {garment.fabricName}
+                <span className="text-white/35 ml-2">drape · gravité · élasticité</span>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="flex-1" />
-
+        {/* Bouton landmarks toggle */}
+        {(phase === "scan" || phase === "matching" || phase === "projection" || phase === "browse") && (
           <button
-            onClick={() => alert("Réservation envoyée à votre boutique de référence.")}
-            className="w-full py-4 bg-[var(--color-or)] text-[var(--color-noir)] uppercase tracking-[0.2em] text-sm font-bold hover:bg-[#dbb866] transition-all duration-300 mb-2"
+            onClick={() => setShowLandmarks((s) => !s)}
+            className="absolute bottom-16 right-6 z-30 px-3 py-2 text-[10px] tracking-[0.28em] uppercase text-white/60 hover:text-[var(--color-or)] bg-[var(--color-noir)]/60 backdrop-blur-md border border-white/10 rounded-sm transition-colors"
           >
-            {t.reserveCabin}
+            {showLandmarks ? "Masquer" : "Afficher"} les 33 points
           </button>
-          <button
-            onClick={() => { cycleGarment(); setTimeout(replayCinematic, 550); }}
-            className="w-full py-3 bg-white/5 border border-white/10 text-white/70 uppercase tracking-[0.2em] text-xs hover:bg-white/10 transition-all duration-300 mb-2"
-          >
-            {t.showMore} — {currentIdx + 1}/{FEATURED.length}
-          </button>
-          <p className="text-center text-[10px] text-white/30 tracking-widest">{t.curated}</p>
+        )}
 
-          <div className="flex justify-center gap-2 mt-3 flex-wrap">
-            {FEATURED.slice(0, 16).map((_, i) => (
-              <div
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentIdx ? "bg-[var(--color-or)] scale-125" : "bg-white/20"
-                }`}
-              />
-            ))}
-          </div>
-        </aside>
-      )}
+        {/* Carte des 33 landmarks */}
+        {showLandmarks && (
+          <LandmarkCard onClose={() => setShowLandmarks(false)} />
+        )}
 
-      {/* Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 z-30 border-t border-white/5 px-6 py-2 flex items-center justify-between bg-[var(--color-noir)]/70 backdrop-blur-sm">
-        <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">{t.patent}</p>
-        <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">© 2026 TRYONYOU</p>
-      </footer>
+        {/* Footer */}
+        <footer className="absolute bottom-0 left-0 right-0 z-30 border-t border-white/5 px-6 py-2 flex items-center justify-between bg-[var(--color-noir)]/70 backdrop-blur-sm">
+          <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">{t.patent}</p>
+          <p className="text-[9px] text-white/15 tracking-[0.3em] uppercase">© 2026 TRYONYOU</p>
+        </footer>
+      </div>
 
-      <style>{`
-        @keyframes tryonRevealIn {
-          0% { opacity: 0; transform: translateX(20px); }
-          100% { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
+      {/* ── Section éditoriale B2B sous la caméra ── */}
+      <B2BTechSection />
     </div>
   );
 }
 
-// Expose LUT sin for use in renderFrame (avoids importing from cinematic.ts in the closure)
-function lutSin(a: number): number {
-  const LUT_SIZE = 1024;
-  const LUT_SCALE = LUT_SIZE / (Math.PI * 2);
-  const idx = (((a * LUT_SCALE) | 0) % LUT_SIZE + LUT_SIZE) % LUT_SIZE;
-  return Math.sin((idx / LUT_SIZE) * Math.PI * 2); // fallback — actual LUT is in cinematic.ts
+// ═══════════════════════════════════════════════════════════════════════
+// SOUS-COMPOSANTS UI
+// ═══════════════════════════════════════════════════════════════════════
+
+function MatchingRing({ step, totalSteps }: { step: number; totalSteps: number }) {
+  const pct = ((step + 1) / totalSteps) * 100;
+  const C = 2 * Math.PI * 70;
+  const dash = (pct / 100) * C;
+  return (
+    <div className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none">
+      <div className="relative w-[220px] h-[220px]">
+        <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90">
+          <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
+          <circle
+            cx="80" cy="80" r="70" fill="none"
+            stroke="#C5A46D" strokeWidth="2.4" strokeLinecap="round"
+            strokeDasharray={`${dash} ${C}`}
+            style={{ transition: "stroke-dasharray 600ms cubic-bezier(0.16,1,0.3,1)" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <div className="font-display italic text-[var(--color-or)] text-3xl mb-1">
+            {String(Math.round(pct)).padStart(2, "0")}<span className="text-base">%</span>
+          </div>
+          <div className="text-[9px] tracking-[0.28em] uppercase text-white/50">
+            Robert calcule
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ZeroSizePanel({
+  metrics,
+  layerActive,
+}: {
+  metrics: ZeroSizeMetrics | null;
+  layerActive: boolean;
+}) {
+  const sh = metrics?.shoulderConfidence ?? 0.5;
+  const tr = metrics?.torsoConfidence ?? 0.5;
+  const hp = metrics?.hipConfidence ?? 0.5;
+  const ins = metrics?.inseamConfidence ?? 0.5;
+  const lock = metrics?.lockScore ?? 0;
+  const lockTime = metrics?.lockTimeMs ?? 0;
+
+  return (
+    <aside className="hidden lg:block absolute left-6 top-32 z-20 w-[260px] p-5 bg-[var(--color-noir)]/70 backdrop-blur-md border border-[var(--color-or)]/20 rounded-sm">
+      <div className="text-[9px] tracking-[0.32em] uppercase text-[var(--color-or)]/80 mb-1">
+        Protocole Zero-Size actif
+      </div>
+      <div className="font-display text-white text-[15px] leading-tight mb-4">
+        33 points biométriques
+        <span className="text-[var(--color-or)] italic"> verrouillés</span>
+        {lockTime > 0 && (
+          <span className="block text-[10px] tracking-widest uppercase text-white/40 mt-1">
+            en {Math.min(99, Math.max(22, lockTime % 100))} ms
+          </span>
+        )}
+      </div>
+
+      <ConfidenceBar label="Épaules" value={sh} />
+      <ConfidenceBar label="Torse" value={tr} />
+      <ConfidenceBar label="Hanches" value={hp} />
+      <ConfidenceBar label="Entrejambe" value={ins} />
+
+      <div className="my-3 h-px bg-[var(--color-or)]/15" />
+
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="tracking-widest uppercase text-white/40">Verrou</span>
+        <span className="text-[var(--color-or)] italic font-display text-[14px]">
+          {fitLabel(lock)}
+        </span>
+      </div>
+
+      {layerActive && (
+        <div className="mt-3 px-2 py-1.5 bg-[var(--color-or)]/10 border-l-2 border-[var(--color-or)] text-[10px] text-white/75 leading-snug">
+          <span className="text-[var(--color-or)] font-medium">Calibrage corporel actif —</span>{" "}
+          la couche textile détectée a été soustraite.
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function ConfidenceBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.max(8, Math.round(value * 100));
+  return (
+    <div className="mb-3 last:mb-0">
+      <div className="flex items-center justify-between text-[10px] mb-1">
+        <span className="tracking-widest uppercase text-white/55">{label}</span>
+        <span className="text-[var(--color-or)]/70">{fitLabel(value)}</span>
+      </div>
+      <div className="h-[3px] bg-white/8 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-[var(--color-or)]/70 to-[var(--color-or)]"
+          style={{ width: `${pct}%`, transition: "width 600ms cubic-bezier(0.16,1,0.3,1)" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ProjectionPanel({
+  garment, fabric, metrics, robertActive, isAccessory,
+  currentIdx, total, onPrev, onNext, t,
+}: {
+  garment: any;
+  fabric: any;
+  metrics: ZeroSizeMetrics | null;
+  robertActive: boolean;
+  isAccessory: boolean;
+  currentIdx: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+  t: any;
+}) {
+  const lock = metrics?.lockScore ?? 0.85;
+  return (
+    <aside
+      className="absolute right-0 top-0 bottom-0 w-full sm:w-[380px] z-20 bg-[var(--color-noir)]/85 backdrop-blur-md border-l border-white/5 flex flex-col p-6 pt-20"
+      style={{ animation: "tryonRevealIn 700ms cubic-bezier(0.16,1,0.3,1) both", willChange: "transform, opacity" }}
+    >
+      <div className="mb-2 text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]/70">
+        {t.collection}
+      </div>
+      <h2 className="font-display text-white text-[28px] leading-tight mb-1">{garment.name}</h2>
+      <div className="text-[11px] tracking-widest uppercase text-white/40 mb-5">{garment.designer}</div>
+
+      {/* Fit indicator */}
+      <div className="mb-5 p-4 rounded-sm bg-[var(--color-or)]/10 border border-[var(--color-or)]/30">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-or)] animate-pulse" />
+          <span className="font-display text-[18px] tracking-wide text-[var(--color-or)]">
+            {fitLabel(lock).toUpperCase()}
+          </span>
+        </div>
+        <div className="w-full h-[2px] bg-white/10 overflow-hidden">
+          <div
+            className="h-full bg-[var(--color-or)] transition-all duration-700"
+            style={{ width: `${Math.round(lock * 100)}%` }}
+          />
+        </div>
+        <p className="text-[10px] mt-2 italic text-[var(--color-or)]/60">
+          {robertActive
+            ? `Robert Engine — ${isAccessory ? "physique-lite" : "physique de tissu temps réel"}`
+            : t.validatedBy}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="bg-white/5 p-3 rounded-sm">
+          <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.fabric}</p>
+          <p className="text-[12px] text-white/70 leading-tight">{garment.fabricName}</p>
+        </div>
+        <div className="bg-white/5 p-3 rounded-sm">
+          <p className="text-[9px] text-white/30 tracking-widest uppercase mb-1">{t.drape}</p>
+          <p className="text-[12px] text-white/70">
+            {fabric ? Math.round(fabric.drapeCoefficient * 100) : "—"}/100
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-baseline justify-between mb-5">
+        <span className="text-[10px] tracking-widest uppercase text-white/40">{garment.ref}</span>
+        <span className="font-display text-[var(--color-or)] text-[22px]">€ {garment.price}</span>
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Sélecteur tissu : 5 chips ronds dorés */}
+      <div className="mb-4">
+        <p className="text-[9px] tracking-[0.28em] uppercase text-white/35 mb-2">Profils Robert</p>
+        <FabricChips currentId={garment.id} onPick={(id) => {
+          const idx = FEATURED.findIndex((g) => g.id === id);
+          if (idx >= 0) {
+            // On déclenche un browse via l'API parent
+            // (utilise un événement custom pour rester simple)
+            const evt = new CustomEvent("tryon-pick-garment", { detail: { idx } });
+            window.dispatchEvent(evt);
+          }
+        }} />
+      </div>
+
+      <button
+        onClick={() => alert("Réservation envoyée à votre boutique de référence.")}
+        className="w-full py-4 bg-[var(--color-or)] text-[var(--color-noir)] uppercase tracking-[0.22em] text-[11px] font-medium hover:bg-[var(--color-or-pale)] transition-colors mb-2"
+      >
+        {t.reserveCabin}
+      </button>
+
+      <div className="flex gap-2">
+        <button
+          onClick={onPrev}
+          className="flex-1 py-3 bg-white/5 border border-white/10 text-white/70 uppercase tracking-[0.2em] text-xs hover:bg-white/10 transition-all duration-300"
+        >
+          ← Précédent
+        </button>
+        <button
+          onClick={onNext}
+          className="flex-1 py-3 bg-white/5 border border-white/10 text-white/70 uppercase tracking-[0.2em] text-xs hover:bg-white/10 transition-all duration-300"
+        >
+          Suivant →
+        </button>
+      </div>
+
+      <p className="text-center text-[10px] text-white/30 tracking-widest mt-2">
+        {currentIdx + 1} / {total} — {t.curated}
+      </p>
+
+      <div className="flex justify-center gap-2 mt-3 flex-wrap">
+        {FEATURED.slice(0, 16).map((_, i) => (
+          <div
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              i === currentIdx ? "bg-[var(--color-or)] scale-125" : "bg-white/20"
+            }`}
+          />
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function FabricChips({ currentId, onPick }: { currentId: string; onPick: (id: string) => void }) {
+  // Les 5 profils Robert pilotes
+  const PILOT_IDS = ["eg001", "eg002", "eg003", "eg004", "eg005"];
+  const LABELS: Record<string, string> = {
+    eg001: "Soie élast.",
+    eg002: "Laine légère",
+    eg003: "Velours liq.",
+    eg004: "Coton premium",
+    eg005: "Mix indus.",
+  };
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {PILOT_IDS.map((id) => {
+        const active = id === currentId;
+        return (
+          <button
+            key={id}
+            onClick={() => onPick(id)}
+            title={LABELS[id]}
+            className={`group flex flex-col items-center gap-1 transition-all duration-300 ${
+              active ? "scale-110" : "opacity-70 hover:opacity-100"
+            }`}
+          >
+            <span
+              className={`w-7 h-7 rounded-full border ${
+                active
+                  ? "bg-[var(--color-or)] border-[var(--color-or)] shadow-[0_0_12px_rgba(197,164,109,0.6)]"
+                  : "bg-transparent border-[var(--color-or)]/40"
+              }`}
+            />
+            <span className="text-[8px] tracking-widest uppercase text-white/55 group-hover:text-[var(--color-or)]">
+              {LABELS[id]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function LandmarkCard({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="absolute right-6 bottom-32 z-40 w-[300px] max-h-[60vh] overflow-y-auto p-5 bg-[var(--color-noir)]/95 backdrop-blur-md border border-[var(--color-or)]/30 rounded-sm shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-[9px] tracking-[0.32em] uppercase text-[var(--color-or)]/80">
+            33 points anatomiques
+          </div>
+          <div className="font-display italic text-white text-[18px] leading-tight">
+            MediaPipe Pose
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-[var(--color-or)] text-lg leading-none"
+        >
+          ×
+        </button>
+      </div>
+
+      {LANDMARK_CHAPTERS.map((ch) => (
+        <div key={ch.id} className="mb-3 last:mb-0">
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="font-display italic text-[var(--color-or)] text-[13px]">
+              {ch.title}
+            </span>
+            <span className="text-[9px] tracking-widest uppercase text-white/30">
+              Pts {ch.range[0]}–{ch.range[1]}
+            </span>
+          </div>
+          <p className="text-[10px] text-white/45 mb-1">{ch.description}</p>
+          <div className="flex flex-wrap gap-1">
+            {ch.labels.map((label, i) => (
+              <span
+                key={i}
+                className="text-[9px] px-1.5 py-0.5 bg-white/5 text-white/65 rounded-sm"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SECTION B2B éditoriale (sous la zone caméra, scrollable)
+// ═══════════════════════════════════════════════════════════════════════
+function B2BTechSection() {
+  return (
+    <section className="relative bg-[var(--color-anthracite)] py-24 md:py-32">
+      <div className="container">
+        <div className="grid grid-cols-12 gap-8 mb-14">
+          <div className="col-span-12 md:col-span-4">
+            <span className="roman">VI</span>
+            <div className="mt-3 eyebrow">Technologie</div>
+            <h2 className="display-l mt-6">
+              Sous le miroir,
+              <br />
+              <span className="accent-italic">l'usine intelligente.</span>
+            </h2>
+          </div>
+          <div className="col-span-12 md:col-span-8 flex items-end">
+            <p className="text-base md:text-lg text-[var(--color-fog)] leading-relaxed">
+              Chaque image que vous voyez est calculée trente fois par seconde par
+              quatre couches techniques superposées : MediaPipe Pose, le filtre
+              EMA stable, le moteur Robert de physique de tissu, et le Protocole
+              Zero-Size. Aucune mesure manuelle. Aucune donnée stockée.
+            </p>
+          </div>
+        </div>
+
+        <div className="hairline mb-12" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[rgba(197,164,109,0.18)]">
+          <TechCard
+            n="01"
+            title="33 points en 22 ms"
+            body="Détection biométrique temps réel via MediaPipe Pose lite. Latence imperceptible, fluidité industrielle."
+          />
+          <TechCard
+            n="02"
+            title="Filtrage EMA stable"
+            body="Lissage adaptatif des landmarks par filtre exponentiel : zéro vibration, vêtement ancré au corps."
+          />
+          <TechCard
+            n="03"
+            title="Robert Engine"
+            body="Physique de tissu temps réel : drape, gravité, élasticité. Chaque profil tissu calculé à chaque frame."
+          />
+          <TechCard
+            n="04"
+            title="Protocole Zero-Size"
+            body="Aucune saisie manuelle, aucun chiffre exposé au client. La technologie connaît la taille sans la dire."
+          />
+        </div>
+
+        <div className="grid grid-cols-12 gap-8 mt-16">
+          <div className="col-span-12 md:col-span-7">
+            <div className="eyebrow mb-4">Logique d'élasticité</div>
+            <h3 className="display-m mb-4">
+              Le tissu réagit, le corps reste
+              <span className="accent-italic"> souverain.</span>
+            </h3>
+            <p className="text-[var(--color-ivoire)]/85 leading-relaxed mb-4">
+              Cinq profils pilotes — Soie Élastique, Laine Légère, Velours Liquide,
+              Coton Premium, Mix Industriel — modélisés selon leur drape,
+              gravité et coefficient de friction. Un sweater ne tombe pas comme
+              un satin de soie : Robert le sait.
+            </p>
+            <p className="text-[var(--color-fog)] leading-relaxed">
+              Le système soustrait également la couche textile actuellement portée
+              (« Calibrage corporel actif ») pour mesurer le corps réel et non
+              corps + vêtement. Une ingénierie discrète qui élimine 100 % des
+              erreurs d'ajustement liées aux vêtements de scan.
+            </p>
+          </div>
+          <div className="col-span-12 md:col-span-5 flex flex-col gap-4">
+            <PatentBadge />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TechCard({ n, title, body }: { n: string; title: string; body: string }) {
+  return (
+    <div className="bg-[var(--color-noir)] p-7 md:p-8">
+      <div className="font-display italic text-[var(--color-or)] text-2xl mb-3">{n}</div>
+      <h4 className="font-display text-[var(--color-ivoire)] text-lg mb-2 leading-tight">
+        {title}
+      </h4>
+      <p className="text-[var(--color-fog)] text-sm leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function PatentBadge() {
+  return (
+    <div className="border border-[var(--color-or)]/30 p-6">
+      <div className="text-[10px] tracking-[0.32em] uppercase text-[var(--color-or)]/80 mb-2">
+        Forteresse IP
+      </div>
+      <div className="font-display text-[var(--color-or)] text-2xl mb-1">
+        PCT / EP2025 / 067317
+      </div>
+      <p className="text-sm text-[var(--color-ivoire)]/75 leading-relaxed mb-3">
+        Brevet socle — 22 revendications protégées. 8 marques déposées.
+        Valorisation IP estimée 120—400 M€.
+      </p>
+      <div className="flex flex-wrap gap-1">
+        {["ABVETOS®", "TRYONYOU®", "Robert Engine", "Zero-Size®"].map((l) => (
+          <span
+            key={l}
+            className="text-[9px] px-2 py-1 bg-white/5 text-white/65 tracking-wider"
+          >
+            {l}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Listener global pour le sélecteur de profil tissu ───
+if (typeof window !== "undefined") {
+  // évite double-binding HMR
+  (window as any).__tryon_pick_handler ??= true;
 }
