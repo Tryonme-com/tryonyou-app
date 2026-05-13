@@ -143,6 +143,25 @@ export function calculateElasticityBreathing(
 // Replaces the simple drawImage with physics-aware rendering
 // ═══════════════════════════════════════════════════════════════
 
+// ─── Garment length factor by type (relative to torsoH = shoulder → hip distance) ───
+// A factor of 1.0 means the garment ends exactly at the hip line.
+// A factor of 2.4 means it extends 2.4x the torso height below the shoulders (e.g. long dress).
+const GARMENT_LENGTH_FACTORS: Record<string, number> = {
+  top: 1.05,        // short top, ends just past hip
+  chemise: 1.20,    // shirt/blouse, slight overhang past hip
+  ensemble: 2.30,   // jacket + trousers (full body)
+  veste: 1.35,      // jacket, mid-hip
+  manteau: 2.50,    // coat, long
+  robe: 2.40,       // dress, long
+  jupe: 1.85,       // skirt, mid-calf (anchored at hip, but we draw from shoulders for simplicity)
+  pantalon: 2.30,   // trousers (drawn from waist line, but we use shoulders as anchor)
+  combinaison: 2.40,// jumpsuit
+  foulard: 0.90,    // scarf, sits over shoulders / chest
+};
+function lengthFactorFor(type: string): number {
+  return GARMENT_LENGTH_FACTORS[type] ?? 1.30;
+}
+
 export function robertRenderGarment(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -151,27 +170,28 @@ export function robertRenderGarment(
   fitScore: number,
   isAccessory: boolean,
   canvasW: number,
-  _canvasH: number
+  _canvasH: number,
+  garmentType: string = "robe"
 ): void {
   const fabric = PILOT_FABRIC_PHYSICS[garmentId];
   if (!fabric) {
     // Fallback: simple render
-    simpleRender(ctx, img, anchors, isAccessory, canvasW, _canvasH);
+    simpleRender(ctx, img, anchors, isAccessory, canvasW, _canvasH, garmentType);
     return;
   }
 
   const now = Date.now();
   const { cx, shoulderY, hipY, shoulderW, angle, hasBody } = anchors;
-  const torsoH = hipY - shoulderY;
+  const torsoH = Math.max(60, hipY - shoulderY); // guard against zero/negative
 
   if (isAccessory) {
-    // Accessories: physics-lite (just gravity sway)
-    const bagW = hasBody ? shoulderW * 0.8 : canvasW * 0.18;
+    // Accessories: physics-lite (just gravity sway). Bag sits at the hip line, slightly outboard.
+    const bagW = (hasBody ? shoulderW : canvasW * 0.22) * 0.55;
     const ar = img.naturalHeight / img.naturalWidth;
     const bagH = bagW * ar;
     const sway = Math.sin(now * 0.002) * (fabric.weightGSM / 100) * 2;
-    const bagX = cx + (hasBody ? shoulderW * 0.6 : canvasW * 0.12) + sway;
-    const bagY = hipY - bagH * 0.3;
+    const bagX = cx + (hasBody ? shoulderW * 0.55 : canvasW * 0.10) + sway;
+    const bagY = hipY - bagH * 0.20; // hangs from hip, mostly below
 
     ctx.save();
     ctx.globalAlpha = calculateDynamicAlpha(fitScore, fabric, now);
@@ -181,14 +201,16 @@ export function robertRenderGarment(
   }
 
   // ─── GARMENT PHYSICS RENDERING ───
+  // CRITICAL: height is derived from the BODY (torsoH × lengthFactor), NOT from the image AR.
+  // This guarantees the garment hangs from shoulders DOWN through the hips and below, never above.
   const lafayetteFactor = calculateLafayetteFactor(fabric);
   const elasticBreath = calculateElasticityBreathing(fabric, now);
   const garmentW = shoulderW * lafayetteFactor * elasticBreath;
-  const ar = img.naturalHeight / img.naturalWidth;
-  const baseH = garmentW * ar;
-  const gravityH = calculateGravityStretch(fabric, baseH);
-  const neckOffset = torsoH * 0.08;
-  const drawY = shoulderY - neckOffset;
+  const targetH = torsoH * lengthFactorFor(garmentType);
+  const gravityH = calculateGravityStretch(fabric, targetH);
+  // Anchor the TOP of the garment slightly above shoulder line (collar/neckline ~6% of torso).
+  const collarLift = torsoH * 0.06;
+  const drawY = shoulderY - collarLift;
   const alpha = calculateDynamicAlpha(fitScore, fabric, now);
 
   ctx.save();
@@ -264,32 +286,34 @@ export function robertRenderGarment(
 }
 
 // ─── Simple fallback render (no physics) ───
+// Same anchoring rules as the physics renderer: garment height is body-driven, never image-AR-driven.
 function simpleRender(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   anchors: BodyAnchors,
   isAccessory: boolean,
   canvasW: number,
-  _canvasH: number
+  _canvasH: number,
+  garmentType: string = "robe"
 ): void {
   const { cx, shoulderY, hipY, shoulderW, hasBody, angle } = anchors;
   const ar = img.naturalHeight / img.naturalWidth;
+  const torsoH = Math.max(60, hipY - shoulderY);
 
   if (isAccessory) {
-    const bagW = hasBody ? shoulderW * 0.8 : canvasW * 0.18;
+    const bagW = (hasBody ? shoulderW : canvasW * 0.22) * 0.55;
     const bagH = bagW * ar;
-    const bagX = cx + (hasBody ? shoulderW * 0.6 : canvasW * 0.12);
-    const bagY = hipY - bagH * 0.3;
+    const bagX = cx + (hasBody ? shoulderW * 0.55 : canvasW * 0.10);
+    const bagY = hipY - bagH * 0.20;
     ctx.save();
     ctx.globalAlpha = 0.88;
     ctx.drawImage(img, bagX, bagY, bagW, bagH);
     ctx.restore();
   } else {
     const garmentW = shoulderW * 2.2;
-    const garmentH = garmentW * ar;
-    const torsoH = hipY - shoulderY;
-    const neckOffset = torsoH * 0.08;
-    const drawY = shoulderY - neckOffset;
+    const garmentH = torsoH * lengthFactorFor(garmentType); // body-driven, not AR-driven
+    const collarLift = torsoH * 0.06;
+    const drawY = shoulderY - collarLift;
     ctx.save();
     ctx.translate(cx, drawY);
     if (hasBody && Math.abs(angle) > 0.01) ctx.rotate(angle);

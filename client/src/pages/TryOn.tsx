@@ -330,13 +330,17 @@ export default function TryOn() {
       const g = FEATURED[idxRef.current];
       const img = overlaysRef.current.get(g.id);
       if (img) {
+        // Fallback anchors when no MediaPipe body detected yet:
+        // place a plausible torso silhouette in the central third of the frame.
+        // Portrait: shoulders ~28% from top, hips ~58% → torsoH = 30% of H
+        // Landscape: shoulders ~22%, hips ~52% → torsoH = 30% of H
         const baseAnchor: BodyAnchors = a.hasBody
           ? { ...a }
           : {
               cx: W / 2,
-              shoulderY: (portrait ? H * 0.38 : H * 0.28) + Math.sin(now * 0.0015) * 6,
-              hipY: (portrait ? H * 0.68 : H * 0.62) + Math.sin(now * 0.0015) * 6,
-              shoulderW: portrait ? W * 0.35 : W * 0.24,
+              shoulderY: (portrait ? H * 0.28 : H * 0.22) + Math.sin(now * 0.0015) * 6,
+              hipY:      (portrait ? H * 0.58 : H * 0.52) + Math.sin(now * 0.0015) * 6,
+              shoulderW: portrait ? W * 0.30 : W * 0.20,
               angle: 0,
               hasBody: false,
             };
@@ -351,7 +355,8 @@ export default function TryOn() {
             fitScoreRef.current,
             g.type === "accessoire",
             W,
-            H
+            H,
+            g.type
           );
         } catch (e) { console.warn("[TRYONYOU] robert error:", e); }
         ctx.restore();

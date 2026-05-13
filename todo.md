@@ -78,3 +78,36 @@
 - [ ] Deploy Vercel
 - [ ] Verify routes 200
 - [ ] webdev_save_checkpoint v2.5
+
+
+---
+
+# v2.6 — Consolidation architecturale + fix overlay sur tête
+
+THE PROJECT (single source of truth):
+- Local: `/home/ubuntu/tryonyou-app/`
+- Vercel: `prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh` (project name: `tryonyou-app`)
+- Domain: `tryonyou.app` (+ alias `tryonme.app`)
+
+## Phase 1 — Inventaire
+- [ ] `gh repo list` complet
+- [ ] Inventaire `/home/ubuntu/repos/*` et `/home/ubuntu/Downloads/*`
+
+## Phase 2 — Diff & valeur
+- [ ] Lister par dépôt les fichiers de valeur (algos biométriques, Robert, sections UI, assets)
+- [ ] Comparer aux fichiers déjà présents dans `tryonyou-app`
+
+## Phase 3 — Bug fix + ports
+- [ ] Robert Engine : hauteur basée sur `torsoH × lengthFactor`, pas sur AR image
+- [ ] simpleRender fallback corrigé
+- [ ] Ancrage `shoulderY` = haut du vêtement
+- [ ] Test local dev
+
+## Phase 4 — Deploy
+- [ ] Build prod + copie médias + strip analytics
+- [ ] Deploy sur `prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh`
+
+## Phase 5 — Vérif
+- [ ] HTTP 200 sur toutes les routes
+- [ ] Bundle inclut Robert + Zero-Size + 33 points
+- [ ] webdev_save_checkpoint v2.6
