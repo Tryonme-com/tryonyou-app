@@ -169,6 +169,11 @@ export default function TryOn() {
     cx: 0, shoulderY: 0, hipY: 0, shoulderW: 0, angle: 0, hasBody: false,
   });
 
+  // Cover-fit map: converts MediaPipe normalized stream coords → canvas px
+  const coverMapRef = useRef({
+    scale: 1, offX: 0, offY: 0, vw: 1280, vh: 720,
+  });
+
   // Phase machine
   const phaseRef = useRef<Phase>("permission");
   const idxRef = useRef(currentIdx);
@@ -218,15 +223,39 @@ export default function TryOn() {
     const ctx = canvas.getContext("2d", { willReadFrequently: false });
     if (!ctx) return;
 
-    const vpW = Math.min(video.videoWidth || 1280, window.innerWidth);
-    const vpH = Math.min(video.videoHeight || 720, window.innerHeight);
-    if (canvas.width !== vpW || canvas.height !== vpH) {
-      canvas.width = vpW;
-      canvas.height = vpH;
+    // CRITICAL: the canvas is overlaid on the <video> with object-cover.
+    // To make Robert's overlay align pixel-perfectly with the displayed video,
+    // we must size the canvas to the same DISPLAYED rectangle (CSS pixels of
+    // the parent), not to the raw video stream resolution.
+    const parent = canvas.parentElement;
+    const dispW = parent?.clientWidth  || window.innerWidth;
+    const dispH = parent?.clientHeight || window.innerHeight;
+    if (canvas.width !== dispW || canvas.height !== dispH) {
+      canvas.width  = dispW;
+      canvas.height = dispH;
     }
     const W = canvas.width;
     const H = canvas.height;
     ctx.clearRect(0, 0, W, H);
+
+    // Compute object-cover crop: the video stream is letter-cropped to fill
+    // the canvas. We need this crop to convert MediaPipe normalized landmarks
+    // (in stream coords) to canvas pixel coords.
+    const vw = video.videoWidth  || W;
+    const vh = video.videoHeight || H;
+    const streamAR = vw / vh;
+    const dispAR   = W  / H;
+    let scale: number, offX = 0, offY = 0;
+    if (streamAR > dispAR) {
+      // stream is wider than display → crop left/right
+      scale = H / vh;
+      offX  = (W - vw * scale) / 2; // negative
+    } else {
+      // stream is taller than display → crop top/bottom
+      scale = W / vw;
+      offY  = (H - vh * scale) / 2; // negative
+    }
+    coverMapRef.current = { scale, offX, offY, vw, vh };
 
     const a = anchorRef.current;
     const now = performance.now();
@@ -329,6 +358,35 @@ export default function TryOn() {
       // Garment overlay via Robert Engine (physique de tissu temps réel)
       const g = FEATURED[idxRef.current];
       const img = overlaysRef.current.get(g.id);
+
+      // DEBUG: trace anchors visually when ?debug=1 in URL
+      const debug = typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("debug") === "1";
+      if (debug && a.hasBody) {
+        ctx.save();
+        ctx.strokeStyle = "#C5A46D";
+        ctx.fillStyle   = "#C5A46D";
+        ctx.lineWidth   = 2;
+        // shoulders dot (cx, shoulderY)
+        ctx.beginPath();
+        ctx.arc(a.cx - a.shoulderW/2, a.shoulderY, 6, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(a.cx + a.shoulderW/2, a.shoulderY, 6, 0, Math.PI*2); ctx.fill();
+        // hips dot
+        ctx.beginPath();
+        ctx.arc(a.cx, a.hipY, 5, 0, Math.PI*2); ctx.fill();
+        // dashed garment box (shoulders→hips, width=shoulderW*1.4)
+        const torsoH = a.hipY - a.shoulderY;
+        const bw = a.shoulderW * 1.4;
+        const bh = torsoH * 1.4;
+        ctx.setLineDash([8, 6]);
+        ctx.strokeRect(a.cx - bw/2, a.shoulderY - torsoH*0.05, bw, bh);
+        ctx.setLineDash([]);
+        ctx.font = "11px monospace";
+        ctx.fillText(`cx=${a.cx|0} sy=${a.shoulderY|0} hy=${a.hipY|0} sw=${a.shoulderW|0}`, 12, H - 14);
+        ctx.restore();
+      }
+
       if (img) {
         // Fallback anchors when no MediaPipe body detected yet:
         // place a plausible torso silhouette in the central third of the frame.
@@ -415,29 +473,35 @@ export default function TryOn() {
         if (!lSh || !rSh || !lHip || !rHip) return;
         if (lSh.visibility < 0.3 || rSh.visibility < 0.3) return;
 
-        const c = canvasRef.current;
-        const W = c?.width || 1280;
-        const H = c?.height || 720;
-        const lx = lSh.x * W, rx = rSh.x * W;
+        // Use cover-fit map so anchors land on the DISPLAYED video pixels,
+        // not on the raw stream pixels (which would be misaligned by object-cover).
+        const cm = coverMapRef.current;
+        const toX = (nx: number) => nx * cm.vw * cm.scale + cm.offX;
+        const toY = (ny: number) => ny * cm.vh * cm.scale + cm.offY;
+        const lx = toX(lSh.x), rx = toX(rSh.x);
         const cx = (lx + rx) / 2;
-        const sy = ((lSh.y + rSh.y) / 2) * H;
-        const hy = ((lHip.y + rHip.y) / 2) * H;
+        const sy = (toY(lSh.y) + toY(rSh.y)) / 2;
+        const hy = (toY(lHip.y) + toY(rHip.y)) / 2;
         const sw = Math.abs(rx - lx);
-        const angle = Math.atan2((rSh.y - lSh.y) * H, rx - lx);
+        const angle = Math.atan2(toY(rSh.y) - toY(lSh.y), rx - lx);
 
         anchorRef.current = {
           cx, shoulderY: sy, hipY: hy, shoulderW: sw, angle, hasBody: true,
         };
 
+        const cnv = canvasRef.current;
+        const cW = cnv?.width  || 1280;
+        const cH = cnv?.height || 720;
+
         // 3. Layer subtraction — historique court pour détection
         shoulderHistRef.current.push(sw);
-        torsoYHistRef.current.push((hy - sy) / Math.max(1, H));
+        torsoYHistRef.current.push((hy - sy) / Math.max(1, cH));
         if (shoulderHistRef.current.length > 30) shoulderHistRef.current.shift();
         if (torsoYHistRef.current.length > 30) torsoYHistRef.current.shift();
         const layer = detectLayer(shoulderHistRef.current, torsoYHistRef.current);
 
         // 4. Calcul des métriques (stockées, jamais affichées en chiffres)
-        const m = computeMetrics(filtered, W, H, layer, detectionStartRef.current);
+        const m = computeMetrics(filtered, cW, cH, layer, detectionStartRef.current);
         if (m) {
           metricsRef.current = m;
           // throttle setState pour éviter de re-render à 60Hz
