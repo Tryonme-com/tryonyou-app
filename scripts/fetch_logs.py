@@ -5,7 +5,9 @@ import sys
 import urllib.request
 import urllib.parse
 
-TOKEN = os.environ.get("VERCEL_TOKEN", "VERCEL_TOKEN_REDACTED")
+TOKEN = os.environ.get("VERCEL_TOKEN", "")
+if not TOKEN:
+    sys.exit("Error: VERCEL_TOKEN environment variable is required. Set it with: export VERCEL_TOKEN=<your_token>")
 TEAM = "team_SDhj8kxLVE7oJ3S5KPbwG9uC"
 PROJECT = "prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh"
 DEPLOYMENT = sys.argv[1] if len(sys.argv) > 1 else "dpl_6afqyDxd6vgiCT4k4geG5SFDjvQg"
