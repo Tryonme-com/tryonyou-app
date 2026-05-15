@@ -55,6 +55,30 @@ const T_BROWSE_REMATCH = 700;
 
 type Phase = "permission" | "scan" | "matching" | "projection" | "browse";
 
+// ─── Demo mode (no camera): activated via ?demo=1 ─────────────────────────
+// Simulates an animated body so the garment overlay can be verified visually
+// in any browser — useful for stakeholders without camera access.
+const DEMO_MODE = typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("demo") === "1";
+
+function demoAnchors(W: number, H: number, now: number) {
+  const portrait = H > W;
+  // Subtle breathing + slight lateral sway
+  const breath = Math.sin(now * 0.0018) * 4;
+  const sway   = Math.sin(now * 0.0009) * (W * 0.012);
+  const shoulderY = (portrait ? H * 0.30 : H * 0.24) + breath;
+  const hipY      = (portrait ? H * 0.60 : H * 0.54) + breath * 0.6;
+  const shoulderW = portrait ? W * 0.32 : W * 0.22;
+  return {
+    cx: W / 2 + sway,
+    shoulderY,
+    hipY,
+    shoulderW,
+    angle: Math.sin(now * 0.0011) * 0.04,
+    hasBody: true,
+  };
+}
+
 declare global {
   interface Window {
     Pose?: any;
@@ -216,7 +240,12 @@ export default function TryOn() {
   const renderFrame = useCallback(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    if (!canvas || !video || video.readyState < 2) {
+    if (!canvas) {
+      rafRef.current = requestAnimationFrame(renderFrame);
+      return;
+    }
+    // In demo mode we don't need a live video stream.
+    if (!DEMO_MODE && (!video || video.readyState < 2)) {
       rafRef.current = requestAnimationFrame(renderFrame);
       return;
     }
@@ -241,8 +270,8 @@ export default function TryOn() {
     // Compute object-cover crop: the video stream is letter-cropped to fill
     // the canvas. We need this crop to convert MediaPipe normalized landmarks
     // (in stream coords) to canvas pixel coords.
-    const vw = video.videoWidth  || W;
-    const vh = video.videoHeight || H;
+    const vw = video?.videoWidth  || W;
+    const vh = video?.videoHeight || H;
     const streamAR = vw / vh;
     const dispAR   = W  / H;
     let scale: number, offX = 0, offY = 0;
@@ -257,10 +286,18 @@ export default function TryOn() {
     }
     coverMapRef.current = { scale, offX, offY, vw, vh };
 
-    const a = anchorRef.current;
     const now = performance.now();
+
+    // In demo mode, inject synthetic anchors so the user can see the full flow
+    // (scan → matching → projection) without a camera.
+    if (DEMO_MODE) {
+      anchorRef.current = demoAnchors(W, H, now);
+      fitScoreRef.current = 92;
+    }
+
+    const a = anchorRef.current;
     const filtered = filteredRef.current;
-    const usablePose = isPoseUsable(filtered as any);
+    const usablePose = DEMO_MODE ? true : isPoseUsable(filtered as any);
 
     // ─── Transitions de phase ───
     if (phaseRef.current === "scan") {
@@ -422,7 +459,7 @@ export default function TryOn() {
     }
 
     // ─── Send frame to MediaPipe ───
-    if (poseReadyRef.current && poseRef.current && video.readyState >= 2) {
+    if (!DEMO_MODE && poseReadyRef.current && poseRef.current && video && video.readyState >= 2) {
       const interval = IS_MOBILE ? 100 : 50;
       const wallNow = Date.now();
       if (wallNow - lastSendRef.current > interval) {
@@ -562,7 +599,18 @@ export default function TryOn() {
     }, 7000);
   }, [initPose, renderFrame]);
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ─── DEMO MODE auto-bootstrap (no camera permission needed) ─────────────
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    detectionStartRef.current = performance.now();
+    scanStartRef.current = performance.now();
+    setPhase("scan");
+    rafRef.current = requestAnimationFrame(renderFrame);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ───────────────────────────────────────────────────────────────────
   // BROWSE — passe à la pièce suivante avec mini re-MATCHING
   // ──────────────────────────────────────────────────────────────────────
   const projectGarment = useCallback((idx: number) => {
