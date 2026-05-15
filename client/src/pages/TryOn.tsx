@@ -79,6 +79,74 @@ function demoAnchors(W: number, H: number, now: number) {
   };
 }
 
+// Generate 33 synthetic MediaPipe-compatible landmarks (normalized 0..1) for demo mode.
+// We return them in canvas pixel coordinates (x, y, z, visibility) so the rest of the
+// rendering pipeline (drawTriangulatedAvatar, isPoseUsable, bodyBox) can consume them
+// without modification.
+function demoLandmarks(W: number, H: number, now: number) {
+  const a = demoAnchors(W, H, now);
+  const cx = a.cx;
+  const sy = a.shoulderY;
+  const hy = a.hipY;
+  const sw = a.shoulderW;
+  const torsoH = hy - sy;
+  const headY  = sy - torsoH * 0.45;
+  const noseY  = headY + torsoH * 0.18;
+  const kneeY  = hy + torsoH * 0.55;
+  const ankleY = hy + torsoH * 1.10;
+  const elbowY = sy + torsoH * 0.40;
+  const wristY = sy + torsoH * 0.78;
+  const hipW   = sw * 0.85;
+  const headW  = sw * 0.40;
+  const sway   = Math.sin(now * 0.0009) * (W * 0.012);
+
+  // Helper: convert pixel coords to MediaPipe-compatible normalized landmark.
+  // The downstream code multiplies by W/H so we feed normalized values.
+  const lm = (x: number, y: number, vis = 0.95) => ({
+    x: x / W,
+    y: y / H,
+    z: 0,
+    visibility: vis,
+  });
+
+  // 33 points following MediaPipe Pose convention (silhouette frontale)
+  const L = new Array(33);
+  L[0]  = lm(cx,             noseY);                  // nose
+  L[1]  = lm(cx - headW*0.18, noseY - torsoH*0.04);   // left eye inner
+  L[2]  = lm(cx - headW*0.28, noseY - torsoH*0.04);   // left eye
+  L[3]  = lm(cx - headW*0.38, noseY - torsoH*0.04);   // left eye outer
+  L[4]  = lm(cx + headW*0.18, noseY - torsoH*0.04);   // right eye inner
+  L[5]  = lm(cx + headW*0.28, noseY - torsoH*0.04);   // right eye
+  L[6]  = lm(cx + headW*0.38, noseY - torsoH*0.04);   // right eye outer
+  L[7]  = lm(cx - headW*0.50, noseY);                 // left ear
+  L[8]  = lm(cx + headW*0.50, noseY);                 // right ear
+  L[9]  = lm(cx - headW*0.18, noseY + torsoH*0.08);   // mouth left
+  L[10] = lm(cx + headW*0.18, noseY + torsoH*0.08);   // mouth right
+  L[11] = lm(cx - sw/2, sy);                          // left shoulder
+  L[12] = lm(cx + sw/2, sy);                          // right shoulder
+  L[13] = lm(cx - sw/2 - sw*0.08, elbowY);            // left elbow
+  L[14] = lm(cx + sw/2 + sw*0.08, elbowY);            // right elbow
+  L[15] = lm(cx - sw/2 - sw*0.05, wristY);            // left wrist
+  L[16] = lm(cx + sw/2 + sw*0.05, wristY);            // right wrist
+  L[17] = lm(cx - sw/2 - sw*0.07, wristY + 6);        // left pinky
+  L[18] = lm(cx + sw/2 + sw*0.07, wristY + 6);        // right pinky
+  L[19] = lm(cx - sw/2 - sw*0.04, wristY + 8);        // left index
+  L[20] = lm(cx + sw/2 + sw*0.04, wristY + 8);        // right index
+  L[21] = lm(cx - sw/2 - sw*0.02, wristY + 4);        // left thumb
+  L[22] = lm(cx + sw/2 + sw*0.02, wristY + 4);        // right thumb
+  L[23] = lm(cx - hipW/2, hy);                        // left hip
+  L[24] = lm(cx + hipW/2, hy);                        // right hip
+  L[25] = lm(cx - hipW/2 - sway*0.5, kneeY);          // left knee
+  L[26] = lm(cx + hipW/2 - sway*0.5, kneeY);          // right knee
+  L[27] = lm(cx - hipW/2,             ankleY);        // left ankle
+  L[28] = lm(cx + hipW/2,             ankleY);        // right ankle
+  L[29] = lm(cx - hipW/2 - 4, ankleY + 14);           // left heel
+  L[30] = lm(cx + hipW/2 + 4, ankleY + 14);           // right heel
+  L[31] = lm(cx - hipW/2 + 8, ankleY + 18);           // left foot index
+  L[32] = lm(cx + hipW/2 - 8, ankleY + 18);           // right foot index
+  return L;
+}
+
 declare global {
   interface Window {
     Pose?: any;
@@ -152,7 +220,7 @@ const MATCHING_STEPS = [
 // ═══════════════════════════════════════════════════════════════════════
 export default function TryOn() {
   const [lang, setLang] = useState<Lang>("fr");
-  const [phase, setPhase] = useState<Phase>("permission");
+  const [phase, setPhase] = useState<Phase>(DEMO_MODE ? "scan" : "permission");
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [matchingStep, setMatchingStep] = useState(0);
@@ -288,10 +356,11 @@ export default function TryOn() {
 
     const now = performance.now();
 
-    // In demo mode, inject synthetic anchors so the user can see the full flow
-    // (scan → matching → projection) without a camera.
+    // In demo mode, inject synthetic 33 landmarks (so the wireframe + triangulation
+    // render correctly) AND anchors (so Robert Engine can project the garment).
     if (DEMO_MODE) {
       anchorRef.current = demoAnchors(W, H, now);
+      filteredRef.current = demoLandmarks(W, H, now) as any;
       fitScoreRef.current = 92;
     }
 

@@ -25,6 +25,7 @@ const ROUTES = [
 ];
 
 const SECONDARY_ROUTES = [
+  { href: "/cap", label: "CAP — Production" },
   { href: "/footscan", label: "Foot Scan" },
   { href: "/investors", label: "Investors" },
 ];

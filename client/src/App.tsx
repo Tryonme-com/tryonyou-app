@@ -11,6 +11,7 @@ import FootScan from "./pages/FootScan";
 import Investors from "./pages/Investors";
 import Offre from "./pages/Offre";
 import Manifeste from "./pages/Manifeste";
+import CAP from "./pages/CAP";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/offer"} component={Offre} />
       <Route path={"/manifeste"} component={Manifeste} />
       <Route path={"/manifesto"} component={Manifeste} />
+      <Route path={"/cap"} component={CAP} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
