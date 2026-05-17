@@ -1,7 +1,11 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 
 const LINEAR_API_URL = "https://api.linear.app/graphql";
 const SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
+const API_TIMEOUT_MS = 20000;
+
+let syncTimer: NodeJS.Timeout | null = null;
+let isCronSyncRunning = false;
 
 type LinearIssueNode = {
   id: string;
@@ -47,8 +51,12 @@ function getMissingRequiredEnv(): string[] {
 }
 
 async function fetchLinearIssues(): Promise<LinearIssueNode[]> {
-  const token = process.env.LINEAR_API_TOKEN as string;
-  const linearAuth = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+  const token = process.env.LINEAR_API_TOKEN;
+  if (!token) {
+    throw new Error("LINEAR_API_TOKEN is required");
+  }
+
+  const linearAuth = token.startsWith("Bearer ") ? token : `Bearer ${token.trim()}`;
   const pageSize = Number(process.env.LINEAR_PAGE_SIZE ?? 50);
   const maxPages = Number(process.env.LINEAR_MAX_PAGES ?? 10);
 
@@ -83,7 +91,7 @@ async function fetchLinearIssues(): Promise<LinearIssueNode[]> {
       }
     `;
 
-    const response: { data: LinearIssuesResponse } = await axios.post<LinearIssuesResponse>(
+    const response: AxiosResponse<LinearIssuesResponse> = await axios.post<LinearIssuesResponse>(
       LINEAR_API_URL,
       { query, variables: { first: pageSize, after } },
       {
@@ -91,7 +99,7 @@ async function fetchLinearIssues(): Promise<LinearIssueNode[]> {
           Authorization: linearAuth,
           "Content-Type": "application/json",
         },
-        timeout: 20000,
+        timeout: API_TIMEOUT_MS,
       },
     );
 
@@ -162,7 +170,7 @@ async function writeRowsToSheet(rows: string[][]): Promise<void> {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      timeout: 20000,
+      timeout: API_TIMEOUT_MS,
     },
   );
 }
@@ -215,12 +223,39 @@ export function startSyncCron(): void {
     return;
   }
 
-  const timer = setInterval(async () => {
-    const result = await syncLinearToGoogleSheets();
-    console.log(
-      `[sync] status=${result.status} fetched=${result.issuesFetched} rows=${result.rowsWritten}`,
-    );
+  if (syncTimer) {
+    clearInterval(syncTimer);
+  }
+
+  syncTimer = setInterval(async () => {
+    if (isCronSyncRunning) {
+      console.warn("[sync] Skipping run because a previous sync is still in progress");
+      return;
+    }
+
+    isCronSyncRunning = true;
+    try {
+      const result = await syncLinearToGoogleSheets();
+      console.log(
+        `[sync] status=${result.status} fetched=${result.issuesFetched} rows=${result.rowsWritten}`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown cron sync error";
+      console.error(`[sync] cron execution failed: ${message}`);
+    } finally {
+      isCronSyncRunning = false;
+    }
   }, intervalMs);
 
-  timer.unref();
+  syncTimer.unref();
+}
+
+export function stopSyncCron(): void {
+  if (!syncTimer) {
+    return;
+  }
+
+  clearInterval(syncTimer);
+  syncTimer = null;
+  isCronSyncRunning = false;
 }

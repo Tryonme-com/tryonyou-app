@@ -2,7 +2,11 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import { startSyncCron, syncLinearToGoogleSheets } from "./linearSheetsSync";
+import {
+  startSyncCron,
+  stopSyncCron,
+  syncLinearToGoogleSheets,
+} from "./linearSheetsSync";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,10 +17,15 @@ async function startServer() {
 
   app.use(express.json());
 
-  app.all("/sync", async (_req, res) => {
+  app.post("/sync", async (_req, res) => {
     const result = await syncLinearToGoogleSheets();
-    const statusCode = result.status === "success" ? 200 : result.status === "skipped" ? 503 : 500;
-    res.status(statusCode).json(result);
+    const statusByResult: Record<typeof result.status, number> = {
+      success: 200,
+      skipped: 503,
+      error: 500,
+    };
+
+    res.status(statusByResult[result.status]).json(result);
   });
 
   // Serve static files from dist/public in production
@@ -35,6 +44,21 @@ async function startServer() {
   const port = process.env.PORT || 3000;
 
   startSyncCron();
+
+  const shutdown = () => {
+    stopSyncCron();
+    server.close((error) => {
+      if (error) {
+        console.error("Error while closing server", error);
+        process.exit(1);
+      }
+
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
