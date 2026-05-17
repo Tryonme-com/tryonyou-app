@@ -2,6 +2,11 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  startSyncCron,
+  stopSyncCron,
+  syncLinearToGoogleSheets,
+} from "./linearSheetsSync";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +14,19 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  app.use(express.json());
+
+  app.post("/sync", async (_req, res) => {
+    const result = await syncLinearToGoogleSheets();
+    const statusByResult: Record<typeof result.status, number> = {
+      success: 200,
+      skipped: 503,
+      error: 500,
+    };
+
+    res.status(statusByResult[result.status]).json(result);
+  });
 
   // Serve static files from dist/public in production
   const staticPath =
@@ -24,6 +42,23 @@ async function startServer() {
   });
 
   const port = process.env.PORT || 3000;
+
+  startSyncCron();
+
+  const shutdown = () => {
+    stopSyncCron();
+    server.close((error) => {
+      if (error) {
+        console.error("Error while closing server", error);
+        process.exit(1);
+      }
+
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
