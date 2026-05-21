@@ -5,6 +5,7 @@ Endpoints:
   GET  /api/health          → diagnostic
   POST /api/v1/leads        → capture lead (form de contact)
   GET  /api/v1/leads/count  → compteur (admin/diagnostic)
+  POST /api/v1/ops/jules-mail → exécute le traitement des emails comptables
 
 Stockage: SQLite (/tmp/tryonyou_leads.sqlite, lecture/écriture compatibles
 Vercel serverless). En complément, les leads sont également journalisés sur stdout
@@ -101,6 +102,17 @@ def _json_ok(data: Any, status: int = 200) -> Response:
 def _json_err(msg: str, status: int = 400, **extra: Any) -> Response:
     payload = {"ok": False, "error": msg, **extra}
     return _cors(Response(json.dumps(payload, ensure_ascii=False), status=status, mimetype="application/json"))
+
+
+def _is_authorized_ops_request() -> bool:
+    token = os.environ.get("JULES_CRON_TOKEN", "").strip()
+    if not token:
+        return True
+
+    auth_header = request.headers.get("Authorization", "").strip()
+    bearer = auth_header.removeprefix("Bearer ").strip() if auth_header.startswith("Bearer ") else ""
+    explicit = request.headers.get("X-Cron-Token", "").strip()
+    return bearer == token or explicit == token
 
 
 # ─── routes ───────────────────────────────────────────────────────────────
@@ -218,6 +230,24 @@ def leads_count() -> Response:
         return _json_ok({"ok": True, "count": n})
     except Exception as e:
         return _json_err(f"db error: {e}", 500)
+
+
+@app.route("/api/v1/ops/jules-mail", methods=["OPTIONS", "POST"])
+def run_jules_mail() -> Response:
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    if not _is_authorized_ops_request():
+        return _json_err("Unauthorized", 401)
+
+    try:
+        from jules_mail import jules_mail_agent_execution
+
+        result = jules_mail_agent_execution()
+        status = 200 if result.get("ok") else (202 if result.get("status") == "skipped" else 500)
+        return _json_ok(result, status)
+    except Exception as e:
+        return _json_err(f"jules mail execution error: {e}", 500)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
