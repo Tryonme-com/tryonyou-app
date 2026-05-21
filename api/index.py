@@ -5,6 +5,9 @@ Endpoints:
   GET  /api/health          → diagnostic
   POST /api/v1/leads        → capture lead (form de contact)
   GET  /api/v1/leads/count  → compteur (admin/diagnostic)
+  POST /api/v1/ops/jules-mail → exécute le traitement des emails comptables
+  POST /api/chat-pau        → assistant commercial P.A.U.
+  POST /api/pau-habla       → TTS/animation payload pour l'avatar P.A.U.
 
 Stockage: SQLite (/tmp/tryonyou_leads.sqlite, lecture/écriture compatibles
 Vercel serverless). En complément, les leads sont également journalisés sur stdout
@@ -18,14 +21,13 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sqlite3
 import sys
 import time
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import Flask, jsonify, request, Response
+from flask import Flask, request, Response
 
 app = Flask(__name__)
 
@@ -33,7 +35,6 @@ DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 
-EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
@@ -76,6 +77,15 @@ def _client_ip() -> str:
     return request.remote_addr or "unknown"
 
 
+def _is_valid_email(value: str) -> bool:
+    if not value or " " in value:
+        return False
+    if value.count("@") != 1:
+        return False
+    local, domain = value.split("@", 1)
+    return bool(local and domain and "." in domain and not domain.startswith(".") and not domain.endswith("."))
+
+
 def _rate_check(ip: str) -> bool:
     now = time.time()
     bucket = _RATE.setdefault(ip, [])
@@ -101,6 +111,17 @@ def _json_ok(data: Any, status: int = 200) -> Response:
 def _json_err(msg: str, status: int = 400, **extra: Any) -> Response:
     payload = {"ok": False, "error": msg, **extra}
     return _cors(Response(json.dumps(payload, ensure_ascii=False), status=status, mimetype="application/json"))
+
+
+def _is_authorized_ops_request() -> bool:
+    token = os.environ.get("JULES_CRON_TOKEN", "").strip()
+    if not token:
+        return False
+
+    auth_header = request.headers.get("Authorization", "").strip()
+    bearer = auth_header.removeprefix("Bearer ").strip() if auth_header.startswith("Bearer ") else ""
+    explicit = request.headers.get("X-Cron-Token", "").strip()
+    return bearer == token or explicit == token
 
 
 # ─── routes ───────────────────────────────────────────────────────────────
@@ -153,7 +174,7 @@ def post_lead() -> Response:
     # Validation
     if not full_name or len(full_name) > 200:
         return _json_err("Nom complet manquant ou trop long.", 422, field="full_name")
-    if not EMAIL_RE.match(email):
+    if not _is_valid_email(email):
         return _json_err("Email professionnel invalide.", 422, field="email")
     if not company or len(company) > 200:
         return _json_err("Maison / Enseigne manquante.", 422, field="company")
@@ -217,7 +238,79 @@ def leads_count() -> Response:
         con.close()
         return _json_ok({"ok": True, "count": n})
     except Exception as e:
-        return _json_err(f"db error: {e}", 500)
+        print(f"[tryonyou] db count error: {e}", file=sys.stderr)
+        return _json_err("db error", 500)
+
+
+@app.route("/api/v1/ops/jules-mail", methods=["OPTIONS", "POST"])
+def run_jules_mail() -> Response:
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    if not _is_authorized_ops_request():
+        return _json_err("Unauthorized", 401)
+
+    try:
+        from jules_mail import jules_mail_agent_execution
+
+        result = jules_mail_agent_execution()
+        status = 200 if result.get("ok") else (202 if result.get("status") == "skipped" else 500)
+        return _json_ok(result, status)
+    except Exception as e:
+        print(f"[tryonyou] jules mail execution error: {e}", file=sys.stderr)
+        return _json_err("jules mail execution error", 500)
+
+
+@app.route("/api/chat-pau", methods=["POST"])
+def chat_pau_endpoint() -> Response:
+    data = request.get_json(silent=True) or {}
+    mensaje = str(data.get("mensaje", "")).strip()
+    es_inversor = bool(data.get("inversor", False))
+
+    if not mensaje:
+        return _json_err("Mensaje ausente", 400)
+
+    try:
+        from pau_assistant import PauInterfaceAgent
+
+        agente_pau = PauInterfaceAgent()
+        respuesta_pau = agente_pau.procesar_consulta_visita(
+            mensaje, es_inversor=es_inversor
+        )
+        return _json_ok({"respuesta": respuesta_pau}, 200)
+    except Exception as e:
+        print(f"[tryonyou] pau chat error: {e}", file=sys.stderr)
+        return _json_err("Error de procesamiento en la interfaz", 500)
+
+
+@app.route("/api/pau-habla", methods=["POST"])
+def pau_habla_endpoint() -> Response:
+    data = request.get_json(silent=True) or {}
+    texto = str(data.get("texto", "")).strip()
+    idioma = str(data.get("idioma", "")).strip() or "fr"
+    if not texto:
+        return _json_err("Texto ausente", 400)
+
+    try:
+        from pau_assistant import generar_audio_habla
+
+        result = generar_audio_habla(texto, idioma)
+        status = 200 if result.get("status") == "success" else 503
+        return _json_ok(result, status)
+    except Exception as e:
+        print(f"[tryonyou] pau habla error: {e}", file=sys.stderr)
+        return _json_err("Error en generación de audio Pau", 500)
+
+
+try:
+    from manoli import manoli_blueprint
+except ModuleNotFoundError as e:
+    print(f"[tryonyou] manoli blueprint module not found: {e}", file=sys.stderr)
+else:
+    try:
+        app.register_blueprint(manoli_blueprint)
+    except (AssertionError, ValueError) as e:
+        print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
