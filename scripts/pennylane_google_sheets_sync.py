@@ -83,7 +83,7 @@ def _to_decimal(value: Any) -> Decimal:
 
 
 def _extract_vat_from_total(amount_with_vat: Decimal, tva_rate: Decimal) -> Decimal:
-    if amount_with_vat >= 0 or tva_rate <= 0:
+    if amount_with_vat > 0 or tva_rate <= 0:
         # Business default: only expense transactions (negative amounts)
         # get reverse VAT extraction in this automation flow.
         return Decimal("0")
@@ -105,6 +105,7 @@ def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any
         amount = _to_decimal(tx.get("amount"))
         is_expense = amount < 0
         # Business default from statement: 20% VAT for expenses, exempt otherwise.
+        # Reduced/special VAT rates are intentionally out of scope for this sync.
         tva_rate = VAT_RATE_STANDARD if is_expense else Decimal("0")
         vat_amount = _extract_vat_from_total(amount, tva_rate)
         base_imponible = (amount - vat_amount).quantize(Decimal("0.01"))
@@ -139,6 +140,7 @@ def _ensure_headers(sheet: gspread.Worksheet) -> None:
             f"La hoja contiene {len(first_row)} columnas en la fila 1 y se esperaban al menos {len(EXPECTED_HEADERS)}."
         )
 
+    # Additional columns are allowed; we validate only the managed A:H structure.
     normalized_existing = [cell.strip() for cell in first_row[: len(EXPECTED_HEADERS)]]
     if normalized_existing != EXPECTED_HEADERS:
         raise RuntimeError(
@@ -155,7 +157,14 @@ def sync_to_google_sheets(rows: list[list[Any]]) -> int:
 
     _ensure_headers(sheet)
     existing_ids = {value.strip() for value in sheet.col_values(1)[1:] if value.strip()}
-    new_rows = [row for row in rows if row and str(row[0]).strip() and str(row[0]).strip() not in existing_ids]
+    new_rows: list[list[Any]] = []
+    for row in rows:
+        if not row:
+            continue
+        row_id = str(row[0]).strip()
+        if not row_id or row_id in existing_ids:
+            continue
+        new_rows.append(row)
 
     if not new_rows:
         print(f"{LOG_PREFIX} No hay transacciones nuevas para añadir. Todo al día.")
