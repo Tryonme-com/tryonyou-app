@@ -18,6 +18,7 @@ GEMINI_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
     "gemini-2.5-pro:generateContent"
 )
+AUDIT_LOG_FILENAME = "logs_contabilidad.csv"
 CUENTAS_AUTORIZADAS = [
     "admin@tryonyou.app",
     "ruben.espinard.10@icloud.com",
@@ -107,7 +108,7 @@ class CalendarioFiscalFrances:
 
 
 class AuditoriaContableJules:
-    def __init__(self, ruta_log: str = "api/logs_contabilidad.csv") -> None:
+    def __init__(self, ruta_log: str = f"api/{AUDIT_LOG_FILENAME}") -> None:
         self.ruta_log = os.environ.get("JULES_AUDIT_LOG_PATH", ruta_log)
         self._inicializar_archivo()
 
@@ -116,7 +117,7 @@ class AuditoriaContableJules:
             os.makedirs(os.path.dirname(self.ruta_log), exist_ok=True)
             return open(self.ruta_log, mode=mode, newline="", encoding="utf-8")
         except OSError:
-            tmp_path = os.path.join(os.environ.get("TMPDIR", "/tmp"), "logs_contabilidad.csv")
+            tmp_path = os.path.join(os.environ.get("TMPDIR", "/tmp"), AUDIT_LOG_FILENAME)
             os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
             self.ruta_log = tmp_path
             return open(self.ruta_log, mode=mode, newline="", encoding="utf-8")
@@ -327,7 +328,7 @@ def analyze_and_draft_response(
             {
                 "parts": [
                     {
-                        "text": f"Consulta recibida de {sender_email}:\\n\\n{email_body[:12000]}"
+                        "text": f"Consulta recibida de {sender_email}:\n\n{email_body[:12000]}"
                     }
                 ]
             }
@@ -399,7 +400,7 @@ def jules_mail_agent_execution() -> dict[str, Any]:
         return {
             "ok": False,
             "status": "skipped",
-            "message": f"Mail agent skipped: {exc}",
+            "message": "Mail agent skipped: Gmail configuration or auth is invalid.",
             "processed": 0,
             "replied": 0,
             "failed": 0,
@@ -450,6 +451,8 @@ def jules_mail_agent_execution() -> dict[str, Any]:
                 )
 
             if len(importes_mencionados) >= 3:
+                # Heurística: usamos los tres primeros importes detectados como
+                # total, base imponible y TVA declarada para un chequeo preliminar.
                 revision_tva = auditor.verificar_calculo_tva(
                     total=importes_mencionados[0],
                     base_imponible=importes_mencionados[1],

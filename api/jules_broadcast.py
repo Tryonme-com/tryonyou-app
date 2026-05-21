@@ -41,13 +41,13 @@ def enviar_correo_individual(
     desde_cuenta: str,
     para_email: str,
     asunto: str,
-    cuerpo_texto: str,
+    cuerpo_html: str,
 ) -> bool:
     if desde_cuenta.lower() not in {c.lower() for c in CUENTAS_AUTORIZADAS}:
         print(f"[Jules Error] Remitente no autorizado: {desde_cuenta}")
         return False
 
-    mensaje = MIMEText(cuerpo_texto, "html", "utf-8")
+    mensaje = MIMEText(cuerpo_html, "html", "utf-8")
     mensaje["To"] = para_email
     mensaje["From"] = desde_cuenta
     mensaje["Subject"] = asunto

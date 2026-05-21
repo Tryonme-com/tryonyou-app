@@ -6,6 +6,7 @@ Endpoints:
   POST /api/v1/leads        → capture lead (form de contact)
   GET  /api/v1/leads/count  → compteur (admin/diagnostic)
   POST /api/v1/ops/jules-mail → exécute le traitement des emails comptables
+  POST /api/chat-pau        → assistant commercial P.A.U.
 
 Stockage: SQLite (/tmp/tryonyou_leads.sqlite, lecture/écriture compatibles
 Vercel serverless). En complément, les leads sont également journalisés sur stdout
@@ -19,7 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sqlite3
 import sys
 import time
@@ -34,7 +34,6 @@ DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 
-EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
@@ -75,6 +74,15 @@ def _client_ip() -> str:
     if fwd:
         return fwd.split(",")[0].strip()
     return request.remote_addr or "unknown"
+
+
+def _is_valid_email(value: str) -> bool:
+    if not value or " " in value:
+        return False
+    if value.count("@") != 1:
+        return False
+    local, domain = value.split("@", 1)
+    return bool(local and domain and "." in domain and not domain.startswith(".") and not domain.endswith("."))
 
 
 def _rate_check(ip: str) -> bool:
@@ -165,7 +173,7 @@ def post_lead() -> Response:
     # Validation
     if not full_name or len(full_name) > 200:
         return _json_err("Nom complet manquant ou trop long.", 422, field="full_name")
-    if not EMAIL_RE.match(email):
+    if not _is_valid_email(email):
         return _json_err("Email professionnel invalide.", 422, field="email")
     if not company or len(company) > 200:
         return _json_err("Maison / Enseigne manquante.", 422, field="company")
@@ -250,6 +258,31 @@ def run_jules_mail() -> Response:
     except Exception as e:
         print(f"[tryonyou] jules mail execution error: {e}", file=sys.stderr)
         return _json_err("jules mail execution error", 500)
+
+
+@app.route("/api/chat-pau", methods=["POST"])
+def chat_pau_endpoint() -> Response:
+    data = request.get_json(silent=True) or {}
+    mensaje = str(data.get("mensaje", "")).strip()
+    es_inversor = bool(data.get("inversor", False))
+
+    if not mensaje:
+        return _json_err("Mensaje ausente", 400)
+
+    try:
+        try:
+            from pau_assistant import PauInterfaceAgent
+        except Exception:
+            from api.pau_assistant import PauInterfaceAgent
+
+        agente_pau = PauInterfaceAgent()
+        respuesta_pau = agente_pau.procesar_consulta_visita(
+            mensaje, es_inversor=es_inversor
+        )
+        return _json_ok({"respuesta": respuesta_pau}, 200)
+    except Exception as e:
+        print(f"[tryonyou] pau chat error: {e}", file=sys.stderr)
+        return _json_err("Error de procesamiento en la interfaz", 500)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
