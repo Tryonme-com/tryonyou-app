@@ -10,6 +10,7 @@ from typing import Any
 import gspread
 import requests
 from google.oauth2.service_account import Credentials
+from gspread.utils import rowcol_to_a1
 
 PENNYLANE_API_URL = "https://api.pennylane.com/v1"
 PENNYLANE_API_KEY = os.environ.get("PENNYLANE_API_KEY", "").strip()
@@ -17,6 +18,7 @@ SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID", "").strip()
 GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 REQUEST_TIMEOUT_SECONDS = 30
 VAT_RATE_STANDARD = Decimal("0.20")
+LOG_PREFIX = "[PennylaneSync]"
 
 EXPECTED_HEADERS = [
     "ID Transacción",
@@ -82,6 +84,8 @@ def _to_decimal(value: Any) -> Decimal:
 
 def _extract_vat_from_total(amount_with_vat: Decimal, tva_rate: Decimal) -> Decimal:
     if amount_with_vat >= 0 or tva_rate <= 0:
+        # Business default: only expense transactions (negative amounts)
+        # get reverse VAT extraction in this automation flow.
         return Decimal("0")
     # Reverse VAT extraction from VAT-inclusive amount:
     # total * (rate / (1 + rate)) -> VAT component
@@ -100,6 +104,7 @@ def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any
 
         amount = _to_decimal(tx.get("amount"))
         is_expense = amount < 0
+        # Business default from statement: 20% VAT for expenses, exempt otherwise.
         tva_rate = VAT_RATE_STANDARD if is_expense else Decimal("0")
         vat_amount = _extract_vat_from_total(amount, tva_rate)
         base_imponible = (amount - vat_amount).quantize(Decimal("0.01"))
@@ -125,8 +130,14 @@ def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any
 def _ensure_headers(sheet: gspread.Worksheet) -> None:
     first_row = sheet.row_values(1)
     if not first_row:
-        sheet.update("A1:H1", [EXPECTED_HEADERS], value_input_option="USER_ENTERED")
+        end_cell = rowcol_to_a1(1, len(EXPECTED_HEADERS))
+        sheet.update(f"A1:{end_cell}", [EXPECTED_HEADERS], value_input_option="USER_ENTERED")
         return
+
+    if len(first_row) < len(EXPECTED_HEADERS):
+        raise RuntimeError(
+            f"La hoja contiene {len(first_row)} columnas en la fila 1 y se esperaban al menos {len(EXPECTED_HEADERS)}."
+        )
 
     normalized_existing = [cell.strip() for cell in first_row[: len(EXPECTED_HEADERS)]]
     if normalized_existing != EXPECTED_HEADERS:
@@ -147,29 +158,29 @@ def sync_to_google_sheets(rows: list[list[Any]]) -> int:
     new_rows = [row for row in rows if row and str(row[0]).strip() and str(row[0]).strip() not in existing_ids]
 
     if not new_rows:
-        print("[Jules] No hay transacciones nuevas para añadir. Todo al día.")
+        print(f"{LOG_PREFIX} No hay transacciones nuevas para añadir. Todo al día.")
         return 0
 
     sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
-    print(f"[Jules] Sincronizadas con éxito {len(new_rows)} nuevas transacciones.")
+    print(f"{LOG_PREFIX} Sincronizadas con éxito {len(new_rows)} nuevas transacciones.")
     return len(new_rows)
 
 
 def main_execution() -> int:
     """Ejecutor principal del flujo contable."""
     try:
-        print("[Jules] Iniciando extracción de datos financieros de Pennylane...")
+        print(f"{LOG_PREFIX} Iniciando extracción de datos financieros de Pennylane...")
         raw_transactions = fetch_pennylane_transactions()
-        print(f"[Jules] Transacciones recibidas: {len(raw_transactions)}")
+        print(f"{LOG_PREFIX} Transacciones recibidas: {len(raw_transactions)}")
 
-        print("[Jules] Procesando importes, desgloses de TVA y estados de conciliación...")
+        print(f"{LOG_PREFIX} Procesando importes, desgloses de TVA y estados de conciliación...")
         processed_data = process_and_format_data(raw_transactions)
 
-        print("[Jules] Escribiendo datos en Google Sheets...")
+        print(f"{LOG_PREFIX} Escribiendo datos en Google Sheets...")
         sync_to_google_sheets(processed_data)
         return 0
     except Exception as exc:
-        print(f"[Jules ERROR] Fallo en la ejecución automática: {exc}")
+        print(f"{LOG_PREFIX} ERROR: Fallo en la ejecución automática: {exc}")
         return 1
 
 
