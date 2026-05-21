@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 from email.mime.text import MIMEText
 from email.utils import parseaddr
 from typing import Any
@@ -15,6 +16,69 @@ GEMINI_API_URL = (
     "gemini-2.5-pro:generateContent"
 )
 DEFAULT_QUERY = "is:unread (lconta OR comptabilité OR factura OR taxes)"
+CUENTAS_AUTORIZADAS = [
+    "admin@tryonyou.app",
+    "ruben.espinar.10@icloud.com",
+    "rubensanzburo@gmail.com",
+]
+
+
+class ExcelenciaContableJules:
+    def __init__(self, tva_rate_default: float = 0.20) -> None:
+        self.tva_default = tva_rate_default
+
+    def verificar_calculo_tva(
+        self, total: float, base_imponible: float, tva_declarada: float
+    ) -> dict[str, Any]:
+        total = float(total)
+        base_imponible = float(base_imponible)
+        tva_declarada = float(tva_declarada)
+
+        tva_teorica = round(base_imponible * self.tva_default, 2)
+        total_teorico = round(base_imponible + tva_teorica, 2)
+
+        descuadre_tva = abs(tva_teorica - tva_declarada)
+        descuadre_total = abs(total_teorico - total)
+
+        if descuadre_tva > 0.02 or descuadre_total > 0.02:
+            return {
+                "valido": False,
+                "error": (
+                    f"Discrepancia fiscal. IVA teórico: {tva_teorica}€, "
+                    f"Declarado: {tva_declarada}€. Total teórico: {total_teorico}€, "
+                    f"Declarado: {total}€."
+                ),
+            }
+        return {"valido": True, "error": None}
+
+    def escanear_importes_en_texto(self, texto: str) -> list[float]:
+        patron = r"(\d+(?:[\s.,]\d+)?)\s*(?:€|EUR|euros)"
+        coincidencias = re.findall(patron, texto)
+
+        importes: list[float] = []
+        for coincidencia in coincidencias:
+            try:
+                num_str = coincidencia.replace(" ", "").replace(",", ".")
+                importes.append(float(num_str))
+            except ValueError:
+                continue
+        return importes
+
+    def generar_instruccion_sistema_avanzada(
+        self, contexto_bancario_actual: str = ""
+    ) -> str:
+        return (
+            "Eres Jules, el controlador financiero y contable de más alto nivel para TRYONYOU. "
+            "Tus respuestas son estrictamente analíticas, basadas en datos confirmados y leyes fiscales vigentes "
+            "(Francia/Unión Europea). Reglas de oro:\n"
+            "1. Si Lconta o un proveedor pregunta por un descuadre, revisa los datos adjuntos y desglosa la Base "
+            "Imponible y la TVA (20%).\n"
+            "2. Nunca asumas un pago como realizado si no figura en el extracto bancario sincronizado.\n"
+            "3. Usa terminología financiera precisa (NIF, IVA/TVA, Invoice, Bilan, Conciliación).\n"
+            "4. Respuestas concisas, cortas, directas y sin rodeos corporativos innecesarios.\n"
+            "5. Si te piden un justificante que no está en el sistema, indica que se está procesando en Pennylane.\n"
+            f"Contexto de caja actual del sistema:\n{contexto_bancario_actual}"
+        )
 
 
 def _get_required_env(name: str) -> str:
@@ -81,15 +145,10 @@ def _header_value(headers: list[dict[str, str]], name: str) -> str:
     return ""
 
 
-def analyze_and_draft_response(email_body: str, sender_email: str) -> str:
+def analyze_and_draft_response(
+    email_body: str, sender_email: str, system_instruction: str
+) -> str:
     gemini_api_key = _get_required_env("GEMINI_API_KEY")
-    system_instruction = (
-        "Eres Jules, asistente técnico de operaciones y contabilidad. Responde consultas "
-        "de contables o gestores de forma directa, objetiva y basada estrictamente en "
-        "datos reales. Si te piden un justificante que no está en el sistema, indica "
-        "que se está procesando en Pennylane. No inventes números ni transacciones. "
-        "Usa un tono profesional, claro y refinado."
-    )
     payload = {
         "contents": [
             {
@@ -152,6 +211,20 @@ def mark_as_read(service: Any, message_id: str) -> None:
 def jules_mail_agent_execution() -> dict[str, Any]:
     try:
         service = get_gmail_service()
+        profile = service.users().getProfile(userId="me").execute()
+        mailbox = str(profile.get("emailAddress", "")).strip().lower()
+        if mailbox not in {c.lower() for c in CUENTAS_AUTORIZADAS}:
+            return {
+                "ok": False,
+                "status": "skipped",
+                "message": (
+                    "Mail agent skipped: mailbox not authorized. "
+                    f"Authorized: {', '.join(CUENTAS_AUTORIZADAS)}"
+                ),
+                "processed": 0,
+                "replied": 0,
+                "failed": 0,
+            }
     except Exception as exc:
         return {
             "ok": False,
@@ -175,6 +248,7 @@ def jules_mail_agent_execution() -> dict[str, Any]:
 
     replied = 0
     failed = 0
+    auditor = ExcelenciaContableJules()
     for msg in messages:
         msg_id = msg.get("id", "")
         thread_id = msg.get("threadId", "")
@@ -203,7 +277,27 @@ def jules_mail_agent_execution() -> dict[str, Any]:
             if not body.strip():
                 body = "(correo sin cuerpo de texto plano)"
 
-            reply_body = analyze_and_draft_response(body, sender_email)
+            importes_mencionados = auditor.escanear_importes_en_texto(body)
+            contexto_adicional = ""
+            if importes_mencionados:
+                contexto_adicional = (
+                    "El remitente menciona los siguientes importes en su consulta: "
+                    f"{importes_mencionados}. Verifica si requieren validación."
+                )
+                if len(importes_mencionados) >= 3:
+                    revision_tva = auditor.verificar_calculo_tva(
+                        total=importes_mencionados[0],
+                        base_imponible=importes_mencionados[1],
+                        tva_declarada=importes_mencionados[2],
+                    )
+                    contexto_adicional = (
+                        f"{contexto_adicional}\nResultado de auditoría TVA preliminar: {revision_tva}"
+                    )
+
+            system_instruction = auditor.generar_instruccion_sistema_avanzada(
+                contexto_adicional
+            )
+            reply_body = analyze_and_draft_response(body, sender_email, system_instruction)
             send_reply(service, sender_email, subject, reply_body, thread_id, message_id_header)
             mark_as_read(service, msg_id)
             replied += 1
