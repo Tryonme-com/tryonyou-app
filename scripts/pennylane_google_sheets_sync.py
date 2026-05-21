@@ -84,8 +84,8 @@ def _to_decimal(value: Any) -> Decimal:
 
 def _extract_vat_from_total(amount_with_vat: Decimal, tva_rate: Decimal) -> Decimal:
     if amount_with_vat >= 0 or tva_rate <= 0:
-        # Business default: only expense transactions (negative amounts)
-        # get reverse VAT extraction in this automation flow.
+        # Business default: only expense transactions (strictly negative amounts)
+        # get reverse VAT extraction in this automation flow. Zero is treated as non-expense.
         return Decimal("0")
     # Reverse VAT extraction from VAT-inclusive amount:
     # total * (rate / (1 + rate)) -> VAT component
@@ -110,6 +110,7 @@ def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any
         vat_amount = _extract_vat_from_total(amount, tva_rate)
         base_imponible = (amount - vat_amount).quantize(Decimal("0.01"))
 
+        # Explicit bool cast to normalize possible non-boolean API values.
         matched = bool(tx.get("matched") or tx.get("matched_invoice"))
         status = "Conciliado" if matched else "Pendiente Justificante"
 
