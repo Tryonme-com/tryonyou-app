@@ -18,6 +18,7 @@ from googleapiclient.discovery import build
 MAX_ENVIOS_DIARIOS = 4
 CUENTA_ENVIO_CORPORATIVA = "admin@tryonyou.app"
 SHEET_TAB = "SEO_Prospects"
+SEO_HEADERS = ["Nombre_Sitio", "URL", "Email_Contacto", "Estado", "Fecha_Envio", "Msg_ID"]
 
 
 def get_google_sheet_client() -> gspread.Client:
@@ -37,7 +38,18 @@ def _sheet() -> gspread.Worksheet:
     if not spreadsheet_id:
         raise RuntimeError("Missing required env: SPREADSHEET_ID")
     client = get_google_sheet_client()
-    return client.open_by_key(spreadsheet_id).worksheet(SHEET_TAB)
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    try:
+        sheet = spreadsheet.worksheet(SHEET_TAB)
+    except gspread.exceptions.WorksheetNotFound:
+        sheet = spreadsheet.add_worksheet(title=SHEET_TAB, rows=1000, cols=10)
+        sheet.append_row(SEO_HEADERS, value_input_option="USER_ENTERED")
+        return sheet
+
+    first_row = sheet.row_values(1)
+    if not first_row:
+        sheet.append_row(SEO_HEADERS, value_input_option="USER_ENTERED")
+    return sheet
 
 
 def obtener_sitios_seo_pendientes() -> list[dict[str, Any]]:

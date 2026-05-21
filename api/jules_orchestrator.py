@@ -31,6 +31,7 @@ CUENTAS_AUTORIZADAS = [
     "rubensanzburo@gmail.com",
 ]
 SEO_MAX_ENVIOS_DIARIOS = 4
+SEO_HEADERS = ["Nombre_Sitio", "URL", "Email_Contacto", "Estado", "Fecha_Envio", "Msg_ID"]
 
 
 def get_google_sheet_client() -> gspread.Client:
@@ -281,11 +282,17 @@ def ejecutar_goteo_seo_diario() -> None:
         return
 
     client = get_google_sheet_client()
+    spreadsheet = client.open_by_key(SPREADSHEET_ID)
     try:
-        sheet = client.open_by_key(SPREADSHEET_ID).worksheet("SEO_Prospects")
+        sheet = spreadsheet.worksheet("SEO_Prospects")
     except gspread.exceptions.WorksheetNotFound:
-        print("[SEO Warning] Pestaña 'SEO_Prospects' ausente en Drive. Saltando módulo.")
+        sheet = spreadsheet.add_worksheet(title="SEO_Prospects", rows=1000, cols=10)
+        sheet.append_row(SEO_HEADERS, value_input_option="USER_ENTERED")
+        print("[SEO Info] Pestaña 'SEO_Prospects' creada automáticamente.")
         return
+
+    if not sheet.row_values(1):
+        sheet.append_row(SEO_HEADERS, value_input_option="USER_ENTERED")
 
     prospectos = [
         r for r in sheet.get_all_records() if str(r.get("Estado", "")).strip() == "Pendiente"
