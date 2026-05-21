@@ -55,7 +55,7 @@ class ExcelenciaContableJules:
         return {"valido": True, "error": None}
 
     def escanear_importes_en_texto(self, texto: str) -> list[float]:
-        patron = r"(\d+(?:[\s.,]\d+)?)\s*(?:€|EUR|euros)"
+        patron = r"(\d{1,3}(?:\s\d{3})*(?:[.,]\d+)?|\d+(?:[.,]\d+)?)\s*(?:€|EUR|euros)"
         coincidencias = re.findall(patron, texto)
 
         importes: list[float] = []
