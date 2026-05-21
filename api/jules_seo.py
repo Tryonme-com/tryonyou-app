@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from typing import Any
 
 import gspread
+from gspread.exceptions import CellNotFound
 from google.oauth2.credentials import Credentials as UserCredentials
 from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 from googleapiclient.discovery import build
@@ -49,7 +50,11 @@ def obtener_sitios_seo_pendientes() -> list[dict[str, Any]]:
 
 def actualizar_estado_seo_sheet(sitio_url: str, msg_id: str) -> None:
     sheet = _sheet()
-    celda_url = sheet.find(sitio_url)
+    try:
+        celda_url = sheet.find(sitio_url)
+    except CellNotFound:
+        print(f"[Jules SEO] URL no encontrada en hoja: {sitio_url}")
+        return
     fila = celda_url.row
     sheet.update_cell(fila, 4, "Enviado")
     sheet.update_cell(fila, 5, datetime.now().strftime("%Y-%m-%d"))

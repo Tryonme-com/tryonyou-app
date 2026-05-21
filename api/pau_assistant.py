@@ -83,3 +83,50 @@ class PauInterfaceAgent:
         if not text:
             raise RuntimeError("Pau response is empty")
         return text
+
+
+def generar_audio_habla(texto: str, idioma: str) -> dict[str, Any]:
+    webhook = (os.environ.get("PAU_TTS_ENDPOINT") or "").strip()
+    fallback_audio_url = (os.environ.get("PAU_TTS_FALLBACK_AUDIO_URL") or "").strip()
+    estimated_duration_ms = max(1800, min(len(texto) * 55, 12000))
+
+    if not webhook:
+        if fallback_audio_url:
+            return {
+                "status": "success",
+                "audio_data": fallback_audio_url,
+                "duracion_animacion_ms": estimated_duration_ms,
+            }
+        return {
+            "status": "error",
+            "error": "PAU_TTS_ENDPOINT no configurado",
+            "duracion_animacion_ms": estimated_duration_ms,
+        }
+
+    response = requests.post(
+        webhook,
+        headers={"Content-Type": "application/json"},
+        json={"texto": texto, "idioma": idioma},
+        timeout=60,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(f"Pau TTS API error {response.status_code}: {response.text[:500]}")
+
+    body = response.json()
+    audio_data = body.get("audio_data") or body.get("audioUrl") or body.get("url")
+    duration = int(
+        body.get("duracion_animacion_ms")
+        or body.get("durationMs")
+        or estimated_duration_ms
+    )
+    if not audio_data:
+        return {
+            "status": "error",
+            "error": "Respuesta TTS sin audio_data",
+            "duracion_animacion_ms": duration,
+        }
+    return {
+        "status": "success",
+        "audio_data": audio_data,
+        "duracion_animacion_ms": duration,
+    }

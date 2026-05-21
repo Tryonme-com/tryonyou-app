@@ -7,6 +7,7 @@ Endpoints:
   GET  /api/v1/leads/count  → compteur (admin/diagnostic)
   POST /api/v1/ops/jules-mail → exécute le traitement des emails comptables
   POST /api/chat-pau        → assistant commercial P.A.U.
+  POST /api/pau-habla       → TTS/animation payload pour l'avatar P.A.U.
 
 Stockage: SQLite (/tmp/tryonyou_leads.sqlite, lecture/écriture compatibles
 Vercel serverless). En complément, les leads sont également journalisés sur stdout
@@ -270,10 +271,7 @@ def chat_pau_endpoint() -> Response:
         return _json_err("Mensaje ausente", 400)
 
     try:
-        try:
-            from pau_assistant import PauInterfaceAgent
-        except Exception:
-            from api.pau_assistant import PauInterfaceAgent
+        from pau_assistant import PauInterfaceAgent
 
         agente_pau = PauInterfaceAgent()
         respuesta_pau = agente_pau.procesar_consulta_visita(
@@ -283,6 +281,25 @@ def chat_pau_endpoint() -> Response:
     except Exception as e:
         print(f"[tryonyou] pau chat error: {e}", file=sys.stderr)
         return _json_err("Error de procesamiento en la interfaz", 500)
+
+
+@app.route("/api/pau-habla", methods=["POST"])
+def pau_habla_endpoint() -> Response:
+    data = request.get_json(silent=True) or {}
+    texto = str(data.get("texto", "")).strip()
+    idioma = str(data.get("idioma", "")).strip() or "fr"
+    if not texto:
+        return _json_err("Texto ausente", 400)
+
+    try:
+        from pau_assistant import generar_audio_habla
+
+        result = generar_audio_habla(texto, idioma)
+        status = 200 if result.get("status") == "success" else 503
+        return _json_ok(result, status)
+    except Exception as e:
+        print(f"[tryonyou] pau habla error: {e}", file=sys.stderr)
+        return _json_err("Error en generación de audio Pau", 500)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
