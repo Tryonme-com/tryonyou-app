@@ -302,6 +302,14 @@ def pau_habla_endpoint() -> Response:
         return _json_err("Error en generación de audio Pau", 500)
 
 
+try:
+    from manoli import manoli_blueprint
+
+    app.register_blueprint(manoli_blueprint)
+except Exception as e:
+    print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
+
+
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
 # Do not define a `handler` function here, otherwise the runtime tries to call
 # it as a HTTP handler instead of forwarding to the Flask app.
