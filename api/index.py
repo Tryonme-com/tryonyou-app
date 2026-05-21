@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import Flask, jsonify, request, Response
+from flask import Flask, request, Response
 
 app = Flask(__name__)
 
@@ -107,7 +107,7 @@ def _json_err(msg: str, status: int = 400, **extra: Any) -> Response:
 def _is_authorized_ops_request() -> bool:
     token = os.environ.get("JULES_CRON_TOKEN", "").strip()
     if not token:
-        return True
+        return False
 
     auth_header = request.headers.get("Authorization", "").strip()
     bearer = auth_header.removeprefix("Bearer ").strip() if auth_header.startswith("Bearer ") else ""
@@ -229,7 +229,8 @@ def leads_count() -> Response:
         con.close()
         return _json_ok({"ok": True, "count": n})
     except Exception as e:
-        return _json_err(f"db error: {e}", 500)
+        print(f"[tryonyou] db count error: {e}", file=sys.stderr)
+        return _json_err("db error", 500)
 
 
 @app.route("/api/v1/ops/jules-mail", methods=["OPTIONS", "POST"])
@@ -247,7 +248,8 @@ def run_jules_mail() -> Response:
         status = 200 if result.get("ok") else (202 if result.get("status") == "skipped" else 500)
         return _json_ok(result, status)
     except Exception as e:
-        return _json_err(f"jules mail execution error: {e}", 500)
+        print(f"[tryonyou] jules mail execution error: {e}", file=sys.stderr)
+        return _json_err("jules mail execution error", 500)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
