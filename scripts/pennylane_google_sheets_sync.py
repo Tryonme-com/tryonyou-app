@@ -16,6 +16,7 @@ PENNYLANE_API_KEY = os.environ.get("PENNYLANE_API_KEY", "").strip()
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID", "").strip()
 GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 REQUEST_TIMEOUT_SECONDS = 30
+VAT_RATE_STANDARD = Decimal("0.20")
 
 EXPECTED_HEADERS = [
     "ID Transacción",
@@ -79,6 +80,14 @@ def _to_decimal(value: Any) -> Decimal:
         return Decimal("0")
 
 
+def _extract_vat_from_total(amount_with_vat: Decimal, tva_rate: Decimal) -> Decimal:
+    if amount_with_vat >= 0 or tva_rate <= 0:
+        return Decimal("0")
+    # Reverse VAT extraction from VAT-inclusive amount:
+    # total * (rate / (1 + rate)) -> VAT component
+    return (amount_with_vat * (tva_rate / (Decimal("1") + tva_rate))).quantize(Decimal("0.01"))
+
+
 def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any]]:
     """Filtra, calcula tasas y formatea filas para la hoja de cálculo."""
     formatted_rows: list[list[Any]] = []
@@ -91,8 +100,8 @@ def process_and_format_data(transactions: list[dict[str, Any]]) -> list[list[Any
 
         amount = _to_decimal(tx.get("amount"))
         is_expense = amount < 0
-        tva_rate = Decimal("0.20") if is_expense else Decimal("0")
-        vat_amount = (amount * (tva_rate / (Decimal("1") + tva_rate))).quantize(Decimal("0.01")) if is_expense else Decimal("0")
+        tva_rate = VAT_RATE_STANDARD if is_expense else Decimal("0")
+        vat_amount = _extract_vat_from_total(amount, tva_rate)
         base_imponible = (amount - vat_amount).quantize(Decimal("0.01"))
 
         matched = bool(tx.get("matched") or tx.get("matched_invoice"))
@@ -160,7 +169,7 @@ def main_execution() -> int:
         sync_to_google_sheets(processed_data)
         return 0
     except Exception as exc:
-        print(f"[ERROR CONTRALOR] Fallo en la ejecución automática: {exc}")
+        print(f"[Jules ERROR] Fallo en la ejecución automática: {exc}")
         return 1
 
 
