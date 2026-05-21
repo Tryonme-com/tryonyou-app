@@ -304,10 +304,13 @@ def pau_habla_endpoint() -> Response:
 
 try:
     from manoli import manoli_blueprint
-
-    app.register_blueprint(manoli_blueprint)
-except Exception as e:
-    print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
+except ModuleNotFoundError as e:
+    print(f"[tryonyou] manoli blueprint module not found: {e}", file=sys.stderr)
+else:
+    try:
+        app.register_blueprint(manoli_blueprint)
+    except (AssertionError, ValueError) as e:
+        print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
