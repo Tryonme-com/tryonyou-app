@@ -83,7 +83,7 @@ def _to_decimal(value: Any) -> Decimal:
 
 
 def _extract_vat_from_total(amount_with_vat: Decimal, tva_rate: Decimal) -> Decimal:
-    if amount_with_vat > 0 or tva_rate <= 0:
+    if amount_with_vat >= 0 or tva_rate <= 0:
         # Business default: only expense transactions (negative amounts)
         # get reverse VAT extraction in this automation flow.
         return Decimal("0")
