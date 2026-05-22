@@ -42,7 +42,7 @@ export default function Home() {
       "optimización de inventario retail",
       "reducir devoluciones moda e-commerce",
       "tecnología para probadores físicos",
-      "ROI retail vusion",
+      "ROI retail vision",
       "logística inversa textil",
     ],
     openGraph: {
@@ -67,7 +67,7 @@ export default function Home() {
         "optimización de inventario retail",
         "reducir devoluciones moda e-commerce",
         "tecnología para probadores físicos",
-        "ROI retail vusion",
+        "ROI retail vision",
         "logística inversa textil",
       ],
       inLanguage: "es",

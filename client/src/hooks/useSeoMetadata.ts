@@ -39,8 +39,9 @@ function upsertMetaTag(attribute: "name" | "property", key: string, value?: stri
   const existingElement = document.head.querySelector<HTMLMetaElement>(selector);
 
   if (existingElement) {
+    const previousContent = existingElement.getAttribute("content");
     existingElement.setAttribute("content", value);
-    return { element: existingElement, existed: true, previousContent: null };
+    return { element: existingElement, existed: true, previousContent };
   }
 
   const element = document.createElement("meta");
