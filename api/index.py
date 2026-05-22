@@ -279,8 +279,8 @@ def process_incoming_emails():
 
             # Extraer cabeceras (Remitente y Asunto)
             headers = message.get("payload", {}).get("headers", [])
-            sender = next((h["value"] for h in headers if h.get("name") == "From"), "Inconnu")
-            subject = next((h["value"] for h in headers if h.get("name") == "Subject"), "Sans Objet")
+            sender = next((h["value"] for h in headers if h.get("name", "").lower() == "from"), "Inconnu")
+            subject = next((h["value"] for h in headers if h.get("name", "").lower() == "subject"), "Sans Objet")
 
             # Filtrar si el correo pertenece a un lead interesado en el probador
             low_subject = subject.lower()
@@ -316,7 +316,7 @@ def process_incoming_emails():
         return jsonify(
             {
                 "status": "error",
-                "message": "Erreur lors de l'exécution du service de messagerie.",
+                "message": "Erreur du service de messagerie. Vérifiez GOOGLE_CREDENTIALS_JSON et DIVINEO_LEADS_DB_ID.",
             }
         ), 500
 
