@@ -25,13 +25,18 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+import google.oauth2.credentials
+from flask_cors import CORS
 from flask import Flask, jsonify, request, Response
+from googleapiclient.discovery import build
 
 app = Flask(__name__)
+CORS(app)
 
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
+GOOGLE_SHEETS_ID = os.environ.get("DIVINEO_LEADS_DB_ID")
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 _RATE: dict[str, list[float]] = {}
@@ -101,6 +106,25 @@ def _json_ok(data: Any, status: int = 200) -> Response:
 def _json_err(msg: str, status: int = 400, **extra: Any) -> Response:
     payload = {"ok": False, "error": msg, **extra}
     return _cors(Response(json.dumps(payload, ensure_ascii=False), status=status, mimetype="application/json"))
+
+
+def _google_credentials() -> google.oauth2.credentials.Credentials:
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if not creds_json:
+        raise ValueError("Faltan las credenciales reales de Google en el entorno.")
+
+    info = json.loads(creds_json)
+    return google.oauth2.credentials.Credentials.from_authorized_user_info(info)
+
+
+def get_gmail_service():
+    """Inicializa el servicio oficial de la API de Gmail con credenciales reales."""
+    return build("gmail", "v1", credentials=_google_credentials())
+
+
+def get_sheets_service():
+    """Inicializa el servicio oficial de la API de Google Sheets."""
+    return build("sheets", "v4", credentials=_google_credentials())
 
 
 # ─── routes ───────────────────────────────────────────────────────────────
@@ -218,6 +242,72 @@ def leads_count() -> Response:
         return _json_ok({"ok": True, "count": n})
     except Exception as e:
         return _json_err(f"db error: {e}", 500)
+
+
+@app.route("/api/jules/process-emails", methods=["POST"])
+def process_incoming_emails():
+    """
+    Escanea la bandeja de entrada, procesa los correos de leads
+    y registra los datos de contacto en Divineo_Leads_DB.
+    """
+    try:
+        if not GOOGLE_SHEETS_ID:
+            raise ValueError("Falta DIVINEO_LEADS_DB_ID en el entorno.")
+
+        gmail_service = get_gmail_service()
+        sheets_service = get_sheets_service()
+
+        # Consultar los mensajes no leídos en la bandeja de entrada real
+        results = gmail_service.users().messages().list(userId="me", q="is:unread").execute()
+        messages = results.get("messages", [])
+
+        processed_count = 0
+
+        for msg in messages:
+            msg_id = msg["id"]
+            message = gmail_service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+
+            # Extraer cabeceras (Remitente y Asunto)
+            headers = message.get("payload", {}).get("headers", [])
+            sender = next((h["value"] for h in headers if h.get("name") == "From"), "Desconocido")
+            subject = next((h["value"] for h in headers if h.get("name") == "Subject"), "Sin Asunto")
+
+            # Filtrar si el correo pertenece a un lead interesado en el probador
+            low_subject = subject.lower()
+            if "tryonyou" in low_subject or "pilot" in low_subject or "probador" in low_subject:
+                # Registrar lead en Google Sheets
+                range_name = "Leads!A:C"
+                values = [[sender, subject, "Pendiente de revisión humana"]]
+                body = {"values": values}
+
+                sheets_service.spreadsheets().values().append(
+                    spreadsheetId=GOOGLE_SHEETS_ID,
+                    range=range_name,
+                    valueInputOption="RAW",
+                    body=body,
+                ).execute()
+
+                # Marcar como leído para evitar duplicados
+                gmail_service.users().messages().batchModify(
+                    userId="me",
+                    body={"ids": [msg_id], "removeLabelIds": ["UNREAD"]},
+                ).execute()
+
+                processed_count += 1
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": f"Procesamiento completado. {processed_count} leads registrados en Divineo_Leads_DB.",
+            }
+        ), 200
+    except Exception as e:
+        return jsonify(
+            {
+                "status": "error",
+                "message": f"Error en la ejecución del servicio de correo: {str(e)}",
+            }
+        ), 500
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
