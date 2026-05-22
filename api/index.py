@@ -250,7 +250,8 @@ def leads_count() -> Response:
         con.close()
         return _json_ok({"ok": True, "count": n})
     except Exception as e:
-        return _json_err(f"db error: {e}", 500)
+        print(f"[tryonyou] leads_count db error: {e}", file=sys.stderr)
+        return _json_err("db error", 500)
 
 
 @app.route("/api/jules/process-emails", methods=["POST"])
