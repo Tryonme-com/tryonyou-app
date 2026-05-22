@@ -35,7 +35,7 @@ CORS(app)
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
-GOOGLE_SHEETS_ID = os.environ.get("DIVINEO_LEADS_DB_ID")
+DIVINEO_LEADS_DB_ID = os.environ.get("DIVINEO_LEADS_DB_ID")
 
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
@@ -127,12 +127,12 @@ def _google_credentials() -> google.oauth2.credentials.Credentials:
 
 
 def get_gmail_service():
-    """Inicializa el servicio oficial de la API de Gmail con credenciales reales."""
+    """Inicializa y retorna el recurso de servicio Gmail API v1."""
     return build("gmail", "v1", credentials=_google_credentials())
 
 
 def get_sheets_service():
-    """Inicializa el servicio oficial de la API de Google Sheets."""
+    """Inicializa y retorna el recurso de servicio Google Sheets API v4."""
     return build("sheets", "v4", credentials=_google_credentials())
 
 
@@ -261,7 +261,7 @@ def process_incoming_emails():
     y registra los datos de contacto en Divineo_Leads_DB.
     """
     try:
-        if not GOOGLE_SHEETS_ID:
+        if not DIVINEO_LEADS_DB_ID:
             raise ValueError("DIVINEO_LEADS_DB_ID est manquant dans l'environnement.")
 
         gmail_service = get_gmail_service()
@@ -291,7 +291,7 @@ def process_incoming_emails():
                 body = {"values": values}
 
                 sheets_service.spreadsheets().values().append(
-                    spreadsheetId=GOOGLE_SHEETS_ID,
+                    spreadsheetId=DIVINEO_LEADS_DB_ID,
                     range=range_name,
                     valueInputOption="RAW",
                     body=body,
