@@ -145,11 +145,11 @@ export function useSeoMetadata({
     return () => {
       document.title = previousTitle;
 
-      for (const [selector, snapshot] of previousTagState.entries()) {
+      previousTagState.forEach((snapshot, selector) => {
         if (!snapshot) {
           const createdTag = document.head.querySelector<HTMLMetaElement>(selector);
           createdTag?.remove();
-          continue;
+          return;
         }
 
         if (snapshot.existed) {
@@ -158,11 +158,11 @@ export function useSeoMetadata({
           } else {
             snapshot.element.setAttribute("content", snapshot.previousContent);
           }
-          continue;
+          return;
         }
 
         snapshot.element.remove();
-      }
+      });
 
       if (!structuredData || !scriptElement) {
         return;
