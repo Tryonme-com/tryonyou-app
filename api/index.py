@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sqlite3
 import sys
 import time
@@ -38,7 +37,6 @@ SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 GOOGLE_SHEETS_ID = os.environ.get("DIVINEO_LEADS_DB_ID")
 
-EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
@@ -91,6 +89,17 @@ def _rate_check(ip: str) -> bool:
     return True
 
 
+def _is_valid_email(email: str) -> bool:
+    if not email or len(email) > 254 or " " in email or email.count("@") != 1:
+        return False
+    local, domain = email.rsplit("@", 1)
+    if not local or not domain or "." not in domain:
+        return False
+    if domain.startswith(".") or domain.endswith("."):
+        return False
+    return True
+
+
 def _cors(resp: Response) -> Response:
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
@@ -111,7 +120,7 @@ def _json_err(msg: str, status: int = 400, **extra: Any) -> Response:
 def _google_credentials() -> google.oauth2.credentials.Credentials:
     creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
     if not creds_json:
-        raise ValueError("Faltan las credenciales reales de Google en el entorno.")
+        raise ValueError("Les informations d'identification Google sont manquantes dans l'environnement.")
 
     info = json.loads(creds_json)
     return google.oauth2.credentials.Credentials.from_authorized_user_info(info)
@@ -177,7 +186,7 @@ def post_lead() -> Response:
     # Validation
     if not full_name or len(full_name) > 200:
         return _json_err("Nom complet manquant ou trop long.", 422, field="full_name")
-    if not EMAIL_RE.match(email):
+    if not _is_valid_email(email):
         return _json_err("Email professionnel invalide.", 422, field="email")
     if not company or len(company) > 200:
         return _json_err("Maison / Enseigne manquante.", 422, field="company")
@@ -252,7 +261,7 @@ def process_incoming_emails():
     """
     try:
         if not GOOGLE_SHEETS_ID:
-            raise ValueError("Falta DIVINEO_LEADS_DB_ID en el entorno.")
+            raise ValueError("DIVINEO_LEADS_DB_ID est manquant dans l'environnement.")
 
         gmail_service = get_gmail_service()
         sheets_service = get_sheets_service()
@@ -269,15 +278,15 @@ def process_incoming_emails():
 
             # Extraer cabeceras (Remitente y Asunto)
             headers = message.get("payload", {}).get("headers", [])
-            sender = next((h["value"] for h in headers if h.get("name") == "From"), "Desconocido")
-            subject = next((h["value"] for h in headers if h.get("name") == "Subject"), "Sin Asunto")
+            sender = next((h["value"] for h in headers if h.get("name") == "From"), "Inconnu")
+            subject = next((h["value"] for h in headers if h.get("name") == "Subject"), "Sans Objet")
 
             # Filtrar si el correo pertenece a un lead interesado en el probador
             low_subject = subject.lower()
             if "tryonyou" in low_subject or "pilot" in low_subject or "probador" in low_subject:
                 # Registrar lead en Google Sheets
                 range_name = "Leads!A:C"
-                values = [[sender, subject, "Pendiente de revisión humana"]]
+                values = [[sender, subject, "En attente de révision humaine"]]
                 body = {"values": values}
 
                 sheets_service.spreadsheets().values().append(
@@ -298,14 +307,15 @@ def process_incoming_emails():
         return jsonify(
             {
                 "status": "success",
-                "message": f"Procesamiento completado. {processed_count} leads registrados en Divineo_Leads_DB.",
+                "message": f"Traitement terminé. {processed_count} leads enregistrés dans Divineo_Leads_DB.",
             }
         ), 200
     except Exception as e:
+        print(f"[tryonyou] jules email processing error: {e}", file=sys.stderr)
         return jsonify(
             {
                 "status": "error",
-                "message": f"Error en la ejecución del servicio de correo: {str(e)}",
+                "message": "Erreur lors de l'exécution du service de messagerie.",
             }
         ), 500
 
