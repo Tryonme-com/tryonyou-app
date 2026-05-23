@@ -289,15 +289,20 @@ export default function TryOn() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      for (const g of FEATURED) {
-        if (cancelled) return;
-        if (!overlaysRef.current.has(g.id)) {
-          try {
-            const img = await loadOverlayImage(g);
-            overlaysRef.current.set(g.id, img);
-          } catch (e) { console.warn("[TRYONYOU] overlay load failed:", g.id, e); }
-        }
-      }
+      await Promise.all(
+        FEATURED.map(async (g) => {
+          if (cancelled) return;
+          if (!overlaysRef.current.has(g.id)) {
+            try {
+              const img = await loadOverlayImage(g);
+              if (cancelled) return;
+              overlaysRef.current.set(g.id, img);
+            } catch (e) {
+              console.warn("[TRYONYOU] overlay load failed:", g.id, e);
+            }
+          }
+        })
+      );
     })();
     return () => { cancelled = true; };
   }, []);
