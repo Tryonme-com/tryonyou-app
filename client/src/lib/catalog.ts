@@ -2173,8 +2173,11 @@ export const FEATURED: Garment[] = GARMENTS.filter((g) => g.isHero)
   .concat(GARMENTS.filter((g) => !g.isHero).slice(0, 12));
 
 /** Lookup helpers */
-export function getGarmentBySku(sku: string): Garment | undefined {
-  return GARMENTS.find((g) => g.sku === sku || g.ref === sku);
+export function getGarmentBySku(sku?: string | null): Garment | undefined {
+  if (!sku || typeof sku !== 'string') return undefined;
+  const trimmedSku = sku.trim();
+  if (trimmedSku === '') return undefined;
+  return GARMENTS.find((g) => g.sku === trimmedSku || g.ref === trimmedSku);
 }
 
 export function getGarmentById(id: string): Garment | undefined {
