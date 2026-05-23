@@ -133,6 +133,10 @@ export class GyroCorrector {
   start(): void {
     if (this.listening || typeof window === "undefined") return;
     if (!("DeviceOrientationEvent" in window)) return;
+
+    // Check if it's a mobile device (rough check)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) return;
     this.listening = true;
     // iOS 13+ : permission requise — silent fallback si refusée
     const Anyclass = window.DeviceOrientationEvent as any;
@@ -163,13 +167,19 @@ export class GyroCorrector {
    * Re-projette un landmark normalisé pour compenser l'inclinaison verticale.
    * Effet : étire/raccourcit l'axe Y selon le facteur cos(tilt).
    */
-  correct(lm: FilteredLandmark): FilteredLandmark {
+  correctAll(landmarks: FilteredLandmark[]): FilteredLandmark[] {
     const tilt = this.getTiltCompensation();
-    if (Math.abs(tilt) < 0.05) return lm; // < 3° on ignore
+    if (Math.abs(tilt) < 0.05) return landmarks; // < 3° on ignore, pas d'overhead
+
     const factor = 1 / Math.max(0.5, Math.cos(tilt));
+
     // On centre la correction autour de y=0.5 pour éviter de pousser la tête hors cadre
-    const ny = 0.5 + (lm.y - 0.5) * factor;
-    return { x: lm.x, y: ny, z: lm.z, visibility: lm.visibility };
+    return landmarks.map(lm => ({
+      x: lm.x,
+      y: 0.5 + (lm.y - 0.5) * factor,
+      z: lm.z,
+      visibility: lm.visibility
+    }));
   }
 
   isActive(): boolean {
