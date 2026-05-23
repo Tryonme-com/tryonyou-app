@@ -573,7 +573,7 @@ export default function TryOn() {
         // 1. Filtrage EMA stable (anti-jitter)
         let filtered = filterRef.current.apply(raw);
         // 2. Compensation gyroscope (perspective fix)
-        filtered = filtered.map((l) => gyroRef.current.correct(l));
+        filtered = gyroRef.current.correctAll(filtered);
         filteredRef.current = filtered;
         window.__tryon_landmarks = filtered;
 
