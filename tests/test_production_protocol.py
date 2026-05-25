@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from balance_soberana import run_balance_sync
 from execute_all import execute_pipeline
-from payment_gateway import BLOCKED, READY_FOR_POST, build_gateway_payload
+from payment_gateway import BLOCKED, HTTP_200_OK, READY_FOR_POST, build_gateway_payload
 
 
 class TestProductionProtocol(unittest.TestCase):
@@ -25,6 +25,15 @@ class TestProductionProtocol(unittest.TestCase):
 
         self.assertEqual(payload["status"], READY_FOR_POST)
         self.assertTrue(payload["ready"])
+        self.assertEqual(payload["orchestration"], "Zion")
+        self.assertEqual(payload["system_check"], READY_FOR_POST)
+        self.assertEqual(payload["gateway_connectivity"]["status"], "CONNECTED")
+        self.assertEqual(payload["gateway_connectivity"]["detail"], "Stripe Event Confirmed")
+        self.assertEqual(payload["backend_sync"]["service"], "Jules")
+        self.assertEqual(payload["backend_sync"]["status"], "SUCCESS")
+        self.assertEqual(payload["frontend"]["service"], "Pau")
+        self.assertEqual(payload["frontend"]["status"], "READY")
+        self.assertEqual(payload["endpoint_status"], HTTP_200_OK)
         self.assertEqual(payload["blocking_steps"], [])
 
     def test_gateway_blocks_when_any_step_errors(self):
@@ -37,6 +46,9 @@ class TestProductionProtocol(unittest.TestCase):
 
         self.assertEqual(payload["status"], BLOCKED)
         self.assertFalse(payload["ready"])
+        self.assertEqual(payload["gateway_connectivity"]["status"], "DISCONNECTED")
+        self.assertEqual(payload["backend_sync"]["status"], "BLOCKED")
+        self.assertEqual(payload["frontend"]["status"], "BLOCKED")
         self.assertEqual(payload["blocking_steps"], ["payment_gateway"])
 
     @patch("execute_all.run_balance_sync")
