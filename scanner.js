@@ -91,6 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.checkoutUrl) {
                     // Redirección al flujo de pago seguro que posteriormente activará el Webhook de Stripe
                     window.location.href = data.checkoutUrl;
+                } else {
+                    console.warn('La respuesta de la API no incluyó checkoutUrl:', data);
                 }
 
             } catch (error) {
