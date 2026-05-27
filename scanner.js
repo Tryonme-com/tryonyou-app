@@ -87,16 +87,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
 
-                // Si el backend genera la sesión de Stripe, redirigimos al usuario para que pague/reserve
+                // FLUJO CORRECTO: si el backend devuelve la prenda ideal, se inicializa el Checkout/PaymentIntent
                 if (data.checkoutUrl) {
+                    // Redirección al flujo de pago seguro que posteriormente activará el Webhook de Stripe
                     window.location.href = data.checkoutUrl;
-                } else {
-                    alert("Recomendación calculada con éxito (Modo simulación).");
                 }
 
             } catch (error) {
-                console.error("Error en la conexión con la API:", error);
-                alert("Hubo un problema al conectar con el motor de TryOnYou.");
+                console.error("Fallo en la comunicación con el motor TryOnYou:", error);
             }
         });
     }
