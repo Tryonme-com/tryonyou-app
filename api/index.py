@@ -144,8 +144,8 @@ def stripe_webhook() -> Response:
     except stripe.error.SignatureVerificationError:
         return _json_err("invalid signature", 400)
 
-    stripe_event_type = event.get("type")
-    if stripe_event_type == "payment_intent.succeeded":
+    event_type = event.get("type")
+    if event_type == "payment_intent.succeeded":
         print("[tryonyou] Stripe payment_intent.succeeded received", flush=True)
 
     return _json_ok({"status": "success"}, 200)
