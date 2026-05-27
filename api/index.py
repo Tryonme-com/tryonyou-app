@@ -27,7 +27,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import Flask, request, Response
+from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
 
@@ -259,6 +259,11 @@ def run_jules_mail() -> Response:
     except Exception as e:
         print(f"[tryonyou] jules mail execution error: {e}", file=sys.stderr)
         return _json_err("jules mail execution error", 500)
+
+
+@app.route("/api/webhook", methods=["POST"])
+def webhook() -> tuple[Response, int]:
+    return jsonify({"status": "success"}), 200
 
 
 @app.route("/api/chat-pau", methods=["POST"])
