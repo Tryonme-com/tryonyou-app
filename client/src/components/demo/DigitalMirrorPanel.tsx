@@ -7,7 +7,7 @@
  *
  * No backend dependency — pure UX demo for executives.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type Suggestion = {
@@ -31,6 +31,11 @@ export default function DigitalMirrorPanel() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [active, setActive] = useState<Suggestion | null>(null);
   const [viewingAll, setViewingAll] = useState(false);
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [eventType, setEventType] = useState("cocktail");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const biometricFormRef = useRef<HTMLFormElement>(null);
 
   const handleScan = useCallback(() => {
     setPhase("scanning");
@@ -47,6 +52,50 @@ export default function DigitalMirrorPanel() {
     setActive(null);
     setViewingAll(false);
   }, []);
+
+  const handlePerfectSelection = useCallback(async () => {
+    if (!active) return;
+    const form = biometricFormRef.current;
+    if (!form) return;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const payload = {
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      event_type: eventType,
+    };
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("https://tryonyou.app/api/recommendation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error en servidor: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.checkoutUrl && typeof data.checkoutUrl === "string") {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      throw new Error("Respuesta sin checkoutUrl");
+    } catch (error) {
+      console.error("Fallo en la comunicación con el motor TryOnYou:", error);
+      toast.error("No se pudo iniciar el checkout seguro. Inténtalo de nuevo.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [active, eventType, height, weight]);
 
   return (
     <div className="border border-[rgba(201,168,76,0.3)] bg-[rgba(10,8,7,0.6)] backdrop-blur-sm">
@@ -143,13 +192,68 @@ export default function DigitalMirrorPanel() {
               ))}
             </div>
 
+            <form
+              id="biometric-form"
+              ref={biometricFormRef}
+              onSubmit={(e) => e.preventDefault()}
+              className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6"
+            >
+              <label className="flex flex-col gap-2">
+                <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--color-fog)]">Taille (cm)</span>
+                <input
+                  id="height"
+                  name="height"
+                  type="number"
+                  min={120}
+                  max={240}
+                  step="0.1"
+                  required
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="h-10 bg-[var(--color-noir)] border border-[rgba(201,168,76,0.25)] px-3 text-[13px] text-[var(--color-ivoire)] focus:border-[var(--color-or)] outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--color-fog)]">Poids (kg)</span>
+                <input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  min={30}
+                  max={250}
+                  step="0.1"
+                  required
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="h-10 bg-[var(--color-noir)] border border-[rgba(201,168,76,0.25)] px-3 text-[13px] text-[var(--color-ivoire)] focus:border-[var(--color-or)] outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--color-fog)]">Événement</span>
+                <select
+                  id="event"
+                  name="event"
+                  required
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="h-10 bg-[var(--color-noir)] border border-[rgba(201,168,76,0.25)] px-3 text-[13px] text-[var(--color-ivoire)] focus:border-[var(--color-or)] outline-none"
+                >
+                  <option value="cocktail">Cocktail</option>
+                  <option value="business">Business</option>
+                  <option value="wedding">Mariage</option>
+                  <option value="gala">Gala</option>
+                </select>
+              </label>
+            </form>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               <button
+                id="btn-perfect-selection"
                 className="btn-or w-full justify-center text-[11px]"
-                disabled={!active}
-                onClick={() => toast.success("Look ajouté à votre sélection avec l'ajustement calculé.")}
+                disabled={!active || isSubmitting}
+                onClick={handlePerfectSelection}
               >
-                Ma sélection parfaite
+                {isSubmitting ? "Connexion sécurisée…" : "Ma sélection parfaite"}
               </button>
               <button
                 className="btn-ghost w-full justify-center text-[11px]"
