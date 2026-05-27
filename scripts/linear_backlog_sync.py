@@ -177,7 +177,7 @@ def _description_with_labels(task: dict[str, Any]) -> str:
     return f"{task['description']}\n\nSuggested labels: {', '.join(labels)}"
 
 
-def create_linear_issue(task: dict[str, Any], *, team_id: str, project_id: str, api_key: str) -> None:
+def create_linear_issue(task: dict[str, Any], *, team_id: str, project_id: str, api_key: str) -> bool:
     variables = {
         "teamId": team_id,
         "projectId": project_id,
@@ -198,15 +198,18 @@ def create_linear_issue(task: dict[str, Any], *, team_id: str, project_id: str, 
 
     if response.status_code != 200:
         print(f"💥 Network error while creating {task['title']}: {response.status_code}")
-        return
+        return False
 
     result = response.json()
     if "errors" in result:
-        print(f"❌ Error in {task['title']}: {result['errors'][0]['message']}")
-        return
+        error_messages = [str(err.get("message", "Unknown error")) for err in result["errors"] if isinstance(err, dict)]
+        joined_errors = " | ".join(error_messages) if error_messages else "Unknown error"
+        print(f"❌ Error in {task['title']}: {joined_errors}")
+        return False
 
     issue_data = result["data"]["issueCreate"]["issue"]
     print(f"✅ Created: {task['title']} -> {issue_data['url']}")
+    return True
 
 
 def main() -> int:
@@ -219,10 +222,16 @@ def main() -> int:
         return 1
 
     print("🚀 Starting V10 backlog sync to Linear...")
+    success_count = 0
+    failure_count = 0
     for task in BACKLOG_TASKS:
-        create_linear_issue(task, team_id=team_id, project_id=project_id, api_key=api_key)
-    print("🎉 Sync completed.")
-    return 0
+        if create_linear_issue(task, team_id=team_id, project_id=project_id, api_key=api_key):
+            success_count += 1
+        else:
+            failure_count += 1
+
+    print(f"🎉 Sync completed. Success: {success_count} | Failed: {failure_count}")
+    return 1 if failure_count else 0
 
 
 if __name__ == "__main__":
