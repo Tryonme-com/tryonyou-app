@@ -26,6 +26,8 @@ const SUGGESTIONS: Suggestion[] = [
 ];
 
 type Phase = "idle" | "scanning" | "ready";
+const DEFAULT_RECOMMENDATION_API = "https://tryonyou.app/api/recommendation";
+const ALLOWED_CHECKOUT_HOSTS = new Set(["tryonyou.app", "checkout.stripe.com"]);
 
 export default function DigitalMirrorPanel() {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -62,15 +64,23 @@ export default function DigitalMirrorPanel() {
       return;
     }
 
+    const parsedHeight = parseFloat(height);
+    const parsedWeight = parseFloat(weight);
+    if (Number.isNaN(parsedHeight) || Number.isNaN(parsedWeight)) {
+      toast.error("Données biométriques invalides. Vérifiez taille et poids.");
+      return;
+    }
+
     const payload = {
-      height: parseFloat(height),
-      weight: parseFloat(weight),
+      height: parsedHeight,
+      weight: parsedWeight,
       event_type: eventType,
     };
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("https://tryonyou.app/api/recommendation", {
+      const endpoint = import.meta.env.VITE_RECOMMENDATION_API_URL || DEFAULT_RECOMMENDATION_API;
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,14 +94,21 @@ export default function DigitalMirrorPanel() {
 
       const data = await response.json();
       if (data?.checkoutUrl && typeof data.checkoutUrl === "string") {
-        window.location.href = data.checkoutUrl;
+        const checkoutUrl = new URL(data.checkoutUrl, window.location.origin);
+        if (!ALLOWED_CHECKOUT_HOSTS.has(checkoutUrl.hostname)) {
+          throw new Error("checkoutUrl no permitido");
+        }
+        window.location.href = checkoutUrl.toString();
         return;
       }
 
       throw new Error("Respuesta sin checkoutUrl");
     } catch (error) {
       console.error("Fallo en la comunicación con el motor TryOnYou:", error);
-      toast.error("No se pudo iniciar el checkout seguro. Inténtalo de nuevo.");
+      const message = error instanceof TypeError
+        ? "Error de red. Revisa tu conexión e inténtalo de nuevo."
+        : "No se pudo iniciar el checkout seguro. Inténtalo de nuevo.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
