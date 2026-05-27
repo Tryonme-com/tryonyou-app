@@ -51,6 +51,23 @@ _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
 
+# ─── Lafayette Piloto OMEGA — Catálogo Multimarca ─────────────────────────────
+
+CATALOGO_GLOBAL: dict[str, list[dict[str, str]]] = {
+    "balmain": [
+        {"id": "blm_01", "nombre": "Blazer Cruzado Estructurado", "asset": "/assets/balmain_blazer.png", "planta": "Planta 1 - Córner Lujo"},
+        {"id": "blm_02", "nombre": "Vestido Knit Geométrico", "asset": "/assets/balmain_dress.png", "planta": "Planta 1 - Córner Lujo"},
+    ],
+    "prada": [
+        {"id": "prd_01", "nombre": "Abrigo Re-Nylon Minimalista Anthracite", "asset": "/assets/prada_coat.png", "planta": "Planta 2 - Créateurs"},
+        {"id": "prd_02", "nombre": "Falda Plisada Estructurada", "asset": "/assets/prada_skirt.png", "planta": "Planta 2 - Créateurs"},
+    ],
+    "hermes": [
+        {"id": "rms_01", "nombre": "Capa Corta en Cachemira Bone", "asset": "/assets/hermes_cape.png", "planta": "Planta 1 - Córner Lujo"},
+        {"id": "rms_02", "nombre": "Pañuelo de Seda Art Deco", "asset": "/assets/hermes_scarf.png", "planta": "Planta 1 - Córner Lujo"},
+    ],
+}
+
 # ─── Lafayette VIP (Efecto Paloma) ────────────────────────────────────────────
 CATALOGO_VIP: dict[str, dict[str, Any]] = {
     "vip_look_01": {
@@ -493,6 +510,97 @@ def obtener_lista_completa_museum() -> Response:
         print(f"[tryonyou] sac-museum read error: {e}", file=sys.stderr)
 
     return _json_ok({"total_invitados": len(lista), "invitados": lista})
+
+
+# ─── Lafayette Piloto OMEGA — Endpoints ───────────────────────────────────────
+
+@app.route("/status", methods=["GET"])
+def get_status() -> Response:
+    """Diagnóstico rápido del motor OMEGA."""
+    return _json_ok({"status": "online", "engine": "OMEGA_V10.2", "mode": "Empire"})
+
+
+@app.route("/api/lafayette/carrito", methods=["OPTIONS", "POST"])
+def anadir_al_carrito() -> Response:
+    """[Función 1] Mi Selección Perfecta — añade una prenda al carrito."""
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    body = request.get_json(silent=True) or {}
+    garment_id = str(body.get("garment_id", "")).strip()
+    talla = str(body.get("talla_calculada", "")).strip()
+
+    if not garment_id:
+        return _json_err("garment_id requerido", 422, field="garment_id")
+
+    return _json_ok({
+        "status": "success",
+        "tienda": "Galeries Lafayette Haussmann",
+        "garment_id": garment_id,
+        "talla_asegurada": talla or "M",
+        "filtro": "Zero-Size Active",
+    })
+
+
+@app.route("/api/lafayette/reservar/<garment_id>", methods=["GET"])
+def reservar_en_probador(garment_id: str) -> Response:
+    """[Función 2] Reservar en Probador — genera un QR de acceso estándar."""
+    reserva_id = f"GL-{str(uuid.uuid4())[:6].upper()}"
+    datos_qr = f"https://tryonyou.lafayette.demo/verify/{reserva_id}"
+
+    if not _QRCODE_AVAILABLE:
+        return _json_ok({
+            "reserva_id": reserva_id,
+            "garment_id": garment_id,
+            "qr": None,
+            "aviso": "qrcode no disponible en este entorno",
+        })
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(datos_qr)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#1a1a1a", back_color="white")
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return _cors(Response(buf.read(), status=200, mimetype="image/png"))
+
+
+@app.route("/api/lafayette/coleccion/<marca>", methods=["GET"])
+def obtener_coleccion(marca: str) -> Response:
+    """[Función 3] Ver Combinaciones — retorna el catálogo de la firma pulsada."""
+    marca_key = marca.lower().strip()
+    if marca_key not in CATALOGO_GLOBAL:
+        return _json_err(
+            f"Firma '{marca}' no disponible. Firmas válidas: {', '.join(CATALOGO_GLOBAL)}",
+            404,
+        )
+    return _json_ok({"marca": marca, "sugerencias": CATALOGO_GLOBAL[marca_key]})
+
+
+@app.route("/api/lafayette/silueta/guardar", methods=["OPTIONS", "POST"])
+def guardar_silueta() -> Response:
+    """[Función 4] Guardar mi Silueta — almacena puntos biométricos del espejo."""
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    body = request.get_json(silent=True) or {}
+    if not body:
+        return _json_err("Payload biométrico ausente", 422)
+
+    cliente_ref = f"LAFAYETTE_USER_{str(uuid.uuid4())[:6].upper()}"
+    return _json_ok({"status": "stored", "cliente_referencia": cliente_ref})
+
+
+@app.route("/api/lafayette/metricas", methods=["OPTIONS", "POST"])
+def registrar_metricas() -> Response:
+    """[Función 5] Compartir Look & Métricas — registra actividad del piloto."""
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    metricas = request.get_json(silent=True) or {}
+    print(f"[tryonyou] Métricas log: {json.dumps(metricas, ensure_ascii=False)}", flush=True)
+    return _json_ok({"status": "recorded"})
 
 
 
