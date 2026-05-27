@@ -46,6 +46,9 @@ DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
+LAFAYETTE_VERIFY_BASE_URL = os.environ.get(
+    "LAFAYETTE_VERIFY_BASE_URL", "https://tryonyou.lafayette.demo/verify/"
+)
 
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
@@ -546,7 +549,7 @@ def anadir_al_carrito() -> Response:
 def reservar_en_probador(garment_id: str) -> Response:
     """[Función 2] Reservar en Probador — genera un QR de acceso estándar."""
     reserva_id = f"GL-{str(uuid.uuid4())[:6].upper()}"
-    datos_qr = f"https://tryonyou.lafayette.demo/verify/{reserva_id}"
+    datos_qr = f"{LAFAYETTE_VERIFY_BASE_URL}{reserva_id}"
 
     if not _QRCODE_AVAILABLE:
         return _json_ok({
