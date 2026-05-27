@@ -89,25 +89,25 @@ export default function DigitalMirrorPanel() {
       });
 
       if (!response.ok) {
-        throw new Error(`Error en servidor: ${response.status}`);
+        throw new Error(`Erreur serveur: ${response.status}`);
       }
 
       const data = await response.json();
       if (data?.checkoutUrl && typeof data.checkoutUrl === "string") {
-        const checkoutUrl = new URL(data.checkoutUrl, window.location.origin);
+        const checkoutUrl = new URL(data.checkoutUrl);
         if (!ALLOWED_CHECKOUT_HOSTS.has(checkoutUrl.hostname)) {
-          throw new Error("checkoutUrl no permitido");
+          throw new Error("checkoutUrl non autorisée");
         }
         window.location.href = checkoutUrl.toString();
         return;
       }
 
-      throw new Error("Respuesta sin checkoutUrl");
+      throw new Error("Réponse sans checkoutUrl");
     } catch (error) {
-      console.error("Fallo en la comunicación con el motor TryOnYou:", error);
+      console.error("Échec de communication avec le moteur TryOnYou:", error);
       const message = error instanceof TypeError
-        ? "Error de red. Revisa tu conexión e inténtalo de nuevo."
-        : "No se pudo iniciar el checkout seguro. Inténtalo de nuevo.";
+        ? "Erreur réseau. Vérifiez votre connexion et réessayez."
+        : "Impossible d'initier le paiement sécurisé. Réessayez.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
