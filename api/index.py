@@ -28,11 +28,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from flask import Flask, request, Response
+import stripe
 
 app = Flask(__name__)
 
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
-STRIPE_ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+STRIPE_ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 
@@ -128,13 +129,13 @@ def _is_authorized_ops_request() -> bool:
 # ─── routes ───────────────────────────────────────────────────────────────
 @app.route("/api/webhook", methods=["POST"])
 def stripe_webhook() -> Response:
-    try:
-        import stripe
-    except ModuleNotFoundError:
-        return _json_err("Stripe SDK not installed.", 500)
+    if not STRIPE_ENDPOINT_SECRET:
+        return _json_err("Stripe endpoint secret not configured.", 500)
 
     payload = request.data
     sig_header = request.headers.get("Stripe-Signature")
+    if not sig_header:
+        return _json_err("missing signature", 400)
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_ENDPOINT_SECRET)
@@ -143,10 +144,9 @@ def stripe_webhook() -> Response:
     except stripe.error.SignatureVerificationError:
         return _json_err("invalid signature", 400)
 
-    event_type = event.get("type")
-    if event_type == "payment_intent.succeeded":
-        _ = event.get("data", {}).get("object", {})
-        # Handle long-running tasks asynchronously if needed.
+    stripe_event_type = event.get("type")
+    if stripe_event_type == "payment_intent.succeeded":
+        print("[tryonyou] Stripe payment_intent.succeeded received", flush=True)
 
     return _json_ok({"status": "success"}, 200)
 
