@@ -468,7 +468,31 @@ def registrar_invitado_sac_museum() -> Response:
     return _json_ok({
         "status": "success",
         "message": "Correo recolectado y asignado a la lista de eventos del SAC Museum.",
+        "email": email,
     }, 201)
+
+
+@app.route("/api/museum/lista-invitados", methods=["GET"])
+def obtener_lista_completa_museum() -> Response:
+    """Retorna la lista consolidada de invitados VIP del SAC Museum."""
+    lista: list[dict[str, str]] = []
+    try:
+        if _MUSEUM_CSV.exists():
+            with open(_MUSEUM_CSV, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                next(reader, None)  # skip header
+                for row in reader:
+                    if row and len(row) >= 4:
+                        lista.append({
+                            "fecha": row[0],
+                            "email": row[1],
+                            "origen": row[2],
+                            "estado": row[3],
+                        })
+    except OSError as e:
+        print(f"[tryonyou] sac-museum read error: {e}", file=sys.stderr)
+
+    return _json_ok({"total_invitados": len(lista), "invitados": lista})
 
 
 
