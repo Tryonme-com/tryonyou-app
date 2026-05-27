@@ -32,6 +32,7 @@ from flask import Flask, request, Response
 app = Flask(__name__)
 
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
+STRIPE_ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 
@@ -125,6 +126,31 @@ def _is_authorized_ops_request() -> bool:
 
 
 # ─── routes ───────────────────────────────────────────────────────────────
+@app.route("/api/webhook", methods=["POST"])
+def stripe_webhook() -> Response:
+    try:
+        import stripe
+    except ModuleNotFoundError:
+        return _json_err("Stripe SDK not installed.", 500)
+
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_ENDPOINT_SECRET)
+    except ValueError:
+        return _json_err("invalid payload", 400)
+    except stripe.error.SignatureVerificationError:
+        return _json_err("invalid signature", 400)
+
+    event_type = event.get("type")
+    if event_type == "payment_intent.succeeded":
+        _ = event.get("data", {}).get("object", {})
+        # Handle long-running tasks asynchronously if needed.
+
+    return _json_ok({"status": "success"}, 200)
+
+
 @app.route("/api/health", methods=["GET"])
 def health() -> Response:
     try:
