@@ -27,6 +27,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+import stripe
 from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
@@ -34,6 +35,7 @@ app = Flask(__name__)
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
+ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
 
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
@@ -263,6 +265,20 @@ def run_jules_mail() -> Response:
 
 @app.route("/api/webhook", methods=["POST"])
 def webhook() -> tuple[Response, int]:
+    payload = request.get_data(cache=False, as_text=False)
+    sig_header = request.headers.get("Stripe-Signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, ENDPOINT_SECRET)
+    except ValueError:
+        return jsonify({"status": "invalid payload"}), 400
+    except stripe.error.SignatureVerificationError:
+        return jsonify({"status": "invalid signature"}), 400
+
+    event_type = event.get("type")
+    if event_type == "payment_intent.succeeded":
+        pass
+
     return jsonify({"status": "success"}), 200
 
 
