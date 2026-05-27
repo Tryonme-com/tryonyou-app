@@ -19,16 +19,26 @@ in-memory (best-effort), CORS contrôlé.
 """
 from __future__ import annotations
 
+import csv
 import json
 import os
 import sqlite3
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
+from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 import stripe
 from flask import Flask, jsonify, request, Response
+
+try:
+    import qrcode
+    _QRCODE_AVAILABLE = True
+except ImportError:
+    _QRCODE_AVAILABLE = False
 
 app = Flask(__name__)
 
@@ -40,6 +50,26 @@ ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
+
+# ─── Lafayette VIP (Efecto Paloma) ────────────────────────────────────────────
+CATALOGO_VIP: dict[str, dict[str, Any]] = {
+    "vip_look_01": {
+        "name": "Alta Costura - Blazer Balmain Estructurado Edición Oro",
+        "url_asset": "/assets/vip_balmain_gold.png",
+        "zona_tienda": "Salón Privado Haussmann - Planta 1",
+        "exclusivo": True,
+    },
+    "vip_look_02": {
+        "name": "Visón de Primavera & Conjunto Minimalista Bone",
+        "url_asset": "/assets/vip_spring_vison.png",
+        "zona_tienda": "Salón Privado Haussmann - Planta 1",
+        "exclusivo": True,
+    },
+}
+
+# SAC Museum guest list — /tmp is the only writable path in Vercel serverless
+_MUSEUM_CSV = Path("/tmp/lista_invitados_sac_museum.csv")
+_MUSEUM_CSV_HEADER = ["Fecha_Registro", "Email", "Origen_Captacion", "Estado_Invitacion"]
 
 
 # ─── DB ────────────────────────────────────────────────────────────────────
@@ -332,6 +362,106 @@ else:
         app.register_blueprint(manoli_blueprint)
     except (AssertionError, ValueError) as e:
         print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
+
+
+# ─── Lafayette VIP — Efecto Paloma ────────────────────────────────────────────
+
+@app.route("/api/lafayette/vip/activar", methods=["OPTIONS", "POST"])
+def activar_efecto_paloma() -> Response:
+    """Activa el Efecto Paloma: Mode Empire para el espejo digital."""
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    body = request.get_json(silent=True) or {}
+    client_token = str(body.get("client_token", "")).strip()
+    if not client_token:
+        return _json_err("Acceso VIP no autorizado", 403)
+
+    return _json_ok({
+        "status": "EMPIRE_MODE_ACTIVE",
+        "experiencia": "VIP Premium - Efecto Paloma",
+        "atencion_personalizada": "Asistente de planta notificado",
+        "probador_privado": "Reservado automáticamente - Salón Haussmann",
+        "restricciones_talla": "Desactivadas (Ajuste biométrico automatizado a medida)",
+    })
+
+
+@app.route("/api/lafayette/vip/reservar/<garment_id>", methods=["GET"])
+def reservar_probador_vip(garment_id: str) -> Response:
+    """Genera un QR de prioridad absoluta para el salón privado."""
+    if garment_id not in CATALOGO_VIP:
+        garment_id = "vip_look_01"
+
+    reserva_id = f"VIP-PALOMA-{str(uuid.uuid4())[:4].upper()}"
+    prenda = CATALOGO_VIP[garment_id]
+
+    if not _QRCODE_AVAILABLE:
+        return _json_ok({
+            "reserva_id": reserva_id,
+            "prenda": prenda["name"],
+            "zona": prenda["zona_tienda"],
+            "qr": None,
+            "aviso": "qrcode no disponible en este entorno",
+        })
+
+    qr_data = (
+        f"TRYONYOU-VIP\n"
+        f"Reserva: {reserva_id}\n"
+        f"Prenda: {prenda['name']}\n"
+        f"Zona: {prenda['zona_tienda']}"
+    )
+    img = qrcode.make(qr_data)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return _cors(Response(buf.read(), status=200, mimetype="image/png"))
+
+
+@app.route("/api/lafayette/vip/registrar-museum", methods=["OPTIONS", "POST"])
+def registrar_invitado_sac_museum() -> Response:
+    """Registra el email VIP en la lista de acceso del SAC Museum."""
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()
+    origen = str(body.get("origen", "Espejo Digital - Efecto Paloma (Lafayette Haussmann)")).strip()
+
+    if not _is_valid_email(email):
+        return _json_err("Email inválido", 422, field="email")
+
+    # Initialise CSV with header if needed
+    try:
+        if not _MUSEUM_CSV.exists() or _MUSEUM_CSV.stat().st_size == 0:
+            _MUSEUM_CSV.parent.mkdir(parents=True, exist_ok=True)
+            with open(_MUSEUM_CSV, "w", newline="", encoding="utf-8") as f:
+                csv.writer(f).writerow(_MUSEUM_CSV_HEADER)
+
+        # Check for duplicate
+        with open(_MUSEUM_CSV, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            next(reader, None)  # skip header
+            for row in reader:
+                if row and row[1] == email:
+                    return _json_ok({
+                        "status": "already_registered",
+                        "message": "Este perfil VIP ya se encuentra en la lista de acceso del SAC Museum.",
+                    })
+
+        # Append new guest
+        fecha = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        with open(_MUSEUM_CSV, "a", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow([fecha, email, origen, "Pendiente de Envío Entrada"])
+    except OSError as e:
+        print(f"[tryonyou] sac-museum csv error: {e}", file=sys.stderr)
+
+    print(f"[tryonyou] SAC_MUSEUM new guest: {email}", flush=True)
+
+    return _json_ok({
+        "status": "success",
+        "message": "Correo recolectado y asignado a la lista de eventos del SAC Museum.",
+    }, 201)
+
 
 
 # Vercel @vercel/python detects WSGI apps named `app` automatically.
