@@ -5,3 +5,7 @@ google-auth==2.38.0
 gspread==6.1.4
 requests==2.32.3
 stripe==10.8.0
+opencv-python-headless==4.9.0.80
+numpy==1.26.0
+mediapipe==0.10.9
+psutil==5.9.5
