@@ -5,6 +5,10 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 
+def _noop_result_callback(result, output_image, timestamp_ms) -> None:
+    _ = (result, output_image, timestamp_ms)
+
+
 class RobertEngine:
     def __init__(self, model_asset_path: str = "pose_landmarker_heavy.task"):
         base_options = python.BaseOptions(model_asset_path=model_asset_path)
@@ -13,6 +17,7 @@ class RobertEngine:
             output_segmentation_masks=True,
             running_mode=vision.RunningMode.LIVE_STREAM,
             num_poses=1,
+            result_callback=_noop_result_callback,
         )
         self.landmarker = vision.PoseLandmarker.create_from_options(options)
 
