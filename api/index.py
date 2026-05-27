@@ -277,8 +277,7 @@ def webhook() -> tuple[Response, int]:
 
     event_type = event.get("type")
     if event_type == "payment_intent.succeeded":
-        intent = event.get("data", {}).get("object", {})
-        _ = intent
+        pass
 
     return jsonify({"status": "success"}), 200
 
