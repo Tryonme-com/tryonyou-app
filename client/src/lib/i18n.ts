@@ -32,6 +32,9 @@ export const LANG_PACKS: Record<Lang, {
   phaseMaterializing: string;
   phaseReady: string;
   faceCamera: string;
+  snapCTA: string;
+  snapLoading: string;
+  snapTitle: string;
 }> = {
   fr: {
     brand: "TRYONYOU",
@@ -61,6 +64,9 @@ export const LANG_PACKS: Record<Lang, {
     phaseMaterializing: "Matérialisation de la pièce",
     phaseReady: "Projection prête",
     faceCamera: "Placez-vous face à la caméra, à 1,5 m",
+    snapCTA: "✦ Chasquido de P.A.U.",
+    snapLoading: "P.A.U. compose votre look…",
+    snapTitle: "Look complet P.A.U.",
   },
   en: {
     brand: "TRYONYOU",
@@ -90,6 +96,9 @@ export const LANG_PACKS: Record<Lang, {
     phaseMaterializing: "Materializing garment",
     phaseReady: "Projection ready",
     faceCamera: "Face the camera, about 1.5 m away",
+    snapCTA: "✦ P.A.U. Snap",
+    snapLoading: "P.A.U. is styling your look…",
+    snapTitle: "P.A.U. Complete Look",
   },
   es: {
     brand: "TRYONYOU",
@@ -119,5 +128,8 @@ export const LANG_PACKS: Record<Lang, {
     phaseMaterializing: "Materializando la prenda",
     phaseReady: "Proyección lista",
     faceCamera: "Sitúate frente a la cámara, a 1,5 m",
+    snapCTA: "✦ Chasquido de P.A.U.",
+    snapLoading: "P.A.U. compone tu look…",
+    snapTitle: "Look Completo P.A.U.",
   },
 };

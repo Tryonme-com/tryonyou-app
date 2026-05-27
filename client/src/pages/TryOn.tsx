@@ -1003,6 +1003,32 @@ function ProjectionPanel({
   t: any;
 }) {
   const lock = metrics?.lockScore ?? 0.85;
+  const [snapState, setSnapState] = useState<"idle" | "loading" | "done">("idle");
+  const [lookRec, setLookRec] = useState<string | null>(null);
+
+  const handleSnap = async () => {
+    if (snapState === "loading") return;
+    setSnapState("loading");
+    setLookRec(null);
+    try {
+      const prompt =
+        `Cliente en el espejo digital TRYONYOU. Prenda actual: "${garment.name}" de ${garment.designer}. ` +
+        `Tejido: ${garment.fabricName ?? "premium"}. ` +
+        `Propón un look completo exclusivo con esta pieza base: complementos, calzado, accesorios y consejo de estilo. ` +
+        `Respuesta corta y elegante.`;
+      const res = await fetch("/api/chat-pau", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensaje: prompt }),
+      });
+      const data = await res.json() as { respuesta?: string };
+      setLookRec(data.respuesta ?? null);
+      setSnapState("done");
+    } catch {
+      setSnapState("idle");
+    }
+  };
+
   return (
     <aside
       className="absolute right-0 top-0 bottom-0 w-full sm:w-[380px] z-20 bg-[var(--color-noir)]/85 backdrop-blur-md border-l border-white/5 flex flex-col p-6 pt-20"
@@ -1067,6 +1093,36 @@ function ProjectionPanel({
             window.dispatchEvent(evt);
           }
         }} />
+      </div>
+
+      {/* PAU snap — Chasquido / Look complet */}
+      <div className="mb-4">
+        <button
+          onClick={() => { void handleSnap(); }}
+          disabled={snapState === "loading"}
+          className="w-full py-3 border border-[var(--color-or)]/50 text-[var(--color-or)] uppercase tracking-[0.22em] text-[10px] font-medium hover:bg-[var(--color-or)]/10 disabled:opacity-50 transition-colors"
+        >
+          {snapState === "loading" ? t.snapLoading : t.snapCTA}
+        </button>
+
+        {snapState === "done" && lookRec && (
+          <div className="mt-3 p-4 bg-[var(--color-or)]/8 border border-[var(--color-or)]/25 rounded-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[var(--color-or)] text-[10px]">◆</span>
+              <span className="text-[9px] tracking-[0.28em] uppercase text-[var(--color-or)]/80">
+                {t.snapTitle}
+              </span>
+              <button
+                onClick={() => { setSnapState("idle"); setLookRec(null); }}
+                className="ml-auto text-white/30 hover:text-white/60 text-sm leading-none"
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-[11px] text-white/75 leading-[1.65] whitespace-pre-wrap">{lookRec}</p>
+          </div>
+        )}
       </div>
 
       <button
