@@ -1,0 +1,80 @@
+name: Deploy API to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGION: europe-west1
+  SERVICE: tryonyou-api
+  IMAGE: europe-west1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/tryonyou/api
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            --tag "${{ env.IMAGE }}:${{ github.sha }}" \
+            --tag "${{ env.IMAGE }}:latest" \
+            .
+          docker push "${{ env.IMAGE }}:${{ github.sha }}"
+          docker push "${{ env.IMAGE }}:latest"
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          flags: --allow-unauthenticated --min-instances=0 --max-instances=10 --memory=512Mi --timeout=60s
+          env_vars: |
+            LAFAYETTE_VERIFY_BASE_URL=${{ vars.LAFAYETTE_VERIFY_BASE_URL }}
+            JULES_MAIL_MAX_RESULTS=${{ vars.JULES_MAIL_MAX_RESULTS }}
+            MAX_ENVIOS_DIARIOS=${{ vars.MAX_ENVIOS_DIARIOS }}
+            GOOGLE_SHEETS_RANGE=${{ vars.GOOGLE_SHEETS_RANGE }}
+            LINEAR_PAGE_SIZE=${{ vars.LINEAR_PAGE_SIZE }}
+            LINEAR_MAX_PAGES=${{ vars.LINEAR_MAX_PAGES }}
+            LINEAR_SYNC_CRON_MS=${{ vars.LINEAR_SYNC_CRON_MS }}
+          secrets: |
+            STRIPE_ENDPOINT_SECRET=STRIPE_ENDPOINT_SECRET:latest
+            JULES_CRON_TOKEN=JULES_CRON_TOKEN:latest
+            GMAIL_REFRESH_TOKEN=GMAIL_REFRESH_TOKEN:latest
+            GMAIL_CLIENT_ID=GMAIL_CLIENT_ID:latest
+            GMAIL_CLIENT_SECRET=GMAIL_CLIENT_SECRET:latest
+            GEMINI_API_KEY=GEMINI_API_KEY:latest
+            GOOGLE_SERVICE_ACCOUNT_JSON=GOOGLE_SERVICE_ACCOUNT_JSON:latest
+            SPREADSHEET_ID=SPREADSHEET_ID:latest
+            PENNYLANE_API_KEY=PENNYLANE_API_KEY:latest
+            PAU_TTS_ENDPOINT=PAU_TTS_ENDPOINT:latest
+            PAU_TTS_FALLBACK_AUDIO_URL=PAU_TTS_FALLBACK_AUDIO_URL:latest
+            LINEAR_API_TOKEN=LINEAR_API_TOKEN:latest
+            GOOGLE_SHEETS_ID=GOOGLE_SHEETS_ID:latest
+            GOOGLE_SHEETS_ACCESS_TOKEN=GOOGLE_SHEETS_ACCESS_TOKEN:latest
+
+      - name: Show deployed URL
+        run: |
+          echo "Deployed: $(gcloud run services describe ${{ env.SERVICE }} --region=${{ env.REGION }} --format='value(status.url)')"
