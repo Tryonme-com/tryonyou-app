@@ -1,17 +1,16 @@
 """
-setup_google_secrets.py — carga todos los secretos de TRYONYOU en
-Google Secret Manager.
+setup_google_secrets.py — upload all TRYONYOU secrets to Google Secret Manager.
 
-Uso:
-  export GOOGLE_APPLICATION_CREDENTIALS=/ruta/a/sa-key.json
-  export GCP_PROJECT_ID=mi-proyecto-gcp
+Usage:
+  export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa-key.json
+  export GCP_PROJECT_ID=my-gcp-project
   python scripts/setup_google_secrets.py [--env-file .env.local]
 
-El script lee las variables de entorno (de la shell o de un archivo .env
-opcional) y crea o actualiza cada secreto en Secret Manager.
+The script reads environment variables (from the shell or an optional .env file)
+and creates or updates each secret version in Secret Manager.
 
-Requiere:
-  pip install google-cloud-secret-manager python-dotenv
+Requires:
+  pip install google-cloud-secret-manager
 """
 from __future__ import annotations
 
@@ -82,7 +81,7 @@ def _load_dotenv(path: Path) -> None:
 
 def _log_key(label: str, name: str) -> None:
     """Print only the key name, never a secret value."""
-    print(f"  [{label:8}]  {name}")
+    print(f"  [{label:8}]  {name}")  # lgtm[py/clear-text-logging-sensitive-data]
 
 
 def _upsert_secret(client, project: str, name: str, payload: bytes) -> None:
