@@ -71,7 +71,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.CLOUD_RUN_SERVICE }}:${{ github.sha }}"
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.CLOUD_RUN_SERVICE }}:${{ github.sha }}"
           docker build -t "$IMAGE" api/
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
@@ -81,7 +81,7 @@ jobs:
           gcloud run deploy ${{ env.CLOUD_RUN_SERVICE }} \
             --image "$IMAGE" \
             --region ${{ env.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --project ${{ vars.GCP_PROJECT_ID }} \
             --platform managed \
             --allow-unauthenticated \
             --memory 512Mi \
@@ -124,4 +124,4 @@ MAX_ENVIOS_DIARIOS=${{ secrets.MAX_ENVIOS_DIARIOS }}"
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          projectId: ${{ secrets.GCP_PROJECT_ID }}
+          projectId: ${{ vars.GCP_PROJECT_ID }}
