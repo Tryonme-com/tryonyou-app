@@ -53,14 +53,13 @@
       onCreate = {
         install-frontend = "corepack enable && pnpm install --frozen-lockfile=false";
         install-api = ''
-          python3 -m venv api/.venv
-          api/.venv/bin/pip install -r api/requirements.txt
+          cd api && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
         '';
       };
       onStart = {
         run-frontend = "pnpm run dev";
         run-api = ''
-          cd api && ../.venv/bin/python index.py
+          cd api && .venv/bin/python index.py
         '';
       };
     };

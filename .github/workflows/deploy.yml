@@ -89,19 +89,20 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-            --set-env-vars "STRIPE_ENDPOINT_SECRET=${{ secrets.STRIPE_ENDPOINT_SECRET }}" \
-            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" \
-            --set-env-vars "GMAIL_CLIENT_ID=${{ secrets.GMAIL_CLIENT_ID }}" \
-            --set-env-vars "GMAIL_CLIENT_SECRET=${{ secrets.GMAIL_CLIENT_SECRET }}" \
-            --set-env-vars "GMAIL_REFRESH_TOKEN=${{ secrets.GMAIL_REFRESH_TOKEN }}" \
-            --set-env-vars "GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" \
-            --set-env-vars "JULES_CRON_TOKEN=${{ secrets.JULES_CRON_TOKEN }}" \
-            --set-env-vars "PENNYLANE_API_KEY=${{ secrets.PENNYLANE_API_KEY }}" \
-            --set-env-vars "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" \
-            --set-env-vars "PAU_TTS_ENDPOINT=${{ secrets.PAU_TTS_ENDPOINT }}" \
-            --set-env-vars "PAU_TTS_FALLBACK_AUDIO_URL=${{ secrets.PAU_TTS_FALLBACK_AUDIO_URL }}" \
-            --set-env-vars "LAFAYETTE_VERIFY_BASE_URL=${{ secrets.LAFAYETTE_VERIFY_BASE_URL }}" \
-            --set-env-vars "MAX_ENVIOS_DIARIOS=${{ secrets.MAX_ENVIOS_DIARIOS }}"
+            --set-env-vars "\
+STRIPE_ENDPOINT_SECRET=${{ secrets.STRIPE_ENDPOINT_SECRET }},\
+GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},\
+GMAIL_CLIENT_ID=${{ secrets.GMAIL_CLIENT_ID }},\
+GMAIL_CLIENT_SECRET=${{ secrets.GMAIL_CLIENT_SECRET }},\
+GMAIL_REFRESH_TOKEN=${{ secrets.GMAIL_REFRESH_TOKEN }},\
+GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }},\
+JULES_CRON_TOKEN=${{ secrets.JULES_CRON_TOKEN }},\
+PENNYLANE_API_KEY=${{ secrets.PENNYLANE_API_KEY }},\
+SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},\
+PAU_TTS_ENDPOINT=${{ secrets.PAU_TTS_ENDPOINT }},\
+PAU_TTS_FALLBACK_AUDIO_URL=${{ secrets.PAU_TTS_FALLBACK_AUDIO_URL }},\
+LAFAYETTE_VERIFY_BASE_URL=${{ secrets.LAFAYETTE_VERIFY_BASE_URL }},\
+MAX_ENVIOS_DIARIOS=${{ secrets.MAX_ENVIOS_DIARIOS }}"
 
   # ── Deploy frontend → Firebase Hosting ────────────────────────────────────
   deploy-firebase:
