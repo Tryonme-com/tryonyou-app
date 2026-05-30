@@ -80,13 +80,19 @@ def _load_dotenv(path: Path) -> None:
                 os.environ[key] = value
 
 
-def _upsert_secret(client, project: str, name: str, value: str) -> None:
+def _log_key(label: str, name: str) -> None:
+    """Print only the key name, never a secret value."""
+    print(f"  [{label:8}]  {name}")
+
+
+def _upsert_secret(client, project: str, name: str, payload: bytes) -> None:
     from google.api_core.exceptions import NotFound, AlreadyExists
 
     parent = f"projects/{project}"
     secret_path = f"{parent}/secrets/{name}"
 
     # Create secret resource if it does not exist yet.
+    created = False
     try:
         client.get_secret(name=secret_path)
     except NotFound:
@@ -96,22 +102,21 @@ def _upsert_secret(client, project: str, name: str, value: str) -> None:
                 secret_id=name,
                 secret={"replication": {"automatic": {}}},
             )
-            print(f"  [created]  {name}")
+            created = True
         except AlreadyExists:
             pass
 
     # Add a new version with the current value.
-    client.add_secret_version(
-        parent=secret_path,
-        payload={"data": value.encode("utf-8")},
-    )
-    print(f"  [updated]  {name}")
+    client.add_secret_version(parent=secret_path, payload={"data": payload})
+    verb = "created" if created else "updated"
+    # Log only the key name, never the secret value.
+    _log_key(verb, name)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync secrets to Google Secret Manager")
     parser.add_argument("--env-file", default=".env.local", help="Optional .env file to load")
-    parser.add_argument("--dry-run", action="store_true", help="Print values without uploading")
+    parser.add_argument("--dry-run", action="store_true", help="Print key names without uploading")
     args = parser.parse_args()
 
     # Load optional .env file.
@@ -122,21 +127,23 @@ def main() -> None:
         print("ERROR: set GCP_PROJECT_ID before running this script.", file=sys.stderr)
         sys.exit(1)
 
-    missing = [s for s in SECRETS if not os.environ.get(s, "").strip()]
+    # Build presence map using only boolean flags — never pass values to logging.
+    present: set[str] = {s for s in SECRETS if os.environ.get(s, "").strip()}
+    missing: list[str] = [s for s in SECRETS if s not in present]
+
     if missing:
         print("WARNING: the following secrets have no value and will be skipped:")
         for m in missing:
-            print(f"  - {m}")
+            _log_key("missing", m)
 
     if args.dry_run:
         print("\n[dry-run] Secrets that WOULD be uploaded:")
         for s in SECRETS:
-            val = os.environ.get(s, "")
-            status = "<set>" if val else "<empty — skipped>"
-            print(f"  {s}: {status}")
+            _log_key("set" if s in present else "skipped", s)
         print("\n[dry-run] Plain env-vars (not uploaded to Secret Manager):")
         for v in ENV_VARS:
-            print(f"  {v} = {os.environ.get(v, '<not set>')}")
+            status = "set" if os.environ.get(v, "").strip() else "not set"
+            _log_key(status, v)
         return
 
     try:
@@ -153,15 +160,17 @@ def main() -> None:
 
     print(f"\nUploading secrets to project '{project}'...\n")
     for name in SECRETS:
-        value = os.environ.get(name, "").strip()
-        if not value:
-            print(f"  [skipped]  {name}  (empty)")
+        if name not in present:
+            _log_key("skipped", name)
             continue
-        _upsert_secret(client, project, name, value)
+        # Encode value to bytes here so the raw string never touches a log call.
+        raw = os.environ[name].strip().encode("utf-8")
+        _upsert_secret(client, project, name, raw)
 
     print("\nDone. Plain env-vars to configure in Cloud Run or GitHub Actions vars:")
     for v in ENV_VARS:
-        print(f"  {v} = {os.environ.get(v, '<not set>')}")
+        status = "set" if os.environ.get(v, "").strip() else "not set"
+        _log_key(status, v)
 
 
 if __name__ == "__main__":

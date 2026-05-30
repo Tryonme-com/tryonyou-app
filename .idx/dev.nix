@@ -72,7 +72,6 @@
       onCreate = {
         install-python-deps = {
           command = "pip install -r api/requirements.txt";
-          openFiles = [ "README.md" ];
         };
         install-node-deps = {
           command = "corepack enable && corepack pnpm install";
