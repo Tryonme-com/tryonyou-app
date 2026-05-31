@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "order_id": "VIP-LAFAYETTE-001",
+      "timestamp": "2026-03-30T19:45:00Z",
+      "client_rcs": "VERIFIED_FR_943610196",
+      "audio_validation": "static/audio/lily_confirm_VIP-LAFAYETTE-001.mp3",
+      "security_hash": "PENDIENTE_REGENERAR_CON_registro_ordenes_seguras_py",
+      "status": "BAJO PROTOCOLO V10 - SOBERANÍA TOTAL",
+      "nota": "Ejemplo de esquema. Ejecuta registro_ordenes_seguras.py para hash + MP3 reales."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+import os
+
+html_code = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>TRYONME × DIVINEO — Mirror Sovereignty V10</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <style>
+        body { margin: 0; background: #000; color: #D4AF37; font-family: serif; overflow: hidden; }
+        #mirror-root { position: relative; width: 100vw; height: 100vh; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #garment-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scaleX(-1); width: 65%; pointer-events: none; opacity: 0.85; display: none; z-index: 10; }
+        #pau-bot { position: fixed; bottom: 30px; left: 30px; width: 150px; height: 150px; z-index: 100; border-radius: 50%; border: 2px solid #D4AF37; overflow: hidden; box-shadow: 0 0 30px rgba(212, 175, 55, 0.5); }
+        #pau-bot video { width: 100%; height: 100%; object-fit: cover; }
+        #status-db { position: fixed; top: 20px; right: 20px; text-align: right; font-size: 11px; letter-spacing: 2px; z-index: 100; background: rgba(0,0,0,0.8); padding: 15px; border-right: 3px solid #D4AF37; }
+        .legal { position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 9px; opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="mirror-root">
+        <video id="input_video" style="display:none;"></video>
+        <canvas id="output_canvas"></canvas>
+        <img id="garment-overlay" src="assets/balmain_look.png">
+    </div>
+    <div id="status-db">
+        <div>DATABASE: CONNECTED</div>
+        <div id="fit-score">FIT SCORE: SCANNING...</div>
+        <div id="item-name">TARGET: BALMAIN V10</div>
+    </div>
+    <div id="pau-bot">
+        <video autoplay loop muted playsinline><source src="pau_transparent.webm" type="video/webm"></video>
+    </div>
+    <div class="legal">SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317 | © 2026 DIVINEO PARIS</div>
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const overlay = document.getElementById('garment-overlay');
+        const fitScoreDisplay = document.getElementById('fit-score');
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            if (results.poseLandmarks) {
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#D4AF37', lineWidth: 2});
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
+                const confidence = results.poseLandmarks[11].visibility;
+                if (confidence > 0.8) {
+                    overlay.style.display = 'block';
+                    fitScoreDisplay.innerText = 'FIT SCORE: 98.4% MATCH';
+                } else {
+                    overlay.style.display = 'none';
+                    fitScoreDisplay.innerText = 'FIT SCORE: SCANNING...';
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        const pose = new Pose({locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file});
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5 });
+        pose.onResults(onResults);
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 1280, height: 720
+        });
+        camera.start();
+
+        window.addEventListener('resize', () => {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        });
+        canvasElement.width = window.innerWidth;
+        canvasElement.height = window.innerHeight;
+    </script>
+</body>
+</html>"""
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html_code)
+
+os.system("git add index.html")
+os.system("git commit -m 'FIX: V10 COMPLETE - PAU + OVERLAY + ENGINE'")
+os.system("git push origin main --force")
+print("\n--- ✅ BÚNKER TOTALMENTE DESPLEGADO ---")

@@ -1,0 +1,10 @@
+{
+    "core": "tryonme.app",
+    "satellites": [
+        {"domain": "abvetos.com", "role": "Intelligence Hub & Strategy"},
+        {"domain": "tryonme.com", "role": "Commercial Gateway"},
+        {"domain": "tryonme.org", "role": "Sovereignty & Legal Archive"}
+    ],
+    "protection": "Full DNS Shield Active",
+    "patent_linked": "PCT/EP2025/067317"
+}

@@ -1,0 +1,41 @@
+[
+    {
+        "id": "V10-BALMAIN-WHITE-SNAP",
+        "brand": "BALMAIN",
+        "name": "Silhouette pilote blanche — Lafayette",
+        "technical_specs": {"shoulder_max": 44, "waist_max": 32},
+        "price_eur": 0,
+        "type": "PILOT_SNAP",
+        "store_id": "GL-HAUSSMANN",
+        "stock_status": true,
+        "fabric_weight": "crêpe noble",
+        "img": "assets/balmain_white_snap.png"
+    },
+    {
+        "id": "as_001",
+        "brand": "ARMARIO SOLIDARIO",
+        "name": "VESTE SOLIDAIRE V10",
+        "technical_specs": {"shoulder_max": 46, "waist_max": 34},
+        "price_eur": 0,
+        "type": "DONATION",
+        "img": "assets/solidario_veste.png"
+    },
+    {
+        "id": "ai_102",
+        "brand": "ARMARIO INTELIGENTE",
+        "name": "ENSEMBLE CONNECTÉ OMEGA",
+        "technical_specs": {"shoulder_max": 48, "waist_max": 36},
+        "price_eur": 850,
+        "type": "SMART_RENTAL",
+        "img": "assets/smart_ensemble.png"
+    },
+    {
+        "id": "sac_m_001",
+        "brand": "SAC MUSEUM",
+        "name": "PIÈCE D'ARCHIVE 1954",
+        "technical_specs": {"shoulder_max": 42, "waist_max": 28},
+        "price_eur": 12500,
+        "type": "MUSEUM_PIECE",
+        "img": "assets/sac_museum_archive.png"
+    }
+]

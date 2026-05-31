@@ -1,116 +1,50 @@
-# Dependencies
-**/node_modules
-.pnpm-store/
+.vercel
 
-# Build outputs
-dist/
-build/
-*.dist
+# Node (evitar que git add -A incluya dependencias locales)
+node_modules/
 
-# Environment variables
+# Secretos y entorno local
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+.env_security_lock
 
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Frontend build (Vercel reconstruye en deploy)
+dist/
 
-# OS generated files
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+venv/
+
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+.env*.local
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Java / legado (no front Vite)
+01-Genericos/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-__pycache__/
-*.pyc
+# Carpeta anidada accidental (no versionar)
+tryonyou-app/
+test_write_tool.txt
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# Borradores generados (operacion_rescate_soberania_v10.py)
+operacion_rescate/
+leads_francia/
+leads_empire/
+Bpifrance_Envio_Urgente/
 
-# nyc test coverage
-.nyc_output
+# Proforma generada por peacock_v10_final_execution.py (datos comerciales)
+billing/VENTA_V10_PROFORMA.json
 
-# Dependency directories
-jspm_packages/
-
-# TypeScript cache
-*.tsbuildinfo
-__pycache__/
-*.pyc
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-
-# Gatsby files
-.cache/
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Webdev artifacts (checkpoint zips, migrations, etc.)
-.webdev/
-
-# Manus version file (auto-generated, not part of source)
-client/public/__manus__/version.json
+# Bunker — journaux runtime (IP, monitor TTC)
+logs/ip_access.jsonl
+logs/IP_WATCH.md
+logs/LAFAYETTE_TTC_MONITOR.md
+logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+update_stripe_v10.py
+activate_royalties_v10.py
+monetizacion_trace_demo.log

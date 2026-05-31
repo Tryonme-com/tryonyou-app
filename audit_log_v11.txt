@@ -1,0 +1,17 @@
+FINANCE_BRIDGE_AUDIT: MATCHED
+
+==============================================================================
+REGISTRO DE MOVIMIENTO FINANCIERO - OMEGA V10
+Fecha/Hora: $(date +"%Y-%m-%d %H:%M:%S")
+==============================================================================
+Concepto: Adelanto Karmen
+Importe: 27,500.00 EUR
+Banco Origen/Destino: Qonto
+Titular: EI - ESPINAR RODRIGUEZ RUBEN
+IBAN: FR761695800001576292349652
+BIC: QNTOFRP1XXX
+BIC Intermediario: TRWIBEB3XXX
+Estado: Confirmado / Encolado para conciliación
+==============================================================================
+
+[2026-05-31 02:47:43] LIVE PAYOUT ASENTADO - SIREN: 943610196 - Importe: 27,500.00 EUR - Destino: Qonto

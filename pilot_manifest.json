@@ -1,0 +1,12 @@
+{
+    "origin": "Tryonme-com",
+    "project": "tryonyou-app",
+    "id_client": "gen-lang-client-0091228222",
+    "features": [
+        "scan_silhouette_v10",
+        "qr_generator_store",
+        "smart_cart_integration",
+        "ar_mirror_render"
+    ],
+    "deployment_ready": true
+}

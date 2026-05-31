@@ -1,0 +1,91 @@
+import os
+
+html_total = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>TRYONME × DIVINEO — Mirror Sanctuary V10</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <style>
+        body { margin: 0; background: #000; color: #D4AF37; font-family: serif; overflow: hidden; }
+        #mirror-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
+        /* P.A.U. - EL GUÍA */
+        #pau-container { 
+            position: fixed; 
+            bottom: 30px; 
+            left: 30px; 
+            width: 160px; 
+            height: 160px; 
+            z-index: 9999; 
+            border-radius: 50%; 
+            border: 2px solid #D4AF37; 
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+        }
+        #pau-container video { width: 100%; height: 100%; object-fit: cover; }
+
+        .legal { position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 10px; letter-spacing: 1px; opacity: 0.7; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="mirror-container">
+        <video id="input_video" style="display:none;"></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <div id="pau-container">
+        <video autoplay loop muted playsinline>
+            <source src="pau_transparent.webm" type="video/webm">
+        </video>
+    </div>
+
+    <div class="legal">SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317 | © 2026 DIVINEO PARIS</div>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            if (results.poseLandmarks) {
+                // Dibujar el esqueleto dorado sobre el usuario
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#D4AF37', lineWidth: 3});
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
+            }
+            canvasCtx.restore();
+        }
+
+        const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5 });
+        pose.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 1280, height: 720
+        });
+        camera.start();
+
+        window.addEventListener('resize', () => {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        });
+        canvasElement.width = window.innerWidth;
+        canvasElement.height = window.innerHeight;
+    </script>
+</body>
+</html>"""
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html_total)
+
+os.system("git add index.html")
+os.system("git commit -m 'SOVEREIGNTY V10: Mirror + PAU Integrated'")
+os.system("git push origin main --force")
+print("\n🚀 BÚNKER SELLADO CON PAU Y MOTOR. Revisa tryonyou.app en incógnito.")
