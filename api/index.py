@@ -364,7 +364,7 @@ def webhook() -> tuple[Response, int]:
             "Stripe event %s processed: payment_intent.payment_failed id=%s last_error=%s",
             event_id,
             event_object.get("id"),
-            ((event_object.get("last_payment_error") or {}).get("message")),
+            (event_object.get("last_payment_error") or {}).get("message"),
         )
     elif event_type == "checkout.session.completed":
         logger.info(
