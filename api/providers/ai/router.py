@@ -27,5 +27,12 @@ def run_ai_task(task_type: str, payload: dict[str, Any], provider: str | None = 
             last_error = exc
             if attempt >= 3:
                 break
-            time.sleep(min(2**attempt, 5))
-    raise RuntimeError(f"ai_task_failed provider={selected}: {last_error}") from last_error
+            delay = min(
+                (2 ** max(attempt - 1, 0)) * settings.retry_backoff_base_seconds,
+                settings.retry_max_backoff_seconds,
+            )
+            time.sleep(delay)
+    payload_keys = ",".join(sorted(payload.keys()))
+    raise RuntimeError(
+        f"ai_task_failed provider={selected} task_type={task_type} payload_keys={payload_keys}: {last_error}"
+    ) from last_error

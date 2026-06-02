@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import signal
 import time
 from typing import Any
 
@@ -14,6 +15,8 @@ from api.services.redis_lock import RedisLock
 from api.utils.logging import get_logger
 
 logger = get_logger("jules_worker")
+_running = True
+REASON_MISSING_EVENT_RECORD = "missing_event_store_record"
 
 
 def _log(level: str, msg: str, **extra: Any) -> None:
@@ -26,7 +29,7 @@ def process_once() -> bool:
     store = EventStore(redis)
 
     queue.requeue_due_retries()
-    job = queue.pop(timeout_seconds=2)
+    job = queue.pop(timeout_seconds=settings.worker_pop_timeout_seconds)
     if not job:
         return False
 
@@ -43,7 +46,7 @@ def process_once() -> bool:
     try:
         stored = store.get_event(event_id)
         if not stored:
-            queue.send_to_dead_letter(event_id, trace_id, attempts, "missing_event_store_record")
+            queue.send_to_dead_letter(event_id, trace_id, attempts, REASON_MISSING_EVENT_RECORD)
             _log("error", "missing_event_record", event_id=event_id, trace_id=trace_id, status="dead_letter")
             return True
 
@@ -62,16 +65,26 @@ def process_once() -> bool:
 
         result = execute_event_flow(decision, event, context)
         store.update_status(event_id, "completed", attempts=attempts)
-        _log("info", "event_completed", event_id=event_id, event_type=event.get("type", "unknown"), trace_id=trace_id, status="completed")
+        _log(
+            "info",
+            "event_completed",
+            event_id=event_id,
+            event_type=event.get("type", "unknown"),
+            trace_id=trace_id,
+            status="completed",
+            action=decision.action,
+            provider=result.get("provider"),
+        )
         return True
     except Exception as exc:  # noqa: BLE001
+        error_text = f"{type(exc).__name__}: {exc}"
         if attempts < settings.max_retry_attempts:
-            store.update_status(event_id, "retrying", attempts=attempts, error=str(exc))
+            store.update_status(event_id, "retrying", attempts=attempts, error=error_text)
             queue.schedule_retry(event_id, trace_id, attempts)
             _log("warning", "event_retry", event_id=event_id, trace_id=trace_id, status="retrying")
         else:
-            store.update_status(event_id, "dead_letter", attempts=attempts, error=str(exc))
-            queue.send_to_dead_letter(event_id, trace_id, attempts, str(exc))
+            store.update_status(event_id, "dead_letter", attempts=attempts, error=error_text)
+            queue.send_to_dead_letter(event_id, trace_id, attempts, error_text)
             _log("error", "event_dead_letter", event_id=event_id, trace_id=trace_id, status="dead_letter")
         return True
     finally:
@@ -79,8 +92,17 @@ def process_once() -> bool:
 
 
 def run_forever() -> None:
+    global _running
+
+    def _stop_handler(signum: int, _: object) -> None:
+        global _running
+        _running = False
+        _log("info", "worker_stopping", trace_id="worker", status=f"signal_{signum}")
+
+    signal.signal(signal.SIGTERM, _stop_handler)
+    signal.signal(signal.SIGINT, _stop_handler)
     _log("info", "worker_started", trace_id="worker")
-    while True:
+    while _running:
         processed = process_once()
         if not processed:
             time.sleep(1.0)

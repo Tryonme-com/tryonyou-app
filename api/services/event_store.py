@@ -53,6 +53,6 @@ class EventStore:
         if attempts is not None:
             mapping["attempts"] = str(attempts)
         if error:
-            mapping["last_error"] = error[:600]
+            mapping["last_error"] = error[: settings.max_error_length]
         self.redis.hset(self.event_key(event_id), mapping=mapping)
         self.redis.expire(self.event_key(event_id), settings.event_ttl_seconds)

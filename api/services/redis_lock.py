@@ -31,7 +31,8 @@ class RedisLock:
         self.redis.eval(_RELEASE_LOCK_SCRIPT, 1, self.key, self.token)
 
     def __enter__(self) -> "RedisLock":
-        self.acquire()
+        if not self.acquire():
+            raise RuntimeError(f"failed to acquire redis lock: {self.key}")
         return self
 
     def __exit__(self, *_: object) -> None:

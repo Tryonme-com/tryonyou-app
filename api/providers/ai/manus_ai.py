@@ -12,6 +12,8 @@ class ManusAIProvider(AIProvider):
     def run_task(self, task_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not settings.manus_api_key:
             raise RuntimeError("MANUS_API_KEY is missing")
+        if not settings.manus_base_url:
+            raise RuntimeError("MANUS_BASE_URL is missing")
 
         response = requests.post(
             f"{settings.manus_base_url.rstrip('/')}/v1/tasks",

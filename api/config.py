@@ -22,12 +22,15 @@ class Settings:
     lock_ttl_seconds: int = int(os.getenv("LOCK_TTL_SECONDS", "60"))
     max_retry_attempts: int = int(os.getenv("MAX_RETRY_ATTEMPTS", "5"))
     retry_backoff_base_seconds: int = int(os.getenv("RETRY_BACKOFF_BASE_SECONDS", "2"))
+    retry_max_backoff_seconds: int = int(os.getenv("RETRY_MAX_BACKOFF_SECONDS", "300"))
+    max_error_length: int = int(os.getenv("MAX_ERROR_LENGTH", "600"))
+    worker_pop_timeout_seconds: int = int(os.getenv("WORKER_POP_TIMEOUT_SECONDS", "2"))
 
     ai_provider: str = os.getenv("AI_PROVIDER", "google")
     ai_timeout_seconds: int = int(os.getenv("AI_TIMEOUT_SECONDS", "20"))
     google_ai_api_key: str = os.getenv("GOOGLE_AI_API_KEY", "")
     manus_api_key: str = os.getenv("MANUS_API_KEY", "")
-    manus_base_url: str = os.getenv("MANUS_BASE_URL", "https://example.com")
+    manus_base_url: str = os.getenv("MANUS_BASE_URL", "")
 
 
 settings = Settings()

@@ -30,7 +30,10 @@ class QueueService:
         return json.loads(payload)
 
     def schedule_retry(self, event_id: str, trace_id: str, attempts: int) -> None:
-        delay = min((2 ** max(attempts - 1, 0)) * settings.retry_backoff_base_seconds, 300)
+        delay = min(
+            (2 ** max(attempts - 1, 0)) * settings.retry_backoff_base_seconds,
+            settings.retry_max_backoff_seconds,
+        )
         due_ts = int(time.time()) + delay
         value = json.dumps({"event_id": event_id, "trace_id": trace_id, "attempts": attempts})
         self.redis.zadd(self.retry_key, {value: due_ts})
@@ -55,7 +58,7 @@ class QueueService:
                     "event_id": event_id,
                     "trace_id": trace_id,
                     "attempts": attempts,
-                    "reason": reason[:600],
+                    "reason": reason[: settings.max_error_length],
                     "dead_lettered_at": int(time.time()),
                 }
             ),
