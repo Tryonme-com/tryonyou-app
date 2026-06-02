@@ -48,7 +48,7 @@ class RedisLock:
         # worker's lock if our TTL expired while we were working.
         try:
             current = self._r.get(self._key)
-            if current == self._token:
+            if str(current) == self._token:
                 self._r.delete(self._key)
         except Exception as exc:
             logger.warning("[redis_lock] release error key=%s: %s", self._key, exc)

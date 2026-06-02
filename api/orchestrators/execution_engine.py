@@ -96,7 +96,6 @@ def _run_ai_optional(
             "[execution] AI enrichment ok event_id=%s provider=%s",
             event.get("id"), provider,
         )
-        return result
     except Exception as exc:
         logger.warning(
             "[execution] AI enrichment skipped event_id=%s: %s",

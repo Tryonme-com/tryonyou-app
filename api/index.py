@@ -355,7 +355,16 @@ def webhook() -> tuple[Response, int]:
     try:
         event = verify_webhook(payload, sig_header)
     except WebhookVerificationError as exc:
-        return jsonify({"status": str(exc)}), 400
+        # Map internal slug to a safe, static HTTP response — never expose
+        # raw exception text to the caller.
+        _SAFE_STATUS = {
+            "invalid_payload": "invalid_payload",
+            "invalid_signature": "invalid_signature",
+            "missing_config": "service_unavailable",
+            "verification_error": "verification_error",
+        }
+        safe = _SAFE_STATUS.get(str(exc), "bad_request")
+        return jsonify({"status": safe}), 400
 
     event_id: str = event.get("id", "")
     event_type: str = event.get("type", "unknown")
