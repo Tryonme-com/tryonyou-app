@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import os
 import sqlite3
 import sys
@@ -33,6 +34,14 @@ from typing import Any
 
 import stripe
 from flask import Flask, jsonify, request, Response
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stderr,
+)
+logger = logging.getLogger("tryonyou")
 
 try:
     import qrcode
@@ -313,23 +322,186 @@ def run_jules_mail() -> Response:
         return _json_err("jules mail execution error", 500)
 
 
+# ─── Stripe Webhook — Async-ready architecture ────────────────────────────────
+#
+# Architecture overview (Vercel serverless + Jules worker):
+#
+#   [Stripe] ──POST /api/webhook──▶ webhook()
+#                                      │ 1. verify signature (400 if invalid)
+#                                      │ 2. idempotency check (skip duplicates)
+#                                      │ 3. enqueue_event()  ──▶ SQLite queue
+#                                      │ 4. return 200 OK immediately
+#                                      │
+#   [Jules worker] ──polls queue──▶ handle_stripe_event()
+#                                      │  payment_intent.succeeded
+#                                      │  payment_intent.payment_failed
+#                                      │  checkout.session.completed
+#                                      └─ charge.refunded
+#
+# Jules connects at: enqueue_event() / handle_stripe_event()
+# The request thread does NO heavy work.
+
+def _init_stripe_queue(conn: sqlite3.Connection) -> None:
+    """Create the stripe event queue table if it does not exist."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS stripe_event_queue (
+            event_id    TEXT PRIMARY KEY,
+            event_type  TEXT NOT NULL,
+            payload     TEXT NOT NULL,
+            status      TEXT NOT NULL DEFAULT 'pending',
+            created_at  TEXT NOT NULL,
+            processed_at TEXT
+        )
+        """
+    )
+    conn.commit()
+
+
+def enqueue_event(event: dict[str, Any]) -> bool:
+    """
+    Persist the Stripe event to the SQLite queue for async processing.
+
+    Returns True if the event was newly enqueued, False if it was a duplicate
+    (idempotency: each event_id is stored only once).
+
+    ── Jules integration point ──────────────────────────────────────────────────
+    Replace or extend this function to publish the event to your preferred
+    async backend, for example:
+      - Redis / Celery:  celery_app.send_task("handle_stripe_event", args=[event])
+      - GCP Pub/Sub:     publisher.publish(topic, json.dumps(event).encode())
+      - AWS SQS:         sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(event))
+      - HTTP webhook:    requests.post(JULES_WORKER_URL, json=event)
+    The SQLite queue below is the zero-dependency default suitable for Vercel.
+    ─────────────────────────────────────────────────────────────────────────────
+    """
+    event_id = event.get("id", "")
+    event_type = event.get("type", "unknown")
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            _init_stripe_queue(conn)
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO stripe_event_queue
+                    (event_id, event_type, payload, status, created_at)
+                VALUES (?, ?, ?, 'pending', ?)
+                """,
+                (
+                    event_id,
+                    event_type,
+                    json.dumps(event),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            # rowcount == 0 means the INSERT was ignored (duplicate)
+            was_inserted = conn.total_changes > 0
+            conn.commit()
+        return was_inserted
+    except Exception as exc:
+        logger.error("stripe enqueue_event error: %s", exc)
+        return False
+
+
+def handle_stripe_event(event: dict[str, Any]) -> None:
+    """
+    Business logic dispatcher for Stripe events.
+
+    Called by the Jules worker (or any background worker) after dequeuing.
+    This function MUST NOT be called inside the HTTP request thread.
+
+    ── Jules integration point ──────────────────────────────────────────────────
+    Jules should:
+      1. Poll `stripe_event_queue` WHERE status='pending'
+      2. Call handle_stripe_event(json.loads(row["payload"]))
+      3. UPDATE stripe_event_queue SET status='done', processed_at=now()
+         WHERE event_id=row["event_id"]
+    ─────────────────────────────────────────────────────────────────────────────
+    """
+    event_type: str = event.get("type", "")
+    event_id: str = event.get("id", "unknown")
+    data_object: dict[str, Any] = event.get("data", {}).get("object", {})
+
+    logger.info("handle_stripe_event: type=%s id=%s", event_type, event_id)
+
+    if event_type == "payment_intent.succeeded":
+        # ── TODO (Jules): fulfill order, send confirmation email, update CRM ──
+        pi_id = data_object.get("id", "")
+        amount = data_object.get("amount_received", 0)
+        currency = data_object.get("currency", "")
+        logger.info("payment_intent.succeeded: pi=%s amount=%s %s", pi_id, amount, currency)
+
+    elif event_type == "payment_intent.payment_failed":
+        # ── TODO (Jules): notify customer, retry logic, alert ops team ─────────
+        pi_id = data_object.get("id", "")
+        err = (data_object.get("last_payment_error") or {}).get("message", "")
+        logger.warning("payment_intent.payment_failed: pi=%s error=%s", pi_id, err)
+
+    elif event_type == "checkout.session.completed":
+        # ── TODO (Jules): provision access, send receipt, update inventory ──────
+        session_id = data_object.get("id", "")
+        customer_email = data_object.get("customer_details", {}).get("email", "")
+        logger.info(
+            "checkout.session.completed: session=%s email=<redacted len=%d>",
+            session_id,
+            len(customer_email),
+        )
+
+    elif event_type == "charge.refunded":
+        # ── TODO (Jules): update order status, notify customer, adjust ledger ───
+        charge_id = data_object.get("id", "")
+        amount_refunded = data_object.get("amount_refunded", 0)
+        currency = data_object.get("currency", "")
+        logger.info(
+            "charge.refunded: charge=%s refunded=%s %s",
+            charge_id,
+            amount_refunded,
+            currency,
+        )
+
+    else:
+        # Unhandled event type — log and ignore
+        logger.info("unhandled stripe event type: %s", event_type)
+
+
 @app.route("/api/webhook", methods=["POST"])
 def webhook() -> tuple[Response, int]:
+    """
+    Stripe webhook endpoint.
+
+    Validates the signature, deduplicates via event_id, enqueues the event for
+    background processing, and returns 200 immediately.  No heavy work is done
+    inside this request.
+    """
     payload = request.get_data(cache=False, as_text=False)
     sig_header = request.headers.get("Stripe-Signature", "")
 
+    if not ENDPOINT_SECRET:
+        logger.error("webhook: STRIPE_ENDPOINT_SECRET not configured")
+        return jsonify({"status": "configuration error"}), 500
+
+    # ── 1. Verify Stripe signature ────────────────────────────────────────────
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, ENDPOINT_SECRET)
     except ValueError:
+        logger.warning("webhook: invalid payload (ValueError)")
         return jsonify({"status": "invalid payload"}), 400
     except stripe.error.SignatureVerificationError:
+        logger.warning("webhook: invalid signature")
         return jsonify({"status": "invalid signature"}), 400
 
-    event_type = event.get("type")
-    if event_type == "payment_intent.succeeded":
-        pass
+    event_id: str = event.get("id", "")
+    event_type: str = event.get("type", "")
+    logger.info("webhook: received event_type=%s event_id=%s", event_type, event_id)
 
-    return jsonify({"status": "success"}), 200
+    # ── 2. Enqueue for async processing (idempotency built into enqueue_event) ─
+    enqueued = enqueue_event(event)
+    if not enqueued:
+        # Duplicate event — already processed or in queue; still return 200
+        logger.info("webhook: duplicate event ignored event_id=%s", event_id)
+
+    # ── 3. Respond immediately — Jules handles the rest asynchronously ─────────
+    return jsonify({"status": "received"}), 200
 
 
 @app.route("/api/chat-pau", methods=["POST"])
