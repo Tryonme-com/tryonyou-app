@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import os
 import sqlite3
 import sys
@@ -42,10 +43,14 @@ except ImportError:
 
 app = Flask(__name__)
 
+LOG_LEVEL = (os.environ.get("LOG_LEVEL") or "INFO").upper()
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
+logger = logging.getLogger(__name__)
+
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
-ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
+ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET")
 LAFAYETTE_VERIFY_BASE_URL = os.environ.get(
     "LAFAYETTE_VERIFY_BASE_URL", "https://tryonyou.lafayette.demo/verify/"
 )
@@ -316,18 +321,66 @@ def run_jules_mail() -> Response:
 @app.route("/api/webhook", methods=["POST"])
 def webhook() -> tuple[Response, int]:
     payload = request.get_data(cache=False, as_text=False)
-    sig_header = request.headers.get("Stripe-Signature", "")
+    sig_header = (request.headers.get("Stripe-Signature") or "").strip()
+
+    if not payload:
+        logger.warning("Rejected Stripe webhook with empty payload")
+        return jsonify({"status": "invalid payload"}), 400
+
+    if not sig_header:
+        logger.warning("Rejected Stripe webhook without Stripe-Signature header")
+        return jsonify({"status": "invalid signature"}), 400
+
+    if not ENDPOINT_SECRET:
+        logger.error("STRIPE_ENDPOINT_SECRET is not configured")
+        return jsonify({"status": "server misconfigured"}), 500
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, ENDPOINT_SECRET)
-    except ValueError:
+    except ValueError as exc:
+        logger.warning("Rejected Stripe webhook with invalid payload: %s", exc)
         return jsonify({"status": "invalid payload"}), 400
-    except stripe.error.SignatureVerificationError:
+    except stripe.error.SignatureVerificationError as exc:
+        logger.warning("Rejected Stripe webhook with invalid signature: %s", exc)
         return jsonify({"status": "invalid signature"}), 400
 
-    event_type = event.get("type")
+    event_type = event.get("type", "unknown")
+    event_id = event.get("id", "unknown")
+    event_object = event.get("data", {}).get("object", {})
+
     if event_type == "payment_intent.succeeded":
-        pass
+        logger.info(
+            "Stripe event %s processed: payment_intent.succeeded id=%s amount=%s currency=%s",
+            event_id,
+            event_object.get("id"),
+            event_object.get("amount_received"),
+            event_object.get("currency"),
+        )
+    elif event_type == "payment_intent.payment_failed":
+        logger.info(
+            "Stripe event %s processed: payment_intent.payment_failed id=%s last_error=%s",
+            event_id,
+            event_object.get("id"),
+            ((event_object.get("last_payment_error") or {}).get("message")),
+        )
+    elif event_type == "checkout.session.completed":
+        logger.info(
+            "Stripe event %s processed: checkout.session.completed id=%s mode=%s customer=%s",
+            event_id,
+            event_object.get("id"),
+            event_object.get("mode"),
+            event_object.get("customer"),
+        )
+    elif event_type == "charge.refunded":
+        logger.info(
+            "Stripe event %s processed: charge.refunded id=%s amount_refunded=%s currency=%s",
+            event_id,
+            event_object.get("id"),
+            event_object.get("amount_refunded"),
+            event_object.get("currency"),
+        )
+    else:
+        logger.info("Stripe event %s received with unhandled type=%s", event_id, event_type)
 
     return jsonify({"status": "success"}), 200
 
@@ -376,12 +429,12 @@ def pau_habla_endpoint() -> Response:
 try:
     from manoli import manoli_blueprint
 except ModuleNotFoundError as e:
-    print(f"[tryonyou] manoli blueprint module not found: {e}", file=sys.stderr)
+    logger.warning("manoli blueprint module not found: %s", e)
 else:
     try:
         app.register_blueprint(manoli_blueprint)
     except (AssertionError, ValueError) as e:
-        print(f"[tryonyou] manoli blueprint not registered: {e}", file=sys.stderr)
+        logger.warning("manoli blueprint not registered: %s", e)
 
 
 # ─── Lafayette VIP — Efecto Paloma ────────────────────────────────────────────
@@ -612,4 +665,8 @@ def registrar_metricas() -> Response:
 # it as a HTTP handler instead of forwarding to the Flask app.
 
 if __name__ == "__main__":  # local dev
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000)),
+        debug=os.environ.get("FLASK_DEBUG") == "1",
+    )

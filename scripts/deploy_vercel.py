@@ -3,9 +3,10 @@ Direct Vercel deployment for TRYONYOU — uploads files via the v2/files API,
 then creates a v13/deployments record targeted at production. No GitHub push.
 
 Env / constants:
-  - VERCEL_TOKEN   : auth token (Bearer)
-  - VERCEL_TEAM_ID : team_SDhj8kxLVE7oJ3S5KPbwG9uC
-  - VERCEL_PROJECT : prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh (id) / tryonyou-app (name)
+  - VERCEL_TOKEN      : auth token (Bearer)
+  - VERCEL_ORG_ID     : Vercel team/org id
+  - VERCEL_PROJECT_ID : Vercel project id
+  - VERCEL_PROJECT_NAME (optional): project display name
 
 Bundles:
   - dist/public/**         → site static  (deployed as `*` files, root)
@@ -27,14 +28,22 @@ from urllib import request as urlrequest
 from urllib import error as urlerror
 
 ROOT = Path(__file__).resolve().parent.parent
-TEAM_ID = "team_SDhj8kxLVE7oJ3S5KPbwG9uC"
-PROJECT_ID = "prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh"
-PROJECT_NAME = "tryonyou-app"
-TOKEN = os.environ.get("VERCEL_TOKEN") or sys.argv[1] if len(sys.argv) > 1 else os.environ.get("VERCEL_TOKEN", "")
+VERCEL_TOKEN = os.environ.get("VERCEL_TOKEN")
+VERCEL_PROJECT_ID = os.environ.get("VERCEL_PROJECT_ID")
+VERCEL_ORG_ID = os.environ.get("VERCEL_ORG_ID")
+PROJECT_NAME = (os.environ.get("VERCEL_PROJECT_NAME") or "tryonyou-app").strip()
 
-if not TOKEN:
-    print("ERROR: pass token as $VERCEL_TOKEN or first CLI arg")
-    sys.exit(2)
+
+def _required_env(name: str, value: str | None) -> str:
+    result = (value or "").strip()
+    if not result:
+        raise SystemExit(f"ERROR: set {name} in the environment")
+    return result
+
+
+TOKEN = _required_env("VERCEL_TOKEN", VERCEL_TOKEN)
+TEAM_ID = _required_env("VERCEL_ORG_ID", VERCEL_ORG_ID)
+PROJECT_ID = _required_env("VERCEL_PROJECT_ID", VERCEL_PROJECT_ID)
 
 API = "https://api.vercel.com"
 HEADERS_BASE = {"Authorization": f"Bearer {TOKEN}"}

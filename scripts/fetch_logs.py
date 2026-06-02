@@ -5,12 +5,25 @@ import sys
 import urllib.request
 import urllib.parse
 
-TOKEN = os.environ.get("VERCEL_TOKEN", "")
-if not TOKEN:
-    sys.exit("Error: VERCEL_TOKEN environment variable is required. Set it with: export VERCEL_TOKEN=<your_token>")
-TEAM = "team_SDhj8kxLVE7oJ3S5KPbwG9uC"
-PROJECT = "prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh"
-DEPLOYMENT = sys.argv[1] if len(sys.argv) > 1 else "dpl_6afqyDxd6vgiCT4k4geG5SFDjvQg"
+VERCEL_TOKEN = os.environ.get("VERCEL_TOKEN")
+VERCEL_PROJECT_ID = os.environ.get("VERCEL_PROJECT_ID")
+VERCEL_ORG_ID = os.environ.get("VERCEL_ORG_ID")
+VERCEL_DEPLOYMENT_ID = os.environ.get("VERCEL_DEPLOYMENT_ID")
+
+
+def _required_env(name, value):
+    result = (value or "").strip()
+    if not result:
+        sys.exit(f"Error: {name} environment variable is required.")
+    return result
+
+
+TOKEN = _required_env("VERCEL_TOKEN", VERCEL_TOKEN)
+TEAM = _required_env("VERCEL_ORG_ID", VERCEL_ORG_ID)
+PROJECT = _required_env("VERCEL_PROJECT_ID", VERCEL_PROJECT_ID)
+DEPLOYMENT = sys.argv[1] if len(sys.argv) > 1 else (VERCEL_DEPLOYMENT_ID or "").strip()
+if not DEPLOYMENT:
+    sys.exit("Error: provide the deployment id as the first CLI argument or VERCEL_DEPLOYMENT_ID.")
 
 
 def call(url):

@@ -16,7 +16,10 @@
   # (never commit actual secrets here)
   env = {
     # ── Backend — Flask API ──────────────────────────────────────────────────
-    STRIPE_ENDPOINT_SECRET        = "";
+    STRIPE_ENDPOINT_SECRET        = "whsec_test_xxx";
+    VERCEL_TOKEN                  = "token_xxx";
+    VERCEL_PROJECT_ID             = "prj_xxx";
+    VERCEL_ORG_ID                 = "team_xxx";
     GEMINI_API_KEY                = "";
     GMAIL_CLIENT_ID               = "";
     GMAIL_CLIENT_SECRET           = "";

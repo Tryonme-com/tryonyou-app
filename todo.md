@@ -86,7 +86,7 @@
 
 THE PROJECT (single source of truth):
 - Local: `/home/ubuntu/tryonyou-app/`
-- Vercel: `prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh` (project name: `tryonyou-app`)
+- Vercel: `VERCEL_PROJECT_ID` (project name: `tryonyou-app`)
 - Domain: `tryonyou.app` (+ alias `tryonme.app`)
 
 ## Phase 1 — Inventaire
@@ -105,7 +105,7 @@ THE PROJECT (single source of truth):
 
 ## Phase 4 — Deploy
 - [ ] Build prod + copie médias + strip analytics
-- [ ] Deploy sur `prj_vDPvZ4U1MD4t3CmKxfusBB7md2Fh`
+- [ ] Deploy sur `VERCEL_PROJECT_ID`
 
 ## Phase 5 — Vérif
 - [ ] HTTP 200 sur toutes les routes
