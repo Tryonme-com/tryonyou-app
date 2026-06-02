@@ -55,6 +55,9 @@ LAFAYETTE_VERIFY_BASE_URL = os.environ.get(
     "LAFAYETTE_VERIFY_BASE_URL", "https://tryonyou.lafayette.demo/verify/"
 )
 
+if not ENDPOINT_SECRET:
+    logger.warning("STRIPE_ENDPOINT_SECRET is not configured; Stripe webhook verification will fail")
+
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6

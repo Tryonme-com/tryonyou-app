@@ -11,7 +11,7 @@ VERCEL_ORG_ID = os.environ.get("VERCEL_ORG_ID")
 VERCEL_DEPLOYMENT_ID = os.environ.get("VERCEL_DEPLOYMENT_ID")
 
 
-def _required_env(name, value):
+def _required_env(name: str, value: str | None) -> str:
     result = (value or "").strip()
     if not result:
         sys.exit(f"Error: {name} environment variable is required.")

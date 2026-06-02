@@ -16,6 +16,7 @@
   # (never commit actual secrets here)
   env = {
     # ── Backend — Flask API ──────────────────────────────────────────────────
+    # Placeholder values only; replace them in IDX settings or `.env.example`.
     STRIPE_ENDPOINT_SECRET        = "whsec_test_xxx";
     VERCEL_TOKEN                  = "token_xxx";
     VERCEL_PROJECT_ID             = "prj_xxx";
