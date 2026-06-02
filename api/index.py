@@ -381,7 +381,7 @@ def enqueue_event(event: dict[str, Any]) -> bool:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             _init_stripe_queue(conn)
-            conn.execute(
+            cur = conn.execute(
                 """
                 INSERT OR IGNORE INTO stripe_event_queue
                     (event_id, event_type, payload, status, created_at)
@@ -394,8 +394,8 @@ def enqueue_event(event: dict[str, Any]) -> bool:
                     datetime.now(timezone.utc).isoformat(),
                 ),
             )
-            # rowcount == 0 means the INSERT was ignored (duplicate)
-            was_inserted = conn.total_changes > 0
+            # rowcount == 0 means the INSERT was ignored (duplicate event_id)
+            was_inserted = cur.rowcount > 0
             conn.commit()
         return was_inserted
     except Exception as exc:
