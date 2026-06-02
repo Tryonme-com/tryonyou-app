@@ -43,8 +43,11 @@ except ImportError:
 
 app = Flask(__name__)
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
@@ -53,14 +56,22 @@ ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
 LAFAYETTE_VERIFY_BASE_URL = os.environ.get(
     "LAFAYETTE_VERIFY_BASE_URL", "https://tryonyou.lafayette.demo/verify/"
 )
+STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "").strip()
+APP_ENV = os.environ.get("APP_ENV", "development")
+
+if STRIPE_API_KEY:
+    stripe.api_key = STRIPE_API_KEY
 
 _RATE: dict[str, list[float]] = {}
 RATE_WINDOW_S = 60.0
 RATE_MAX = 6
 
-# In-memory idempotency store — replace with Redis/DB in production.
-# Prevents duplicate processing if Stripe retries the same event.
-_processed_event_ids: set[str] = set()
+# ── Stripe async state ────────────────────────────────────────────────────────
+# In-memory stores — replace with Redis/DB in production.
+# processed_events: idempotency guard (event_id → already handled)
+# queued_events:    pending work for Jules or another async worker
+processed_events: set[str] = set()
+queued_events: list[dict] = []
 
 # ─── Lafayette Piloto OMEGA — Catálogo Multimarca ─────────────────────────────
 
@@ -321,83 +332,195 @@ def run_jules_mail() -> Response:
         return _json_err("jules mail execution error", 500)
 
 
-# ── Stripe Webhook — async-ready architecture ─────────────────────────────────
-# REQUEST LAYER : validates signature, marks event id, responds 200 fast.
-# WORKER LAYER  : enqueue_event → handle_stripe_event (Jules or other worker).
+# ── Stripe Webhook — async-ready production architecture ──────────────────────
+#
+# REQUEST LAYER  ── webhook()           validates, deduplicates, enqueues, → 200
+# ENQUEUE LAYER  ── enqueue_event()     serialises + hands off to queue/Jules
+# WORKER LAYER   ── handle_stripe_event() dispatches per event type (Jules runs this)
+#
+# To wire Jules: replace the body of enqueue_event() with your queue call.
+# To wire Redis idempotency: replace processed_events (set) with a Redis check.
 
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+
+def validate_config() -> None:
+    if not ENDPOINT_SECRET:
+        raise RuntimeError("Missing STRIPE_ENDPOINT_SECRET environment variable")
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def is_event_already_processed(event_id: str) -> bool:
+    return event_id in processed_events
+
+
+def mark_event_processed(event_id: str) -> None:
+    processed_events.add(event_id)
+
+
+def serialize_event_for_queue(event: dict) -> dict:
+    """Strip the raw Stripe object down to the fields the worker needs."""
+    return {
+        "id": event.get("id"),
+        "type": event.get("type"),
+        "created": event.get("created"),
+        "received_at": now_iso(),
+        "data": event.get("data", {}),
+        "livemode": event.get("livemode", False),
+    }
+
+
+# ── Event handlers (WORKER LAYER — called by Jules, not by the request) ───────
+
+def handle_payment_intent_succeeded(event: dict) -> None:
+    obj = event["data"]["object"]
+    logger.info(
+        "[stripe] payment_intent.succeeded id=%s amount=%s currency=%s",
+        obj.get("id"), obj.get("amount"), obj.get("currency"),
+    )
+    # TODO: mark order paid, send confirmation email, update DB
+
+
+def handle_payment_intent_failed(event: dict) -> None:
+    obj = event["data"]["object"]
+    error_msg = obj.get("last_payment_error", {}).get("message")
+    logger.warning(
+        "[stripe] payment_intent.payment_failed id=%s error=%s",
+        obj.get("id"), error_msg,
+    )
+    # TODO: notify customer, log failure reason, trigger retry flow
+
+
+def handle_checkout_session_completed(event: dict) -> None:
+    obj = event["data"]["object"]
+    logger.info(
+        "[stripe] checkout.session.completed id=%s customer=%s payment_status=%s",
+        obj.get("id"), obj.get("customer"), obj.get("payment_status"),
+    )
+    # TODO: provision access, send receipt, trigger onboarding flow
+
+
+def handle_charge_refunded(event: dict) -> None:
+    obj = event["data"]["object"]
+    logger.info(
+        "[stripe] charge.refunded id=%s amount_refunded=%s",
+        obj.get("id"), obj.get("amount_refunded"),
+    )
+    # TODO: update order status, notify customer, alert support if needed
+
+
+def handle_unhandled_event(event: dict) -> None:
+    logger.info("[stripe] unhandled event_type=%s", event.get("type"))
+
+
+# ── handle_stripe_event — main dispatcher (WORKER LAYER) ─────────────────────
 
 def handle_stripe_event(event: dict) -> None:
     """
-    WORKER LAYER — Business logic per event type.
-
-    Jules (or another async worker) should call this function after dequeuing.
-    Do NOT call this directly from the request handler — keep the request fast.
+    Business-logic dispatcher.  Jules (or another worker) calls this after
+    dequeuing.  Includes a second idempotency check so replayed jobs are safe.
     """
+    event_id = event.get("id")
     event_type = event.get("type")
-    event_id = event.get("id", "unknown")
 
-    if event_type == "payment_intent.succeeded":
-        # TODO: fulfill order, send confirmation email, update DB
-        logger.info("[stripe] payment_intent.succeeded event_id=%s", event_id)
+    if not event_id:
+        logger.error("[stripe] worker received event without id")
+        return
 
-    elif event_type == "payment_intent.payment_failed":
-        # TODO: notify customer of failure, log, trigger retry flow
-        logger.info("[stripe] payment_intent.payment_failed event_id=%s", event_id)
+    if is_event_already_processed(event_id):
+        logger.info("[stripe] worker: duplicate skipped event_id=%s", event_id)
+        return
 
-    elif event_type == "checkout.session.completed":
-        # TODO: provision access, send receipt, trigger onboarding flow
-        logger.info("[stripe] checkout.session.completed event_id=%s", event_id)
+    try:
+        if event_type == "payment_intent.succeeded":
+            handle_payment_intent_succeeded(event)
+        elif event_type == "payment_intent.payment_failed":
+            handle_payment_intent_failed(event)
+        elif event_type == "checkout.session.completed":
+            handle_checkout_session_completed(event)
+        elif event_type == "charge.refunded":
+            handle_charge_refunded(event)
+        else:
+            handle_unhandled_event(event)
 
-    elif event_type == "charge.refunded":
-        # TODO: update order status, notify customer of refund
-        logger.info("[stripe] charge.refunded event_id=%s", event_id)
+        mark_event_processed(event_id)
 
-    else:
-        logger.info("[stripe] unhandled event_type=%s event_id=%s", event_type, event_id)
+    except Exception as exc:
+        logger.exception("[stripe] worker error event_id=%s: %s", event_id, exc)
+        raise
 
+
+# ── enqueue_event — Jules connection point ────────────────────────────────────
 
 def enqueue_event(event: dict) -> None:
     """
-    ENQUEUE LAYER — Hands off the validated event for async processing.
+    Serialises the event and pushes it onto the queue.
 
-    Replace this body to connect your preferred backend:
-      - Jules:   jules_orchestrator.schedule_stripe_event(event)
-      - Celery:  task_process_stripe_event.delay(event)
-      - Redis:   redis_client.lpush("stripe_events", json.dumps(event))
-      - Pub/Sub: pubsub_client.publish(topic, json.dumps(event).encode())
-      - SQS:     sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(event))
-
-    Jules connection point ↓
+    Current implementation: in-memory list (dev/staging only).
+    Replace with your production backend:
+      - Jules:   jules_orchestrator.schedule_stripe_event(payload)  ← Jules here
+      - Celery:  task_process_stripe_event.delay(payload)
+      - Redis:   redis_client.lpush("stripe_events", json.dumps(payload))
+      - Pub/Sub: pubsub_client.publish(topic, json.dumps(payload).encode())
+      - SQS:     sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(payload))
     """
-    event_id = event.get("id", "unknown")
-    event_type = event.get("type", "unknown")
-    logger.info("[stripe] enqueue_event type=%s event_id=%s", event_type, event_id)
+    payload = serialize_event_for_queue(event)
+    queued_events.append(payload)
+    logger.info(
+        "[stripe] enqueue_event type=%s event_id=%s",
+        payload["type"], payload["id"],
+    )
 
-    # ── Jules async hook — replace with real queue call in production ─────────
-    # jules_orchestrator.schedule_stripe_event(event)  # ← Jules connects here
+    # ── Jules async hook ── replace the line below with your real queue call ──
+    # jules_orchestrator.schedule_stripe_event(payload)   # ← Jules connects here
     # ─────────────────────────────────────────────────────────────────────────
 
-    # Synchronous fallback for dev/staging — remove once a real queue is wired.
-    handle_stripe_event(event)
+    # Synchronous fallback for dev — Jules/worker replaces this in production.
+    handle_stripe_event(payload)
 
+
+def process_event_async(event: dict) -> None:
+    """Jules-facing entry point.  Swap body for your async dispatch mechanism."""
+    enqueue_event(event)
+
+
+# ── run_local_worker_once — dev helper ────────────────────────────────────────
+
+def run_local_worker_once() -> dict | None:
+    """
+    Pops and processes one job from the in-memory queue.
+    Jules or a real worker replaces this in production.
+    """
+    if not queued_events:
+        return None
+    job = queued_events.pop(0)
+    handle_stripe_event(job)
+    return job
+
+
+# ── webhook — REQUEST LAYER ───────────────────────────────────────────────────
 
 @app.route("/api/webhook", methods=["POST"])
 def webhook() -> tuple[Response, int]:
     """
-    REQUEST LAYER — validates Stripe signature, responds 200 immediately, delegates.
-
-    No heavy work is performed here. All processing is deferred via enqueue_event().
+    REQUEST LAYER — fast path: validate → deduplicate → enqueue → 200.
+    No business logic runs here.  Jules processes events from the queue.
     """
+    try:
+        validate_config()
+    except RuntimeError as exc:
+        logger.error("[stripe] %s", exc)
+        return jsonify({"status": "misconfigured"}), 500
+
     payload = request.get_data(cache=False, as_text=False)
     sig_header = request.headers.get("Stripe-Signature", "")
 
     if not sig_header:
         logger.warning("[stripe] missing Stripe-Signature header")
         return jsonify({"status": "missing signature"}), 400
-
-    if not ENDPOINT_SECRET:
-        logger.error("[stripe] STRIPE_ENDPOINT_SECRET is not configured")
-        return jsonify({"status": "server misconfiguration"}), 500
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, ENDPOINT_SECRET)
@@ -407,26 +530,32 @@ def webhook() -> tuple[Response, int]:
     except stripe.error.SignatureVerificationError:
         logger.warning("[stripe] signature verification failed")
         return jsonify({"status": "invalid signature"}), 400
+    except Exception as exc:
+        logger.exception("[stripe] unexpected verification error: %s", exc)
+        return jsonify({"status": "verification error"}), 400
 
     event_id: str = event.get("id", "")
     event_type: str = event.get("type", "unknown")
 
-    # Idempotency — skip events already seen in this process lifetime.
-    # In production, check against a persistent store (Redis, DB) instead.
-    if event_id and event_id in _processed_event_ids:
-        logger.info("[stripe] duplicate event skipped event_id=%s", event_id)
-        return jsonify({"status": "already processed"}), 200
+    logger.info("[stripe] verified event_type=%s event_id=%s", event_type, event_id)
 
-    if event_id:
-        _processed_event_ids.add(event_id)
+    # Early idempotency check — avoids enqueuing duplicates at the request level.
+    # Replace `processed_events` set with Redis/DB for multi-instance deployments.
+    if event_id and is_event_already_processed(event_id):
+        logger.info("[stripe] duplicate acknowledged event_id=%s", event_id)
+        return jsonify({"status": "duplicate", "event_id": event_id}), 200
 
-    logger.info("[stripe] accepted event_type=%s event_id=%s", event_type, event_id)
+    try:
+        process_event_async(dict(event))
+    except Exception as exc:
+        logger.exception("[stripe] failed to enqueue event_id=%s: %s", event_id, exc)
+        return jsonify({"status": "enqueue failed"}), 500
 
-    # Delegate to async layer — this is the only work done inside the request.
-    enqueue_event(dict(event))
-
-    # Respond 200 immediately; Jules/worker handles the rest asynchronously.
-    return jsonify({"status": "ok"}), 200
+    return jsonify({
+        "status": "accepted",
+        "event_id": event_id,
+        "event_type": event_type,
+    }), 200
 
 
 @app.route("/api/chat-pau", methods=["POST"])
