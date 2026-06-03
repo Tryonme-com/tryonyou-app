@@ -331,7 +331,7 @@ def webhook() -> tuple[Response, int]:
     event_type = event.get("type")
     if event_type == "invoice.payment_succeeded":
         invoice = event.get("data", {}).get("object", {})
-        amount_paid = int(invoice.get("amount_paid", 0))
+        amount_paid = int(invoice.get("amount_paid") or 0)
         currency = str(invoice.get("currency", "")).upper()
         description = str(invoice.get("description") or "Pago de cliente confirmado")
         notify_slack(amount_paid / 100, currency, description)
