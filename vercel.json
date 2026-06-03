@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install --frozen-lockfile=false && pnpm run build",
-  "outputDirectory": "dist/public",
-  "installCommand": "pnpm install --frozen-lockfile=false",
-  "framework": null,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "functions": {
     "api/index.py": {
       "runtime": "@vercel/python@4.3.1",
