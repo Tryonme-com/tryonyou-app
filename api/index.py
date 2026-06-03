@@ -31,6 +31,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import requests
 import stripe
 from flask import Flask, jsonify, request, Response
 
@@ -42,10 +43,12 @@ except ImportError:
 
 app = Flask(__name__)
 
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 DB_PATH = os.environ.get("TRYONYOU_DB_PATH", "/tmp/tryonyou_leads.sqlite")
 SIREN = "943 610 196"
 PATENT = "PCT/EP2025/067317"
 ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET", "").strip()
+SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
 LAFAYETTE_VERIFY_BASE_URL = os.environ.get(
     "LAFAYETTE_VERIFY_BASE_URL", "https://tryonyou.lafayette.demo/verify/"
 )
@@ -326,10 +329,39 @@ def webhook() -> tuple[Response, int]:
         return jsonify({"status": "invalid signature"}), 400
 
     event_type = event.get("type")
-    if event_type == "payment_intent.succeeded":
-        pass
+    if event_type == "invoice.payment_succeeded":
+        invoice = event.get("data", {}).get("object", {})
+        amount_paid = int(invoice.get("amount_paid", 0))
+        currency = str(invoice.get("currency", "")).upper()
+        description = str(invoice.get("description") or "Pago de cliente confirmado")
+        notify_slack(amount_paid / 100, currency, description)
 
     return jsonify({"status": "success"}), 200
+
+
+def notify_slack(amount: float, currency: str, message: str) -> bool:
+    if not SLACK_WEBHOOK_URL:
+        return False
+
+    payload = {
+        "text": "✅ *Ingreso Realizado*",
+        "attachments": [
+            {
+                "color": "#36a64f",
+                "fields": [
+                    {"title": "Monto", "value": f"{amount} {currency}", "short": True},
+                    {"title": "Estado", "value": "Validado", "short": True},
+                    {"title": "Descripción", "value": message, "short": False},
+                ],
+            }
+        ],
+    }
+    try:
+        response = requests.post(SLACK_WEBHOOK_URL, json=payload, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException as e:
+        print(f"[tryonyou] slack webhook error: {e}", file=sys.stderr)
+        return False
 
 
 @app.route("/api/chat-pau", methods=["POST"])
