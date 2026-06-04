@@ -245,10 +245,19 @@ export default function TryOn() {
     return idx >= 0 ? idx : 0;
   }, []);
   const [currentIdx, setCurrentIdx] = useState(initialIdx);
+  const createSessionId = () => {
+    if (typeof crypto !== "undefined") {
+      if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+      if (typeof crypto.getRandomValues === "function") {
+        const buf = new Uint8Array(16);
+        crypto.getRandomValues(buf);
+        return `tryon-${Array.from(buf).map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+      }
+    }
+    return `tryon-${Date.now()}-${Math.floor(performance.now() * 1000).toString(16)}`;
+  };
   const sessionIdRef = useRef(
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `tryon-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
+    createSessionId()
   );
 
   // Refs DOM

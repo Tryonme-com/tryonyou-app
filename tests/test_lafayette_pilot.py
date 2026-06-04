@@ -70,17 +70,18 @@ class TestLafayettePilotEndpoints(unittest.TestCase):
         self.assertEqual(sil_res.status_code, 200)
         self.assertEqual(sil_res.get_json()["status"], "stored")
 
-        share_bad = self.client.post(
-            "/api/lafayette/look/compartir",
-            json={
-                "session_id": "sess-silhouette",
-                "garment_id": "eg001",
-                "brand": "balmain",
-                "image_name": "bad.png",
-                "metadata": {"weight": "62kg"},
-            },
-        )
-        self.assertEqual(share_bad.status_code, 422)
+        for forbidden_key in ["weight", "height", "dimensions", "size"]:
+            share_bad = self.client.post(
+                "/api/lafayette/look/compartir",
+                json={
+                    "session_id": "sess-silhouette",
+                    "garment_id": "eg001",
+                    "brand": "balmain",
+                    "image_name": f"bad-{forbidden_key}.png",
+                    "metadata": {forbidden_key: "blocked"},
+                },
+            )
+            self.assertEqual(share_bad.status_code, 422)
 
         share_ok = self.client.post(
             "/api/lafayette/look/compartir",

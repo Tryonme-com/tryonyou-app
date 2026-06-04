@@ -807,10 +807,11 @@ def compartir_look() -> Response:
         return _json_err("image_name requerido", 422, field="image_name")
 
     forbidden = {"peso", "weight", "altura", "height", "dimension", "dimensions", "size", "talla"}
-    lower_payload = json.dumps(metadata, ensure_ascii=False).lower()
-    for token in forbidden:
-        if token in lower_payload:
-            return _json_err("La metadata de compartición no puede incluir peso, altura, dimensiones ni tallas.", 422)
+    if isinstance(metadata, dict):
+        for key in metadata.keys():
+            lower_key = str(key).lower()
+            if any(token in lower_key for token in forbidden):
+                return _json_err("La metadata de compartición no puede incluir peso, altura, dimensiones ni tallas.", 422)
 
     created_at = datetime.now(timezone.utc).isoformat()
     con = _db()
