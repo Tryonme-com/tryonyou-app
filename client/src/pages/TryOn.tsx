@@ -17,7 +17,8 @@
  * © 2025-2026 Rubén Espinar Rodríguez — Brevet PCT/EP2025/067317
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Link } from "wouter";
 import { FEATURED, FABRICS } from "@/lib/catalog";
 import { LANG_PACKS, type Lang } from "@/lib/i18n";
@@ -54,6 +55,16 @@ const T_REVEAL_FADE_IN = 900;
 const T_BROWSE_REMATCH = 700;
 
 type Phase = "permission" | "scan" | "matching" | "projection" | "browse";
+type SnapState = "idle" | "loading" | "done";
+
+type PilotCombination = {
+  id: string;
+  nombre: string;
+  marca?: string;
+  asset?: string;
+};
+
+const BALMAIN_SIGNATURE_GARMENT_ID = "eg001";
 
 // ─── Demo mode (no camera): activated via ?demo=1 ─────────────────────────
 // Simulates an animated body so the garment overlay can be verified visually
@@ -234,6 +245,11 @@ export default function TryOn() {
     return idx >= 0 ? idx : 0;
   }, []);
   const [currentIdx, setCurrentIdx] = useState(initialIdx);
+  const sessionIdRef = useRef(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `tryon-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
+  );
 
   // Refs DOM
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -708,6 +724,10 @@ export default function TryOn() {
   const cyclePrev = useCallback(() => {
     projectGarment((idxRef.current - 1 + FEATURED.length) % FEATURED.length);
   }, [projectGarment]);
+  const activateBalmainLook = useCallback(() => {
+    const idx = FEATURED.findIndex((item) => item.id === BALMAIN_SIGNATURE_GARMENT_ID);
+    projectGarment(idx >= 0 ? idx : 0);
+  }, [projectGarment]);
 
   // Quand projection se termine la première fois, on auto-passe en browse
   useEffect(() => {
@@ -837,6 +857,10 @@ export default function TryOn() {
             total={FEATURED.length}
             onPrev={cyclePrev}
             onNext={cycleNext}
+            onBalmainTrigger={activateBalmainLook}
+            sessionId={sessionIdRef.current}
+            videoRef={videoRef}
+            canvasRef={canvasRef}
             t={t}
           />
         )}
@@ -989,7 +1013,7 @@ function ConfidenceBar({ label, value }: { label: string; value: number }) {
 
 function ProjectionPanel({
   garment, fabric, metrics, robertActive, isAccessory,
-  currentIdx, total, onPrev, onNext, t,
+  currentIdx, total, onPrev, onNext, onBalmainTrigger, sessionId, videoRef, canvasRef, t,
 }: {
   garment: any;
   fabric: any;
@@ -1000,20 +1024,48 @@ function ProjectionPanel({
   total: number;
   onPrev: () => void;
   onNext: () => void;
+  onBalmainTrigger: () => void;
+  sessionId: string;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   t: any;
 }) {
   const lock = metrics?.lockScore ?? 0.85;
-  const [snapState, setSnapState] = useState<"idle" | "loading" | "done">("idle");
+  const [snapState, setSnapState] = useState<SnapState>("idle");
   const [lookRec, setLookRec] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState<string | null>(null);
+  const [reservationId, setReservationId] = useState<string | null>(null);
+  const [reservationQr, setReservationQr] = useState<string | null>(null);
+  const [savedSilhouetteRef, setSavedSilhouetteRef] = useState<string | null>(null);
+  const [combinationAlternatives, setCombinationAlternatives] = useState<PilotCombination[]>([]);
 
-  const handleSnap = async () => {
+  const fitProfile = lock >= 0.9 ? "precision-couture" : lock >= 0.75 ? "signature-fit" : "adaptive-fit";
+
+  const postJson = useCallback(async (url: string, payload: Record<string, unknown>) => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : `HTTP ${res.status}`);
+    }
+    return data;
+  }, []);
+
+  const handleSnap = async (brand: "default" | "balmain" = "default") => {
     if (snapState === "loading") return;
     setSnapState("loading");
     setLookRec(null);
     try {
+      const lookBase = brand === "balmain"
+        ? FEATURED.find((item) => item.id === BALMAIN_SIGNATURE_GARMENT_ID) ?? garment
+        : garment;
       const prompt =
-        `Cliente en el espejo digital TRYONYOU. Prenda actual: "${garment.name}" de ${garment.designer}. ` +
-        `Tejido: ${garment.fabricName ?? "premium"}. ` +
+        `Cliente en el espejo digital TRYONYOU. Prenda actual: "${lookBase.name}" de ${lookBase.designer}. ` +
+        `Tejido: ${lookBase.fabricName ?? "premium"}. ` +
+        (brand === "balmain" ? "Firma activada: Balmain. Ejecuta chasquido y propone look completo de marca. " : "") +
         `Propón un look completo exclusivo con esta pieza base: complementos, calzado, accesorios y consejo de estilo. ` +
         `Respuesta corta y elegante.`;
       const res = await fetch("/api/chat-pau", {
@@ -1026,6 +1078,148 @@ function ProjectionPanel({
       setSnapState("done");
     } catch {
       setSnapState("idle");
+    }
+  };
+
+  const handleBalmainSnapTrigger = () => {
+    onBalmainTrigger();
+    void handleSnap("balmain");
+  };
+
+  const handlePerfectSelection = async () => {
+    if (actionPending) return;
+    setActionPending("cart");
+    try {
+      const data = await postJson("/api/lafayette/carrito", {
+        session_id: sessionId,
+        garment_id: garment.id,
+        look_name: garment.name,
+        brand: "balmain",
+        fit_profile: fitProfile,
+      }) as { cart_count?: number };
+      toast.success(`Añadido al carrito (${data.cart_count ?? 1}).`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo añadir al carrito.");
+    } finally {
+      setActionPending(null);
+    }
+  };
+
+  const handleReserveFittingRoom = async () => {
+    if (actionPending) return;
+    setActionPending("reserve");
+    try {
+      const data = await postJson("/api/lafayette/reservar", {
+        session_id: sessionId,
+        garment_id: garment.id,
+        brand: "balmain",
+      }) as { reserva_id?: string; qr_image_data_url?: string };
+      setReservationId(data.reserva_id ?? null);
+      setReservationQr(data.qr_image_data_url ?? null);
+      toast.success("Reserva bloqueada en stock y QR generado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo reservar en probador.");
+    } finally {
+      setActionPending(null);
+    }
+  };
+
+  const handleViewCombinations = async () => {
+    if (actionPending) return;
+    setActionPending("combinations");
+    try {
+      const res = await fetch("/api/lafayette/coleccion/balmain");
+      const data = await res.json().catch(() => ({})) as { alternativas?: PilotCombination[]; error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "No se pudieron recuperar combinaciones.");
+      }
+      setCombinationAlternatives(Array.isArray(data.alternativas) ? data.alternativas : []);
+      toast.success("4 combinaciones alternativas listas.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudieron cargar combinaciones.");
+    } finally {
+      setActionPending(null);
+    }
+  };
+
+  const handleSaveSilhouette = async () => {
+    if (actionPending) return;
+    setActionPending("silhouette");
+    try {
+      const payload = {
+        session_id: sessionId,
+        biometric_snapshot: {
+          lock_score: lock,
+          shoulder_confidence: metrics?.shoulderConfidence ?? null,
+          torso_confidence: metrics?.torsoConfidence ?? null,
+          hip_confidence: metrics?.hipConfidence ?? null,
+          inseam_confidence: metrics?.inseamConfidence ?? null,
+          layer_calibration_active: metrics?.layerCalibrationActive ?? false,
+          garment_id: garment.id,
+          captured_at: new Date().toISOString(),
+        },
+      };
+      const data = await postJson("/api/lafayette/silueta/guardar", payload) as { cliente_referencia?: string };
+      setSavedSilhouetteRef(data.cliente_referencia ?? null);
+      toast.success("Silueta guardada en el perfil.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar la silueta.");
+    } finally {
+      setActionPending(null);
+    }
+  };
+
+  const handleShareLook = async () => {
+    if (actionPending) return;
+    const video = videoRef.current;
+    const overlay = canvasRef.current;
+    if (!video || !overlay || overlay.width === 0 || overlay.height === 0) {
+      toast.error("No hay frame disponible para compartir.");
+      return;
+    }
+    setActionPending("share");
+    try {
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = overlay.width;
+      exportCanvas.height = overlay.height;
+      const ctx = exportCanvas.getContext("2d");
+      if (!ctx) throw new Error("No se pudo preparar la exportación.");
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -exportCanvas.width, 0, exportCanvas.width, exportCanvas.height);
+      ctx.drawImage(overlay, -exportCanvas.width, 0, exportCanvas.width, exportCanvas.height);
+      ctx.restore();
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        exportCanvas.toBlob((result) => {
+          if (!result) reject(new Error("Exportación fallida."));
+          else resolve(result);
+        }, "image/png");
+      });
+      const fileName = `tryonyou-look-${garment.id}-${Date.now()}.png`;
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = blobUrl;
+      anchor.download = fileName;
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+
+      await postJson("/api/lafayette/look/compartir", {
+        session_id: sessionId,
+        garment_id: garment.id,
+        brand: "balmain",
+        image_name: fileName,
+        metadata: {
+          exported_at: new Date().toISOString(),
+          projection_phase: "browse",
+          privacy_filter: "NO_WEIGHT_HEIGHT_DIMENSIONS_SIZE",
+        },
+      });
+      toast.success("Imagen limpia exportada y compartición registrada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo compartir el look.");
+    } finally {
+      setActionPending(null);
     }
   };
 
@@ -1095,6 +1289,31 @@ function ProjectionPanel({
         }} />
       </div>
 
+      {/* Disparador de marca Balmain + snap automático */}
+      <div className="mb-4 p-3 rounded-sm bg-white/5 border border-[var(--color-or)]/20">
+        <div className="text-[9px] tracking-[0.28em] uppercase text-white/40 mb-2">Brand trigger</div>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={handleBalmainSnapTrigger}
+            className="py-2 border border-[var(--color-or)]/50 text-[var(--color-or)] text-[10px] tracking-[0.2em] uppercase hover:bg-[var(--color-or)]/10 transition-colors"
+          >
+            BALMAIN
+          </button>
+          <button
+            onClick={handleBalmainSnapTrigger}
+            className="py-2 border border-white/15 text-white/70 text-[10px] tracking-[0.2em] uppercase hover:border-[var(--color-or)]/40 transition-colors"
+          >
+            logo
+          </button>
+          <button
+            onClick={handleBalmainSnapTrigger}
+            className="py-2 border border-white/15 text-white/70 text-[10px] tracking-[0.2em] uppercase hover:border-[var(--color-or)]/40 transition-colors"
+          >
+            enlace
+          </button>
+        </div>
+      </div>
+
       {/* PAU snap — Chasquido / Look complet */}
       <div className="mb-4">
         <button
@@ -1125,12 +1344,66 @@ function ProjectionPanel({
         )}
       </div>
 
-      <button
-        onClick={() => alert("Réservation envoyée à votre boutique de référence.")}
-        className="w-full py-4 bg-[var(--color-or)] text-[var(--color-noir)] uppercase tracking-[0.22em] text-[11px] font-medium hover:bg-[var(--color-or-pale)] transition-colors mb-2"
-      >
-        {t.reserveCabin}
-      </button>
+      <div className="grid grid-cols-1 gap-2 mb-4">
+        <button
+          onClick={() => { void handlePerfectSelection(); }}
+          disabled={!!actionPending}
+          className="w-full py-3 border border-[var(--color-or)]/45 text-[var(--color-or)] uppercase tracking-[0.2em] text-[10px] hover:bg-[var(--color-or)]/10 disabled:opacity-60 transition-colors"
+        >
+          Mi Selección Perfecta
+        </button>
+        <button
+          onClick={() => { void handleReserveFittingRoom(); }}
+          disabled={!!actionPending}
+          className="w-full py-3 border border-[var(--color-or)]/45 text-[var(--color-or)] uppercase tracking-[0.2em] text-[10px] hover:bg-[var(--color-or)]/10 disabled:opacity-60 transition-colors"
+        >
+          Reservar en Probador
+        </button>
+        <button
+          onClick={() => { void handleViewCombinations(); }}
+          disabled={!!actionPending}
+          className="w-full py-3 border border-white/15 text-white/70 uppercase tracking-[0.2em] text-[10px] hover:border-[var(--color-or)]/40 disabled:opacity-60 transition-colors"
+        >
+          Ver Combinaciones
+        </button>
+        <button
+          onClick={() => { void handleSaveSilhouette(); }}
+          disabled={!!actionPending}
+          className="w-full py-3 border border-white/15 text-white/70 uppercase tracking-[0.2em] text-[10px] hover:border-[var(--color-or)]/40 disabled:opacity-60 transition-colors"
+        >
+          Guardar mi Silueta
+        </button>
+        <button
+          onClick={() => { void handleShareLook(); }}
+          disabled={!!actionPending}
+          className="w-full py-3 bg-[var(--color-or)] text-[var(--color-noir)] uppercase tracking-[0.2em] text-[10px] font-medium hover:bg-[var(--color-or-pale)] disabled:opacity-70 transition-colors"
+        >
+          Compartir Look
+        </button>
+      </div>
+
+      {reservationId && (
+        <div className="mb-3 p-3 bg-[var(--color-or)]/8 border border-[var(--color-or)]/25 rounded-sm">
+          <p className="text-[10px] text-[var(--color-or)] uppercase tracking-[0.22em]">Reserva activa</p>
+          <p className="text-[11px] text-white/80 mt-1">{reservationId}</p>
+          {reservationQr && <img src={reservationQr} alt="QR Reserva Probador" className="mt-2 w-20 h-20 bg-white p-1" />}
+        </div>
+      )}
+      {savedSilhouetteRef && (
+        <p className="text-[10px] text-white/45 mb-3">Silueta segura: {savedSilhouetteRef}</p>
+      )}
+      {combinationAlternatives.length > 0 && (
+        <div className="mb-4 p-3 rounded-sm bg-white/5 border border-white/10">
+          <p className="text-[9px] tracking-[0.24em] uppercase text-white/45 mb-2">4 alternativas</p>
+          <div className="space-y-1">
+            {combinationAlternatives.slice(0, 4).map((alt) => (
+              <p key={alt.id} className="text-[11px] text-white/75 leading-snug">
+                {alt.nombre}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <button
