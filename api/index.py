@@ -20,6 +20,7 @@ in-memory (best-effort), CORS contrôlé.
 from __future__ import annotations
 
 import csv
+import base64
 import json
 import os
 import sqlite3
@@ -117,6 +118,54 @@ def _db() -> sqlite3.Connection:
     )
     con.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_leads_company ON leads(company)")
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pilot_cart_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            garment_id TEXT NOT NULL,
+            look_name TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            fit_profile TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    con.execute("CREATE INDEX IF NOT EXISTS idx_pilot_cart_session ON pilot_cart_items(session_id)")
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pilot_stock_locks (
+            garment_id TEXT PRIMARY KEY,
+            reservation_id TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            locked_at TEXT NOT NULL
+        )
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pilot_silhouette_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            profile_ref TEXT NOT NULL UNIQUE,
+            payload_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pilot_share_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            garment_id TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            image_name TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
     con.commit()
     return con
 
@@ -517,30 +566,114 @@ def anadir_al_carrito() -> Response:
 
     body = request.get_json(silent=True) or {}
     garment_id = str(body.get("garment_id", "")).strip()
-    talla = str(body.get("talla_calculada", "")).strip()
+    look_name = str(body.get("look_name", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    brand = str(body.get("brand", "")).strip() or "balmain"
+    fit_profile = str(body.get("fit_profile", "")).strip()
 
+    if not session_id:
+        return _json_err("session_id requerido", 422, field="session_id")
     if not garment_id:
         return _json_err("garment_id requerido", 422, field="garment_id")
+    if not look_name:
+        return _json_err("look_name requerido", 422, field="look_name")
+    if not fit_profile:
+        return _json_err("fit_profile requerido", 422, field="fit_profile")
+
+    created_at = datetime.now(timezone.utc).isoformat()
+    con = _db()
+    cur = con.execute(
+        """
+        INSERT INTO pilot_cart_items (session_id, garment_id, look_name, brand, fit_profile, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (session_id, garment_id, look_name, brand, fit_profile, created_at),
+    )
+    cart_item_id = cur.lastrowid
+    cart_count = con.execute(
+        "SELECT COUNT(*) AS n FROM pilot_cart_items WHERE session_id = ?",
+        (session_id,),
+    ).fetchone()["n"]
+    con.commit()
+    con.close()
 
     return _json_ok({
         "status": "success",
-        "tienda": "Galeries Lafayette Haussmann",
-        "garment_id": garment_id,
-        "talla_asegurada": talla or "M",
-        "filtro": "Zero-Size Active",
+        "cart_item": {
+            "id": cart_item_id,
+            "session_id": session_id,
+            "garment_id": garment_id,
+            "look_name": look_name,
+            "brand": brand,
+            "fit_profile": fit_profile,
+            "added_at": created_at,
+        },
+        "cart_count": cart_count,
     })
 
 
 @app.route("/api/lafayette/reservar/<garment_id>", methods=["GET"])
-def reservar_en_probador(garment_id: str) -> Response:
+def reservar_en_probador_legacy(garment_id: str) -> Response:
     """[Función 2] Reservar en Probador — genera un QR de acceso estándar."""
-    reserva_id = f"GL-{str(uuid.uuid4())[:6].upper()}"
-    datos_qr = f"{LAFAYETTE_VERIFY_BASE_URL}{reserva_id}"
+    body = {
+        "session_id": request.headers.get("X-Tryon-Session", "").strip(),
+        "garment_id": garment_id,
+        "brand": request.args.get("brand", "balmain"),
+    }
+    return _reservar_en_probador_impl(body)
 
+
+def _reservar_en_probador_impl(body: dict[str, Any]) -> Response:
+    garment_id = str(body.get("garment_id", "")).strip()
+    session_id = str(body.get("session_id", "")).strip()
+    brand = str(body.get("brand", "")).strip() or "balmain"
+    if not garment_id:
+        return _json_err("garment_id requerido", 422, field="garment_id")
+    if not session_id:
+        return _json_err("session_id requerido", 422, field="session_id")
+
+    con = _db()
+    existing = con.execute(
+        "SELECT reservation_id, session_id FROM pilot_stock_locks WHERE garment_id = ?",
+        (garment_id,),
+    ).fetchone()
+    if existing and existing["session_id"] != session_id:
+        con.close()
+        return _json_err(
+            "La prenda ya está bloqueada para otra reserva activa.",
+            409,
+            reservation_id=existing["reservation_id"],
+        )
+
+    reserva_id = existing["reservation_id"] if existing else f"GL-{str(uuid.uuid4())[:8].upper()}"
+    datos_qr = f"{LAFAYETTE_VERIFY_BASE_URL}{reserva_id}"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    if not existing:
+        con.execute(
+            """
+            INSERT INTO pilot_stock_locks (garment_id, reservation_id, session_id, brand, locked_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (garment_id, reserva_id, session_id, brand, now_iso),
+        )
+        con.commit()
+
+    lock_row = con.execute(
+        "SELECT garment_id, reservation_id, session_id, brand, locked_at FROM pilot_stock_locks WHERE garment_id = ?",
+        (garment_id,),
+    ).fetchone()
+    con.close()
+
+    qr_image_data_url: str | None = None
     if not _QRCODE_AVAILABLE:
         return _json_ok({
             "reserva_id": reserva_id,
             "garment_id": garment_id,
+            "session_id": lock_row["session_id"],
+            "stock_lock": "locked",
+            "brand": lock_row["brand"],
+            "locked_at": lock_row["locked_at"],
             "qr": None,
             "aviso": "qrcode no disponible en este entorno",
         })
@@ -552,7 +685,25 @@ def reservar_en_probador(garment_id: str) -> Response:
     buf = BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
-    return _cors(Response(buf.read(), status=200, mimetype="image/png"))
+    qr_image_data_url = f"data:image/png;base64,{base64.b64encode(buf.read()).decode('ascii')}"
+    return _json_ok({
+        "reserva_id": lock_row["reservation_id"],
+        "garment_id": lock_row["garment_id"],
+        "session_id": lock_row["session_id"],
+        "stock_lock": "locked",
+        "brand": lock_row["brand"],
+        "locked_at": lock_row["locked_at"],
+        "qr_payload": datos_qr,
+        "qr_image_data_url": qr_image_data_url,
+    })
+
+
+@app.route("/api/lafayette/reservar", methods=["OPTIONS", "POST"])
+def reservar_en_probador() -> Response:
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+    body = request.get_json(silent=True) or {}
+    return _reservar_en_probador_impl(body)
 
 
 @app.route("/api/lafayette/coleccion/<marca>", methods=["GET"])
@@ -564,7 +715,31 @@ def obtener_coleccion(marca: str) -> Response:
             f"Firma '{marca}' no disponible. Firmas válidas: {', '.join(CATALOGO_GLOBAL)}",
             404,
         )
-    return _json_ok({"marca": marca, "sugerencias": CATALOGO_GLOBAL[marca_key]})
+    pool: list[dict[str, str]] = []
+    for label, looks in CATALOGO_GLOBAL.items():
+        for look in looks:
+            pool.append({**look, "marca": label})
+
+    ranked: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for look in [*CATALOGO_GLOBAL[marca_key], *pool]:
+        look_id = str(look.get("id", "")).strip()
+        if not look_id or look_id in seen:
+            continue
+        ranked.append(look)
+        seen.add(look_id)
+        if len(ranked) == 5:
+            break
+
+    if len(ranked) < 5:
+        return _json_err("No hay suficientes looks para construir 5 sugerencias reales.", 503)
+
+    return _json_ok({
+        "marca": marca_key,
+        "sugerencias_totales": ranked,
+        "look_principal": ranked[0],
+        "alternativas": ranked[1:5],
+    })
 
 
 @app.route("/api/lafayette/silueta/guardar", methods=["OPTIONS", "POST"])
@@ -574,11 +749,31 @@ def guardar_silueta() -> Response:
         return _cors(Response("", status=204))
 
     body = request.get_json(silent=True) or {}
-    if not body:
+    session_id = str(body.get("session_id", "")).strip()
+    biometric_snapshot = body.get("biometric_snapshot")
+    if not session_id:
+        return _json_err("session_id requerido", 422, field="session_id")
+    if not isinstance(biometric_snapshot, dict) or not biometric_snapshot:
         return _json_err("Payload biométrico ausente", 422)
 
-    cliente_ref = f"LAFAYETTE_USER_{str(uuid.uuid4())[:6].upper()}"
-    return _json_ok({"status": "stored", "cliente_referencia": cliente_ref})
+    cliente_ref = f"LAFAYETTE_USER_{str(uuid.uuid4())[:8].upper()}"
+    created_at = datetime.now(timezone.utc).isoformat()
+    payload_json = json.dumps(biometric_snapshot, ensure_ascii=False)
+    con = _db()
+    con.execute(
+        """
+        INSERT INTO pilot_silhouette_profiles (session_id, profile_ref, payload_json, created_at)
+        VALUES (?, ?, ?, ?)
+        """,
+        (session_id, cliente_ref, payload_json, created_at),
+    )
+    con.commit()
+    con.close()
+    return _json_ok({
+        "status": "stored",
+        "cliente_referencia": cliente_ref,
+        "stored_at": created_at,
+    })
 
 
 @app.route("/api/lafayette/metricas", methods=["OPTIONS", "POST"])
@@ -590,6 +785,56 @@ def registrar_metricas() -> Response:
     metricas = request.get_json(silent=True) or {}
     print(f"[tryonyou] Métricas log: {json.dumps(metricas, ensure_ascii=False)}", flush=True)
     return _json_ok({"status": "recorded"})
+
+
+@app.route("/api/lafayette/look/compartir", methods=["OPTIONS", "POST"])
+def compartir_look() -> Response:
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    body = request.get_json(silent=True) or {}
+    session_id = str(body.get("session_id", "")).strip()
+    garment_id = str(body.get("garment_id", "")).strip()
+    brand = str(body.get("brand", "")).strip() or "balmain"
+    image_name = str(body.get("image_name", "")).strip()
+    metadata = body.get("metadata") or {}
+
+    if not session_id:
+        return _json_err("session_id requerido", 422, field="session_id")
+    if not garment_id:
+        return _json_err("garment_id requerido", 422, field="garment_id")
+    if not image_name:
+        return _json_err("image_name requerido", 422, field="image_name")
+
+    forbidden = {"peso", "weight", "altura", "height", "dimension", "dimensions", "size", "talla"}
+    if isinstance(metadata, dict):
+        for key in metadata.keys():
+            lower_key = str(key).lower()
+            if any(token in lower_key for token in forbidden):
+                return _json_err("La metadata de compartición no puede incluir peso, altura, dimensiones ni tallas.", 422)
+
+    created_at = datetime.now(timezone.utc).isoformat()
+    con = _db()
+    con.execute(
+        """
+        INSERT INTO pilot_share_events (session_id, garment_id, brand, image_name, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (session_id, garment_id, brand, image_name, created_at),
+    )
+    con.commit()
+    con.close()
+
+    print(
+        f"[tryonyou] Look compartido: {json.dumps({'session_id': session_id, 'garment_id': garment_id, 'brand': brand, 'image_name': image_name}, ensure_ascii=False)}",
+        flush=True,
+    )
+    return _json_ok({
+        "status": "shared",
+        "image_name": image_name,
+        "shared_at": created_at,
+        "privacy_rule": "OK_NO_BODY_DIMENSIONS",
+    })
 
 
 
