@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "alias": ["tryonyou.app", "www.tryonyou.app"],
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "outputDirectory": "dist",
