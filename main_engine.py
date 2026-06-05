@@ -5,14 +5,16 @@ import os
 import sqlite3
 import time
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 
 import requests
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-app = FastAPI()
+logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=4)
 
 SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET", "")
@@ -35,14 +37,28 @@ def init_db() -> None:
 
 
 def _post_to_slack(url: str, text: str) -> None:
-    requests.post(
+    response = requests.post(
         url,
-        json={"replace_original": "true", "text": text},
+        json={"replace_original": True, "text": text},
         timeout=10,
     )
+    response.raise_for_status()
 
 
 init_db()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if not SLACK_SIGNING_SECRET:
+        raise RuntimeError("SLACK_SIGNING_SECRET no configurado")
+    try:
+        yield
+    finally:
+        executor.shutdown(wait=True, cancel_futures=False)
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/api/slack/interact")
@@ -51,8 +67,6 @@ async def slack_interactive_endpoint(request: Request) -> JSONResponse:
     signature = request.headers.get("X-Slack-Signature")
     body = await request.body()
 
-    if not SLACK_SIGNING_SECRET:
-        raise HTTPException(status_code=500, detail="SLACK_SIGNING_SECRET no configurado")
     if not timestamp or not signature:
         raise HTTPException(status_code=400, detail="Headers de Slack incompletos")
 
@@ -80,9 +94,14 @@ async def slack_interactive_endpoint(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="Payload ausente")
 
     payload = json.loads(raw_payload)
-    action = payload["actions"][0]
-    ref_id = action["value"]
-    user_name = payload["user"]["name"]
+    try:
+        action = payload["actions"][0]
+        ref_id = action["value"]
+        user_name = payload["user"]["name"]
+        action_id = action["action_id"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="Payload inválido") from exc
+
     response_url = payload.get("response_url") or SLACK_WEBHOOK_URL
 
     if not response_url:
@@ -90,18 +109,23 @@ async def slack_interactive_endpoint(request: Request) -> JSONResponse:
 
     new_text = f"*Estado:* Transacción {ref_id} procesada por {user_name}"
 
-    await asyncio.get_running_loop().run_in_executor(
-        executor,
-        _post_to_slack,
-        response_url,
-        new_text,
-    )
+    try:
+        await asyncio.get_running_loop().run_in_executor(
+            executor,
+            _post_to_slack,
+            response_url,
+            new_text,
+        )
+    except requests.RequestException:
+        logger.exception("Error enviando actualización a Slack")
+        raise HTTPException(status_code=502, detail="Error notificando a Slack")
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "INSERT OR REPLACE INTO refs (ref_id, status) VALUES (?, ?)",
-            (ref_id, action["action_id"]),
+            (ref_id, action_id),
         )
+        conn.commit()
 
     return JSONResponse(content={"text": "Procesado"})
 
