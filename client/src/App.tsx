@@ -12,6 +12,7 @@ import Investors from "./pages/Investors";
 import Offre from "./pages/Offre";
 import Manifeste from "./pages/Manifeste";
 import CAP from "./pages/CAP";
+import Checkout from "./pages/Checkout";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path={"/manifeste"} component={Manifeste} />
       <Route path={"/manifesto"} component={Manifeste} />
       <Route path={"/cap"} component={CAP} />
+      <Route path={"/checkout"} component={Checkout} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -362,6 +362,49 @@ def run_jules_mail() -> Response:
         return _json_err("jules mail execution error", 500)
 
 
+@app.route("/api/create-payment-intent", methods=["OPTIONS", "POST"])
+def create_payment_intent_endpoint() -> Response:
+    if request.method == "OPTIONS":
+        return _cors(Response("", status=204))
+
+    ip = _client_ip()
+    if not _rate_check(ip):
+        return _json_err("Trop de requêtes. Réessayez dans une minute.", 429)
+
+    try:
+        body = request.get_json(silent=True) or {}
+    except Exception:
+        return _json_err("Corps JSON invalide.", 400)
+
+    amount_cents = body.get("amount_cents")
+    order_id = str(body.get("order_id", "")).strip()
+
+    if not isinstance(amount_cents, int) or amount_cents <= 0:
+        return _json_err("amount_cents doit être un entier positif.", 422)
+    if not order_id:
+        return _json_err("order_id manquant.", 422)
+
+    # TODO: look up the canonical amount from your order DB using order_id and
+    # replace amount_cents with that value before creating the PaymentIntent.
+    # Never trust the amount submitted by the browser in production.
+
+    # Idempotency key is tied to the order so retries won't create double charges.
+    idempotency_key = f"pi-{order_id}"
+
+    try:
+        from api.services.stripe_service import create_payment_intent
+
+        client_secret = create_payment_intent(amount_cents, idempotency_key)
+    except RuntimeError as exc:
+        print(f"[tryonyou] stripe config error: {exc}", file=sys.stderr)
+        return _json_err("Passerelle de paiement non configurée.", 503)
+    except Exception as exc:
+        print(f"[tryonyou] stripe error: {exc}", file=sys.stderr)
+        return _json_err("Erreur lors de la création du paiement.", 500)
+
+    return _cors(_json_ok({"client_secret": client_secret}))
+
+
 @app.route("/api/webhook", methods=["POST"])
 def webhook() -> tuple[Response, int]:
     return process_stripe_webhook()
