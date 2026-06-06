@@ -61,17 +61,24 @@ export default function CheckoutConfirmation() {
       return;
     }
 
-    stripePromise.then(async (stripe) => {
-      if (!stripe) { setStatus("failed"); return; }
-      const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
-      if (!paymentIntent) { setStatus("failed"); return; }
-      setPaymentIntentId(paymentIntent.id);
-      if (paymentIntent.status === "succeeded") setStatus("succeeded");
-      else if (paymentIntent.status === "processing") setStatus("processing");
-      else setStatus("failed");
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const stripe = await stripePromise;
+        if (!stripe || cancelled) return;
+        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+        if (cancelled) return;
+        if (!paymentIntent) { setStatus("failed"); return; }
+        setPaymentIntentId(paymentIntent.id);
+        if (paymentIntent.status === "succeeded") setStatus("succeeded");
+        else if (paymentIntent.status === "processing") setStatus("processing");
+        else setStatus("failed");
+      } catch {
+        if (!cancelled) setStatus("failed");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [clientSecret, redirectStatus, params]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0807] text-[#F5EFE0]">
