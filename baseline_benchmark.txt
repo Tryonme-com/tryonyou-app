@@ -1,0 +1,7 @@
+Benchmark Results:
+Total requests: 500
+Successful requests: 500
+Total time: 8.5233 seconds
+Throughput: 58.66 req/s
+Avg latency: 5.4677 seconds
+Max latency: 8.4637 seconds

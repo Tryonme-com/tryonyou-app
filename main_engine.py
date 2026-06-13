@@ -24,7 +24,8 @@ MAX_TIMESTAMP_DRIFT_SECONDS = 60 * 5
 
 
 def init_db() -> None:
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(DB_PATH, timeout=10.0) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS refs (
@@ -43,6 +44,16 @@ def _post_to_slack(url: str, text: str) -> None:
         timeout=10,
     )
     response.raise_for_status()
+
+
+def _save_to_db(ref_id: str, action_id: str) -> None:
+    with sqlite3.connect(DB_PATH, timeout=10.0) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute(
+            "INSERT OR REPLACE INTO refs (ref_id, status) VALUES (?, ?)",
+            (ref_id, action_id),
+        )
+        conn.commit()
 
 
 init_db()
@@ -120,12 +131,16 @@ async def slack_interactive_endpoint(request: Request) -> JSONResponse:
         logger.exception("Error enviando actualización a Slack")
         raise HTTPException(status_code=502, detail="Error notificando a Slack")
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO refs (ref_id, status) VALUES (?, ?)",
-            (ref_id, action_id),
+    try:
+        await asyncio.get_running_loop().run_in_executor(
+            executor,
+            _save_to_db,
+            ref_id,
+            action_id,
         )
-        conn.commit()
+    except Exception:
+        logger.exception("Error guardando en la base de datos")
+        raise HTTPException(status_code=500, detail="Error interno")
 
     return JSONResponse(content={"text": "Procesado"})
 
