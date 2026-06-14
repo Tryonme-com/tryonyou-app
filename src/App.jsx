@@ -1,20 +1,10 @@
-// import SmartWardrobe from "./components/Wardrobe/SmartWardrobe";import React from 'react';
-import SmartWardrobe from './components/Wardrobe/SmartWardrobe';
+import React from 'react';
+import VirtualMirror from './components/VirtualMirror';
 
-function App() {
+export default function App() {
   return (
-    <div className="app-container" style={{ backgroundColor: '#001a2c', color: '#ffffff', minHeight: '100vh' }}>
-      <header style={{ padding: '20px', borderBottom: '1px solid #c5a059' }}>
-        <h1 style={{ color: '#c5a059', letterSpacing: '1px' }}>TRYONYOU</h1>
-      </header>
-      <main style={{ padding: '20px' }}>
-        <SmartWardrobe />
-      </main>
-      <footer style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: '#888888' }}>
-        <p>TRYONYOU R&D — Protected under Patent PCT/EP2025/067317</p>
-      </footer>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: 'system-ui, sans-serif' }}>
+      <VirtualMirror />
     </div>
   );
 }
-
-export default App;
