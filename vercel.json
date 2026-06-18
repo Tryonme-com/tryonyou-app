@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "crons": [
+    {
+      "path": "/api/index",
+      "schedule": "*/15 * * * *"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
+}
