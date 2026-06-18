@@ -1,3 +1,4 @@
+```jsx
 import React, { useState } from 'react';
 
 export default function App() {
@@ -39,8 +40,10 @@ export default function App() {
       )}
       
       <div style={{ marginTop: '50px', fontSize: '0.8rem', color: '#666', letterSpacing: '2px' }}>
-        Patente PCT/EP2025/067317 • Piloto Lafayette V9
+        Patente PCT/EP2025/067317 • Piloto V9
       </div>
     </div>
   );
 }
+```
+
