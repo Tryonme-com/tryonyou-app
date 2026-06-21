@@ -1,12 +1,8 @@
 """
 Motor de cobro soberano (Master Look, distribucion local / BPI / infra / Pau).
-
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberania V10 - Founder: Ruben
 """
-from __future__ import annotations
-
-"""Motor Empire — PCT/EP2025/067317 @CertezaAbsoluta @lo+erestu. Soberania V10 Founder Ruben."""
 from __future__ import annotations
 from typing import Any
 

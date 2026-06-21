@@ -29,8 +29,14 @@ class AgenteBunkerFinal:
     def ejecutar_mision_40(self) -> bool:
         """Acción de 70my: sella los 40 expedientes de monetización."""
         print("⚖️ Agente 70my: Procesando 40 expedientes de regularización...")
+        try:
+            if not os.path.exists(self.leads_csv):
+                print(f"❌ Archivo no encontrado: {self.leads_csv}")
                 return False
-
+            df = pd.read_csv(self.leads_csv)
+            if "Empresa" not in df.columns or "Tipo" not in df.columns:
+                print("❌ Columnas requeridas ausentes en el CSV.")
+                return False
             col_contacto = "Contacto" if "Contacto" in df.columns else None
             objetivos = df[df["Tipo"].isin(["Potencial", "Contacto real"])].head(40)
 
