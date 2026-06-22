@@ -1,9 +1,16 @@
+import { adaptLegacyOverlay, type GarmentRenderConfig } from "../../lib/renderGarmentOnBody";
+
 export interface GarmentOverlayConfig {
   id: string;
   name: string;
   imagePath: string;
   scaleFactor: number;
   offsetY: number;
+}
+
+/** Extended config that includes the render-ready config for PoseTryOnCanvas. */
+export interface GarmentOverlayWithRender extends GarmentOverlayConfig {
+  renderConfig: GarmentRenderConfig;
 }
 
 export const LAFAYETTE_OVERLAYS: Record<string, GarmentOverlayConfig> = {
@@ -29,11 +36,51 @@ export const LAFAYETTE_OVERLAYS: Record<string, GarmentOverlayConfig> = {
   "rms_05": { id: "rms_05", name: "Pantalón Recto de Lana de Sastrería", imagePath: "/assets/hermes_pants.png", scaleFactor: 1.02, offsetY: 38 }
 };
 
+/**
+ * Returns the adjusted overlay config for a given garment ID and user height.
+ * Legacy function — maintained for backward compatibility.
+ */
 export function getAdjustedOverlay(garmentId: string, userHeightPx: number): GarmentOverlayConfig | null {
   const config = LAFAYETTE_OVERLAYS[garmentId];
   if (!config) return null;
   return {
     ...config,
     scaleFactor: config.scaleFactor * (userHeightPx / 800)
+  };
+}
+
+/**
+ * Converts all LAFAYETTE_OVERLAYS into render-ready configs for PoseTryOnCanvas.
+ * Uses a default image height of 1200px for the neckY calculation.
+ *
+ * @param imageNaturalH - Default garment image height (pixels). Defaults to 1200.
+ */
+export function getAllRenderConfigs(imageNaturalH = 1200): GarmentOverlayWithRender[] {
+  return Object.values(LAFAYETTE_OVERLAYS).map((overlay) => ({
+    ...overlay,
+    renderConfig: adaptLegacyOverlay(
+      overlay.scaleFactor,
+      overlay.offsetY,
+      imageNaturalH,
+    ),
+  }));
+}
+
+/**
+ * Get a single garment's render config by ID.
+ */
+export function getRenderConfigById(
+  garmentId: string,
+  imageNaturalH = 1200,
+): GarmentOverlayWithRender | null {
+  const overlay = LAFAYETTE_OVERLAYS[garmentId];
+  if (!overlay) return null;
+  return {
+    ...overlay,
+    renderConfig: adaptLegacyOverlay(
+      overlay.scaleFactor,
+      overlay.offsetY,
+      imageNaturalH,
+    ),
   };
 }
