@@ -1,33 +1,56 @@
-@import "tailwindcss";
-@import "../theme/divineo_v11.css";
-
+/* TRYONYOU — Global Styles — Zero-Size Virtual Fitting */
 :root {
-  /* Oro Divineo V11 — protocolo UI */
-  --oro-divineo: #d4af37;
   --gold: #c5a46d;
-  --anthracite: #141619;
+  --gold-bright: #d4af37;
+  --anthracite: #0d0f12;
+  --surface: #1a1d22;
+  --surface-light: #252830;
   --bone: #f5efe6;
-  --glass: rgba(20, 22, 25, 0.72);
+  --bone-muted: #b8b0a4;
+  --glass: rgba(20, 22, 25, 0.88);
+  --success: #4ade80;
+  --danger: #f87171;
+  --radius: 12px;
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body,
-#root {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+html, body, #root {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
   background: var(--anthracite);
   color: var(--bone);
-  font-family: "Cinzel", Georgia, serif;
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-.app-root {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+button {
+  cursor: pointer; border: none; outline: none;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
 }
+button:active { transform: scale(0.97); }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(197,164,109,0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(197,164,109,0.2); }
+}
+@keyframes scan-line {
+  0% { top: 0; opacity: 1; }
+  100% { top: 100%; opacity: 0.3; }
+}
+.animate-in { animation: fadeIn 0.5s ease forwards; }
