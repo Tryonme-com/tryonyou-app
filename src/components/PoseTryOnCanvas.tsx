@@ -184,7 +184,10 @@ export default function PoseTryOnCanvas({
 
     // Overlay garment if landmarks available
     if (result?.landmarks?.[0] && garmentImg && currentGarment) {
-      const landmarks: PoseLandmark[] = result.landmarks[0];
+      const landmarks: PoseLandmark[] = result.landmarks[0].map((lm: any) => ({
+        ...lm,
+        x: 1 - lm.x // Inversión de espejo horizontal para sincronizar con ctx.scale
+      }));
 
       // Compute fit verdict
       const elasticity = computeElasticityRatio(landmarks);
