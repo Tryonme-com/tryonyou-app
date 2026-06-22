@@ -45,7 +45,7 @@ export interface GlowOptions {
 // ---------------------------------------------------------------------------
 
 const MIN_VISIBILITY = 0.3;
-const DEFAULT_SCALE_BOOST = 1.25;
+const DEFAULT_SCALE_BOOST = 1.0;
 const DEFAULT_OPACITY = 0.95;
 const DEFAULT_COMPOSITE: GlobalCompositeOperation = "multiply";
 
@@ -90,9 +90,9 @@ export function renderGarmentOnBody(
   }
 
   // 2. Convert normalized coords to canvas pixels (mirrored X for webcam)
-  const lsX = (1 - leftShoulder.x) * canvasW;
+  const lsX = leftShoulder.x * canvasW;
   const lsY = leftShoulder.y * canvasH;
-  const rsX = (1 - rightShoulder.x) * canvasW;
+  const rsX = rightShoulder.x * canvasW;
   const rsY = rightShoulder.y * canvasH;
 
   // 3. Compute dynamic metrics
