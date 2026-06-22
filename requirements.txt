@@ -1,2 +1,17 @@
-fastapi
-pydantic
+# TRYONYOU Backend - Python Dependencies
+# Last updated: 2026-06-21
+
+# Core API
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.0
+
+# Communication
+twilio>=9.0.0
+
+# AI/ML
+google-generativeai>=0.8.0
+
+# Optional: MediaPipe (for server-side pose if needed)
+# mediapipe>=0.10.0
+# opencv-python>=4.8.0
