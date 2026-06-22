@@ -1,5 +1,5 @@
 import React from 'react';
-import PoseTryOnCanvas from './components/PoseTryOnCanvas.tsx';
+import PoseTryOnCanvas from '/src/components/PoseTryOnCanvas.tsx';
 
 export default function App() {
   return (
