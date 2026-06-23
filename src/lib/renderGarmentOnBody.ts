@@ -107,8 +107,12 @@ export function renderGarmentOnBody(
   const angle = Math.atan2(rsY - lsY, rsX - lsX);
 
   // 5. Compute draw dimensions
-  const drawW = img.naturalWidth * scale;
-  const drawH = img.naturalHeight * scale;
+  let drawW = img.naturalWidth * scale;
+  let drawH = img.naturalHeight * scale;
+  if (drawW < shoulderDist * 1.5) {
+    drawW = shoulderDist * 2.2;
+    drawH = drawW * (img.naturalHeight / img.naturalWidth);
+  }
 
   ctx.save();
   ctx.translate(centerX, centerY);
@@ -119,7 +123,7 @@ export function renderGarmentOnBody(
     ctx.shadowColor = glow.color;
     ctx.shadowBlur = glow.blur;
     ctx.globalAlpha = glow.alpha;
-    ctx.drawImage(img, -drawW / 2, -(drawH * garment.neckY), drawW, drawH);
+    ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY or 0.25)), drawW, drawH);
     // Reset shadow for main draw
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
@@ -128,7 +132,7 @@ export function renderGarmentOnBody(
   // 7. Main garment draw with fabric-realistic composite
   ctx.globalCompositeOperation = garment.compositeMode ?? DEFAULT_COMPOSITE;
   ctx.globalAlpha = garment.opacity ?? DEFAULT_OPACITY;
-  ctx.drawImage(img, -drawW / 2, -(drawH * garment.neckY), drawW, drawH);
+  ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY or 0.25)), drawW, drawH);
 
   ctx.restore();
 
