@@ -123,7 +123,7 @@ export function renderGarmentOnBody(
     ctx.shadowColor = glow.color;
     ctx.shadowBlur = glow.blur;
     ctx.globalAlpha = glow.alpha;
-    ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY or 0.25)), drawW, drawH);
+    ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY || 0.25)), drawW, drawH);
     // Reset shadow for main draw
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
@@ -132,7 +132,7 @@ export function renderGarmentOnBody(
   // 7. Main garment draw with fabric-realistic composite
   ctx.globalCompositeOperation = garment.compositeMode ?? DEFAULT_COMPOSITE;
   ctx.globalAlpha = garment.opacity ?? DEFAULT_OPACITY;
-  ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY or 0.25)), drawW, drawH);
+  ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY || 0.25)), drawW, drawH);
 
   ctx.restore();
 
