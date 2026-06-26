@@ -16,7 +16,6 @@ Bajo Protocolo de Soberanía V10 - Founder: Rubén
 from __future__ import annotations
 
 import os
-import sys
 
 
 def main() -> int:
