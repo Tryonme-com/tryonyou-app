@@ -5,13 +5,13 @@
 import {
   ABVETOS_LIVE_SHOP_VARIANT_ID,
   getDivineoCheckoutUrl,
-} from "../divineo/envBootstrap";
+} from "../divineo/envBootstrap.ts";
 import {
   STRIPE_DEFAULT_COUNTRY,
   STRIPE_DEFAULT_CURRENCY,
   STRIPE_DEFAULT_LOCALE,
   getStripePublishableKeyParis,
-} from "../services/stripeParisConfig";
+} from "../services/stripeParisConfig.ts";
 
 export { ABVETOS_LIVE_SHOP_VARIANT_ID };
 export {
@@ -21,13 +21,14 @@ export {
   getStripePublishableKeyParis,
 };
 
-export function getLafayetteStripeCheckoutUrl(): string {
-  const e = import.meta.env;
+export function getLafayetteStripeCheckoutUrl(
+  env: ImportMetaEnv = import.meta.env,
+): string {
   const candidates = [
-    e.VITE_LAFAYETTE_STRIPE_CHECKOUT_URL,
-    e.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M,
-    e.VITE_STRIPE_CHECKOUT_URL,
-    e.VITE_STRIPE_LINK_SOVEREIGNTY_98K,
+    env.VITE_LAFAYETTE_STRIPE_CHECKOUT_URL,
+    env.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M,
+    env.VITE_STRIPE_CHECKOUT_URL,
+    env.VITE_STRIPE_LINK_SOVEREIGNTY_98K,
   ];
   for (const v of candidates) {
     const s = (v as string | undefined)?.trim();
