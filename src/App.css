@@ -1,0 +1,410 @@
+/*
+ * TRYONYOU — App.css
+ * Maison Couture Nocturne · Noir #0A0807 · Or #C9A84C · Ivoire #F5EFE0
+ * Design system: asymétrie éditoriale, hairlines or, typographie Playfair + Inter
+ */
+
+/* ─── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400;1,600;1,800&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --noir: #0A0807;
+  --graphite: #1A1614;
+  --or: #C9A84C;
+  --or-pale: #D8BC6A;
+  --or-deep: #9B7E2E;
+  --ivoire: #F5EFE0;
+  --fog: #B8B0A0;
+  --font-display: 'Playfair Display', 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--noir);
+  color: var(--ivoire);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ─── App Root ──────────────────────────────────────────────────────────────── */
+.app-root {
+  min-height: 100vh;
+  background: var(--noir) !important;
+  color: var(--ivoire) !important;
+  position: relative;
+}
+
+/* ─── Stage (background gradient) ──────────────────────────────────────────── */
+.app-stage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 25%, rgba(201,168,76,0.10) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 40% at 85% 75%, rgba(201,168,76,0.07) 0%, transparent 65%);
+}
+
+/* ─── UI Layer ──────────────────────────────────────────────────────────────── */
+.app-ui {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────────── */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(20px, 5vw, 80px);
+  backdrop-filter: blur(12px);
+  background: rgba(10, 8, 7, 0.82);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.25);
+}
+
+.app-logo {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--or);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.app-header-link {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 224, 0.75);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.app-header-link:hover { color: var(--or); }
+
+.app-header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--noir);
+  background: var(--or);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.3s;
+}
+.app-header-cta:hover { background: var(--or-pale); }
+
+/* ─── Hero Section ──────────────────────────────────────────────────────────── */
+.app-hero {
+  padding: 140px clamp(20px, 5vw, 80px) 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .app-hero { grid-template-columns: 1fr; padding-top: 100px; }
+}
+
+.app-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--or);
+  margin-bottom: 20px;
+}
+.app-hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--or);
+}
+
+.app-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ivoire);
+  margin-bottom: 24px;
+}
+
+.app-hero-title em {
+  font-style: italic;
+  color: var(--or);
+}
+
+.app-hero-lede {
+  font-size: 17px;
+  line-height: 1.75;
+  color: rgba(245, 239, 224, 0.80);
+  max-width: 44ch;
+  margin-bottom: 36px;
+}
+
+.app-hero-form {
+  display: flex;
+  gap: 0;
+  max-width: 420px;
+}
+
+.app-hero-input {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(201,168,76,0.35);
+  border-right: none;
+  color: var(--ivoire);
+  outline: none;
+  transition: border-color 0.3s;
+}
+.app-hero-input::placeholder { color: rgba(245,239,224,0.4); }
+.app-hero-input:focus { border-color: var(--or); }
+
+.app-hero-btn {
+  padding: 14px 24px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--noir);
+  background: var(--or);
+  border: 1px solid var(--or);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  transition: background 0.3s;
+}
+.app-hero-btn:hover { background: var(--or-pale); }
+
+/* ─── Mirror / PAU Container ────────────────────────────────────────────────── */
+.app-pau-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 clamp(20px, 5vw, 80px) 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-pau {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 9/16;
+  background: var(--graphite);
+  border: 1px solid rgba(201,168,76,0.30);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.5s, box-shadow 0.5s;
+}
+
+.app-pau::before,
+.app-pau::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--or);
+  border-style: solid;
+  z-index: 2;
+}
+.app-pau::before { top: 10px; left: 10px; border-width: 1px 0 0 1px; }
+.app-pau::after  { bottom: 10px; right: 10px; border-width: 0 1px 1px 0; }
+
+.app-pau--lafayette { border-color: rgba(201,168,76,0.40); }
+.app-pau--marais    { border-color: rgba(0,212,255,0.40); }
+
+.app-pau:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ─── Stats Strip ───────────────────────────────────────────────────────────── */
+.app-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(201,168,76,0.15);
+  margin: 0 clamp(20px, 5vw, 80px) 80px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app-stat {
+  background: var(--graphite);
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.app-stat-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--or);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.app-stat-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,239,224,0.60);
+}
+
+/* ─── Section ───────────────────────────────────────────────────────────────── */
+.app-section {
+  padding: 80px clamp(20px, 5vw, 80px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-section-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--or);
+  margin-bottom: 16px;
+}
+
+.app-section-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.5vw, 48px);
+  font-weight: 700;
+  color: var(--ivoire);
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.app-section-title em {
+  font-style: italic;
+  color: var(--or);
+}
+
+/* ─── Ofrenda / Action Buttons ──────────────────────────────────────────────── */
+.app-ofrenda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.app-ofrenda-btn {
+  padding: 16px 20px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ivoire);
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.35);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  text-align: left;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-ofrenda-btn:hover {
+  background: rgba(201,168,76,0.08);
+  border-color: var(--or);
+  color: var(--or);
+}
+
+/* ─── Hairline ──────────────────────────────────────────────────────────────── */
+.app-hairline {
+  height: 1px;
+  background: rgba(201,168,76,0.20);
+  margin: 0 clamp(20px, 5vw, 80px);
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────────── */
+.app-footer {
+  padding: 60px clamp(20px, 5vw, 80px) 40px;
+  border-top: 1px solid rgba(201,168,76,0.20);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 40px;
+  align-items: end;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-footer-logo {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 28px;
+  color: var(--or);
+  margin-bottom: 12px;
+}
+
+.app-footer-tagline {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(245,239,224,0.60);
+  max-width: 38ch;
+}
+
+.app-footer-meta {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(245,239,224,0.45);
+  text-align: right;
+  line-height: 2;
+}
+
+/* ─── Elastic Label ─────────────────────────────────────────────────────────── */
+.app-elastic-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--or);
+  padding: 6px 14px;
+  border: 1px solid rgba(201,168,76,0.35);
+  margin-bottom: 16px;
+}
+
+/* ─── Mobile ────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .app-stats { grid-template-columns: 1fr; }
+  .app-header-nav { display: none; }
+  .app-hero-form { flex-direction: column; }
+  .app-hero-input { border-right: 1px solid rgba(201,168,76,0.35); }
+  .app-footer { grid-template-columns: 1fr; }
+  .app-footer-meta { text-align: left; }
+}

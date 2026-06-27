@@ -434,194 +434,184 @@ export default function App() {
   };
 
   return (
-    <div
-      className="app-root"
-      style={{
-        background: "linear-gradient(145deg, #F5F5DC 0%, #FFFFFF 38%, #D3B26A 100%)",
-        color: "#111111",
-      }}
-    >
+    <div className="app-root">
       <div className="app-stage" aria-hidden />
 
+      {/* ─── Header ─────────────────────────────────────────────────────── */}
+      <header className="app-header">
+        <span className="app-logo">TryOnYou</span>
+        <nav className="app-header-nav">
+          <a href="#espejo" className="app-header-link">Espejo</a>
+          <a href="#tecnologia" className="app-header-link">Tecnología</a>
+          <a
+            href={getDivineoCheckoutUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="app-header-cta"
+          >
+            {SOVEREIGN_FIT_LABEL}
+          </a>
+        </nav>
+      </header>
+
       <div className="app-ui">
-        <section
-          style={{
-            padding: "32px 20px 12px",
-            maxWidth: 960,
-            margin: "0 auto",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 11,
-              letterSpacing: 6,
-              textTransform: "uppercase",
-              color: "#6b5b3a",
-              marginBottom: 10,
-            }}
-          >
-            TRYONYOU · DIVINEO
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(26px, 4vw, 38px)",
-              lineHeight: 1.15,
-              margin: 0,
-              color: "#26201A",
-            }}
-          >
-            Sabrás si te queda bien, antes de comprarlo.
-          </h1>
-          <p
-            style={{
-              marginTop: 14,
-              maxWidth: 520,
-              fontSize: 14,
-              lineHeight: 1.7,
-              color: "#4a4034",
-            }}
-          >
-            Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
-            Solo la certeza de verte como eres antes de pagar un solo euro.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 18,
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="email"
-              value={emailHero}
-              onChange={(e) => setEmailHero(e.target.value)}
-              placeholder="Tu email para probarla hoy"
-              style={{
-                flex: "1 1 220px",
-                minWidth: 0,
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(0,0,0,0.18)",
-                fontSize: 13,
-                backgroundColor: "rgba(255,255,255,0.9)",
-              }}
-            />
-            <button
-              type="button"
-              onClick={onHeroSubmit}
-              style={{
-                flex: "0 0 auto",
-                padding: "11px 22px",
-                borderRadius: 999,
-                border: "none",
-                backgroundColor: "#D3B26A",
-                color: "#111111",
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                cursor: "pointer",
-                boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
-              }}
-            >
-              Pruébatela YA (5 slots hoy)
-            </button>
+
+        {/* ─── Hero ───────────────────────────────────────────────────────── */}
+        <section className="app-hero" id="hero">
+          <div>
+            <p className="app-hero-eyebrow">Brevet PCT/EP2025/067317</p>
+            <h1 className="app-hero-title">
+              Sabrás si te queda bien,{" "}
+              <em>antes de comprarlo.</em>
+            </h1>
+            <p className="app-hero-lede">
+              Espejo digital en talla real. Sin probadores crueles, sin tallas que hieren.
+              La certeza de verte como eres antes de pagar un solo euro.
+            </p>
+            <div className="app-hero-form">
+              <input
+                type="email"
+                value={emailHero}
+                onChange={(e) => setEmailHero(e.target.value)}
+                placeholder="Tu email para probarla hoy"
+                className="app-hero-input"
+              />
+              <button
+                type="button"
+                onClick={onHeroSubmit}
+                className="app-hero-btn"
+              >
+                Reservar slot
+              </button>
+            </div>
+            <p style={{ marginTop: 16, fontSize: 11, letterSpacing: "0.08em", color: "rgba(245,239,224,0.50)" }}>
+              5 slots disponibles hoy · Acceso beta privado
+            </p>
           </div>
-          <p
-            style={{
-              marginTop: 14,
-              fontSize: 12,
-              letterSpacing: 1,
-              color: "#5c4f3d",
-            }}
-          >
-            <a
-              href={getDivineoCheckoutUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: ORO_DIVINEO,
-                fontWeight: 600,
-                textDecoration: "none",
-                borderBottom: `1px solid ${ORO_DIVINEO}`,
+
+          {/* Mirror preview right side */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            {elasticLabel !== "—" && (
+              <span className="app-elastic-label">{elasticLabel}</span>
+            )}
+            <motion.div
+              className="app-pau-row"
+              style={{ padding: 0, margin: 0 }}
+              animate={{
+                boxShadow: [
+                  `0 0 0 1px ${ORO_DIVINEO}33`,
+                  `0 0 28px ${ORO_DIVINEO}55`,
+                  `0 0 0 1px ${ORO_DIVINEO}33`,
+                ],
               }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
             >
-              {SOVEREIGN_FIT_LABEL}
-            </a>
-            <span style={{ opacity: 0.9 }}> · checkout Divineo V11 → abvetos.com</span>
-          </p>
+              <button
+                type="button"
+                id="espejo"
+                className={
+                  isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
+                }
+                disabled={!pauStarted || !mirrorPoweredOn}
+                onClick={theSnap}
+                title={
+                  !mirrorPoweredOn
+                    ? "P.A.U. — desactivado por kill-switch remoto"
+                    : pauStarted
+                      ? isMaraisNode
+                        ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+                        : activeDistrict === "75009"
+                          ? "P.A.U. — Lafayette 75009"
+                          : "P.A.U. — Lafayette / Marais (UserCheck)"
+                      : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+                }
+                aria-label="P.A.U. — snap et orchestration Jules"
+                style={{
+                  opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
+                  cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
+                }}
+              >
+                <RealTimeAvatar
+                  variant={isMaraisNode ? "marais" : "lafayette"}
+                  disabled={!pauStarted || !mirrorPoweredOn}
+                  videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+                />
+              </button>
+            </motion.div>
+          </div>
         </section>
 
-        <OfrendaOverlay
-          elasticLabel={elasticLabel}
-          julesLane={julesLane}
-          onOfrenda={onOfrenda}
-          headerExtra={
-            <button
-              type="button"
-              onClick={() => void postBetaWaitlist()}
-              style={{
-                marginTop: 14,
-                padding: "8px 18px",
-                fontSize: 10,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: "#C5A46D",
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid #C5A46D",
-                borderRadius: 999,
-                cursor: "pointer",
-              }}
-            >
-              Únete a la beta
-            </button>
-          }
-        />
+        {/* ─── Stats Strip ────────────────────────────────────────────────── */}
+        <div className="app-stats">
+          <div className="app-stat">
+            <div className="app-stat-value">85%</div>
+            <div className="app-stat-label">Reducción de devoluciones</div>
+          </div>
+          <div className="app-stat">
+            <div className="app-stat-value">0.3s</div>
+            <div className="app-stat-label">Tiempo de ajuste biométrico</div>
+          </div>
+          <div className="app-stat">
+            <div className="app-stat-value">PCT</div>
+            <div className="app-stat-label">Patente internacional EP2025</div>
+          </div>
+        </div>
 
-        <motion.div
-          className="app-pau-row"
-          animate={{
-            boxShadow: [
-              `0 0 0 1px ${ORO_DIVINEO}33`,
-              `0 0 28px ${ORO_DIVINEO}55`,
-              `0 0 0 1px ${ORO_DIVINEO}33`,
-            ],
-          }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <button
-            type="button"
-            className={
-              isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
+        {/* ─── Ofrenda / Actions ──────────────────────────────────────────── */}
+        <section className="app-section" id="tecnologia">
+          <p className="app-section-eyebrow">Protocolo Zero-Size</p>
+          <h2 className="app-section-title">
+            La <em>talla perfecta</em>, sin tallas.
+          </h2>
+          <p style={{ fontSize: 15, lineHeight: 1.75, color: "rgba(245,239,224,0.75)", maxWidth: "52ch", marginBottom: 8 }}>
+            El motor biométrico de TRYONYOU elimina el concepto de talla.
+            Tu silueta real, proyectada sobre cualquier prenda, en tiempo real.
+          </p>
+          <OfrendaOverlay
+            elasticLabel={elasticLabel}
+            julesLane={julesLane}
+            onOfrenda={onOfrenda}
+            headerExtra={
+              <button
+                type="button"
+                onClick={() => void postBetaWaitlist()}
+                className="app-ofrenda-btn"
+                style={{ marginTop: 16 }}
+              >
+                Únete a la beta privada
+              </button>
             }
-            disabled={!pauStarted || !mirrorPoweredOn}
-            onClick={theSnap}
-            title={
-              !mirrorPoweredOn
-                ? "P.A.U. — desactivado por kill-switch remoto"
-                : pauStarted
-                  ? isMaraisNode
-                    ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                    : activeDistrict === "75009"
-                      ? "P.A.U. — Lafayette 75009"
-                      : "P.A.U. — Lafayette / Marais (UserCheck)"
-                  : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
-            }
-            aria-label="P.A.U. — snap et orchestration Jules"
-            style={{
-              opacity: pauStarted && mirrorPoweredOn ? 1 : 0.55,
-              cursor: pauStarted && mirrorPoweredOn ? "pointer" : "not-allowed",
-            }}
-          >
-            <RealTimeAvatar
-              variant={isMaraisNode ? "marais" : "lafayette"}
-              disabled={!pauStarted || !mirrorPoweredOn}
-              videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
-            />
-          </button>
-        </motion.div>
+          />
+        </section>
+
+        {/* ─── Hairline ───────────────────────────────────────────────────── */}
+        <div className="app-hairline" />
+
+        {/* ─── Footer ─────────────────────────────────────────────────────── */}
+        <footer className="app-footer">
+          <div>
+            <div className="app-footer-logo">TryOnYou</div>
+            <p className="app-footer-tagline">
+              El probador virtual de alta precisión para maisons de moda.
+              Brevet PCT/EP2025/067317 · Protocolo Zero-Size.
+            </p>
+          </div>
+          <div className="app-footer-meta">
+            <div>tryonyou.pro</div>
+            <div style={{ marginTop: 4 }}>
+              <a
+                href={getDivineoCheckoutUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#C9A84C", textDecoration: "none" }}
+              >
+                {SOVEREIGN_FIT_LABEL} →
+              </a>
+            </div>
+            <div style={{ marginTop: 4, opacity: 0.55 }}>© 2025 LVT-ENG</div>
+          </div>
+        </footer>
+
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
