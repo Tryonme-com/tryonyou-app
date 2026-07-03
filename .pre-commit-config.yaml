@@ -1,0 +1,102 @@
+# -------------------------------------------------------------------------
+# Proyecto: TryOnYou V10 OMEGA
+# Patente: PCT/EP2025/067317
+# Arquitecto: Rubén Espinar
+# Estado: PRODUCTION_STABLE | Soberanía: tryonyou.pro
+# -------------------------------------------------------------------------
+#
+# Pre-commit hooks configuration for sovereignty compliance
+# and security hardening (PCT/EP2025/067317)
+#
+# Instalación:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Verificación manual:
+#   pre-commit run --all-files
+#
+
+repos:
+  # ========== SEGURIDAD: Detección de secretos ==========
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hardcoded secrets
+        entry: detect-secrets scan --baseline .secrets.baseline
+        language: python
+        types: [python]
+        stages: [commit]
+        args:
+          - --baseline
+          - .secrets.baseline
+
+  # ========== LINTING: Python básico ==========
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        name: Flake8 lint
+        entry: flake8
+        language: python
+        types: [python]
+        args:
+          - --max-line-length=100
+          - --ignore=E203,W503
+
+  # ========== FORMATO: Código black ==========
+  - repo: https://github.com/psf/black
+    rev: 23.12.0
+    hooks:
+      - id: black
+        name: Black formatter
+        language: python
+        types: [python]
+        args:
+          - --line-length=100
+
+  # ========== VALIDACIÓN: Archivos comunes ==========
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of file
+      - id: check-yaml
+        name: Check YAML syntax
+        args: [--unsafe]
+      - id: check-json
+        name: Check JSON syntax
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=5000']
+      - id: check-case-conflict
+        name: Check for case conflicts
+      - id: check-docstring-first
+        name: Check docstring is first
+        types: [python]
+      - id: debug-statements
+        name: Debug statements checker
+        types: [python]
+      - id: detect-private-key
+        name: Detect private keys
+
+# ========== CONFIGURACIÓN GLOBAL ==========
+fail_fast: false
+default_language_version:
+  python: python3.11
+exclude: |
+  (?x)^(
+    venv/|
+    .venv/|
+    node_modules/|
+    dist/|
+    build/|
+    \.git/|
+    __pycache__/|
+    \.pytest_cache/|
+    __SOVEREIGN_PATCHES__/
+  )
