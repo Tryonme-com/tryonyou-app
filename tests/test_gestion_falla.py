@@ -63,6 +63,24 @@ class TestGestorFallaV9(unittest.TestCase):
         self.assertEqual(asiento["comision_aplicada"], 3.2)
         self.assertEqual(asiento["neto_resultante"], 36.8)
 
+    def test_conserva_precision_de_una_comision_personalizada(self) -> None:
+        gestor = GestorFallaV9(
+            comision_pct="0.075",
+            memoria_path=self.memory,
+            libro_path=self.ledger,
+        )
+
+        asiento = gestor.ejecutar_cobro(
+            "Pau",
+            100,
+            "Evento Presentación",
+            referencia="fee_075",
+        )
+
+        self.assertEqual(asiento["comision_pct"], 0.075)
+        self.assertEqual(asiento["comision_aplicada"], 7.5)
+        self.assertEqual(asiento["neto_resultante"], 92.5)
+
     def test_reintento_no_duplica_memoria_ni_libro(self) -> None:
         first = self.gestor.ejecutar_cobro(
             "José S.",
