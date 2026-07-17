@@ -28,6 +28,7 @@ CONCEPTOS_PERMITIDOS = frozenset({"cuota", "loteria", "evento"})
 ESTADO_PAGADO = "PAGADO"
 ESTADO_PENDIENTE = "PENDIENTE DE REGULARIZAR"
 _CENTIMOS = Decimal("0.01")
+_PRECISION_TASA = Decimal("0.0001")
 
 
 def _texto_normalizado(value: str) -> str:
@@ -51,6 +52,10 @@ def _importe_json(value: Decimal) -> float:
     return float(value.quantize(_CENTIMOS, rounding=ROUND_HALF_UP))
 
 
+def _tasa_json(value: Decimal) -> float:
+    return float(value.quantize(_PRECISION_TASA, rounding=ROUND_HALF_UP))
+
+
 class GestorFallaV9:
     """Procesa cobros con comisión configurable y memoria local durable."""
 
@@ -62,9 +67,14 @@ class GestorFallaV9:
         memoria_path: str | os.PathLike[str] | None = None,
         libro_path: str | os.PathLike[str] | None = None,
     ) -> None:
-        self.comision_pct = _decimal_monetario(
-            comision_pct, campo="comision_pct"
-        )
+        try:
+            self.comision_pct = Decimal(str(comision_pct)).quantize(
+                _PRECISION_TASA, rounding=ROUND_HALF_UP
+            )
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            raise ValueError("comision_pct debe ser un número decimal") from exc
+        if not self.comision_pct.is_finite():
+            raise ValueError("comision_pct debe ser un número decimal finito")
         self.cuota_base = _decimal_monetario(cuota_base, campo="cuota_base")
         if not Decimal("0") <= self.comision_pct <= Decimal("1"):
             raise ValueError("comision_pct debe estar entre 0 y 1")
@@ -157,7 +167,7 @@ class GestorFallaV9:
                     "fallero": nombre_limpio.upper(),
                     "concepto": concepto_limpio,
                     "importe_bruto": _importe_json(importe_bruto),
-                    "comision_pct": _importe_json(self.comision_pct),
+                    "comision_pct": _tasa_json(self.comision_pct),
                     "comision_aplicada": _importe_json(comision),
                     "neto_resultante": _importe_json(neto),
                     "saldo_pendiente": _importe_json(saldo_pendiente),
