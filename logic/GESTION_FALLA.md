@@ -51,5 +51,5 @@ La memoria JSON es la fuente de verdad. El libro JSONL se sincroniza desde ella
 en cada operación. Un reintento con la misma `referencia` devuelve
 `"duplicado": true` y no genera un segundo asiento.
 
-Patente: PCT/EP2025/067317  
+Patente: PCT/EP2025/067317
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
