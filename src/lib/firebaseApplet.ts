@@ -51,13 +51,12 @@ function mergedOptions(): FirebaseOptions {
   };
 }
 
-/**
- * Si `window.UserCheck` está autorizado, activa el flujo de depuración de App Check
- * antes de inicializar Firebase (evita bloqueos en entornos protegidos).
- */
 export function applyUserCheckForAppCheck(): void {
-  const w = window as Window & { UserCheck?: unknown };
-  if (!w.UserCheck) return;
+  const enableDebug =
+    String(import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG || "")
+      .trim()
+      .toLowerCase() === "true";
+  if (!enableDebug) return;
   const g = globalThis as unknown as {
     FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
   };
@@ -95,8 +94,11 @@ export async function initFirebaseAnalytics(app: FirebaseApp): Promise<void> {
 
 export async function initFirebaseAppCheckIfConfigured(app: FirebaseApp): Promise<void> {
   const siteKey = viteFirebaseValue("VITE_FIREBASE_APPCHECK_SITE_KEY");
-  const w = window as Window & { UserCheck?: unknown };
-  if (w.UserCheck) return;
+  const appCheckBypass =
+    String(import.meta.env.VITE_FIREBASE_APPCHECK_BYPASS || "")
+      .trim()
+      .toLowerCase() === "true";
+  if (appCheckBypass) return;
   if (!siteKey) return;
   initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(siteKey),

@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -31,8 +32,37 @@ from stripe_webhook_fr import handle_stripe_webhook_fr  # noqa: E402
 app = Flask(__name__)
 
 
+def _is_development() -> bool:
+    return (
+        (os.environ.get("FLASK_ENV") or "").strip().lower() == "development"
+        or (os.environ.get("ENV") or "").strip().lower() == "development"
+        or (os.environ.get("NODE_ENV") or "").strip().lower() == "development"
+        or (os.environ.get("VERCEL_ENV") or "").strip().lower() == "development"
+    )
+
+
+def _allowed_origins() -> set[str]:
+    raw = (os.environ.get("ALLOWED_ORIGINS") or "").strip()
+    origins = {o.strip() for o in raw.split(",") if o.strip()}
+    if _is_development():
+        origins.update(
+            {
+                "http://localhost:3000",
+                "http://localhost:4173",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:4173",
+                "http://127.0.0.1:5173",
+            }
+        )
+    return origins
+
+
 def _cors(resp: Response) -> Response:
-    resp.headers["Access-Control-Allow-Origin"] = "*"
+    request_origin = (request.headers.get("Origin") or "").strip()
+    if request_origin and request_origin in _allowed_origins():
+        resp.headers["Access-Control-Allow-Origin"] = request_origin
+        resp.headers["Vary"] = "Origin"
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     resp.headers[
         "Access-Control-Allow-Headers"

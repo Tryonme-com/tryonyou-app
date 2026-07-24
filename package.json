@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/assert-firebase-applet.mjs",
+    "lint": "npm run lint:ts",
+    "lint:ts": "tsc --noEmit --pretty false",
     "build": "vite build",
     "preview": "vite preview"
   },

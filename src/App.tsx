@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { OfrendaOverlay, type OfrendaKey } from "./components/OfrendaOverlay";
 import RealTimeAvatar from "./components/RealTimeAvatar";
@@ -17,13 +17,14 @@ import "./App.css";
 
 /** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais). */
 const PAU_POSTAL_NODES = new Set(["75009", "75004"]);
+const MAINTENANCE_BLOCK_MESSAGE =
+  "Modo mantenimiento: validación de backend no disponible. Motor bloqueado por seguridad.";
 
 /** Estado operativo bunker / preview (narrativa V10). */
 const OPERATIONAL_STATE_DIAMANTE = "DIAMANTE" as const;
 
 function setWindowOperationalStateDiamante(): void {
-  const w = window as Window & { __TRYONYOU_OPERATIONAL_STATE__?: string };
-  w.__TRYONYOU_OPERATIONAL_STATE__ = OPERATIONAL_STATE_DIAMANTE;
+  window.__TRYONYOU_OPERATIONAL_STATE__ = OPERATIONAL_STATE_DIAMANTE;
 }
 
 function readPostalFromWindowOrUrl(): string {
@@ -40,55 +41,10 @@ function readPostalFromWindowOrUrl(): string {
   return "";
 }
 
-/**
- * UserCheck truthy → autorizado (App Check debug + Pau).
- * Código postal 75009 o 75004 (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
- */
-function isPauAuthorized(): boolean {
-  const w = window as Window & { UserCheck?: unknown };
-  const uc = w.UserCheck;
-  if (uc != null && uc !== false && uc !== "") return true;
-  const postal = readPostalFromWindowOrUrl();
-  return PAU_POSTAL_NODES.has(postal);
-}
-
-/** Primera pasada: UserCheck soberano para App Check + Pau (sin esperar efectos). */
-function forceUserCheckIfPilotCold(): void {
-  if (typeof window === "undefined") return;
-  const win = window as Window & { UserCheck?: unknown };
-  if (win.UserCheck != null && win.UserCheck !== false && win.UserCheck !== "") return;
-  const postal = readPostalFromWindowOrUrl();
-  const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
-  const loc: "75009" | "75004" =
-    vite === "75004" || postal === "75004"
-      ? "75004"
-      : vite === "75009" || postal === "75009"
-        ? "75009"
-        : "75009";
-  win.UserCheck = {
-    isAuthorized: true,
-    role: "SOUVERAIN",
-    nodos: ["75009", "75004"],
-    contrato: "194.800€",
-    location: loc,
-    contract: loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
-    source: "pau_v10_forced_pilot",
-    operationalState: OPERATIONAL_STATE_DIAMANTE,
-    pilotVenue: loc === "75004" ? "BHV_MARAIS" : "GALERIES_LAFAYETTE",
-  };
-  setWindowOperationalStateDiamante();
-}
-
-/** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
+/** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, ?postal=, __TRYONYOU_POSTAL__). */
 function resolveActiveDistrict(): "75009" | "75004" | "" {
   const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
   if (vite === "75009" || vite === "75004") return vite;
-  const w = window as Window & { UserCheck?: unknown };
-  const uc = w.UserCheck;
-  if (uc && typeof uc === "object" && uc !== null) {
-    const loc = String((uc as { location?: string }).location ?? "").trim();
-    if (loc === "75009" || loc === "75004") return loc;
-  }
   const postal = readPostalFromWindowOrUrl();
   if (postal === "75009" || postal === "75004") return postal;
   return "";
@@ -236,74 +192,39 @@ async function postPerfectCheckout(fabricSensation: string): Promise<void> {
 }
 
 export default function App() {
-  const pauSovereignBoot = useRef(false);
-  if (!pauSovereignBoot.current) {
-    pauSovereignBoot.current = true;
-    forceUserCheckIfPilotCold();
-  }
-
   const [elasticLabel, setElasticLabel] = useState("V9 Identity");
   const [julesLane, setJulesLane] = useState<string>("Orchestration Jules…");
   const [emailHero, setEmailHero] = useState<string>("");
-  const [mirrorPoweredOn, setMirrorPoweredOn] = useState(true);
+  const [mirrorPoweredOn, setMirrorPoweredOn] = useState(false);
+  const [isBackendAuthorized, setIsBackendAuthorized] = useState(false);
   const [debtMessage, setDebtMessage] = useState<string>("");
-
-  /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
-  const [pauDistrictTick, setPauDistrictTick] = useState(0);
-
-  /** window.UserCheck truthy, o nodo postal 75009 / 75004 (Lafayette / Marais) → Pau activo. */
-  const pauStarted = isPauAuthorized();
-
-  useEffect(() => {
-    const id = window.setInterval(() => setPauDistrictTick((n) => n + 1), 900);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    const w = window as Window & {
-      initPauAlpha?: () => void;
-      launchMarais?: () => void;
-    };
-    const bumpPau = () => {
-      setPauDistrictTick((n) => n + 1);
-      const v = document.querySelector<HTMLVideoElement>(".app-pau video");
-      void v?.play().catch(() => {});
-    };
-    w.initPauAlpha = bumpPau;
-    w.launchMarais = () => {
-      const win = window as Window & { UserCheck?: unknown };
-      win.UserCheck = {
-        isAuthorized: true,
-        role: "SOUVERAIN",
-        nodos: ["75009", "75004"],
-        contrato: "194.800€",
-        location: "75004",
-        contract: "MARAIS_88K",
-        operationalState: OPERATIONAL_STATE_DIAMANTE,
-        pilotVenue: "BHV_MARAIS",
-      };
-      setWindowOperationalStateDiamante();
-      bumpPau();
-      console.log("✅ [BOOM]: Marais 75004 — pavo activo (contrat bunker 88k).");
-    };
-    bumpPau();
-    window.requestAnimationFrame(() => bumpPau());
-    return () => {
-      delete w.initPauAlpha;
-      delete w.launchMarais;
-    };
-  }, []);
-
-  const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
+  const [activeDistrict, setActiveDistrict] = useState<"75009" | "75004" | "">(() =>
+    resolveActiveDistrict(),
+  );
+  const pauStarted = isBackendAuthorized && PAU_POSTAL_NODES.has(activeDistrict);
   const isMaraisNode = activeDistrict === "75004";
 
-  /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
+  /** Estado territorial recalculado solo por eventos relevantes, sin polling agresivo. */
   useEffect(() => {
-    const d = resolveActiveDistrict();
-    if (d !== "75009" && d !== "75004") return;
-    setWindowOperationalStateDiamante();
-    const w = window as Window & { initPauAlpha?: () => void };
-    queueMicrotask(() => w.initPauAlpha?.());
-  }, [activeDistrict, pauDistrictTick]);
+    const refreshDistrict = () => {
+      setActiveDistrict(resolveActiveDistrict());
+    };
+    refreshDistrict();
+    window.addEventListener("popstate", refreshDistrict);
+    window.addEventListener("hashchange", refreshDistrict);
+    window.addEventListener("tryonyou:postal-updated", refreshDistrict as EventListener);
+    return () => {
+      window.removeEventListener("popstate", refreshDistrict);
+      window.removeEventListener("hashchange", refreshDistrict);
+      window.removeEventListener("tryonyou:postal-updated", refreshDistrict as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeDistrict === "75009" || activeDistrict === "75004") {
+      setWindowOperationalStateDiamante();
+    }
+  }, [activeDistrict]);
 
   useEffect(() => {
     const app = initFirebaseApplet();
@@ -314,38 +235,59 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let timerId: number | undefined;
+
     const refreshHealth = async () => {
       const h = await fetchJulesHealth();
       if (cancelled) return;
       if (h?.ok) {
-        setMirrorPoweredOn(h.mirror_enabled !== false);
+        const backendAuthorized =
+          h.mirror_enabled !== false && h.payment_verified !== false && h.ok === true;
+        setIsBackendAuthorized(backendAuthorized);
+        setMirrorPoweredOn(backendAuthorized);
         setDebtMessage(h.debt_message ?? "");
         setJulesLane(
           `Jules · ${h.service ?? "omega"} · ${h.product_lane ?? "tryonyou_v10_omega"}`,
         );
-        return;
+      } else {
+        setIsBackendAuthorized(false);
+        setMirrorPoweredOn(false);
+        setDebtMessage(MAINTENANCE_BLOCK_MESSAGE);
+        setJulesLane("Jules · maintenance/dégradé · backend indisponible (fail-closed)");
       }
-      setMirrorPoweredOn(true);
-      setDebtMessage("");
-      setJulesLane(
-        "Jules · prévisualisation locale (API Python non joignable sur ce port)",
-      );
+
+      const pollMs = document.visibilityState === "visible" ? 15000 : 45000;
+      timerId = window.setTimeout(() => {
+        void refreshHealth();
+      }, pollMs);
     };
-    void refreshHealth();
-    const intervalId = window.setInterval(() => {
+
+    const onVisibilityChange = () => {
+      if (cancelled) return;
+      if (timerId) window.clearTimeout(timerId);
       void refreshHealth();
-    }, 15000);
+    };
+
+    void refreshHealth();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (timerId) window.clearTimeout(timerId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
   useEffect(() => {
+    let lastAppliedAt = 0;
+    const THROTTLE_MS = 120;
     const onFit = (e: Event) => {
       const ce = e as CustomEvent<{ label?: string }>;
       const lab = ce.detail?.label;
       if (typeof lab === "string" && lab.length > 0) {
+        const now = performance.now();
+        if (now - lastAppliedAt < THROTTLE_MS) return;
+        lastAppliedAt = now;
         setElasticLabel(enforceV9IdentityLabel(lab));
       }
     };
@@ -355,7 +297,7 @@ export default function App() {
 
   const onOfrenda = (key: OfrendaKey) => {
     if (!mirrorPoweredOn) {
-      window.alert(debtMessage || "Le miroir est momentanément suspendu par contrôle distant.");
+      window.alert(debtMessage || MAINTENANCE_BLOCK_MESSAGE);
       return;
     }
     if (key === "selection") {
@@ -621,8 +563,8 @@ export default function App() {
                     ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
                     : activeDistrict === "75009"
                       ? "P.A.U. — Lafayette 75009"
-                      : "P.A.U. — Lafayette / Marais (UserCheck)"
-                  : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+                      : "P.A.U. — Lafayette / Marais (validación backend)"
+                  : "P.A.U. — requiere validación backend + nodo 75009/75004"
             }
             aria-label="P.A.U. — snap et orchestration Jules"
             style={{
