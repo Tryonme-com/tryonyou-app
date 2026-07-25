@@ -7,9 +7,10 @@ del 8 % por defecto, actualiza el saldo pendiente y evita duplicados.
 ## Activador
 
 - Webhook: enviar el registro de la pasarela con una `referencia` estable.
-- Schedule: para las 09:00 cada día, usar `FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0`
-  o su equivalente cron `0 9 * * *`. La zona horaria debe configurarse
-  explícitamente en el orquestador.
+- Schedule: preferir `Europe/Madrid` a las 09:00 (`FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0`
+  o cron local `0 9 * * *`). Un cron UTC fijo `0 7 * * *` coincide con las 09:00
+  en CEST (verano) y se desfasa a las 08:00 en CET (invierno); fijar la zona en
+  el orquestador.
 
 Payload compatible:
 
