@@ -88,4 +88,4 @@ with open('index.html', 'w', encoding='utf-8') as f:
 os.system("git add index.html")
 os.system("git commit -m 'SOVEREIGNTY V10: Mirror + PAU Integrated'")
 os.system("git push origin main --force")
-print("\n🚀 BÚNKER SELLADO CON PAU Y MOTOR. Revisa tryonyou.app en incógnito.")
+print("\n🚀 BÚNKER SELLADO CON PAU Y MOTOR. Revisa tryonyou.pro en incógnito.")

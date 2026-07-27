@@ -4,7 +4,7 @@ import subprocess
 import json
 
 # --- CONFIGURACIÓN DE CONSOLIDACIÓN ---
-PROJECT_NAME = "tryonyou.app"
+PROJECT_NAME = "tryonyou.pro"
 PRODUCTION_TAG = "v1.0.0-PROD-VALIDATED"
 
 def consolidar_avance():

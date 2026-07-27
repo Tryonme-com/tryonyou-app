@@ -31,7 +31,7 @@ V10_VOICE = {
 }
 
 DOMINIOS_RED = [
-    "tryonyou.app",
+    "tryonyou.pro",
     "vvlart.com",
     "abvetos.com",
     "tryonme.com",

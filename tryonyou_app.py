@@ -41,7 +41,7 @@ class TryOnYouApp:
 
     def share_look_render(self, look_id):
         return {
-            "image_url": f"https://cdn.tryonyou.app/renders/{look_id}.jpg",
+            "image_url": f"https://cdn.tryonyou.pro/renders/{look_id}.jpg",
             "metadata_privacy": "Biometrics_Hidden",
             "branding": "Balmain_Official",
         }

@@ -27,7 +27,7 @@ def create_ticket(client_name="VIP Client", look_id="BALMAIN_GOLD_V10"):
         json.dump(ticket, f, indent=4)
     
     print(f"✅ Ticket {reservation_id} generado.")
-    print(f"🔗 Link de validación: https://tryonyou.app/verify?id={reservation_id}")
+    print(f"🔗 Link de validación: https://tryonyou.pro/verify?id={reservation_id}")
     return ticket
 
 if __name__ == "__main__":

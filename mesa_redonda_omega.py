@@ -34,7 +34,7 @@ class MesaRedondaOmega:
         # 2. AGENTE70 & GEMINI: decisión de voz (V10: stability 0.85)
         decision_voz = "Lily (Gemela Perfecta) valida el fit con Stability 0.85."
         # 3. MANUS & COPILOT: decisión técnica
-        decision_tecnica = "Inyectar Biometric Matcher V10 en tryonyou.app."
+        decision_tecnica = "Inyectar Biometric Matcher V10 en tryonyou.pro."
 
         acta = {
             "timestamp": datetime.now().isoformat(),

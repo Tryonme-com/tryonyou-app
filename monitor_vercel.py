@@ -15,7 +15,7 @@ def monitor_vercel() -> None:
         time.sleep(3)
 
     print("\n💎 STATUS: LIVE (EN VERDE)")
-    print("🔗 URL: tryonyou-app.vercel.app")
+    print("🔗 URL: https://tryonyou.pro")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """
 Envío Soberano — SMTP Gmail con credenciales solo en entorno (nunca en el repo).
 
-  export EMAIL_USER='ruben@tryonyou.app'
+  export EMAIL_USER='ruben@tryonyou.pro'
   export EMAIL_PASS='xxxx xxxx xxxx xxxx'   # App Password de Google
   # Obligatorio: EMAIL_USER (o E50_SMTP_USER / FOUNDER_EMAIL) para el login SMTP.
   # Opcional: SMTP_HOST, SMTP_PORT, REMITENTE / EMAIL_FROM (solo cabecera From).

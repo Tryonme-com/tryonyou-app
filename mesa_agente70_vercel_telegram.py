@@ -5,7 +5,7 @@ No sustituye el panel de Vercel (DNS / asignación de dominios); valida que cada
   export TELEGRAM_BOT_TOKEN=…   # o TELEGRAM_TOKEN
   export TELEGRAM_CHAT_ID=…
   # opcional — hosts separados por coma (exactamente los que Vercel tenga asignados al proyecto)
-  export MESA_VERCEL_DOMAIN_CHECK='tryonme.app,abvetos.com,tryonme.com,tryonme.org,tryonyou.app,api.tryonyou.app'
+  export MESA_VERCEL_DOMAIN_CHECK='tryonyou.pro,tryonme.app,abvetos.com,tryonme.com,tryonme.org,api.tryonyou.pro'
 
   python3 mesa_agente70_vercel_telegram.py
 
@@ -33,8 +33,8 @@ DEFAULT_HOSTS = (
     "abvetos.com",
     "tryonme.com",
     "tryonme.org",
-    "tryonyou.app",
-    "api.tryonyou.app",
+    "tryonyou.pro",
+    "api.tryonyou.pro",
 )
 
 

@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 Allow: /index.html
 Allow: /success.html
-Sitemap: https://tryonyou.app/sitemap.xml
+Sitemap: https://tryonyou.pro/sitemap.xml
 
 # Proteger el cerebro financiero y analíticas
 Disallow: /pilot_analytics.json

@@ -30,7 +30,7 @@ DEFAULT_DESC = (
     "Élimination des retours retail via le Double Numérique Biométrique. "
     "Brevet PCT/EP2025/067317."
 )
-DEFAULT_IMAGE = "https://tryonyou.app/assets/branding/pau_luxury_banner.png"
+DEFAULT_IMAGE = "https://tryonyou.pro/assets/branding/pau_luxury_banner.png"
 
 GIT_PATHS = [
     "src/seo/linkedin_og_fragment.html",
