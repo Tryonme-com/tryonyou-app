@@ -5,9 +5,9 @@
     "manifest_finance_verified_utc": "2026-04-07T12:00:00Z",
     "identity_system": {
         "official_emails": [
-            "ruben@tryonyou.app",
-            "admin@tryonyou.app",
-            "vip@tryonyou.app"
+            "ruben@tryonyou.pro",
+            "admin@tryonyou.pro",
+            "vip@tryonyou.pro"
         ],
         "sovereignty_level": "TOTAL"
     },
@@ -57,6 +57,7 @@
     },
     "deployment": {
         "verified_domains": [
+            "tryonyou.pro",
             "abvetos.com",
             "tryonme.com",
             "tryonme.app",

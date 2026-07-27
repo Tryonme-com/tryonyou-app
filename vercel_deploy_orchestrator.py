@@ -39,6 +39,7 @@ def deploy_sovereign_network() -> int:
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
         data["deployment"] = {
             "verified_domains": [
+                "tryonyou.pro",
                 "abvetos.com",
                 "tryonme.com",
                 "tryonme.app",

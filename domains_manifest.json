@@ -1,5 +1,5 @@
 {
-    "core": "tryonme.app",
+    "core": "tryonyou.pro",
     "satellites": [
         {"domain": "abvetos.com", "role": "Intelligence Hub & Strategy"},
         {"domain": "tryonme.com", "role": "Commercial Gateway"},

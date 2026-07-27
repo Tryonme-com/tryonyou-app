@@ -32,7 +32,7 @@ from stripe_inauguration import create_inauguration_checkout_session
 
 
 def main() -> None:
-    origin = (os.getenv("STRIPE_CHECKOUT_ORIGIN") or "https://tryonyou.app").strip()
+    origin = (os.getenv("STRIPE_CHECKOUT_ORIGIN") or "https://tryonyou.pro").strip()
     payload, code = create_inauguration_checkout_session(origin)
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     if code == 200 and payload.get("url"):

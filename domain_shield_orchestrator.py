@@ -7,7 +7,7 @@ def secure_domains():
     # Script para validar que el usuario está en el búnker correcto
     shield_script = """
     <script>
-        const authorizedDomains = ['tryonme.app', 'localhost'];
+        const authorizedDomains = ['tryonyou.pro', 'localhost'];
         const currentHost = window.location.hostname;
         
         if (!authorizedDomains.some(domain => currentHost.includes(domain))) {

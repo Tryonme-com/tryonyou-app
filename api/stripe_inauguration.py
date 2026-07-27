@@ -72,7 +72,7 @@ def create_inauguration_checkout_session(origin_header: str | None) -> tuple[dic
     base = (origin_header or "").strip().rstrip("/")
     if not base:
         pub = (os.getenv("TRYONYOU_PUBLIC_DOMAIN") or "").strip()
-        base = f"https://{pub}" if pub else "https://tryonyou.app"
+        base = f"https://{pub}" if pub else "https://tryonyou.pro"
 
     success = (os.getenv("STRIPE_INAUGURATION_SUCCESS_URL") or f"{base}/?inauguration=merci").strip()
     cancel = (os.getenv("STRIPE_INAUGURATION_CANCEL_URL") or f"{base}/?inauguration=annule").strip()
