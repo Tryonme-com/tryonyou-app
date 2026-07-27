@@ -21,6 +21,29 @@ CORE_ENGINE_PROTOCOL = "jules_core_engine_v11"
 COMMISSION_RATE = 0.08
 TARGET_BALANCE_EUR = 27_500.0
 DEBT_BLOCKED_MESSAGE = "Error 402: deuda pendiente de 27.500 € — regularización requerida."
+
+
+def resolve_target_balance_eur() -> float:
+    return round_money(safe_float(os.environ.get("CORE_ENGINE_TARGET_BALANCE_EUR"), TARGET_BALANCE_EUR))
+
+
+def format_eur_amount(amount: float) -> str:
+    value = round_money(amount)
+    if abs(value - round(value)) < 1e-9:
+        return f"{int(round(value)):,}".replace(",", ".")
+    return f"{value:.2f}".replace(".", ",")
+
+
+def compute_debt_amount_eur(validation: Mapping[str, Any] | None = None) -> float:
+    threshold = resolve_target_balance_eur()
+    if not validation:
+        return threshold
+    threshold = round_money(safe_float(validation.get("threshold_eur"), threshold))
+    if validation.get("qualified"):
+        return 0.0
+    combined = round_money(safe_float(validation.get("combined_total_eur")))
+    shortfall = round_money(max(0.0, threshold - combined))
+    return shortfall if shortfall > 0 else threshold
 DEFAULT_ACCOUNT_SCOPE = "personal"
 ACCOUNT_SCOPES = frozenset({"personal", "empresa", "admin"})
 SUPABASE_SCHEMA = "public"
@@ -197,15 +220,31 @@ def parse_env_bool(name: str) -> bool | None:
 
 
 def resolve_payment_verified(validation: Mapping[str, Any]) -> bool:
-    env_override = parse_env_bool("PAYMENT_VERIFIED")
-    if env_override is not None:
-        return env_override
+    if is_payment_verified_override_off():
+        return False
+    if not validation.get("ok"):
+        return False
     return bool(validation.get("qualified"))
 
 
-def resolve_debt_message() -> str:
+def resolve_health_payment_verified(validation: Mapping[str, Any]) -> bool:
+    """
+    Health debe reflejar balance real + kill-switch explícito.
+    PAYMENT_VERIFIED=false bloquea; PAYMENT_VERIFIED=true no bypassa validación financiera.
+    """
+    if is_payment_verified_override_off():
+        return False
+    if not validation.get("ok"):
+        return False
+    return bool(validation.get("qualified"))
+
+
+def resolve_debt_message(debt_amount_eur: float | None = None) -> str:
     raw = (os.environ.get("PAYMENT_DEBT_MESSAGE") or "").strip()
-    return raw or DEBT_BLOCKED_MESSAGE
+    if raw:
+        return raw
+    amount = resolve_target_balance_eur() if debt_amount_eur is None else round_money(debt_amount_eur)
+    return f"Error 402: deuda pendiente de {format_eur_amount(amount)} € — regularización requerida."
 
 
 def is_payment_verified_override_off() -> bool:
@@ -633,7 +672,7 @@ async def validate_dual_balance_async() -> dict[str, Any]:
         safe_float(normalized["stripe"].get("balance_eur"))
         + safe_float(normalized["qonto"].get("balance_eur"))
     )
-    threshold_eur = round_money(safe_float(os.environ.get("CORE_ENGINE_TARGET_BALANCE_EUR"), TARGET_BALANCE_EUR))
+    threshold_eur = resolve_target_balance_eur()
     return {
         "ok": bool(normalized["stripe"].get("ok")) and bool(normalized["qonto"].get("ok")),
         "threshold_eur": threshold_eur,
@@ -689,6 +728,8 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
     account_scope = resolve_account_scope(body, headers)
     actor_id = resolve_actor_id(body, headers)
     if is_payment_verified_override_off():
+        threshold_eur = resolve_target_balance_eur()
+        debt_amount_eur = threshold_eur
         trace = trace_event(
             body={
                 **dict(body or {}),
@@ -705,12 +746,12 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "status": "debt_pending",
             "message": "target_balance_not_reached",
             "payment_verified": False,
-            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-            "debt_message": resolve_debt_message(),
+            "debt_amount_eur": debt_amount_eur,
+            "debt_message": resolve_debt_message(debt_amount_eur),
             "validation": {
                 "ok": False,
                 "qualified": False,
-                "threshold_eur": round_money(TARGET_BALANCE_EUR),
+                "threshold_eur": threshold_eur,
                 "combined_total_eur": 0.0,
                 "override_source": "PAYMENT_VERIFIED",
             },
@@ -735,14 +776,15 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 503
     payment_verified = resolve_payment_verified(validation)
+    debt_amount_eur = compute_debt_amount_eur(validation)
     if not payment_verified:
         return {
             "ok": False,
             "status": "debt_pending",
             "message": "target_balance_not_reached",
             "payment_verified": False,
-            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-            "debt_message": resolve_debt_message(),
+            "debt_amount_eur": debt_amount_eur,
+            "debt_message": resolve_debt_message(debt_amount_eur),
             "validation": validation,
             "trace": trace,
             "protocol": CORE_ENGINE_PROTOCOL,
@@ -752,9 +794,9 @@ def model_access_payload(body: Mapping[str, Any] | None, headers: Mapping[str, A
             "ok": False,
             "status": "debt_pending",
             "message": "target_balance_not_reached",
-            "payment_verified": bool(payment_verified),
-            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-            "debt_message": resolve_debt_message(),
+            "payment_verified": False,
+            "debt_amount_eur": debt_amount_eur,
+            "debt_message": resolve_debt_message(debt_amount_eur),
             "validation": validation,
             "trace": trace,
             "protocol": CORE_ENGINE_PROTOCOL,
@@ -784,13 +826,14 @@ def mirror_snap_payload(body: Mapping[str, Any] | None, headers: Mapping[str, An
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
     if is_payment_verified_override_off():
+        debt_amount_eur = resolve_target_balance_eur()
         return {
             "status": "error",
             "message": "payment_not_verified",
             "error_code": 402,
             "payment_verified": False,
-            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-            "debt_message": resolve_debt_message(),
+            "debt_amount_eur": debt_amount_eur,
+            "debt_message": resolve_debt_message(debt_amount_eur),
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 402
     payload = dict(body or {})
@@ -821,13 +864,14 @@ def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[s
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 423
     if is_payment_verified_override_off():
+        debt_amount_eur = resolve_target_balance_eur()
         return {
             "status": "error",
             "message": "payment_not_verified",
             "error_code": 402,
             "payment_verified": False,
-            "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-            "debt_message": resolve_debt_message(),
+            "debt_amount_eur": debt_amount_eur,
+            "debt_message": resolve_debt_message(debt_amount_eur),
             "protocol": CORE_ENGINE_PROTOCOL,
         }, 402
     payload = dict(body or {})
@@ -853,7 +897,9 @@ def perfect_selection_payload(body: Mapping[str, Any] | None, headers: Mapping[s
 
 def health_payload() -> dict[str, Any]:
     status = kill_switch_status_payload()
-    payment_verified = not is_payment_verified_override_off()
+    validation = asyncio.run(validate_dual_balance_async())
+    payment_verified = resolve_health_payment_verified(validation)
+    debt_amount_eur = compute_debt_amount_eur(validation)
     mirror_enabled = status.get("state") != "off" and payment_verified
     return {
         "ok": True,
@@ -862,8 +908,9 @@ def health_payload() -> dict[str, Any]:
         "protocol": CORE_ENGINE_PROTOCOL,
         "mirror_enabled": mirror_enabled,
         "payment_verified": payment_verified,
-        "debt_amount_eur": round_money(TARGET_BALANCE_EUR),
-        "debt_message": "" if payment_verified else resolve_debt_message(),
+        "debt_amount_eur": debt_amount_eur,
+        "debt_message": "" if payment_verified else resolve_debt_message(debt_amount_eur),
+        "validation": validation,
         "kill_switch": status,
         "inventory": inventory_status_payload(),
     }

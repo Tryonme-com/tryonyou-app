@@ -14,10 +14,12 @@ for _p in (_ROOT, _API):
 
 from commission_audit import run_audit
 from core_engine import (
+    compute_debt_amount_eur,
     health_payload,
     mirror_snap_payload,
     model_access_payload,
     perfect_selection_payload,
+    resolve_target_balance_eur,
 )
 
 
@@ -91,6 +93,50 @@ class TestPaymentKillSwitch402(unittest.TestCase):
         self.assertEqual(code, 402)
         self.assertEqual(payload["error_code"], 402)
         self.assertFalse(payload["payment_verified"])
+
+
+class TestDebtAmountDynamic(unittest.TestCase):
+    def test_compute_debt_amount_uses_threshold_shortfall(self) -> None:
+        validation = {
+            "ok": True,
+            "qualified": False,
+            "threshold_eur": 30_000.0,
+            "combined_total_eur": 12_500.0,
+        }
+        self.assertEqual(compute_debt_amount_eur(validation), 17_500.0)
+
+    def test_compute_debt_amount_zero_when_qualified(self) -> None:
+        validation = {
+            "ok": True,
+            "qualified": True,
+            "threshold_eur": 27_500.0,
+            "combined_total_eur": 30_000.0,
+        }
+        self.assertEqual(compute_debt_amount_eur(validation), 0.0)
+
+    def test_resolve_target_balance_honors_env(self) -> None:
+        prev = os.environ.get("CORE_ENGINE_TARGET_BALANCE_EUR")
+        os.environ["CORE_ENGINE_TARGET_BALANCE_EUR"] = "33200"
+        try:
+            self.assertEqual(resolve_target_balance_eur(), 33_200.0)
+        finally:
+            if prev is None:
+                os.environ.pop("CORE_ENGINE_TARGET_BALANCE_EUR", None)
+            else:
+                os.environ["CORE_ENGINE_TARGET_BALANCE_EUR"] = prev
+
+    def test_health_payment_verified_false_when_validation_unavailable(self) -> None:
+        prev = os.environ.copy()
+        os.environ.pop("PAYMENT_VERIFIED", None)
+        os.environ["JULES_MIRROR_POWER_STATE"] = "on"
+        try:
+            payload = health_payload()
+            self.assertFalse(payload["payment_verified"])
+            self.assertIn("validation", payload)
+            self.assertFalse(payload["validation"]["ok"])
+        finally:
+            os.environ.clear()
+            os.environ.update(prev)
 
 
 if __name__ == "__main__":
