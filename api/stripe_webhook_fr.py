@@ -20,17 +20,13 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 import stripe
+from payment_ledger import record_stripe_webhook_event
 from stripe_fr_resolve import resolve_stripe_secret_fr, resolve_stripe_webhook_secret_fr
 
 
-def process_stripe_webhook_event(event: dict) -> None:
-    """Extender aquí: actualizar órdenes / licencias tras pago confirmado."""
-    etype = event.get("type") or ""
-    data = (event.get("data") or {}).get("object") or {}
-    if etype == "checkout.session.completed":
-        _ = data.get("id"), data.get("payment_status"), data.get("metadata")
-    elif etype == "payment_intent.succeeded":
-        _ = data.get("id"), data.get("amount"), data.get("currency")
+def process_stripe_webhook_event(event: dict) -> dict | None:
+    """Persistir pago confirmado en ledger soberano (Stripe Paris EUR)."""
+    return record_stripe_webhook_event(event)
 
 
 def handle_stripe_webhook_fr(raw_body: bytes, sig_header: str | None) -> tuple[dict, int]:
@@ -54,8 +50,14 @@ def handle_stripe_webhook_fr(raw_body: bytes, sig_header: str | None) -> tuple[d
         return {"status": "error", "message": "invalid_signature"}, 400
 
     try:
-        process_stripe_webhook_event(event)
+        recorded = process_stripe_webhook_event(event)
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
 
-    return {"status": "ok", "received": True, "type": event.get("type")}, 200
+    return {
+        "status": "ok",
+        "received": True,
+        "type": event.get("type"),
+        "ledger_recorded": recorded is not None,
+        "payment_id": (recorded or {}).get("payment_id"),
+    }, 200

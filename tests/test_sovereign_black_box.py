@@ -101,6 +101,7 @@ class TestDebtAmountDynamic(unittest.TestCase):
             "ok": True,
             "qualified": False,
             "threshold_eur": 30_000.0,
+            "effective_total_eur": 12_500.0,
             "combined_total_eur": 12_500.0,
         }
         self.assertEqual(compute_debt_amount_eur(validation), 17_500.0)
@@ -133,10 +134,21 @@ class TestDebtAmountDynamic(unittest.TestCase):
             payload = health_payload()
             self.assertFalse(payload["payment_verified"])
             self.assertIn("validation", payload)
-            self.assertFalse(payload["validation"]["ok"])
+            self.assertGreater(payload["validation"].get("ledger_total_eur", 0), 0)
+            self.assertIn("by_bank", payload["validation"].get("ledger", {}))
         finally:
             os.environ.clear()
             os.environ.update(prev)
+
+    def test_treasury_lists_confirmed_bank_breakdown(self) -> None:
+        from payment_ledger import treasury_status_payload
+
+        payload = treasury_status_payload()
+        self.assertEqual(payload["confirmed_total_eur"], 40000.0)
+        self.assertGreaterEqual(payload["confirmed_count"], 11)
+        self.assertTrue(payload["by_bank"])
+        bank_names = " ".join(payload["by_bank"].keys())
+        self.assertIn("Lafayette", bank_names)
 
 
 if __name__ == "__main__":

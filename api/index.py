@@ -26,6 +26,7 @@ from core_engine import (  # noqa: E402
     trace_event,
 )
 from mirror_digital_make import forward_mirror_event  # noqa: E402
+from payment_ledger import treasury_status_payload  # noqa: E402
 from stripe_inauguration import create_inauguration_checkout_session  # noqa: E402
 from stripe_webhook_fr import handle_stripe_webhook_fr  # noqa: E402
 
@@ -132,6 +133,14 @@ def health() -> tuple[Response, int]:
     if request.method == "OPTIONS":
         return _cors(Response(status=204)), 204
     return _json_response(health_payload(), 200)
+
+
+@app.route("/api/v1/treasury/status", methods=["GET", "OPTIONS"])
+@app.route("/v1/treasury/status", methods=["GET", "OPTIONS"])
+def treasury_status() -> tuple[Response, int]:
+    if request.method == "OPTIONS":
+        return _cors(Response(status=204)), 204
+    return _json_response(treasury_status_payload(), 200)
 
 
 @app.route("/api/v1/core/trace", methods=["POST", "OPTIONS"])

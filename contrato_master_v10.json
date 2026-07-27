@@ -4,6 +4,8 @@
     "siret_sede": "94361019600017",
     "brevet_international": "PCT/EP2025/067317",
     "cliente": "LE BON MARCHÉ RIVE GAUCHE",
+    "contrato_firmado": false,
+    "fecha_firma": null,
     "hito_liquidación": "2026-05-09",
     "monto_neto_eur": 98000.0
   },

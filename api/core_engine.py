@@ -14,6 +14,7 @@ from typing import Any, Mapping
 import httpx
 
 from inventory_engine import inventory_match_payload, inventory_status_payload
+from payment_ledger import is_contract_signed, ledger_summary
 from shopify_bridge import resolve_shopify_checkout_url
 from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 
@@ -41,8 +42,13 @@ def compute_debt_amount_eur(validation: Mapping[str, Any] | None = None) -> floa
     threshold = round_money(safe_float(validation.get("threshold_eur"), threshold))
     if validation.get("qualified"):
         return 0.0
-    combined = round_money(safe_float(validation.get("combined_total_eur")))
-    shortfall = round_money(max(0.0, threshold - combined))
+    effective = round_money(
+        safe_float(
+            validation.get("effective_total_eur"),
+            safe_float(validation.get("combined_total_eur")),
+        )
+    )
+    shortfall = round_money(max(0.0, threshold - effective))
     return shortfall if shortfall > 0 else threshold
 DEFAULT_ACCOUNT_SCOPE = "personal"
 ACCOUNT_SCOPES = frozenset({"personal", "empresa", "admin"})
@@ -222,6 +228,8 @@ def parse_env_bool(name: str) -> bool | None:
 def resolve_payment_verified(validation: Mapping[str, Any]) -> bool:
     if is_payment_verified_override_off():
         return False
+    if not validation.get("contract_signed"):
+        return False
     if not validation.get("ok"):
         return False
     return bool(validation.get("qualified"))
@@ -229,10 +237,12 @@ def resolve_payment_verified(validation: Mapping[str, Any]) -> bool:
 
 def resolve_health_payment_verified(validation: Mapping[str, Any]) -> bool:
     """
-    Health debe reflejar balance real + kill-switch explícito.
-    PAYMENT_VERIFIED=false bloquea; PAYMENT_VERIFIED=true no bypassa validación financiera.
+    Health: contrato firmado + liquidez efectiva (ledger confirmado o saldo Stripe+Qonto).
+    PAYMENT_VERIFIED=false sigue bloqueando.
     """
     if is_payment_verified_override_off():
+        return False
+    if not validation.get("contract_signed"):
         return False
     if not validation.get("ok"):
         return False
@@ -668,16 +678,35 @@ async def validate_dual_balance_async() -> dict[str, Any]:
             }
         else:
             normalized[key] = result
-    combined_total = round_money(
+
+    ledger = ledger_summary()
+    ledger_total = round_money(safe_float(ledger.get("confirmed_total_eur")))
+    bank_total = round_money(
         safe_float(normalized["stripe"].get("balance_eur"))
         + safe_float(normalized["qonto"].get("balance_eur"))
     )
+    stripe_ok = bool(normalized["stripe"].get("ok"))
+    qonto_ok = bool(normalized["qonto"].get("ok"))
+    effective_total = round_money(max(ledger_total, bank_total))
     threshold_eur = resolve_target_balance_eur()
+    contract_signed = is_contract_signed()
+    liquidity_ok = effective_total + 1e-9 >= threshold_eur
+    has_signal = ledger_total > 0 or stripe_ok or qonto_ok
+
     return {
-        "ok": bool(normalized["stripe"].get("ok")) and bool(normalized["qonto"].get("ok")),
+        "ok": has_signal,
         "threshold_eur": threshold_eur,
-        "combined_total_eur": combined_total,
-        "qualified": combined_total + 1e-9 >= threshold_eur,
+        "combined_total_eur": bank_total,
+        "ledger_total_eur": ledger_total,
+        "effective_total_eur": effective_total,
+        "contract_signed": contract_signed,
+        "qualified": contract_signed and liquidity_ok,
+        "liquidity_ok": liquidity_ok,
+        "ledger": {
+            "confirmed_count": ledger.get("confirmed_count"),
+            "confirmed_total_eur": ledger_total,
+            "by_bank": ledger.get("by_bank") or {},
+        },
         "stripe": normalized["stripe"],
         "qonto": normalized["qonto"],
         "protocol": CORE_ENGINE_PROTOCOL,
