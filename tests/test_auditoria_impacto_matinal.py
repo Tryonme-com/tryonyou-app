@@ -263,7 +263,7 @@ class TestAggressiveInvoiceReconciliation(unittest.TestCase):
         with patch.dict("sys.modules", {"stripe": fake_stripe}):
             with patch.dict(
                 "os.environ",
-                {"INJECT_STRIPE_SECRET_KEY": "sk_test_from_alias"},
+                {"INJECT_STRIPE_SECRET_KEY": "rk_live_from_alias"},
                 clear=True,
             ):
                 result = aggressive_invoice_reconciliation(

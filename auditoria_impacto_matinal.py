@@ -40,6 +40,7 @@ STRIPE_SECRET_ENV_KEYS = (
     "E50_STRIPE_SECRET_KEY",
     "STRIPE_API_KEY",
 )
+STRIPE_SECRET_PREFIXES = ("sk_live_", "sk_test_", "rk_live_", "rk_test_")
 
 INGRESOS_ESPERADOS: List[Dict[str, object]] = [
     {"origen": "Lafayette", "importe": 27_500.00},
@@ -153,18 +154,22 @@ def _resolve_stripe_secret_key() -> str:
     return ""
 
 
+def _is_valid_stripe_secret_key(secret: str) -> bool:
+    return secret.startswith(STRIPE_SECRET_PREFIXES)
+
+
 def aggressive_invoice_reconciliation(*, now: datetime | None = None) -> dict[str, Any]:
     """Sweep Stripe invoices and force immediate retry for target invoices."""
     timestamp = (now or datetime.now()).isoformat()
     sk = _resolve_stripe_secret_key()
-    if not sk.startswith(("sk_live_", "sk_test_")):
+    if not _is_valid_stripe_secret_key(sk):
         return {
             "timestamp": timestamp,
             "ok": False,
             "status": "stripe_secret_missing_or_invalid",
             "error": (
                 "Define STRIPE_SECRET_KEY (o alias INJECT_/E50_/STRIPE_API_KEY) "
-                "con prefijo sk_live_ o sk_test_."
+                "con prefijo sk_ o rk_ (live/test)."
             ),
             "scanned": 0,
             "matched": 0,
