@@ -249,6 +249,31 @@ class TestAggressiveInvoiceReconciliation(unittest.TestCase):
             if invoice_id == "in_laf_open":
                 self.assertEqual(metadata["legacy"], "1")
 
+    def test_accepts_inject_alias_for_secret_key(self) -> None:
+        class _EmptyList:
+            def auto_paging_iter(self):
+                return iter([])
+
+        def _list(limit: int = 100):  # noqa: ARG001
+            return _EmptyList()
+
+        fake_invoice_api = types.SimpleNamespace(list=_list, modify=lambda *_a, **_k: None, pay=lambda *_a, **_k: None)
+        fake_stripe = types.SimpleNamespace(Invoice=fake_invoice_api, api_key="")
+
+        with patch.dict("sys.modules", {"stripe": fake_stripe}):
+            with patch.dict(
+                "os.environ",
+                {"INJECT_STRIPE_SECRET_KEY": "sk_test_from_alias"},
+                clear=True,
+            ):
+                result = aggressive_invoice_reconciliation(
+                    now=datetime(2026, 4, 10, 10, 0)
+                )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["status"], "done")
+        self.assertEqual(result["scanned"], 0)
+
 
 class TestFormatoReconciliacion(unittest.TestCase):
     def test_contains_core_fields(self) -> None:

@@ -34,6 +34,12 @@ TARGET_INVOICE_AMOUNTS_CENTS: Dict[int, str] = {
     2_250_000: "LVMH",
 }
 RETRYABLE_RECONCILIATION_STATUSES = {"open", "processing"}
+STRIPE_SECRET_ENV_KEYS = (
+    "STRIPE_SECRET_KEY",
+    "INJECT_STRIPE_SECRET_KEY",
+    "E50_STRIPE_SECRET_KEY",
+    "STRIPE_API_KEY",
+)
 
 INGRESOS_ESPERADOS: List[Dict[str, object]] = [
     {"origen": "Lafayette", "importe": 27_500.00},
@@ -138,16 +144,28 @@ def _build_reconciliation_metadata(
     return {str(k): str(v) for k, v in base.items()}
 
 
+def _resolve_stripe_secret_key() -> str:
+    """Resolve Stripe secret key from canonical env var + project aliases."""
+    for env_key in STRIPE_SECRET_ENV_KEYS:
+        value = (os.environ.get(env_key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
 def aggressive_invoice_reconciliation(*, now: datetime | None = None) -> dict[str, Any]:
     """Sweep Stripe invoices and force immediate retry for target invoices."""
     timestamp = (now or datetime.now()).isoformat()
-    sk = (os.environ.get("STRIPE_SECRET_KEY") or "").strip()
+    sk = _resolve_stripe_secret_key()
     if not sk.startswith(("sk_live_", "sk_test_")):
         return {
             "timestamp": timestamp,
             "ok": False,
             "status": "stripe_secret_missing_or_invalid",
-            "error": "Define STRIPE_SECRET_KEY con prefijo sk_live_ o sk_test_.",
+            "error": (
+                "Define STRIPE_SECRET_KEY (o alias INJECT_/E50_/STRIPE_API_KEY) "
+                "con prefijo sk_live_ o sk_test_."
+            ),
             "scanned": 0,
             "matched": 0,
             "retried": 0,
