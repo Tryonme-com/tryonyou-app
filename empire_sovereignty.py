@@ -4,6 +4,8 @@ Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberania V10 - Founder: Ruben
 """
 from __future__ import annotations
+
+import os
 from typing import Any
 
 __all__ = ["EmpireSovereignty", "ceo_engine"]
@@ -73,7 +75,7 @@ def _demo_execute() -> None:
     project = {
         "status": "PRODUCTION_LIVE",
         "location": "LOCAL_PARIS_PROPIO",
-        "capital": 27500,
+        "capital": float(os.getenv("EMPIRE_DEMO_CAPITAL_EUR") or "0"),
         "identity": "PAU_SOVEREIGNTY_V11",
         "rules": [
             "No cargar cajas",

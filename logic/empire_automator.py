@@ -13,7 +13,9 @@ import os
 import sys
 from typing import Final
 
-_DEFAULT_TARGET_EUR: Final[int] = 27500
+_DEFAULT_TARGET_EUR: Final[int] = int(
+    (os.getenv("EMPIRE_PAYOUT_TARGET_EUR") or "0").split(".")[0] or 0
+)
 _ACCOUNT_SUFFIX: Final[str] = "6934"
 
 
@@ -32,7 +34,7 @@ class EmpireAutomator:
 
     def deploy_monitoring_agents(self) -> bool:
         """Activa la vigilancia sobre los nodos de pago."""
-        nodes = ("STRIPE_VERIFIER", "BNP_LIAISON", "LAFAYETTE_TRACKER")
+        nodes = ("STRIPE_VERIFIER", "BNP_LIAISON", "TREASURY_MONITOR")
         for agent in nodes:
             print(f"[*] Agente {agent}: DESPLEGADO Y OPERATIVO.")
         return True
