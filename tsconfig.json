@@ -16,5 +16,15 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "firebase-applet-config.json"]
+  "include": ["src", "firebase-applet-config.json"],
+  "exclude": [
+    "src/App.tsx",
+    "src/App.jsx",
+    "src/main.jsx",
+    "src/components/DressMeInBalmain.tsx",
+    "src/components/RealTimeAvatar.tsx",
+    "src/components/LandingLVT.tsx",
+    "src/divineo/pauV11/**",
+    "src/divineo/setupDivineoCamera.ts"
+  ]
 }

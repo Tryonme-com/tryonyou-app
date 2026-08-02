@@ -26,6 +26,14 @@ LEDGER_NOTE = (
     "Define TREASURY_LINE_ITEMS_JSON tras contrato firmado."
 )
 
+# Plantilla genérica para tests de compliance (sin importes ficticios a terceros).
+FACTURA_F_2026_001 = {
+    "numero": "F-2026-001",
+    "importe_ttc_eur": 0.0,
+    "statut": "DRAFT",
+    "note": "Plantilla genérica — cargar importes reales solo tras contrato firmado.",
+}
+
 
 def _line_items_from_env() -> list[dict[str, object]]:
     raw = (os.getenv("TREASURY_LINE_ITEMS_JSON") or "").strip()

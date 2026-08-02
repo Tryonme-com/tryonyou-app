@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/vite-env.d.ts",
+    "src/components/PoseTryOnCanvas.tsx",
+    "src/lib/renderGarmentOnBody.ts",
+    "src/lib/manusVirtualMirrorRenderer.ts",
+    "src/lib/fabricFitComparator.ts",
+    "src/data/elenaGarments.ts"
+  ],
+  "exclude": []
+}
