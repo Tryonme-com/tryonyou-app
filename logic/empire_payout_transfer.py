@@ -1,43 +1,40 @@
 """
-Simulación de payout Empire (token SHA-256 + transferencia umbral Qonto).
-
-Solo lógica de demostración; no realiza llamadas bancarias reales.
+Simulación de payout Empire (demo local; no realiza transferencias bancarias).
 
 Patente PCT/EP2025/067317
-Protocolo de Soberanía V11 - Founder: Rubén
 """
+
 from __future__ import annotations
 
 import hashlib
+import os
 import sys
 import time
 from typing import Any, Final
 
-_TRANSFER_THRESHOLD_EUR: Final[int] = 27_500
+
+def _transfer_threshold_eur() -> float:
+    raw = (os.getenv("EMPIRE_TRANSFER_THRESHOLD_EUR") or "0").strip()
+    try:
+        return float(raw)
+    except ValueError:
+        return 0.0
 
 
 def monitor_landing_sequence() -> str:
-    """Simula la secuencia de aterrizaje de capital."""
-    expected_capital = 27_500.00
-    account_id = "FR76...6934"
-
-    print("--- INICIANDO SECUENCIA DE ATERRIZAJE (LANDING V11) ---")
-
-    # Simulación de respuesta de API Bancaria Real
-    is_cleared = False
-
-    if not is_cleared:
-        print(f"[!] ALERTA: Capital localizado en el nodo BNP Paribas ({account_id}).")
-        print(f"[!] ESTADO: Retención por Compliance (Cantidad > 10k). Esperado: {expected_capital} EUR.")
-        print("[!] ACCIÓN: Jules solicita el PDF del contrato de Lafayette para desbloquear.")
-        return "PENDING_MANUAL_VALIDATION"
-
-    print("[FATALITY] Capital liberado. Saldo actualizado.")
-    return "SUCCESS"
+    """Simula comprobación de liquidez sin referencias a clientes ficticios."""
+    expected_capital = _transfer_threshold_eur()
+    print("--- SECUENCIA DE LIQUIDEZ (DEMO) ---")
+    if expected_capital <= 0:
+        print("[*] Sin EMPIRE_TRANSFER_THRESHOLD_EUR configurado. Modo demo inactivo.")
+        return "DEMO_INACTIVE"
+    print(f"[*] Umbral configurado: {expected_capital:.2f} EUR")
+    print("[*] No se detectaron transferencias reales en esta simulación.")
+    return "PENDING_MANUAL_VALIDATION"
 
 
 class EmpirePayout:
-    """Payout soberano: firma temporal por SIREN + timestamp y estado de transferencia."""
+    """Payout demo: firma temporal por SIREN + timestamp."""
 
     def __init__(self, amount_eur: float, siren_target: str) -> None:
         if amount_eur < 0:
@@ -53,30 +50,27 @@ class EmpirePayout:
         return hashlib.sha256(payload).hexdigest()
 
     def execute_transfer(self) -> dict[str, Any]:
-        if self.amount >= _TRANSFER_THRESHOLD_EUR:
+        threshold = _transfer_threshold_eur()
+        if threshold > 0 and self.amount >= threshold:
             return {"status": "TRANSFER_INITIATED", "target_account": "QONTO_EMPIRE"}
-        return {"status": "ERROR_FUNDS_NOT_FOUND"}
+        return {"status": "ERROR_FUNDS_NOT_FOUND", "reason": "threshold_not_met_or_unconfigured"}
 
     def finalize_fatality(self) -> dict[str, Any]:
-        print(f"Executing Fatality Dossier: {self.amount} EUR to SIREN {self.siren}")
+        print(f"Demo payout: {self.amount} EUR (SIREN {self.siren})")
         return self.execute_transfer()
 
 
-# Alias por compatibilidad
 Empirepayout = EmpirePayout
 
 
 if __name__ == "__main__":
-    # Landing sequence
     status = monitor_landing_sequence()
     if status != "SUCCESS":
-        print(f"[*] Estado: {status}. Búnker en espera activa.")
+        print(f"[*] Estado: {status}.")
 
-    # Payout demo
-    payout = EmpirePayout(27_500, "507527370")
-    _token = payout.validate_sovereignty()
-    print(f"auth_token (soberanía): {_token[:16]}...")
+    demo_amount = _transfer_threshold_eur()
+    payout = EmpirePayout(demo_amount, "943610196")
+    print(f"auth_token (demo): {payout.validate_sovereignty()[:16]}...")
     result = payout.finalize_fatality()
     print(result)
-
     sys.exit(0 if result.get("status") == "TRANSFER_INITIATED" else 1)

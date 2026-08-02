@@ -19,7 +19,13 @@ from stripe_fr_resolve import resolve_stripe_secret_fr, stripe_api_call_kwargs
 
 CORE_ENGINE_PROTOCOL = "jules_core_engine_v11"
 COMMISSION_RATE = 0.08
-TARGET_BALANCE_EUR = 27_500.0
+def _target_balance_eur() -> float:
+    raw = (os.environ.get("CORE_ENGINE_TARGET_BALANCE_EUR") or "0").strip()
+    try:
+        return round(float(raw) + 1e-9, 2)
+    except ValueError:
+        return 0.0
+
 DEFAULT_ACCOUNT_SCOPE = "personal"
 ACCOUNT_SCOPES = frozenset({"personal", "empresa", "admin"})
 SUPABASE_SCHEMA = "public"
@@ -601,7 +607,7 @@ async def validate_dual_balance_async() -> dict[str, Any]:
         safe_float(normalized["stripe"].get("balance_eur"))
         + safe_float(normalized["qonto"].get("balance_eur"))
     )
-    threshold_eur = round_money(safe_float(os.environ.get("CORE_ENGINE_TARGET_BALANCE_EUR"), TARGET_BALANCE_EUR))
+    threshold_eur = _target_balance_eur()
     return {
         "ok": bool(normalized["stripe"].get("ok")) and bool(normalized["qonto"].get("ok")),
         "threshold_eur": threshold_eur,

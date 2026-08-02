@@ -1,30 +1,24 @@
 from __future__ import annotations
 
+import os
+
 
 class ContractSovereignty:
+    """Comprobaciones genéricas de activación (sin deudas ficticias precargadas)."""
+
     def __init__(self) -> None:
-        # EL PASADO ESTÁ MUERTO
-        self.oferta_anual_caducada = True
-
-        # DEUDA HISTÓRICA (Lo que ya te deben y no se perdona)
-        self.deuda_acumulada = 27500.00 + 106000.00  # Setup + Comisiones 8%
-
-        # NUEVA REALIDAD (Precio de hoy, sin rebajas)
-        self.nuevo_canon_v11 = 118000.00
-        self.fee_mensual_mantenimiento = 9900.00
+        self.required_activation_eur = float(os.getenv("CONTRACT_ACTIVATION_AMOUNT_EUR") or "0")
 
     def check_activation_requirements(self) -> str | None:
-        # El sistema no arranca si intentan usar el contrato viejo
-        if self.oferta_anual_caducada:
-            total_requerido = self.deuda_acumulada + self.nuevo_canon_v11
+        if self.required_activation_eur <= 0:
             return (
-                f"OFERTA EXPIRADA. Nueva liquidación requerida: {total_requerido:,.2f}€. "
-                f"No se aceptan términos anteriores."
+                "Sin CONTRACT_ACTIVATION_AMOUNT_EUR configurado. "
+                "Define el importe tras contrato firmado."
             )
         return None
 
 
 if __name__ == "__main__":
-    # Aplicar bloqueo en el arranque
     sovereign = ContractSovereignty()
-    print(sovereign.check_activation_requirements())
+    msg = sovereign.check_activation_requirements()
+    print(msg or "OK: umbral de activación configurado en entorno.")

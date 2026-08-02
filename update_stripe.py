@@ -1,46 +1,71 @@
+"""
+Crea productos Stripe LIVE solo desde catálogo explícito en entorno.
+
+No incluye importes ni clientes ficticios. Tras un contrato firmado, define por ejemplo:
+
+  export STRIPE_PRODUCT_CATALOG_JSON='[
+    {"name":"Pilot-Setup","amount_cents":750000,"description":"Setup piloto firmado"}
+  ]'
+
+Patente: PCT/EP2025/067317
+"""
+
+from __future__ import annotations
+
+import json
+import os
+
 import stripe
 
 from sovereign_script_env import require_stripe_secret
 
 
-def crear_productos_v10():
+def _load_catalog() -> list[dict]:
+    raw = (os.getenv("STRIPE_PRODUCT_CATALOG_JSON") or "").strip()
+    if not raw:
+        return []
+    data = json.loads(raw)
+    if not isinstance(data, list):
+        raise ValueError("STRIPE_PRODUCT_CATALOG_JSON debe ser una lista JSON.")
+    return data
+
+
+def crear_productos_v10() -> int:
+    catalog = _load_catalog()
+    if not catalog:
+        print(
+            "ℹ️  Sin STRIPE_PRODUCT_CATALOG_JSON: no se crea ningún producto. "
+            "Configura el catálogo tras contrato firmado."
+        )
+        return 0
+
     stripe.api_key = require_stripe_secret()
-    print("🚀 Iniciando inyección de productos en Stripe...")
-    productos = [
-        {"name": "V10-LAFAYETTE-ENTRY-P1", "amount": 2750000, "desc": "Activación V10: Setup 10 Nodos + Exclusividad D9."},
-        {"name": "V10-ENTRY-GLOBAL", "amount": 2500000, "desc": "Despliegue V10: Instalación 10 Nodos (LVMH/Otros)."},
-        {"name": "IP-TRANSFER-V10-P1", "amount": 9825000, "desc": "Transferencia de Activos/Licencia IP (Parte 1)."},
-        {"name": "IP-TRANSFER-V10-P2", "amount": 9825000, "desc": "Transferencia de Activos/Licencia IP (Parte 2)."},
-        {"name": "V10-ANUAL-PREPAGO", "amount": 9800000, "desc": "Abono Anual 10 nodos (Ahorro 20k) + 8% Comisión sobre ventas."},
-    ]
-
-    for p in productos:
+    print("🚀 Creando productos Stripe desde catálogo explícito...")
+    created = 0
+    for item in catalog:
+        name = str(item.get("name") or "").strip()
+        amount_cents = int(item.get("amount_cents") or 0)
+        desc = str(item.get("description") or "").strip()
+        recurring = item.get("recurring")
+        if not name or amount_cents <= 0:
+            print(f"⚠️  Entrada ignorada (name/amount_cents inválidos): {item!r}")
+            continue
         try:
-            prod = stripe.Product.create(name=p["name"], description=p["desc"])
-            stripe.Price.create(
-                unit_amount=p["amount"],
-                currency="eur",
-                product=prod.id,
-            )
-            print(f"✅ Creado: {p['name']} ({p['amount']/100}€)")
-        except Exception as e:
-            print(f"❌ Error en {p['name']}: {str(e)}")
+            prod = stripe.Product.create(name=name, description=desc or None)
+            params: dict = {
+                "unit_amount": amount_cents,
+                "currency": str(item.get("currency") or "eur").lower(),
+                "product": prod.id,
+            }
+            if isinstance(recurring, dict) and recurring.get("interval"):
+                params["recurring"] = recurring
+            stripe.Price.create(**params)
+            print(f"✅ Creado: {name} ({amount_cents / 100:.2f} EUR)")
+            created += 1
+        except Exception as exc:
+            print(f"❌ Error en {name}: {exc}")
+    return created
 
-    # CREACIÓN DE LA SUSCRIPCIÓN MENSUAL (9.900€)
-    try:
-        mensual = stripe.Product.create(
-            name="V10-MANTENIMIENTO-MENSUAL",
-            description="Canon mensual 10 nodos + 8% Comisión sobre ventas."
-        )
-        stripe.Price.create(
-            unit_amount=990000,
-            currency="eur",
-            recurring={"interval": "month"},
-            product=mensual.id,
-        )
-        print("✅ Suscripción Mensual Creada: 9.900€")
-    except Exception as e:
-        print(f"❌ Error en Suscripción: {str(e)}")
 
 if __name__ == "__main__":
-    crear_productos_v10()
+    raise SystemExit(0 if crear_productos_v10() >= 0 else 1)

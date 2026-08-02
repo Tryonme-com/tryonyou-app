@@ -1,11 +1,9 @@
 """
-Qonto IBAN / SEPA transfer node — BunkerRepairV11.
+Qonto IBAN / SEPA transfer node — datos de transferencia genéricos.
 
-Resolves payment via direct SEPA Business transfer instead of broken
-personal Stripe test links.  IBAN comes from env (never hardcoded).
+IBAN y montos solo desde entorno. Sin importes fijos ni beneficiarios de marca.
 
 SIRET 94361019600017 | PCT/EP2025/067317
-Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
 
 from __future__ import annotations
@@ -17,17 +15,21 @@ SIREN = "943 610 196"
 SIRET = "94361019600017"
 PATENT = "PCT/EP2025/067317"
 ENTITY = "EI - ESPINAR RODRIGUEZ"
-DEFAULT_BENEFICIARY = "Le Bon Marché Rive Gauche"
-
-AMOUNTS = {
-    "setup_fee": 12_500.00,
-    "exclusivity": 15_000.00,
-    "total_immediate": 27_500.00,
-}
 
 
 def _env(key: str) -> str:
     return (os.getenv(key) or "").strip()
+
+
+def _amount_from_env(amount_key: str | None = None) -> float:
+    if amount_key:
+        value = _env(f"QONTO_TRANSFER_AMOUNT_{amount_key.upper()}_EUR")
+        if value:
+            return float(value)
+    default = _env("QONTO_TRANSFER_AMOUNT_EUR")
+    if default:
+        return float(default)
+    return 0.0
 
 
 def get_qonto_iban() -> str:
@@ -43,43 +45,47 @@ def is_iban_transfer_configured() -> bool:
 
 
 def resolve_iban_transfer_details(amount_key: str | None = None) -> dict:
-    """Return transfer details for the front-end or invoice generator.
-
-    ``amount_key`` must be one of ``AMOUNTS`` keys or ``None`` (full
-    ``total_immediate``).
-    """
+    """Return transfer details when IBAN and amount are configured in env."""
     iban = get_qonto_iban()
     bic = get_qonto_bic()
-    key = amount_key if amount_key and amount_key in AMOUNTS else "total_immediate"
-    amount = AMOUNTS[key]
+    amount = _amount_from_env(amount_key)
+    beneficiary = _env("QONTO_TRANSFER_BENEFICIARY") or ENTITY
 
     return {
         "method": "DIRECT_IBAN_TRANSFER",
         "entity": ENTITY,
+        "beneficiary": beneficiary,
         "siret": SIRET,
         "siren": SIREN,
         "patent": PATENT,
         "iban": iban or "",
         "bic": bic or "",
         "amount_eur": amount,
-        "amount_label": key,
+        "amount_label": amount_key or "default",
         "currency": "EUR",
         "bank": "QONTO_BUSINESS",
         "iban_configured": bool(iban),
-        "note": "Transferencia bancaria SEPA Business.",
+        "amount_configured": amount > 0,
+        "note": "Transferencia SEPA solo con IBAN e importe definidos en entorno.",
         "ts": datetime.now(timezone.utc).isoformat(),
     }
 
 
 def validate_transfer_readiness() -> tuple[dict, int]:
-    """Pre-flight check: can the system accept a SEPA transfer right now?"""
     iban = get_qonto_iban()
+    amount = _amount_from_env(None)
     if not iban:
         return {
             "status": "error",
             "message": "qonto_iban_not_configured",
             "hint": "Set QONTO_IBAN in environment (Vercel / .env).",
         }, 503
+    if amount <= 0:
+        return {
+            "status": "error",
+            "message": "qonto_transfer_amount_not_configured",
+            "hint": "Set QONTO_TRANSFER_AMOUNT_EUR after a signed contract.",
+        }, 422
 
     return {
         "status": "ok",
@@ -87,6 +93,7 @@ def validate_transfer_readiness() -> tuple[dict, int]:
         "method": "DIRECT_IBAN_TRANSFER",
         "entity": ENTITY,
         "siret": SIRET,
+        "amount_eur": amount,
     }, 200
 
 
@@ -95,18 +102,9 @@ def build_qonto_invoice_import_metadata(
     invoice_ref: str = "",
     amount_eur: float | None = None,
 ) -> dict[str, object]:
-    """
-    Metadatos para importación / sincronización con Qonto (evitar estado
-    «Importadas — Faltan datos»): proveedor, categoría IVA y referencia de contrato.
-
-    Variables de entorno:
-      - QONTO_INVOICE_SUPPLIER_NAME (opcional; por defecto ENTITY)
-      - QONTO_INVOICE_VAT_CATEGORY (obligatoria para cobro automático / import limpio)
-      - QONTO_CONTRACT_REFERENCE (opcional; referencia marco DIVINEO / factura)
-    """
     supplier = _env("QONTO_INVOICE_SUPPLIER_NAME") or ENTITY
     vat_category = _env("QONTO_INVOICE_VAT_CATEGORY")
-    contract_ref = _env("QONTO_CONTRACT_REFERENCE") or "DIVINEO-V10-PCT2025-067317"
+    contract_ref = _env("QONTO_CONTRACT_REFERENCE") or ""
     row: dict[str, object] = {
         "proveedor": supplier,
         "supplier_name": supplier,
@@ -116,26 +114,26 @@ def build_qonto_invoice_import_metadata(
         "contract_reference": contract_ref,
         "invoice_ref": invoice_ref or None,
         "amount_eur": amount_eur,
-        "qonto_import_ready": bool(vat_category),
+        "qonto_import_ready": bool(vat_category and contract_ref),
     }
-    if not vat_category:
+    if not vat_category or not contract_ref:
         row["qonto_import_hint"] = (
-            "Defina QONTO_INVOICE_VAT_CATEGORY (p. ej. código de tasa Qonto / FR TVA) "
-            "para completar la ficha en Qonto."
+            "Defina QONTO_INVOICE_VAT_CATEGORY y QONTO_CONTRACT_REFERENCE "
+            "tras contrato firmado."
         )
     return row
 
 
 def validate_qonto_invoice_import_readiness() -> tuple[dict | None, int]:
-    """422 si falta categoría IVA (requisito típico Qonto para facturas importadas)."""
     vat = _env("QONTO_INVOICE_VAT_CATEGORY")
-    if vat:
+    contract_ref = _env("QONTO_CONTRACT_REFERENCE")
+    if vat and contract_ref:
         return None, 200
     return {
         "status": "error",
         "message": "qonto_invoice_metadata_incomplete",
         "hint": (
-            "Configure QONTO_INVOICE_VAT_CATEGORY (y opcionalmente "
-            "QONTO_INVOICE_SUPPLIER_NAME, QONTO_CONTRACT_REFERENCE) en el entorno."
+            "Configure QONTO_INVOICE_VAT_CATEGORY and QONTO_CONTRACT_REFERENCE "
+            "after a signed contract."
         ),
     }, 422

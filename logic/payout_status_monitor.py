@@ -20,7 +20,9 @@ try:
 except ImportError:
     from empire_live_mode import is_empire_live
 
-_DEFAULT_TARGET_EUR: Final[int] = 27500
+_DEFAULT_TARGET_EUR: Final[int] = int(
+    (os.getenv("EMPIRE_PAYOUT_TARGET_EUR") or "0").split(".")[0] or 0
+)
 _DEFAULT_POLL_SEC: Final[float] = 60.0
 _DEMO_POLL_SEC: Final[float] = 2.0
 _DEMO_SUCCESS_AFTER_POLLS: Final[int] = 3

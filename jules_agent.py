@@ -32,12 +32,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--execute-live-payout', action='store_true')
     parser.add_argument('--siren', type=str)
+    parser.add_argument('--amount', type=float, default=0.0)
     args = parser.parse_args()
 
     live_active = os.getenv("FINANCE_BRIDGE_LIVE_PAYOUT") == "1"
 
-    if args.execute_live_payout and args.siren == "943610196" and live_active:
-        ejecutar_payout_real(args.siren, 27500.00)
+    if args.execute_live_payout and args.siren == "943610196" and live_active and args.amount > 0:
+        ejecutar_payout_real(args.siren, args.amount)
     else:
         print("--- MODO SIMULACIÓN / CREDENCIALES INCOMPLETAS ---")
-        print("Defina FINANCE_BRIDGE_LIVE_PAYOUT=1 y use --siren correcto.")
+        print("Defina FINANCE_BRIDGE_LIVE_PAYOUT=1, --siren correcto y --amount > 0.")

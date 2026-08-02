@@ -1,19 +1,12 @@
 /**
  * Real-Time Garment Overlay Renderer — Canvas 2D + MediaPipe Pose Landmarks.
  *
- * Renders a garment PNG over the user's body using shoulder landmarks (11, 12)
- * for dynamic scaling, rotation, and positioning. Uses "multiply" composite
- * for fabric realism on light/medium backgrounds with automatic fallback.
+ * Anchors garment PNGs to shoulders (11/12) with optional hip/torso scaling,
+ * nose-assisted collar alignment, and EMA smoothing for live movement.
  *
- * Patent PCT/EP2025/067317 — TRYONYOU–ABVETOS–ULTRA–PLUS–ULTIMATUM
- * Protocol: Divineo V11 — Zero-Size Sovereign Fit
+ * Patent PCT/EP2025/067317 — TRYONYOU Zero-Size Protocol
  */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/** Normalized landmark from MediaPipe Pose (0..1 range). */
 export interface PoseLandmark {
   x: number;
   y: number;
@@ -21,52 +14,62 @@ export interface PoseLandmark {
   visibility?: number;
 }
 
-/** Garment metadata required for overlay rendering. */
 export interface GarmentRenderConfig {
-  /** Ratio of shoulder width relative to the garment image's naturalWidth (0..1). */
+  /** Shoulder span as fraction of garment image width (0..1). */
   shoulderWidthRatio: number;
-  /** Vertical offset ratio for neck anchor point (0..1, from top of image). */
+  /** Y fraction in garment PNG where shoulder line sits (0=top, 1=bottom). */
   neckY: number;
-  /** Optional: composite mode override (defaults to "multiply"). */
   compositeMode?: GlobalCompositeOperation;
-  /** Optional: base opacity (defaults to 0.95). */
   opacity?: number;
 }
 
-/** Options for the glow effect around the garment. */
 export interface GlowOptions {
   color: string;
   blur: number;
   alpha: number;
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const MIN_VISIBILITY = 0.35;
+const DEFAULT_OPACITY = 0.92;
+const DEFAULT_COMPOSITE: GlobalCompositeOperation = "source-over";
+const SMOOTH_ALPHA = 0.38;
 
-const MIN_VISIBILITY = 0.3;
-const DEFAULT_SCALE_BOOST = 1.0;
-const DEFAULT_OPACITY = 0.95;
-const DEFAULT_COMPOSITE: GlobalCompositeOperation = "multiply";
+const LS = 11;
+const RS = 12;
+const LH = 23;
+const RH = 24;
+const NOSE = 0;
 
-// ---------------------------------------------------------------------------
-// Main Renderer
-// ---------------------------------------------------------------------------
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
 
-/**
- * Renders a garment image overlay on the Canvas, anchored to the user's
- * shoulder landmarks detected by MediaPipe Pose.
- *
- * @param ctx        - Canvas 2D rendering context.
- * @param img        - Pre-loaded garment image (PNG with transparency).
- * @param landmarks  - Array of 33 MediaPipe Pose landmarks (normalized 0..1).
- * @param garment    - Garment configuration for scaling and positioning.
- * @param canvasW    - Canvas width in pixels.
- * @param canvasH    - Canvas height in pixels.
- * @param glow       - Optional glow effect parameters (null to disable).
- * @returns          - `true` if the garment was rendered, `false` if landmarks
- *                     were insufficient (low visibility or missing).
- */
+function vis(lm: PoseLandmark | undefined): number {
+  return lm?.visibility ?? 0;
+}
+
+function toPx(lm: PoseLandmark, canvasW: number, canvasH: number): { x: number; y: number } {
+  return { x: lm.x * canvasW, y: lm.y * canvasH };
+}
+
+/** EMA smoothing — keeps overlay glued to body without jitter. */
+export function smoothLandmarks(
+  current: PoseLandmark[],
+  previous: PoseLandmark[] | null,
+  alpha = SMOOTH_ALPHA,
+): PoseLandmark[] {
+  if (!previous || previous.length !== current.length) return current;
+  return current.map((lm, i) => {
+    const prev = previous[i];
+    if (vis(lm) < MIN_VISIBILITY || vis(prev) < MIN_VISIBILITY) return lm;
+    return {
+      ...lm,
+      x: prev.x + alpha * (lm.x - prev.x),
+      y: prev.y + alpha * (lm.y - prev.y),
+    };
+  });
+}
+
 export function renderGarmentOnBody(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -76,82 +79,90 @@ export function renderGarmentOnBody(
   canvasH: number,
   glow: GlowOptions | null = null,
 ): boolean {
-  // 1. Extract shoulder landmarks (MediaPipe Pose indices 11 & 12)
-  const leftShoulder = landmarks[11];
-  const rightShoulder = landmarks[12];
+  const leftShoulder = landmarks[LS];
+  const rightShoulder = landmarks[RS];
 
   if (
     !leftShoulder ||
     !rightShoulder ||
-    (leftShoulder.visibility ?? 0) < MIN_VISIBILITY ||
-    (rightShoulder.visibility ?? 0) < MIN_VISIBILITY
+    vis(leftShoulder) < MIN_VISIBILITY ||
+    vis(rightShoulder) < MIN_VISIBILITY
   ) {
     return false;
   }
 
-  // 2. Convert normalized coords to canvas pixels (mirrored X for webcam)
-  const lsX = leftShoulder.x * canvasW;
-  const lsY = leftShoulder.y * canvasH;
-  const rsX = rightShoulder.x * canvasW;
-  const rsY = rightShoulder.y * canvasH;
+  const ls = toPx(leftShoulder, canvasW, canvasH);
+  const rs = toPx(rightShoulder, canvasW, canvasH);
 
-  // 3. Compute dynamic metrics
-  const shoulderDist = Math.hypot(rsX - lsX, rsY - lsY);
-  const scale =
-    (shoulderDist / (img.naturalWidth * garment.shoulderWidthRatio)) *
-    DEFAULT_SCALE_BOOST;
+  const shoulderDist = Math.hypot(rs.x - ls.x, rs.y - ls.y);
+  if (shoulderDist < 8) return false;
 
-  // 4. Compute transform origin and rotation angle
-  const centerX = (lsX + rsX) / 2;
-  const centerY = (lsY + rsY) / 2;
-  const angle = Math.atan2(rsY - lsY, rsX - lsX);
+  const centerX = (ls.x + rs.x) / 2;
+  const centerY = (ls.y + rs.y) / 2;
+  const angle = Math.atan2(rs.y - ls.y, rs.x - ls.x);
 
-  // 5. Compute draw dimensions
-  let drawW = img.naturalWidth * scale;
-  let drawH = img.naturalHeight * scale;
-  if (drawW < shoulderDist * 1.5) {
-    drawW = shoulderDist * 2.2;
-    drawH = drawW * (img.naturalHeight / img.naturalWidth);
+  const neckY = clamp(garment.neckY ?? 0.18, 0.08, 0.45);
+  const shoulderRatio = Math.max(garment.shoulderWidthRatio, 0.28);
+
+  let scale = shoulderDist / (img.naturalWidth * shoulderRatio);
+
+  const leftHip = landmarks[LH];
+  const rightHip = landmarks[RH];
+  if (
+    leftHip &&
+    rightHip &&
+    vis(leftHip) >= MIN_VISIBILITY &&
+    vis(rightHip) >= MIN_VISIBILITY
+  ) {
+    const hipMidY = ((leftHip.y + rightHip.y) / 2) * canvasH;
+    const torsoPx = Math.max(hipMidY - centerY, shoulderDist * 0.8);
+    const garmentTorsoPx = img.naturalHeight * (1 - neckY) * scale;
+    if (garmentTorsoPx > 1) {
+      const torsoScale = torsoPx / garmentTorsoPx;
+      scale *= clamp(torsoScale, 0.82, 1.18);
+    }
   }
 
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(angle);
+  const nose = landmarks[NOSE];
+  let anchorX = centerX;
+  let anchorY = centerY;
+  if (nose && vis(nose) >= MIN_VISIBILITY) {
+    const nosePx = toPx(nose, canvasW, canvasH);
+    anchorX = centerX * 0.9 + nosePx.x * 0.1;
+    anchorY = centerY * 0.88 + nosePx.y * 0.12;
+  }
 
-  // 6. Apply glow effect if requested
-  if (glow && glow.alpha > 0) {
-    ctx.shadowColor = glow.color;
-    ctx.shadowBlur = glow.blur;
-    ctx.globalAlpha = glow.alpha;
-    ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY || 0.25)), drawW, drawH);
-    // Reset shadow for main draw
+  const drawW = img.naturalWidth * scale;
+  const drawH = img.naturalHeight * scale;
+  const offsetX = -drawW / 2;
+  const offsetY = -(drawH * neckY);
+
+  const drawPass = (alpha: number, composite: GlobalCompositeOperation, shadow: GlowOptions | null) => {
+    ctx.globalCompositeOperation = composite;
+    ctx.globalAlpha = alpha;
+    if (shadow && shadow.alpha > 0) {
+      ctx.shadowColor = shadow.color;
+      ctx.shadowBlur = shadow.blur;
+    }
+    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
+  };
+
+  ctx.save();
+  ctx.translate(anchorX, anchorY);
+  ctx.rotate(angle);
+
+  if (glow && glow.alpha > 0) {
+    drawPass(glow.alpha, "source-over", glow);
   }
 
-  // 7. Main garment draw with fabric-realistic composite
-  ctx.globalCompositeOperation = garment.compositeMode ?? DEFAULT_COMPOSITE;
-  ctx.globalAlpha = garment.opacity ?? DEFAULT_OPACITY;
-  ctx.drawImage(img, -drawW / 2, -(drawH * (garment.neckY || 0.25)), drawW, drawH);
-
+  drawPass(garment.opacity ?? DEFAULT_OPACITY, garment.compositeMode ?? DEFAULT_COMPOSITE, null);
   ctx.restore();
 
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// Adapter: GarmentOverlayConfig → GarmentRenderConfig
-// ---------------------------------------------------------------------------
-
-/**
- * Converts the legacy GarmentOverlayConfig (from garmentOverlays.ts) into
- * the GarmentRenderConfig expected by the renderer.
- *
- * @param scaleFactor       - Legacy scale factor (e.g. 1.15).
- * @param offsetY           - Legacy vertical offset in pixels.
- * @param imageNaturalH     - The garment image's naturalHeight.
- * @param shoulderRatioHint - Estimated shoulder-to-image-width ratio (default 0.45).
- */
 export function adaptLegacyOverlay(
   scaleFactor: number,
   offsetY: number,
@@ -160,8 +171,8 @@ export function adaptLegacyOverlay(
 ): GarmentRenderConfig {
   return {
     shoulderWidthRatio: shoulderRatioHint / scaleFactor,
-    neckY: Math.max(0, Math.min(1, (imageNaturalH / 2 + offsetY) / imageNaturalH)),
-    compositeMode: "multiply",
-    opacity: 0.95,
+    neckY: clamp((imageNaturalH * 0.16 + offsetY) / imageNaturalH, 0.1, 0.35),
+    compositeMode: "source-over",
+    opacity: 0.92,
   };
 }

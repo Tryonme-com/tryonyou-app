@@ -15,11 +15,21 @@ def _default_payout_id_from_env() -> str:
     return (os.getenv("BUNKER_SYNC_STRIPE_PAYOUT_ID") or "").strip()
 
 
-DEFAULT_PAYOUT_AMOUNT_EUR = 27_500.00
-DEFAULT_PAYMENT_INTENT_AMOUNT_EUR = 96_981.60
-DEFAULT_PAYMENT_INTENT_AMOUNT_CENTS = 9_698_160
-DEFAULT_PAYMENT_INTENT_COUNT = 5
-DEFAULT_TARGET_BLOCK_EUR = 484_908.00
+def _default_amount_eur(env_key: str, fallback: float = 0.0) -> float:
+    raw = (os.getenv(env_key) or "").strip()
+    if not raw:
+        return fallback
+    try:
+        return float(raw)
+    except ValueError:
+        return fallback
+
+
+DEFAULT_PAYOUT_AMOUNT_EUR = _default_amount_eur("BUNKER_SYNC_PAYOUT_AMOUNT_EUR")
+DEFAULT_PAYMENT_INTENT_AMOUNT_EUR = _default_amount_eur("BUNKER_SYNC_PAYMENT_INTENT_AMOUNT_EUR")
+DEFAULT_PAYMENT_INTENT_AMOUNT_CENTS = int(round(DEFAULT_PAYMENT_INTENT_AMOUNT_EUR * 100))
+DEFAULT_PAYMENT_INTENT_COUNT = int((os.getenv("BUNKER_SYNC_PAYMENT_INTENT_COUNT") or "0").strip() or 0)
+DEFAULT_TARGET_BLOCK_EUR = _default_amount_eur("BUNKER_SYNC_TARGET_BLOCK_EUR")
 DEFAULT_SUPABASE_URL = "https://irwyurrpofyzcdsihjmz.supabase.co"
 DEFAULT_CLIENT_NAME = "BPIFRANCE FINANCEMENT"
 DEFAULT_CLIENT_SIREN = "507052338"
@@ -666,7 +676,7 @@ def persist_control_rows(writer: AdaptiveTableWriter) -> list[dict[str, Any]]:
         ("souverainete_state", "1", "SOUVERAINETÉ:1 persistente"),
         ("bunker_status", "Sincronizado y en espera", "Búnker sincronizado y en espera"),
         ("cursor_execution", "Programada 09:00 AM", "Barrido automático programado para las 09:00 AM"),
-        ("qonto_watchdog", "Alerta activa 27.500 EUR", "Vigilancia activa para aterrizaje de 27.500 EUR en Qonto"),
+        ("qonto_watchdog", "idle", "Watchdog Qonto inactivo hasta importe configurado en entorno"),
     ]
     results: list[dict[str, Any]] = []
     for control_key, state, note in rows:
@@ -717,7 +727,7 @@ def persist_log_rows(writer: AdaptiveTableWriter, payload: dict[str, Any]) -> di
             "event_type": "qonto_watchdog",
             "type": "qonto_watchdog",
             "status": "ACTIVE",
-            "message": "Alerta activa para 27.500 EUR en Qonto",
+            "message": "Watchdog Qonto inactivo (configure BUNKER_SYNC_PAYOUT_AMOUNT_EUR)",
             "payload": log_payload,
             "metadata": log_payload,
             "raw_payload": log_payload,
@@ -914,7 +924,7 @@ def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, A
             "souverainete": 1,
             "status": "Sincronizado y en espera",
             "cursor_execution": "Programada para el barrido de las 09:00 AM",
-            "watchdog": "Alerta activa para el aterrizaje de 27.500 EUR en Qonto",
+            "watchdog": "Watchdog Qonto inactivo hasta importe configurado",
             "control_rows": control_sync,
         },
         "logs": log_sync,
@@ -930,7 +940,7 @@ def bunker_sync_status() -> tuple[dict[str, Any], int]:
             "souverainete": 1,
             "bunker_status": "Sincronizado y en espera",
             "cursor_execution": "Programada para el barrido de las 09:00 AM",
-            "watchdog": "Alerta activa para el aterrizaje de 27.500 EUR en Qonto",
+            "watchdog": "Watchdog Qonto inactivo hasta importe configurado",
             "supabase_url": (os.getenv("SUPABASE_URL") or DEFAULT_SUPABASE_URL).strip(),
             "stripe_configured": bool((os.getenv("STRIPE_SECRET_KEY") or "").strip()),
             "supabase_configured": bool((os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()),
