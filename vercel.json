@@ -7,61 +7,6 @@
   "regions": ["fra1", "hnd1", "iad1"],
   "rewrites": [
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": ":method",
-          "value": "POST"
-        }
-      ],
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": ":method",
-          "value": "PUT"
-        }
-      ],
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": ":method",
-          "value": "PATCH"
-        }
-      ],
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": ":method",
-          "value": "DELETE"
-        }
-      ],
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": ":method",
-          "value": "OPTIONS"
-        }
-      ],
-      "destination": "/api/index.py"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     },

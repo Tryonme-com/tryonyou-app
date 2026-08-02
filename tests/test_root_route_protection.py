@@ -32,19 +32,20 @@ class TestRootRouteProtection(unittest.TestCase):
         self.assertEqual(response.json(), {"status": "error", "message": "Not Found"})
         self.assertEqual(response.headers.get("access-control-allow-origin"), "*")
 
-    def test_vercel_rewrites_forward_mutating_root_to_api(self) -> None:
+    def test_vercel_api_rewrite_to_index(self) -> None:
         vercel_json = Path(_ROOT, "vercel.json")
         data = json.loads(vercel_json.read_text(encoding="utf-8"))
         rewrites = data.get("rewrites") or []
-        methods = {"POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-        covered: set[str] = set()
-        for rule in rewrites:
-            if rule.get("source") != "/" or rule.get("destination") != "/api/index.py":
-                continue
-            for cond in rule.get("has") or []:
-                if cond.get("key") == ":method" and cond.get("value") in methods:
-                    covered.add(str(cond["value"]))
-        self.assertTrue(methods.issubset(covered))
+        target = next(
+            (
+                rule
+                for rule in rewrites
+                if rule.get("source") == "/api/(.*)"
+                and rule.get("destination") == "/api/index.py"
+            ),
+            None,
+        )
+        self.assertIsNotNone(target)
 
 
 if __name__ == "__main__":
