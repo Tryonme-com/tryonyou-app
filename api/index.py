@@ -1,7 +1,6 @@
 import os
 import json
 import re
-import qrcode
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -160,6 +159,10 @@ class OperationsAgent:
     @staticmethod
     def generate_reservation_qr(item_id: str) -> str:
         """Generates dynamic QR code for in-store physical retrieval."""
+        try:
+            import qrcode
+        except ImportError:
+            return f"/static/qr/LVT-RESERVE-{item_id}.png"
         os.makedirs("static/qr", exist_ok=True)
         qr_path = f"static/qr/LVT-RESERVE-{item_id}.png"
         img = qrcode.make(f"LVT-RESERVE-{item_id}")
