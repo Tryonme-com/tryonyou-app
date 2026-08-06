@@ -45,6 +45,9 @@ logs/ip_access.jsonl
 logs/IP_WATCH.md
 logs/LAFAYETTE_TTC_MONITOR.md
 logs/SISTEMA_SUSPENDIDO.jsonlupdate_stripe.py
+logs/falla_cobros.jsonl
+data/falla_memories.json
+data/falla_memories.json.lock
 update_stripe_v10.py
 activate_royalties_v10.py
 monetizacion_trace_demo.log
