@@ -115,11 +115,11 @@ class StripeRuntime:
                 rows = batch.get("data") if isinstance(batch.get("data"), list) else []
                 if not rows:
                     break
-                for row in rows:
-                    account_id = str(row.get("id") or "").strip()
-                    if account_id:
-                        contexts.append(StripeContext(account_id=account_id))
-                        seen += 1
+                valid_ids = [str(r.get("id")).strip() for r in rows if r.get("id") and str(r.get("id")).strip()]
+                allowed = max_accounts - seen
+                valid_ids = valid_ids[:allowed]
+                contexts.extend(StripeContext(account_id=aid) for aid in valid_ids)
+                seen += len(valid_ids)
                 if not batch.get("has_more") or seen >= max_accounts:
                     break
                 starting_after = str(rows[-1].get("id") or "").strip() or None
