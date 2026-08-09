@@ -1,3 +1,4 @@
+import os
 import uuid
 import csv
 from io import BytesIO
@@ -15,9 +16,21 @@ app = FastAPI(
     description="Servidor maestro unificado con catálogo extendido de marcas Lafayette"
 )
 
+allowed_origins_env = os.getenv("E50_CORS_ALLOW_ORIGIN")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    allowed_origins = [
+        "https://tryonyou.app",
+        "https://abvetos.com",
+        "https://tryonyou.lafayette.demo",
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
