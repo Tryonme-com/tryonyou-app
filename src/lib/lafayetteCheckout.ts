@@ -21,8 +21,8 @@ export {
   getStripePublishableKeyParis,
 };
 
-export function getLafayetteStripeCheckoutUrl(): string {
-  const e = import.meta.env;
+export function getLafayetteStripeCheckoutUrl(env: Record<string, any> = import.meta.env): string {
+  const e = env;
   const candidates = [
     e.VITE_LAFAYETTE_STRIPE_CHECKOUT_URL,
     e.VITE_STRIPE_LINK_SOVEREIGNTY_4_5M,
