@@ -13,7 +13,6 @@ Envío Soberano — SMTP Gmail con credenciales solo en entorno (nunca en el rep
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
-from __future__ import annotations
 
 import argparse
 import os

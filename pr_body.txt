@@ -1,0 +1,4 @@
+🎯 **What:** Removed unused `from __future__ import annotations` from `enviar_correo_soberano.py`.
+💡 **Why:** This improves maintainability by removing unnecessary and unused dead code.
+✅ **Verification:** Verified safe via `git diff` and running `pytest tests/`, confirming no dependencies broke and formatting remains intact.
+✨ **Result:** Cleaned up unused import successfully.
