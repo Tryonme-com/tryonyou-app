@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+import shlex
 
 REPORTE_DEFAULT = "REPORTE_ESTRATEGICO_DIVINEO.txt"
 INTERVALO_S = 60
@@ -12,7 +13,8 @@ def disparar_sincronizacion_bunker() -> None:
     if not cmd:
         return
     print(f"⚙️  BUNKER_SYNC_CMD: {cmd[:80]}{'…' if len(cmd) > 80 else ''}")
-    subprocess.run(cmd, shell=True, check=False)
+    parsed_cmd = shlex.split(cmd)
+    subprocess.run(parsed_cmd, shell=False, check=False)
 
 
 def vigilancia_silenciosa(
