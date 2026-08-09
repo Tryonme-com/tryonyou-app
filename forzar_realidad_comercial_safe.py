@@ -8,8 +8,6 @@ Paso 38: commit + push acotado (despliegue producción / facturación), sin git 
 Ejecutar: E50_GIT_PUSH=1 python3 forzar_realidad_comercial_safe.py
 """
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys
