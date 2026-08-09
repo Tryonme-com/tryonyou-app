@@ -4,8 +4,6 @@ Equipo 51: engines Node ≥20, MISSION_CONTROL.json, npm lock-only, git opcional
 ⚠️  Git solo con E50_GIT_PUSH=1; add acotado (nunca `git add .`).
 """
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess
