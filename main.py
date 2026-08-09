@@ -15,9 +15,24 @@ app = FastAPI(
     description="Servidor maestro unificado con catálogo extendido de marcas Lafayette"
 )
 
+import os
+
+# Load CORS origins strictly via env var with fallbacks for specified domains
+allowed_origins_env = os.environ.get("E50_CORS_ALLOW_ORIGIN", "")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    allowed_origins = [
+        "https://abvetos.com",
+        "https://tryonyou.app",
+        "https://tryonyou.lafayette.demo",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
