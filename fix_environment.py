@@ -9,8 +9,6 @@ Alinea engines Node en package.json y regenera package-lock (opcionalmente limpi
 Ejecutar: python3 fix_environment.py
 """
 
-from __future__ import annotations
-
 import json
 import os
 import shutil
