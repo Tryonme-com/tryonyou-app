@@ -132,22 +132,43 @@ def _allowlist_path(path: str) -> bool:
     return any(p == pref or p.startswith(pref + "/") for pref in prefixes)
 
 
+def _get_allowed_origin(request_origin: str) -> str:
+    """Determina el origen permitido para CORS de forma segura."""
+    import os
+
+    if not request_origin:
+        return "https://tryonyou.app"
+
+    allowed_env = os.environ.get("E50_CORS_ALLOW_ORIGIN")
+    if allowed_env:
+        allowed_list = [x.strip() for x in allowed_env.split(",") if x.strip()]
+        if request_origin in allowed_list:
+            return request_origin
+
+    trusted_domains = ["abvetos.com", "tryonyou.app"]
+    for domain in trusted_domains:
+        if request_origin == f"https://{domain}" or request_origin == f"http://{domain}":
+            return request_origin
+        if request_origin.endswith(f".{domain}"):
+            return request_origin
+
+    return "https://tryonyou.app"
+
 def _cors_json_response(payload: dict, status: int):
-    from flask import Response
+    from flask import Response, request
 
     body = json.dumps(payload, ensure_ascii=False)
     r = Response(body, status=status, mimetype="application/json; charset=utf-8")
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = _get_allowed_origin(request.headers.get("Origin") or "")
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return r
 
-
 def _cors_preflight_no_content() -> object:
-    from flask import Response
+    from flask import Response, request
 
     r = Response(status=204)
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = _get_allowed_origin(request.headers.get("Origin") or "")
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     r.headers["Access-Control-Max-Age"] = "86400"
