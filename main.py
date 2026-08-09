@@ -1,3 +1,4 @@
+import os
 import uuid
 import csv
 from io import BytesIO
@@ -17,7 +18,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.environ.get("E50_CORS_ALLOW_ORIGIN", "https://tryonyou.app,https://abvetos.com").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
