@@ -1,4 +1,5 @@
 """
+
 Orquestador V10 final — un menú para los scripts del búnker (raíz del repo).
 
   python3 orchestrator_v10_final.py SUBCOMANDO
@@ -57,7 +58,7 @@ def _run_py(script: str) -> int:
     return r.returncode
 
 
-def main() -> int:
+def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="TryOnYou V10 — orquestador final (menú de scripts).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -92,32 +93,32 @@ def main() -> int:
         "sacmuseum",
         help="sacmuseum_empire: kill-switch Lafayette, nodos CP, RelicValue, log fiestas",
     )
+    return p
 
-    args = p.parse_args()
-    _path()
 
-    if args.cmd == "produccion":
+def _execute_command(cmd: str) -> int:
+    if cmd == "produccion":
         from ejecutor_v10 import main as m
 
         return m()
-    if args.cmd == "espejo":
+    if cmd == "espejo":
         from unificar_v10 import ejecutar_secuencia_maestra
 
         return ejecutar_secuencia_maestra()
-    if args.cmd == "bunker":
+    if cmd == "bunker":
         from arranque_bunker_soberania import arranque_bunker
 
         return arranque_bunker()
-    if args.cmd == "protocolo-despliegue":
+    if cmd == "protocolo-despliegue":
         from protocolo_v10_despliegue import ejecutar_despliegue
 
         return ejecutar_despliegue()
-    if args.cmd == "formalizar":
+    if cmd == "formalizar":
         from formalizar_soberania_v10 import formalizar_soberania
 
         formalizar_soberania()
         return 0
-    if args.cmd == "monitor":
+    if cmd == "monitor":
         import os
         from monitor_liquidacion_v10 import MonitorLiquidacion, _enviar_telegram
 
@@ -131,66 +132,72 @@ def main() -> int:
         ):
             _enviar_telegram(txt)
         return 0
-    if args.cmd == "reporte-matutino":
+    if cmd == "reporte-matutino":
         from reporte_diario_soberania_v10 import main as m
 
         return m()
-    if args.cmd == "bpifrance":
+    if cmd == "bpifrance":
         from solicitud_liquidez_bpifrance_v10 import main as m
 
         return m()
-    if args.cmd == "bpifrance-envio":
+    if cmd == "bpifrance-envio":
         from preparar_envio_bpifrance_v10 import preparar_envio_final
 
         preparar_envio_final()
         return 0
-    if args.cmd == "bpifrance-token":
+    if cmd == "bpifrance-token":
         from generar_secreto_bpifrance_v10 import generar_secreto_bpifrance
 
         generar_secreto_bpifrance()
         return 0
-    if args.cmd == "rescate":
+    if cmd == "rescate":
         from operacion_rescate_soberania_v10 import main as m
 
         return m()
-    if args.cmd == "sellar-lafayette":
+    if cmd == "sellar-lafayette":
         from operacion_soberania_total_v10 import main as m
 
         return m()
-    if args.cmd == "tesoreria":
+    if cmd == "tesoreria":
         from gestion_tesoreria import main as m
 
         return m()
-    if args.cmd == "metricas":
+    if cmd == "metricas":
         from reporte_metricas_lafayette_v10 import reporte_metricas_lafayette
 
         reporte_metricas_lafayette()
         return 0
-    if args.cmd == "divineo":
+    if cmd == "divineo":
         return _run_py("motor_divineo_v10.py")
-    if args.cmd == "vida":
+    if cmd == "vida":
         return _run_py("motor_vida_avatar_v10.py")
-    if args.cmd == "certeza":
+    if cmd == "certeza":
         return _run_py("motor_certeza_absoluta_v10.py")
-    if args.cmd == "telegram-senal":
+    if cmd == "telegram-senal":
         from telegram_senal_soberania import enviar_senal_soberana
 
         return enviar_senal_soberana()
-    if args.cmd == "gcs-contrato":
+    if cmd == "gcs-contrato":
         from despliegue_gcs_soberano_v10 import subir_codice_v10
 
         return subir_codice_v10()
-    if args.cmd == "gcs-core":
+    if cmd == "gcs-core":
         from desplegar_v10_core_gcs import desplegar_configuracion
 
         return desplegar_configuracion()
-    if args.cmd == "sacmuseum":
+    if cmd == "sacmuseum":
         from sacmuseum_empire import run_sacmuseum_sovereignty
 
         run_sacmuseum_sovereignty()
         return 0
-
     return 2
+
+
+def main() -> int:
+    p = _build_parser()
+    args = p.parse_args()
+    _path()
+    return _execute_command(args.cmd)
 
 
 if __name__ == "__main__":
