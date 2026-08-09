@@ -1,5 +1,4 @@
 """Paso 4: git add acotado, sin shell. E50_GIT_PUSH=1 obligatorio. E50_FORCE_PUSH=1 para --force."""
-from __future__ import annotations
 
 import os
 import subprocess
