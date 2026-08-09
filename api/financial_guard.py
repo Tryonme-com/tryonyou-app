@@ -137,7 +137,7 @@ def _cors_json_response(payload: dict, status: int):
 
     body = json.dumps(payload, ensure_ascii=False)
     r = Response(body, status=status, mimetype="application/json; charset=utf-8")
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = os.environ.get("E50_CORS_ALLOW_ORIGIN", "")
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return r
@@ -147,7 +147,7 @@ def _cors_preflight_no_content() -> object:
     from flask import Response
 
     r = Response(status=204)
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = os.environ.get("E50_CORS_ALLOW_ORIGIN", "")
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     r.headers["Access-Control-Max-Age"] = "86400"
