@@ -1,7 +1,5 @@
 """Alias de genesis_consolidacion_total_safe."""
 
-from __future__ import annotations
-
 import sys
 
 from genesis_consolidacion_total_safe import genesis_consolidacion_total_safe
