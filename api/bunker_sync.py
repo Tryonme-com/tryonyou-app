@@ -829,21 +829,18 @@ def execute_batch_payout_engine(
     }
 
 
-def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
-    body = body or {}
-    stripe_key = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
-    supabase_url = (os.getenv("SUPABASE_URL") or DEFAULT_SUPABASE_URL).strip()
-    supabase_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
-    dry_run = bool(body.get("dry_run"))
 
+def _validate_sync_credentials(stripe_key: str, supabase_key: str) -> tuple[dict[str, Any], int] | None:
     if not stripe_key:
         return ({"status": "error", "message": "stripe_secret_missing"}, 500)
     if not supabase_key:
         return ({"status": "error", "message": "supabase_service_role_missing"}, 500)
+    return None
 
+def _extract_sync_config(body: dict[str, Any]) -> tuple[dict[str, Any] | None, tuple[dict[str, Any], int] | None]:
     payout_id = str(body.get("payout_id") or _default_payout_id_from_env()).strip()
     if not payout_id:
-        return (
+        return None, (
             {
                 "status": "error",
                 "message": "payout_id_required",
@@ -851,58 +848,31 @@ def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, A
             },
             422,
         )
-    payout_amount_eur = float(body.get("payout_amount_eur") or DEFAULT_PAYOUT_AMOUNT_EUR)
-    payment_intent_ids = _resolve_explicit_payment_intents(body)
-    payment_intent_amount_eur = float(body.get("payment_intent_amount_eur") or DEFAULT_PAYMENT_INTENT_AMOUNT_EUR)
-    payment_intent_count = int(body.get("payment_intent_count") or DEFAULT_PAYMENT_INTENT_COUNT)
-    target_block_eur = float(body.get("target_block_eur") or DEFAULT_TARGET_BLOCK_EUR)
-
-    stripe_runtime = StripeRuntime(stripe_key)
-    supabase_runtime = SupabaseRuntime(supabase_url, supabase_key)
-    writer = AdaptiveTableWriter(supabase_runtime)
-    contexts = stripe_runtime.iter_contexts(max_accounts=50)
-
-    payout_lookup = locate_payout(
-        stripe_runtime,
-        payout_id=payout_id,
-        payout_amount_eur=payout_amount_eur,
-        contexts=contexts,
-    )
-    payment_intent_lookup = locate_payment_intents(
-        stripe_runtime,
-        explicit_ids=payment_intent_ids,
-        amount_cents=money_eur_to_cents(payment_intent_amount_eur),
-        count=payment_intent_count,
-        contexts=contexts,
-    )
-
-    payout_sync = sync_payout_record(writer, payout_lookup["payout"])
-    payment_intent_sync = sync_payment_intent_records(writer, payment_intent_lookup["payment_intents"])
-    client_sync = sync_bpifrance_client(writer)
-    control_sync = persist_control_rows(writer)
-    batch_engine = execute_batch_payout_engine(
-        stripe_runtime,
-        contexts=contexts,
-        target_block_eur=target_block_eur,
-        dry_run=dry_run,
-    )
-
-    report_payload = {
+    return {
         "payout_id": payout_id,
-        "payout_sync_ok": payout_sync.get("ok", False),
-        "payment_intents_found": payment_intent_lookup.get("count", 0),
-        "client_sync_ok": client_sync.get("ok", False),
-        "souverainete_state": 1,
-        "dry_run": dry_run,
-    }
-    log_sync = persist_log_rows(writer, report_payload)
+        "payout_amount_eur": float(body.get("payout_amount_eur") or DEFAULT_PAYOUT_AMOUNT_EUR),
+        "payment_intent_ids": _resolve_explicit_payment_intents(body),
+        "payment_intent_amount_eur": float(body.get("payment_intent_amount_eur") or DEFAULT_PAYMENT_INTENT_AMOUNT_EUR),
+        "payment_intent_count": int(body.get("payment_intent_count") or DEFAULT_PAYMENT_INTENT_COUNT),
+        "target_block_eur": float(body.get("target_block_eur") or DEFAULT_TARGET_BLOCK_EUR),
+        "dry_run": bool(body.get("dry_run")),
+    }, None
 
-    ok = bool(
-        payout_sync.get("ok")
-        and client_sync.get("ok")
-        and payment_intent_lookup.get("count", 0) >= payment_intent_count
-    )
-    response = {
+def _build_sync_response(
+    ok: bool,
+    stripe_runtime: StripeRuntime,
+    supabase_runtime: SupabaseRuntime,
+    contexts: list[StripeContext],
+    payout_lookup: dict[str, Any],
+    payout_sync: dict[str, Any],
+    payment_intent_lookup: dict[str, Any],
+    payment_intent_sync: dict[str, Any],
+    client_sync: dict[str, Any],
+    batch_engine: dict[str, Any],
+    control_sync: dict[str, Any],
+    log_sync: dict[str, Any],
+) -> dict[str, Any]:
+    return {
         "status": "ok" if ok else "partial",
         "executed_at": utc_now_iso(),
         "runtime": {
@@ -929,7 +899,85 @@ def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, A
         },
         "logs": log_sync,
     }
+
+
+def execute_bunker_sync(body: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
+    body = body or {}
+    stripe_key = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    supabase_url = (os.getenv("SUPABASE_URL") or DEFAULT_SUPABASE_URL).strip()
+    supabase_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+
+    cred_error = _validate_sync_credentials(stripe_key, supabase_key)
+    if cred_error:
+        return cred_error
+
+    config, config_error = _extract_sync_config(body)
+    if config_error:
+        return config_error
+    assert config is not None
+
+    stripe_runtime = StripeRuntime(stripe_key)
+    supabase_runtime = SupabaseRuntime(supabase_url, supabase_key)
+    writer = AdaptiveTableWriter(supabase_runtime)
+    contexts = stripe_runtime.iter_contexts(max_accounts=50)
+
+    payout_lookup = locate_payout(
+        stripe_runtime,
+        payout_id=config["payout_id"],
+        payout_amount_eur=config["payout_amount_eur"],
+        contexts=contexts,
+    )
+    payment_intent_lookup = locate_payment_intents(
+        stripe_runtime,
+        explicit_ids=config["payment_intent_ids"],
+        amount_cents=money_eur_to_cents(config["payment_intent_amount_eur"]),
+        count=config["payment_intent_count"],
+        contexts=contexts,
+    )
+
+    payout_sync = sync_payout_record(writer, payout_lookup["payout"])
+    payment_intent_sync = sync_payment_intent_records(writer, payment_intent_lookup["payment_intents"])
+    client_sync = sync_bpifrance_client(writer)
+    control_sync = persist_control_rows(writer)
+    batch_engine = execute_batch_payout_engine(
+        stripe_runtime,
+        contexts=contexts,
+        target_block_eur=config["target_block_eur"],
+        dry_run=config["dry_run"],
+    )
+
+    report_payload = {
+        "payout_id": config["payout_id"],
+        "payout_sync_ok": payout_sync.get("ok", False),
+        "payment_intents_found": payment_intent_lookup.get("count", 0),
+        "client_sync_ok": client_sync.get("ok", False),
+        "souverainete_state": 1,
+        "dry_run": config["dry_run"],
+    }
+    log_sync = persist_log_rows(writer, report_payload)
+
+    ok = bool(
+        payout_sync.get("ok")
+        and client_sync.get("ok")
+        and payment_intent_lookup.get("count", 0) >= config["payment_intent_count"]
+    )
+
+    response = _build_sync_response(
+        ok=ok,
+        stripe_runtime=stripe_runtime,
+        supabase_runtime=supabase_runtime,
+        contexts=contexts,
+        payout_lookup=payout_lookup,
+        payout_sync=payout_sync,
+        payment_intent_lookup=payment_intent_lookup,
+        payment_intent_sync=payment_intent_sync,
+        client_sync=client_sync,
+        batch_engine=batch_engine,
+        control_sync=control_sync,
+        log_sync=log_sync,
+    )
     return response, 200
+
 
 
 def bunker_sync_status() -> tuple[dict[str, Any], int]:
