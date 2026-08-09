@@ -30,7 +30,9 @@ class TestRootRouteProtection(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"status": "error", "message": "Not Found"})
-        self.assertEqual(response.headers.get("access-control-allow-origin"), "*")
+        # Expect no Access-Control-Allow-Origin header because we are not sending an Origin header
+        # and CORS middleware won't add it automatically unless it matches the whitelist.
+        self.assertIsNone(response.headers.get("access-control-allow-origin"))
 
     def test_vercel_api_rewrite_to_index(self) -> None:
         vercel_json = Path(_ROOT, "vercel.json")
