@@ -29,7 +29,7 @@ def _truthy_env(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def _make_post_omega(payload: dict[str, Any]) -> bool:
+async def _make_post_omega(payload: dict[str, Any]) -> bool:
     url = (
         os.getenv("MAKE_WEBHOOK_URL_OMEGA", "").strip()
         or os.getenv("MAKE_WEBHOOK_URL", "").strip()
@@ -38,7 +38,7 @@ def _make_post_omega(payload: dict[str, Any]) -> bool:
     if not url:
         return False
     try:
-        r = requests.post(url, json=payload, timeout=25)
+        r = await asyncio.to_thread(requests.post, url, json=payload, timeout=25)
         return 200 <= r.status_code < 300
     except OSError:
         return False
@@ -135,7 +135,7 @@ class CompositeBunker:
                 "ok": bp_ok,
             },
         }
-        make_ok = _make_post_omega(lead_payload)
+        make_ok = await _make_post_omega(lead_payload)
         waitlist_ok, waitlist_path = append_waitlist_json(lead_payload)
 
         return CompositeResult(
