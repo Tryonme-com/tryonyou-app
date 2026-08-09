@@ -4,8 +4,6 @@ Equipo 51: engines Node ≥20, MISSION_CONTROL.json, npm lock-only, git opcional
 ⚠️  Git solo con E50_GIT_PUSH=1; add acotado (nunca `git add .`).
 """
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess
@@ -20,7 +18,6 @@ def _run(argv: list[str]) -> bool:
     except OSError as e:
         print(f"❌ {e}")
         return False
-
 
 def ejecucion_total_equipo_51() -> None:
     print("🚀 EQUIPO 51: Iniciando despliegue masivo en Google AI Studio...")
@@ -100,7 +97,6 @@ def ejecucion_total_equipo_51() -> None:
     else:
         print("❌ Push falló.")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     ejecucion_total_equipo_51()
