@@ -1,11 +1,13 @@
 import os
 import subprocess
+import unittest
 from unittest import mock
-import pytest
+import sys
+from io import StringIO
 
 from vigilancia_pau import disparar_sincronizacion_bunker
 
-class TestVigilanciaPau:
+class TestVigilanciaPau(unittest.TestCase):
     @mock.patch.dict(os.environ, {"BUNKER_SYNC_CMD": "python v10_terminal.py --sync"})
     @mock.patch("vigilancia_pau.subprocess.run")
     def test_disparar_sincronizacion_bunker_valid_cmd(self, mock_run):
@@ -32,8 +34,16 @@ class TestVigilanciaPau:
 
     @mock.patch.dict(os.environ, {"BUNKER_SYNC_CMD": 'echo "unclosed quote'})
     @mock.patch("vigilancia_pau.subprocess.run")
-    def test_disparar_sincronizacion_bunker_invalid_shlex(self, mock_run, capsys):
-        disparar_sincronizacion_bunker()
+    def test_disparar_sincronizacion_bunker_invalid_shlex(self, mock_run):
+        captured_out = StringIO()
+        sys.stdout = captured_out
+        try:
+            disparar_sincronizacion_bunker()
+        finally:
+            sys.stdout = sys.__stdout__
+
         mock_run.assert_not_called()
-        captured = capsys.readouterr()
-        assert "Error al parsear BUNKER_SYNC_CMD" in captured.out
+        self.assertIn("Error al parsear BUNKER_SYNC_CMD", captured_out.getvalue())
+
+if __name__ == "__main__":
+    unittest.main()
