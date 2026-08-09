@@ -11,7 +11,6 @@ Envía un mensaje a Telegram (plantilla TryOnYou V10). Sin secretos en código.
 No concatenes nunca el token al chat_id. Si filtraste el token, revócalo en @BotFather.
 """
 
-from __future__ import annotations
 
 import os
 import re
