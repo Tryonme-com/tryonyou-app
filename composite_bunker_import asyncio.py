@@ -1,4 +1,4 @@
-composite_bunker_import asyncio
+import asyncio
 import json
 import logging
 import random
@@ -95,7 +95,7 @@ class CompositeBunker:
             return False
 
 async def run_composite_main():
-    """Ejecución del flujo completo 'Hazlo Todo'"""
+    """Ejecución del flujo completo 'Hazlo Completo'"""
     print("\n--- 🔥 INICIANDO ORQUESTRADOR COMPOSITE TRYONYOU ---")
     bunker = CompositeBunker()
     
@@ -108,7 +108,7 @@ async def run_composite_main():
     lead_res = await bunker.capture_and_process_lead("compras@inditex.com")
     finance_res, finance_status = await bunker.validate_financial_protocol("BPI_Grant", 7500.0)
 
-    # 3. Sincronizar el "Éxito Técnico" si todo se cumple
+    # 3. Sincronizar el "Éxito Técnico" si se cumplen los requisitos
     if inference_res["status"] == "success" and finance_res:
         composite_data = {
             "msg": "✅ Flujo COMPOSITE validado: IA, Lead y Finanzas OK.",
@@ -123,4 +123,3 @@ async def run_composite_main():
 
 if __name__ == "__main__":
     asyncio.run(run_composite_main())
-    executor.py.
