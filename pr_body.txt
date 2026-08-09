@@ -1,0 +1,6 @@
+🎯 **What:** Removed the unused `from __future__ import annotations` in `bunker_consolidator.py`.
+💡 **Why:** The codebase is using Python 3.12, which natively supports modern type hints (like `list[str]`, `set[str]`) without requiring the future import. The import was unused and its removal cleans up dead code.
+✅ **Verification:**
+- Verified that `bunker_consolidator.py` compiles successfully using `python3 -m py_compile`.
+- Automated test collection confirmed the fix did not introduce any syntax errors.
+✨ **Result:** Improved code health and cleanliness by removing a redundant and unnecessary import.

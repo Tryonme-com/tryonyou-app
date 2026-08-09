@@ -4,7 +4,6 @@ Consolidación de build de producción — identidad legal + Vite (sin pisar sec
 Patente: PCT/EP2025/067317 — @CertezaAbsoluta @lo+erestu
 Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
-from __future__ import annotations
 
 import json
 import os
