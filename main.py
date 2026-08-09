@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 import csv
 from io import BytesIO
 from pathlib import Path
@@ -34,6 +35,20 @@ if not ARCHIVO_INVITADOS_MUSEUM.exists():
     with open(ARCHIVO_INVITADOS_MUSEUM, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["Fecha_Registro", "Email", "Origen_Captacion", "Estado_Invitacion"])
+
+_invitados_cache = set()
+if ARCHIVO_INVITADOS_MUSEUM.exists() and ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
+    with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        for row in reader:
+            if row:
+                _invitados_cache.add(row[1])
+
+def _append_to_csv(filepath, data):
+    with open(filepath, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
 
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
@@ -118,21 +133,15 @@ async def activar_vip(perfil: PerfilVIP):
 
 @app.post("/api/lafayette/vip/registrar-museum")
 async def registrar_museum(invitado: RegistroInvitadoVIP):
-    invitado_existe = False
-    if ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
-        with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            next(reader, None)
-            for row in reader:
-                if row and row[1] == invitado.email:
-                    invitado_existe = True
-                    break
-    if invitado_existe:
+    if invitado.email in _invitados_cache:
         return {"status": "already_registered"}
+
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(ARCHIVO_INVITADOS_MUSEUM, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([fecha_actual, invitado.email, invitado.origen, "Pendiente de Envío Entrada"])
+    data = [fecha_actual, invitado.email, invitado.origen, "Pendiente de Envío Entrada"]
+
+    await asyncio.to_thread(_append_to_csv, ARCHIVO_INVITADOS_MUSEUM, data)
+    _invitados_cache.add(invitado.email)
+
     return {"status": "success", "email": invitado.email}
 
 if __name__ == "__main__":
