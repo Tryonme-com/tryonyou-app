@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 import csv
 from io import BytesIO
 from pathlib import Path
@@ -34,6 +35,19 @@ if not ARCHIVO_INVITADOS_MUSEUM.exists():
     with open(ARCHIVO_INVITADOS_MUSEUM, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["Fecha_Registro", "Email", "Origen_Captacion", "Estado_Invitacion"])
+
+
+INVITADOS_REGISTRADOS = set()
+def _init_invitados_cache():
+    if ARCHIVO_INVITADOS_MUSEUM.exists() and ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
+        with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            next(reader, None)
+            for row in reader:
+                if row and len(row) > 1:
+                    INVITADOS_REGISTRADOS.add(row[1])
+
+_init_invitados_cache()
 
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
@@ -118,21 +132,19 @@ async def activar_vip(perfil: PerfilVIP):
 
 @app.post("/api/lafayette/vip/registrar-museum")
 async def registrar_museum(invitado: RegistroInvitadoVIP):
-    invitado_existe = False
-    if ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
-        with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            next(reader, None)
-            for row in reader:
-                if row and row[1] == invitado.email:
-                    invitado_existe = True
-                    break
-    if invitado_existe:
+    if invitado.email in INVITADOS_REGISTRADOS:
         return {"status": "already_registered"}
+
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(ARCHIVO_INVITADOS_MUSEUM, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([fecha_actual, invitado.email, invitado.origen, "Pendiente de Envío Entrada"])
+
+    def _write_csv():
+        with open(ARCHIVO_INVITADOS_MUSEUM, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([fecha_actual, invitado.email, invitado.origen, "Pendiente de Envío Entrada"])
+
+    await asyncio.to_thread(_write_csv)
+    INVITADOS_REGISTRADOS.add(invitado.email)
+
     return {"status": "success", "email": invitado.email}
 
 if __name__ == "__main__":
