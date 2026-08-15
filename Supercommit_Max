@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper historico seguro: no instala dependencias, staging acotado y sin force-push a main.
+# Entry point solicitado por el búnker: delega en el Supercommit seguro.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
