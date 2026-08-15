@@ -1,9 +1,12 @@
+import os
 import smtplib
 from email.message import EmailMessage
 
 remitente = "rubon.espinar.10@icloud.com"
 destinatario = "relationfournisseur@galerieslafayette.com"
-password = "TU_CONTRASEÑA_DE_APP" # REEMPLAZA ESTO
+password = os.getenv("EMAIL_PASS", "")
+if not password:
+    raise ValueError("Missing EMAIL_PASS environment variable.")
 
 msg = EmailMessage()
 msg['Subject'] = "URGENTE: Relance Facture F-2026-007 - TRYONYOU"
