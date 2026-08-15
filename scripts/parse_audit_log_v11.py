@@ -91,12 +91,7 @@ def parse_lines(text: str) -> list[dict[str, object]]:
         if mreq:
             refs.append(mreq.group(1).strip())
         # dedup preserve order
-        seen: set[str] = set()
-        ref_out = []
-        for r in refs:
-            if r not in seen:
-                seen.add(r)
-                ref_out.append(r)
+        ref_out = list(dict.fromkeys(refs))
         amounts: list[str] = []
         for m in _RE_AMOUNT.finditer(line):
             amounts.append(m.group(1))
