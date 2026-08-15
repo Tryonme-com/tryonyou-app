@@ -37,6 +37,24 @@ class TestSupercommitMaxStaticGuards(unittest.TestCase):
         self.assertIn("TELEGRAM_BOT_TOKEN", script)
         self.assertIsNone(re.search(r"\d{8,}:[A-Za-z0-9_-]{20,}", script))
 
+    def test_env_example_documents_bot_and_fatality_without_secrets(self) -> None:
+        env = (ROOT / ".env.example").read_text(encoding="utf-8")
+
+        self.assertIn("TRYONYOU_DEPLOY_BOT_TOKEN=", env)
+        self.assertIn("TRYONYOU_DEPLOY_CHAT_ID=", env)
+        self.assertIn("TRYONYOU_CAPITAL_450K_CONFIRMED=", env)
+        self.assertIn("DOSSIER_FATALITY_EVIDENCE_PATH=", env)
+        self.assertIsNone(re.search(r"\d{8,}:[A-Za-z0-9_-]{20,}", env))
+        self.assertNotIn("VERCEL_TOKEN=\"", env)
+        self.assertNotIn("pk1_", env)
+
+    def test_equipo_50_does_not_force_push_main(self) -> None:
+        source = (ROOT / "operacion_maestra_equipo_50.py").read_text(encoding="utf-8")
+
+        self.assertNotIn("push --force main", source)
+        self.assertNotIn('"origin", "main", "--force"', source)
+        self.assertIn('"git", "push", "-u", "origin", branch', source)
+
 
 if __name__ == "__main__":
     unittest.main()
