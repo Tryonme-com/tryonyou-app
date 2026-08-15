@@ -1,0 +1,14 @@
+🧪 [testing] Add tests for _collect in inyectar_claves_intelligence
+
+🎯 **What:** The testing gap addressed
+Added a test suite for `_collect` in `inyectar_claves_intelligence.py` using `unittest` to ensure environment variable aliasing and priority handling work correctly.
+
+📊 **Coverage:** What scenarios are now tested
+- Empty environment fallback.
+- Standard aliases mapped to canonical keys.
+- Fallback aliases correctly map to canonical keys.
+- Proper alias priority is enforced.
+- Empty spaces are stripped correctly and keys containing just whitespaces are ignored.
+
+✨ **Result:** The improvement in test coverage
+The previously untested function is now fully covered, preventing accidental bugs when the environment aliases are modified.
