@@ -36,7 +36,7 @@ def operacion_maestra_equipo_50() -> None:
         print("🛠️ Jules: Forzando Node ≥20 y limpiando definición de engines...")
         with open(pkg_path, encoding="utf-8") as f:
             data = json.load(f)
-        data["engines"] = {"node": ">=20.0.0"}
+        data["engines"] = {"node": "20.x"}
         with open(pkg_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.write("\n")
