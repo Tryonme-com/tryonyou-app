@@ -1,5 +1,3 @@
-import os
-
 class EnterpriseConfig:
     # Sustituye los '0000000000000' por tus 13 dígitos reales de tu Avis d'imposition
     FISCAL_ID = "0000000000000"
