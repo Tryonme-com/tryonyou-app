@@ -1,7 +1,11 @@
 {
-    "LVMH": "RADAR_CONNECTED",
-    "Chanel": "RADAR_CONNECTED",
-    "Dior": "RADAR_CONNECTED",
-    "Balmain": "RADAR_CONNECTED",
-    "Hermès": "RADAR_CONNECTED"
+    "marcas": [
+        "LVMH",
+        "Chanel",
+        "Dior",
+        "Balmain",
+        "Hermès"
+    ],
+    "status": "RADAR_CONNECTED",
+    "timestamp": "2026-08-15"
 }
