@@ -1,3 +1,4 @@
+import os
 import uuid
 import csv
 from io import BytesIO
@@ -10,6 +11,13 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Dict
 import qrcode
 
+
+def get_allowed_origins():
+    origins = os.getenv("E50_CORS_ALLOW_ORIGIN")
+    if origins:
+        return [o.strip() for o in origins.split(",")]
+    return ["https://tryonyou.app", "http://localhost:5173"]
+
 app = FastAPI(
     title="TRYONYOU - Sistema Central OMEGA V10.2",
     description="Servidor maestro unificado con catálogo extendido de marcas Lafayette"
@@ -17,7 +25,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
