@@ -8,11 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from typing import List, Dict
+import asyncio
 import qrcode
 
 app = FastAPI(
     title="TRYONYOU - Sistema Central OMEGA V10.2",
-    description="Servidor maestro unificado con catálogo extendido de marcas Lafayette"
+    description="Servidor maestro unificado con catálogo extendido de marcas Lafayette",
 )
 
 app.add_middleware(
@@ -30,59 +31,168 @@ DIR_ASSETS.mkdir(exist_ok=True)
 
 ARCHIVO_INVITADOS_MUSEUM = DIR_DATA / "lista_invitados_sac_museum.csv"
 
+# Cache for VIP emails
+registered_emails_cache = set()
+file_write_lock = asyncio.Lock()
+
 if not ARCHIVO_INVITADOS_MUSEUM.exists():
     with open(ARCHIVO_INVITADOS_MUSEUM, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["Fecha_Registro", "Email", "Origen_Captacion", "Estado_Invitacion"])
+        writer.writerow(
+            ["Fecha_Registro", "Email", "Origen_Captacion", "Estado_Invitacion"]
+        )
+else:
+    if ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
+        with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            next(reader, None)
+            for row in reader:
+                if row and len(row) > 1:
+                    registered_emails_cache.add(row[1])
+
+
+def _write_csv_row(file_path, row_data):
+    with open(file_path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(row_data)
+
 
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+
 
 class DatosSilueta(BaseModel):
     puntos_biometricos: List[float]
     proporciones: Dict[str, float]
 
+
 class PrendaSeleccionada(BaseModel):
     garment_id: str
     talla_calculada: str
 
+
 class PerfilVIP(BaseModel):
     client_token: str
+
 
 class RegistroInvitadoVIP(BaseModel):
     email: EmailStr
     origen: str = "Espejo Digital - Efecto Paloma (Lafayette Haussmann)"
 
+
 CATALOGO_GLOBAL = {
     "balmain": [
-        {"id": "blm_01", "nombre": "Blazer Cruzado Estructurado Pierre", "asset": "/assets/balmain_blazer.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "blm_02", "nombre": "Vestido Knit Monograma Geométrico", "asset": "/assets/balmain_dress.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "blm_03", "nombre": "Chaqueta Tweed Botones de Oro Vintage", "asset": "/assets/balmain_tweed.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "blm_04", "nombre": "Top Corsé de Neopreno Satinado", "asset": "/assets/balmain_corset.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "blm_05", "nombre": "Abrigo Largo Masculino de Lana Negra", "asset": "/assets/balmain_coat.png", "planta": "Planta 1 - Córner Lujo"}
+        {
+            "id": "blm_01",
+            "nombre": "Blazer Cruzado Estructurado Pierre",
+            "asset": "/assets/balmain_blazer.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "blm_02",
+            "nombre": "Vestido Knit Monograma Geométrico",
+            "asset": "/assets/balmain_dress.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "blm_03",
+            "nombre": "Chaqueta Tweed Botones de Oro Vintage",
+            "asset": "/assets/balmain_tweed.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "blm_04",
+            "nombre": "Top Corsé de Neopreno Satinado",
+            "asset": "/assets/balmain_corset.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "blm_05",
+            "nombre": "Abrigo Largo Masculino de Lana Negra",
+            "asset": "/assets/balmain_coat.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
     ],
     "prada": [
-        {"id": "prd_01", "nombre": "Abrigo Re-Nylon Minimalista Anthracite", "asset": "/assets/prada_coat.png", "planta": "Planta 2 - Créateurs"},
-        {"id": "prd_02", "nombre": "Falda Plisada de Sarga Estructurada", "asset": "/assets/prada_skirt.png", "planta": "Planta 2 - Créateurs"},
-        {"id": "prd_03", "nombre": "Traje Técnico Gabardina de Corte Sastre", "asset": "/assets/prada_suit.png", "planta": "Planta 2 - Créateurs"},
-        {"id": "prd_04", "nombre": "Chaqueta Corta de Cuero Gastado Umber", "asset": "/assets/prada_leather.png", "planta": "Planta 2 - Créateurs"},
-        {"id": "prd_05", "nombre": "Vestido Popelín con Escote Geométrico", "asset": "/assets/prada_dress.png", "planta": "Planta 2 - Créateurs"}
+        {
+            "id": "prd_01",
+            "nombre": "Abrigo Re-Nylon Minimalista Anthracite",
+            "asset": "/assets/prada_coat.png",
+            "planta": "Planta 2 - Créateurs",
+        },
+        {
+            "id": "prd_02",
+            "nombre": "Falda Plisada de Sarga Estructurada",
+            "asset": "/assets/prada_skirt.png",
+            "planta": "Planta 2 - Créateurs",
+        },
+        {
+            "id": "prd_03",
+            "nombre": "Traje Técnico Gabardina de Corte Sastre",
+            "asset": "/assets/prada_suit.png",
+            "planta": "Planta 2 - Créateurs",
+        },
+        {
+            "id": "prd_04",
+            "nombre": "Chaqueta Corta de Cuero Gastado Umber",
+            "asset": "/assets/prada_leather.png",
+            "planta": "Planta 2 - Créateurs",
+        },
+        {
+            "id": "prd_05",
+            "nombre": "Vestido Popelín con Escote Geométrico",
+            "asset": "/assets/prada_dress.png",
+            "planta": "Planta 2 - Créateurs",
+        },
     ],
     "hermes": [
-        {"id": "rms_01", "nombre": "Capa Corta en Cachemira Bone Hermès", "asset": "/assets/hermes_cape.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "rms_02", "nombre": "Pañuelo de Seda Estampado Art Deco", "asset": "/assets/hermes_scarf.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "rms_03", "nombre": "Chaqueta de Piel Flexible Suave Ecuestre", "asset": "/assets/hermes_leather.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "rms_04", "nombre": "Jersey Cuello Alto Hilo Trenzado Lino", "asset": "/assets/hermes_knit.png", "planta": "Planta 1 - Córner Lujo"},
-        {"id": "rms_05", "nombre": "Pantalón Recto de Lana de Sastrería", "asset": "/assets/hermes_pants.png", "planta": "Planta 1 - Córner Lujo"}
-    ]
+        {
+            "id": "rms_01",
+            "nombre": "Capa Corta en Cachemira Bone Hermès",
+            "asset": "/assets/hermes_cape.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "rms_02",
+            "nombre": "Pañuelo de Seda Estampado Art Deco",
+            "asset": "/assets/hermes_scarf.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "rms_03",
+            "nombre": "Chaqueta de Piel Flexible Suave Ecuestre",
+            "asset": "/assets/hermes_leather.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "rms_04",
+            "nombre": "Jersey Cuello Alto Hilo Trenzado Lino",
+            "asset": "/assets/hermes_knit.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+        {
+            "id": "rms_05",
+            "nombre": "Pantalón Recto de Lana de Sastrería",
+            "asset": "/assets/hermes_pants.png",
+            "planta": "Planta 1 - Córner Lujo",
+        },
+    ],
 }
+
 
 @app.get("/status")
 async def get_status():
     return {"status": "online", "engine": "OMEGA_V10.2", "mode": "Empire"}
 
+
 @app.post("/api/lafayette/carrito")
 async def añadir_al_carrito(prenda: PrendaSeleccionada):
-    return {"status": "success", "tienda": "Galeries Lafayette Haussmann", "talla_asegurada": prenda.talla_calculada, "filtro": "Zero-Size Active"}
+    return {
+        "status": "success",
+        "tienda": "Galeries Lafayette Haussmann",
+        "talla_asegurada": prenda.talla_calculada,
+        "filtro": "Zero-Size Active",
+    }
+
 
 @app.get("/api/lafayette/reservar/{garment_id}")
 async def reservar_en_probador(garment_id: str):
@@ -96,6 +206,7 @@ async def reservar_en_probador(garment_id: str):
     img.save(buffer, format="PNG")
     return Response(content=buffer.getvalue(), media_type="image/png")
 
+
 @app.get("/api/lafayette/coleccion/{marca}")
 async def obtener_coleccion(marca: str):
     marca_key = marca.lower().strip()
@@ -103,38 +214,59 @@ async def obtener_coleccion(marca: str):
         raise HTTPException(status_code=404, detail="Firma no disponible")
     return {"marca": marca, "sugerencias": CATALOGO_GLOBAL[marca_key]}
 
+
 @app.post("/api/lafayette/silueta/guardar")
 async def guardar_silueta(data: DatosSilueta):
-    return {"status": "stored", "cliente_referencia": f"LAFAYETTE_USER_{str(uuid.uuid4())[:6].upper()}"}
+    return {
+        "status": "stored",
+        "cliente_referencia": f"LAFAYETTE_USER_{str(uuid.uuid4())[:6].upper()}",
+    }
+
 
 @app.post("/api/lafayette/metricas")
 async def registrar_metricas(metricas: dict):
     print(f"[Métricas] Log guardado: {metricas}")
     return {"status": "recorded"}
 
+
 @app.post("/api/lafayette/vip/activar")
 async def activar_vip(perfil: PerfilVIP):
-    return {"status": "EMPIRE_MODE_ACTIVE", "experiencia": "VIP Premium - Efecto Paloma", "probador_privado": "Reservado automáticamente - Salón Haussmann"}
+    return {
+        "status": "EMPIRE_MODE_ACTIVE",
+        "experiencia": "VIP Premium - Efecto Paloma",
+        "probador_privado": "Reservado automáticamente - Salón Haussmann",
+    }
+
 
 @app.post("/api/lafayette/vip/registrar-museum")
 async def registrar_museum(invitado: RegistroInvitadoVIP):
-    invitado_existe = False
-    if ARCHIVO_INVITADOS_MUSEUM.stat().st_size > 0:
-        with open(ARCHIVO_INVITADOS_MUSEUM, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            next(reader, None)
-            for row in reader:
-                if row and row[1] == invitado.email:
-                    invitado_existe = True
-                    break
-    if invitado_existe:
-        return {"status": "already_registered"}
+    async with file_write_lock:
+        if invitado.email in registered_emails_cache:
+            return {"status": "already_registered"}
+
+        # Add to cache immediately to prevent concurrent duplicate processing
+        registered_emails_cache.add(invitado.email)
+
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(ARCHIVO_INVITADOS_MUSEUM, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([fecha_actual, invitado.email, invitado.origen, "Pendiente de Envío Entrada"])
+    row_data = [
+        fecha_actual,
+        invitado.email,
+        invitado.origen,
+        "Pendiente de Envío Entrada",
+    ]
+
+    try:
+        await asyncio.to_thread(_write_csv_row, ARCHIVO_INVITADOS_MUSEUM, row_data)
+    except Exception as e:
+        # Rollback cache if write fails
+        async with file_write_lock:
+            registered_emails_cache.discard(invitado.email)
+        raise e
+
     return {"status": "success", "email": invitado.email}
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
