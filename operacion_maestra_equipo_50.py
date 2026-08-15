@@ -70,7 +70,19 @@ def operacion_maestra_equipo_50() -> None:
         print("🔥 Equipo conectado (sin push). Radar y lock listos en ROOT.")
         return
 
-    print("🚀 Cursor: git add acotado, commit, push --force main...")
+    branch = (
+        subprocess.check_output(
+            ["git", "branch", "--show-current"],
+            cwd=ROOT,
+            text=True,
+        )
+        .strip()
+    )
+    if not branch:
+        print("❌ Rama detached; no se hace push.")
+        sys.exit(1)
+
+    print(f"🚀 Cursor: git add acotado, commit, push no destructivo a origin/{branch}...")
     paths = [
         os.path.join(ROOT, "package.json"),
         os.path.join(ROOT, "package-lock.json"),
@@ -91,7 +103,7 @@ def operacion_maestra_equipo_50() -> None:
             "EQUIPO_50_TOTAL_TAKEOVER: Fix Node Version & Radar Sync",
         ]
     )
-    if _run(["git", "push", "origin", "main", "--force"]):
+    if _run(["git", "push", "-u", "origin", branch]):
         print("🔥 TODO EL EQUIPO CONECTADO. El búnker está en el aire.")
     else:
         print("❌ Push falló.")
