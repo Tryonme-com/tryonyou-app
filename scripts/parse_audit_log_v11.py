@@ -22,6 +22,7 @@ OVERALLOCATED_LEDGER o FINANCE_BRIDGE_AUDIT: FAIL, la puerta falla.
 No sustituye la verificación en Stripe/Qonto: solo estructura lo leíble del registro.
 Patente: PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,7 +37,9 @@ _RE_PI = re.compile(r"\b(pi_[A-Za-z0-9_]+)")
 _RE_CH = re.compile(r"\b(ch_[A-Za-z0-9_]+)")
 _RE_PO = re.compile(r"\b(po_[A-Za-z0-9_]+)")
 # Request / trazas
-_RE_REQ = re.compile(r"(?:req_|request[_\s-]*id[:\s]+|Request-ID[:\s]+)([A-Za-z0-9_-]{8,})")
+_RE_REQ = re.compile(
+    r"(?:req_|request[_\s-]*id[:\s]+|Request-ID[:\s]+)([A-Za-z0-9_-]{8,})"
+)
 _RE_UUID = re.compile(
     r"\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
     re.I,
@@ -91,12 +94,7 @@ def parse_lines(text: str) -> list[dict[str, object]]:
         if mreq:
             refs.append(mreq.group(1).strip())
         # dedup preserve order
-        seen: set[str] = set()
-        ref_out = []
-        for r in refs:
-            if r not in seen:
-                seen.add(r)
-                ref_out.append(r)
+        ref_out = list(dict.fromkeys(refs))
         amounts: list[str] = []
         for m in _RE_AMOUNT.finditer(line):
             amounts.append(m.group(1))
@@ -115,7 +113,9 @@ def parse_lines(text: str) -> list[dict[str, object]]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Parse audit log dump (V11) for cross-check.")
+    ap = argparse.ArgumentParser(
+        description="Parse audit log dump (V11) for cross-check."
+    )
     ap.add_argument(
         "--audit-gate",
         action="store_true",
