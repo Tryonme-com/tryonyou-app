@@ -7,11 +7,18 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
 
+
+def get_allowed_origins():
+    origins = os.getenv("E50_CORS_ALLOW_ORIGIN")
+    if origins:
+        return [o.strip() for o in origins.split(",")]
+    return ["https://tryonyou.app", "http://localhost:5173"]
+
 app = FastAPI(title="TRYONYOU Divineo V7 - Production Core API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_allowed_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
