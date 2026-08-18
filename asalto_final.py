@@ -1,9 +1,10 @@
 """
-Paso 3: git push a main (opcionalmente --force), sin shell=True.
+Paso 3: git push a la rama activa, sin shell=True y sin force-push a main.
 
 - Raíz: E50_PROJECT_ROOT (por defecto ~/Projects/22TRYONYOU).
 - E50_GIT_PUSH=1 obligatorio.
-- --force solo con E50_FORCE_PUSH=1 (tu script original forzaba siempre).
+- Empuja origin/<rama-actual> con -u. Nunca `git push origin main --force`.
+- E50_FORCE_PUSH=1 solo se admite en ramas que no sean main/master.
 
 Ejecutar: python3 asalto_final.py
 """
@@ -14,9 +15,13 @@ import os
 import subprocess
 import sys
 
-ROOT = os.path.abspath(
-    os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
-)
+PROTECTED_BRANCHES = {"main", "master"}
+
+
+def _root() -> str:
+    return os.path.abspath(
+        os.environ.get("E50_PROJECT_ROOT", os.path.expanduser("~/Projects/22TRYONYOU"))
+    )
 
 
 def _run(argv: list[str], *, cwd: str) -> int:
@@ -27,34 +32,68 @@ def _run(argv: list[str], *, cwd: str) -> int:
         return 1
 
 
-def _on(x: str) -> bool:
-    return os.environ.get(x, "").strip().lower() in ("1", "true", "yes", "on")
+def _on(x: str, env: dict[str, str] | None = None) -> bool:
+    source = env if env is not None else os.environ
+    return source.get(x, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _current_branch(cwd: str) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return ""
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout.strip()
+
+
+def build_push_command(branch: str, env: dict[str, str] | None = None) -> list[str]:
+    cmd = ["git", "push", "-u", "origin", branch]
+    if _on("E50_FORCE_PUSH", env):
+        if branch in PROTECTED_BRANCHES:
+            raise ValueError("E50_FORCE_PUSH no se aplica a main/master.")
+        cmd.append("--force")
+    return cmd
 
 
 def asalto_final() -> int:
     print("🚀 Paso 3: push a remoto (git sin shell)...")
 
-    os.makedirs(ROOT, exist_ok=True)
-    os.chdir(ROOT)
+    root = _root()
+    os.makedirs(root, exist_ok=True)
+    os.chdir(root)
 
     if not _on("E50_GIT_PUSH"):
         print("ℹ️  E50_GIT_PUSH=1 para ejecutar push.")
         return 0
 
-    if not os.path.isdir(os.path.join(ROOT, ".git")):
-        print(f"❌ Sin .git en {ROOT}")
+    if not os.path.isdir(os.path.join(root, ".git")):
+        print(f"❌ Sin .git en {root}")
         return 1
 
-    cmd = ["git", "push", "origin", "main"]
-    if _on("E50_FORCE_PUSH"):
-        cmd.append("--force")
+    branch = _current_branch(root)
+    if not branch:
+        print("❌ Rama detached; no se hace push.")
+        return 1
 
-    rc = _run(cmd, cwd=ROOT)
+    try:
+        cmd = build_push_command(branch)
+    except ValueError as exc:
+        print(f"❌ {exc}")
+        return 1
+
+    rc = _run(cmd, cwd=root)
     if rc != 0:
         print(f"❌ git push falló (código {rc}). Revisa remoto, rama y credenciales.")
         return 1
 
-    print("\n🔥 Push completado. Revisa GitHub y el despliegue en Vercel.")
+    print(f"\n🔥 Push no destructivo completado hacia origin/{branch}.")
     return 0
 
 
