@@ -12,6 +12,9 @@ node_modules/
 # Frontend build (Vercel reconstruye en deploy)
 dist/
 
+# Generated public copy of the Station T presentation
+public/STATION_T/PRESENTATION/*.pdf
+
 # Python
 __pycache__/
 *.py[cod]

@@ -1,7 +1,8 @@
 import React from "react";
 import PoseTryOnCanvas from "./components/PoseTryOnCanvas";
+import StationTPage from "./pages/StationTPage";
 
-export default function App() {
+function TryOnHome() {
   return (
     <div
       style={{
@@ -28,4 +29,14 @@ export default function App() {
       <PoseTryOnCanvas />
     </div>
   );
+}
+
+export default function App() {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  if (pathname === "/station-t") {
+    return <StationTPage />;
+  }
+
+  return <TryOnHome />;
 }
