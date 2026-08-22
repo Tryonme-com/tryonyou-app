@@ -2,7 +2,6 @@
 Motor estético Divineo — prototipo TryOnYou V10 (logs de orquestación, sin render real).
 """
 
-from __future__ import annotations
 
 import time
 from datetime import datetime
