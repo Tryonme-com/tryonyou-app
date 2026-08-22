@@ -1,7 +1,5 @@
 """Alias de optimizar_presencia_linkedin_safe."""
 
-from __future__ import annotations
-
 import sys
 
 from optimizar_presencia_linkedin_safe import optimizar_presencia_linkedin_safe
