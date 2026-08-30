@@ -1,5 +1,4 @@
 import os, subprocess, stripe
-from datetime import datetime
 
 # Leemos la clave de la terminal para blindar el código
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
