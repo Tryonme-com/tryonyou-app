@@ -1,17 +1,266 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="TRYONYOU — Zero-Size Virtual Fitting. Physics-driven cloth simulation. Dress Me in Balmain." />
-    <title>TRYONYOU — Zero-Size Virtual Fitting · Dress Me in Balmain</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta
+  name="description"
+  content="TryOnYou x Divineo — galerie web souveraine pour essayage virtuel, Zero-Size et pilots retail Paris."
+/>
+<meta name="theme-color" content="#0c0d10" />
+<title>TryOnYou × Divineo | Galerie Web Souveraine</title>
+<script id="tryonyou-org-jsonld">
+(function(){
+  var d=document,s=d.createElement('script');
+  s.type='application/ld+json';
+  var o=window.location.origin;
+  s.textContent=JSON.stringify({
+    '@context':'https://schema.org','@type':'Organization',
+    'name':'TryOnYou','alternateName':'Divineo','url':o,
+    'foundingDate':'2024',
+    'founder':{'@type':'Person','name':'Rubén Espinar Rodríguez'},
+    'address':{'@type':'PostalAddress','addressLocality':'Paris','postalCode':'75011','addressCountry':'FR'},
+    'taxID':'94361019600017',
+    'knowsAbout':['Virtual try-on technology','Biometric sizing intelligence','Digital twin for fashion retail','Zero-Size Protocol'],
+    'ethicsPolicy':o+'/#ethics',
+    'slogan':'The virtual fitting room that reduces returns'
+  });
+  d.head.appendChild(s);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <style>
+:root { --gold: #D4AF37; --black: #0c0d10; --anthracite: #141619; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--anthracite); color: white; font-family: 'Inter', 'Cinzel', Georgia, serif; overflow-x: hidden; overflow-y: auto; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+#container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+#container video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+#container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; }
+header {
+  position: fixed; top: 0; width: 100%; z-index: 5; padding: 18px 30px;
+  text-align: center; background: linear-gradient(to bottom, var(--black), transparent);
+  pointer-events: none; opacity: 0;
+}
+.brands { display: flex; justify-content: center; gap: 24px; margin-top: 12px; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); font-family: 'Cinzel', Georgia, serif; }
+.hero {
+  position: fixed; top: 22%; width: 100%; text-align: center; z-index: 2; pointer-events: none; opacity: 0;
+}
+.hero h1 { font-size: 2rem; letter-spacing: 12px; text-transform: uppercase; font-weight: 100; color: rgba(255,255,255,0.08); }
+.nav-bottom {
+  display: none;
+}
+.btn { display: none; }
+.pay-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 24px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 24%, rgba(212, 175, 55, 0.18), transparent 54%),
+    rgba(12, 13, 16, 0.82);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+#tryonyou-pay-button {
+  border: 1px solid rgba(212, 175, 55, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.94), rgba(180, 142, 42, 0.96));
+  color: #111318;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#tryonyou-pay-status {
+  color: rgba(245, 239, 230, 0.88);
+  letter-spacing: 0.08em;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.45rem; color: rgba(212,175,55,0.3); z-index: 4; pointer-events: none; letter-spacing: 2px; }
+#root { position: relative; z-index: 10; min-height: 100vh; }
+  </style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing: 10px; font-size: 1rem;">TRYONME</div>
+  <div class="brands"><span class="brand-tap" role="button" tabindex="0" data-mirror-event="balmain_click" style="cursor:pointer;text-decoration:underline;text-underline-offset:4px">BALMAIN</span><span>CHANEL</span><span>DIOR</span><span>YSL</span></div>
+</header>
+<div class="hero">
+  <h1>STOP THE <span style="color:var(--gold)">FAKE FIT</span></h1>
+  <p style="font-size:0.7rem; margin-top:10px; letter-spacing:4px;">MAI 2026</p>
+    </div>
+<div id="container">
+  <video id="input_video" playsinline muted></video>
+  <canvas id="output_canvas"></canvas>
+    </div>
+<footer>SIRET: 94361019600017 | PATENTE: PCT/EP2025/067317</footer>
+<div class="nav-bottom">
+  <div class="btn" onclick="location.reload()">Solidaire</div>
+  <div class="btn" onclick="location.reload()">Intelligent</div>
+  <div class="btn" onclick="location.reload()">Museum</div>
+    </div>
+<div class="pay-bar">
+  <button
+    id="tryonyou-pay-button"
+    type="button"
+    data-mirror-event="tryonyou_payment_click"
+    data-stripe-href=""
+  >
+    Activer Paiement
+  </button>
+  <span id="tryonyou-pay-status">Paiement souverain prêt</span>
+</div>
+<div id="root"></div>
+    <script>
+(function () {
+  var path = (window.__TRYONYOU_MIRROR_DIGITAL_PATH__ || "/api/mirror_digital_event");
+  function postMirror(ev, meta) {
+    return fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: ev, source: "index_html_shell", meta: meta || {} })
+    }).catch(function () {});
+  }
+  function writePayStatus(next) {
+    var statusEl = document.getElementById("tryonyou-pay-status");
+    if (statusEl) statusEl.textContent = next;
+  }
+  function resolveStripeHref(el) {
+    var current = (el.getAttribute("data-stripe-href") || "").trim();
+    if (window.empireFinalProtocol && typeof window.empireFinalProtocol.resolveStripeHref === "function") {
+      current = window.empireFinalProtocol.resolveStripeHref(current);
+    } else if (!current) {
+      current = (window.__DIVINEO_CHECKOUT_URL__ || "").trim();
+    }
+    if (current) el.setAttribute("data-stripe-href", current);
+    return current;
+  }
+  function appendFlowToken(url, flowToken) {
+    if (!url || !flowToken) return url;
+    try {
+      var u = new URL(url);
+      if (!u.searchParams.get("flow_token")) u.searchParams.set("flow_token", flowToken);
+      return u.toString();
+    } catch (err) {
+      return url;
+    }
+  }
+  function wire(el) {
+    var ev = el.getAttribute("data-mirror-event");
+    if (!ev) return;
+    el.addEventListener("click", async function (e) {
+      var isPayButton = el.id === "tryonyou-pay-button";
+      var href = resolveStripeHref(el);
+      if (href) e.preventDefault();
+      void postMirror(ev, { label: (el.textContent || "").trim().slice(0, 200) });
+      if (!isPayButton) {
+        if (href) window.location.href = href;
+        return;
+      }
+      if (!href) {
+        writePayStatus("Lien Stripe manquant");
+        return;
+      }
+      writePayStatus("Pau Emotional Intelligence: préparation...");
+      var flowToken = "";
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.executePauSnap === "function") {
+        try {
+          var snapResult = await window.empireFinalProtocol.executePauSnap({ trigger: "tryonyou-pay-button" });
+          flowToken = (snapResult && snapResult.flowToken) || "";
+        } catch (err) {}
+      }
+      if (window.empireFinalProtocol && typeof window.empireFinalProtocol.registerPaymentIntent === "function") {
+        await window.empireFinalProtocol.registerPaymentIntent({
+          flowToken: flowToken,
+          checkoutUrl: href,
+          buttonId: "tryonyou-pay-button",
+          source: "index_html_shell",
+        });
+      }
+      writePayStatus("Redirection Stripe en cours...");
+      window.location.href = appendFlowToken(href, flowToken);
+    });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+    });
+  }
+  document.querySelectorAll("[data-mirror-event]").forEach(wire);
+  var syncStripeHref = function () {
+    var payButton = document.getElementById("tryonyou-pay-button");
+    if (!payButton) return;
+    resolveStripeHref(payButton);
+  };
+  syncStripeHref();
+  window.setTimeout(syncStripeHref, 1500);
+})();
+    </script>
+    <script>
+(function(){
+var GOLD="#D4AF37";
+var ALPHA=0.22;
+var ema=0.5;
+function dist2(a,b){var dx=a.x-b.x;var dy=a.y-b.y;return Math.hypot(dx,dy);}
+function computeElasticityRatio(lm){if(!lm||lm.length<25)return 0.5;var s=dist2(lm[11],lm[12]);var h=dist2(lm[23],lm[24]);return s/Math.max(h,1e-6);}
+function fabricFitComparator(e,b){b=b||[0.82,1.18];if(e>=b[0]&&e<=b[1])return "aligned";if(e<b[0])return "drape_bias";return "tension_bias";}
+function verdictToUiLabel(v){if(v==="aligned")return "Cohérence drape — tenue";if(v==="drape_bias")return "Préférence drapé";if(v==="tension_bias")return "Préférence tenue";return "Analyse en cours";}
+function drawConn(ctx,lm,pairs,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=2;for(var i=0;i<pairs.length;i++){var a=pairs[i][0],b=pairs[i][1];var pa=lm[a],pb=lm[b];if(!pa||!pb)continue;ctx.beginPath();ctx.moveTo(pa.x*w,pa.y*h);ctx.lineTo(pb.x*w,pb.y*h);ctx.stroke();}}
+function drawLm(ctx,lm,w,h,c){ctx.fillStyle=c;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.visibility!==undefined&&p.visibility<0.45)continue;ctx.beginPath();ctx.arc(p.x*w,p.y*h,2,0,Math.PI*2);ctx.fill();}}
+var videoElement=document.getElementById("input_video");
+var canvasElement=document.getElementById("output_canvas");
+var canvasCtx=canvasElement.getContext("2d");
+if(!videoElement||!canvasCtx)return;
+var PoseCtor=window.Pose;
+var CameraCtor=window.Camera;
+var POSE_CONNECTIONS=window.POSE_CONNECTIONS;
+if(!PoseCtor||!CameraCtor||!POSE_CONNECTIONS)return;
+function resize(){canvasElement.width=window.innerWidth;canvasElement.height=window.innerHeight;}
+window.addEventListener("resize",resize);
+resize();
+function onResults(results){
+var w=canvasElement.width,h=canvasElement.height;
+canvasCtx.save();
+canvasCtx.clearRect(0,0,w,h);
+if(results.image)canvasCtx.drawImage(results.image,0,0,w,h);
+if(results.poseLandmarks&&results.poseLandmarks.length>=33){
+var ratio=computeElasticityRatio(results.poseLandmarks);
+ema=ALPHA*ratio+(1-ALPHA)*ema;
+var v=fabricFitComparator(ema);
+var label=verdictToUiLabel(v);
+try{window.dispatchEvent(new CustomEvent("tryonyou:fit",{detail:{label:label}}));}catch(e){}
+drawConn(canvasCtx,results.poseLandmarks,POSE_CONNECTIONS,w,h,GOLD);
+drawLm(canvasCtx,results.poseLandmarks,w,h,GOLD);
+}
+canvasCtx.restore();
+}
+var pose=new PoseCtor({locateFile:function(file){return "https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file;}});
+pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5});
+pose.onResults(onResults);
+var camera=new CameraCtor(videoElement,{
+  onFrame:function(){pose.send({image:videoElement});},
+  onError:function(err){console.warn("Camera feed unavailable in this environment.", err);},
+  width:1280,
+  height:720
+});
+camera.start().catch(function(){});
+        })();
+    </script>
+<script type="module" src="/src/main.tsx"></script>
+    </body>
 </html>
