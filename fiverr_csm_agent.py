@@ -27,6 +27,87 @@ class ClientMessageAnalysis:
     notes_for_quote: str = ""
 
 
+def _extract_deliverables(low: str) -> list[str]:
+    deliverables: list[str] = []
+    if re.search(r"\b(app|mobile|ios|android|react native|flutter)\b", low):
+        deliverables.append("application_mobile_ou_web")
+    if re.search(r"\b(api|backend|python|node|database|sql)\b", low):
+        deliverables.append("backend_ou_api")
+    if re.search(r"\b(ui|ux|figma|design|frontend|react|vue)\b", low):
+        deliverables.append("interface_ou_front")
+    if re.search(r"\b(3d|three\.?js|webgl|mesh|cad|scan|body)\b", low):
+        deliverables.append("3d_vision_ou_corps")
+    if re.search(r"\b(e-?commerce|shopify|stripe|payment|checkout)\b", low):
+        deliverables.append("commerce_ou_paiement")
+    if re.search(r"\b(ai|ml|model|openai|gpt|embedding)\b", low):
+        deliverables.append("ia_ou_ml")
+    if not deliverables:
+        deliverables.append("besoin_a_clarifier")
+    return deliverables
+
+
+def _extract_signals(low: str, text: str) -> tuple[list[str], list[str], list[str]]:
+    timeline_sig: list[str] = []
+    risk: list[str] = []
+    budget_sig: list[str] = []
+    if "urgent" in low or "asap" in low or "24h" in low or "48h" in low:
+        timeline_sig.append("deadline_serree")
+        risk.append("pression_delai")
+    if "budget" in low or "$" in text or "€" in text or "eur" in low:
+        budget_sig.append("mention_budget")
+    if "fixed" in low or "fixed price" in low:
+        budget_sig.append("prix_fixe_souhaite")
+    return timeline_sig, risk, budget_sig
+
+
+def _extract_constraints(low: str) -> list[str]:
+    constraints: list[str] = []
+    if "mvp" in low or "prototype" in low:
+        constraints.append("mvp_ou_prototype")
+    if "scalable" in low or "scale" in low:
+        constraints.append("scalabilite")
+    if re.search(r"\b(gdpr|rgpd|privacy|hipaa)\b", low):
+        constraints.append("conformite_donnees")
+    return constraints
+
+
+def _evaluate_complexity_and_tier(
+    text: str, deliverables: list[str], risk: list[str]
+) -> tuple[str, str]:
+    n_kw = len(re.findall(r"\b\w+\b", text))
+    if n_kw < 40:
+        risk.append("brief_trop_vague")
+    if len(deliverables) >= 4:
+        complexity = "elevee"
+    elif len(deliverables) >= 2:
+        complexity = "moyenne"
+    else:
+        complexity = "faible_a_moyenne"
+
+    if "elevee" in complexity or "pression_delai" in risk:
+        tier = "omega_atelier"
+    elif complexity == "moyenne":
+        tier = "lafayette_pilote"
+    else:
+        tier = "essai_zero_size"
+    return complexity, tier
+
+
+def _guess_language_and_intent(low: str) -> tuple[str, str]:
+    lang = "fr"
+    if re.search(r"\b(the|please|need|want|project)\b", low):
+        lang = "en"
+    if re.search(r"\b(hola|necesito|proyecto)\b", low):
+        lang = "es"
+
+    intent = "developpement_sur_mesure"
+    if "fix" in low or "bug" in low:
+        intent = "correctif_ou_debug"
+    if "consult" in low or "audit" in low or "advice" in low:
+        intent = "conseil_ou_audit"
+    return lang, intent
+
+
 def analyze_client_message(message: str, max_len: int = 12000) -> dict[str, Any]:
     """
     Analyse un message brut client (Fiverr, email, chat) pour préparer un devis technique.
@@ -44,70 +125,11 @@ def analyze_client_message(message: str, max_len: int = 12000) -> dict[str, Any]
         text = text[:max_len]
 
     low = text.lower()
-    deliverables: list[str] = []
-    constraints: list[str] = []
-    budget_sig: list[str] = []
-    timeline_sig: list[str] = []
-    risk: list[str] = []
-
-    if re.search(r"\b(app|mobile|ios|android|react native|flutter)\b", low):
-        deliverables.append("application_mobile_ou_web")
-    if re.search(r"\b(api|backend|python|node|database|sql)\b", low):
-        deliverables.append("backend_ou_api")
-    if re.search(r"\b(ui|ux|figma|design|frontend|react|vue)\b", low):
-        deliverables.append("interface_ou_front")
-    if re.search(r"\b(3d|three\.?js|webgl|mesh|cad|scan|body)\b", low):
-        deliverables.append("3d_vision_ou_corps")
-    if re.search(r"\b(e-?commerce|shopify|stripe|payment|checkout)\b", low):
-        deliverables.append("commerce_ou_paiement")
-    if re.search(r"\b(ai|ml|model|openai|gpt|embedding)\b", low):
-        deliverables.append("ia_ou_ml")
-    if not deliverables:
-        deliverables.append("besoin_a_clarifier")
-
-    if "urgent" in low or "asap" in low or "24h" in low or "48h" in low:
-        timeline_sig.append("deadline_serree")
-        risk.append("pression_delai")
-    if "budget" in low or "$" in text or "€" in text or "eur" in low:
-        budget_sig.append("mention_budget")
-    if "fixed" in low or "fixed price" in low:
-        budget_sig.append("prix_fixe_souhaite")
-
-    if "mvp" in low or "prototype" in low:
-        constraints.append("mvp_ou_prototype")
-    if "scalable" in low or "scale" in low:
-        constraints.append("scalabilite")
-    if re.search(r"\b(gdpr|rgpd|privacy|hipaa)\b", low):
-        constraints.append("conformite_donnees")
-
-    n_kw = len(re.findall(r"\b\w+\b", text))
-    if n_kw < 40:
-        risk.append("brief_trop_vague")
-    if len(deliverables) >= 4:
-        complexity = "elevee"
-    elif len(deliverables) >= 2:
-        complexity = "moyenne"
-    else:
-        complexity = "faible_a_moyenne"
-
-    if "elevee" in complexity or "pression_delai" in risk:
-        tier = "omega_atelier"
-    elif complexity == "moyenne":
-        tier = "lafayette_pilote"
-    else:
-        tier = "essai_zero_size"
-
-    lang = "fr"
-    if re.search(r"\b(the|please|need|want|project)\b", low):
-        lang = "en"
-    if re.search(r"\b(hola|necesito|proyecto)\b", low):
-        lang = "es"
-
-    intent = "developpement_sur_mesure"
-    if "fix" in low or "bug" in low:
-        intent = "correctif_ou_debug"
-    if "consult" in low or "audit" in low or "advice" in low:
-        intent = "conseil_ou_audit"
+    deliverables = _extract_deliverables(low)
+    timeline_sig, risk, budget_sig = _extract_signals(low, text)
+    constraints = _extract_constraints(low)
+    complexity, tier = _evaluate_complexity_and_tier(text, deliverables, risk)
+    lang, intent = _guess_language_and_intent(low)
 
     analysis = ClientMessageAnalysis(
         raw_excerpt=text[:500] + ("…" if len(text) > 500 else ""),
