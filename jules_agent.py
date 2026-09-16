@@ -1,4 +1,3 @@
-import pandas as pd
 import argparse
 import os
 from datetime import datetime
