@@ -4,7 +4,6 @@ Node ≥20, FINAL_SYNC.json, npm lock, comprobación de remoto y push opcional (
 ⚠️  Git solo con E50_GIT_PUSH=1; add acotado (nunca `git add .`).
 """
 
-from __future__ import annotations
 
 import json
 import os
