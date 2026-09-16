@@ -9,12 +9,38 @@ from typing import Optional, List
 
 app = FastAPI(title="TRYONYOU Divineo V7 - Production Core API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+raw_origins = os.environ.get("E50_CORS_ALLOW_ORIGIN", "")
+allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+
+TRUSTED_DOMAINS = ["abvetos.com", "tryonyou.app", "tryonme.com", "tryonme.app", "tryonme.org"]
+domain_pattern = "|".join([d.replace(".", r"\.") for d in TRUSTED_DOMAINS])
+
+if allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Set explicit allow_origins since allow_origin_regex seems to be misbehaving with TestClient
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:8000",
+            "https://tryonyou.app",
+            "https://api.tryonyou.app",
+            "https://abvetos.com",
+            "https://tryonme.com",
+            "https://tryonme.app",
+            "https://tryonme.org"
+        ],
+        allow_origin_regex=rf"^https?://(?:[a-zA-Z0-9-]+\.)*(?:{domain_pattern})$",
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.post("/")
@@ -23,7 +49,6 @@ async def block_root_post():
     return JSONResponse(
         status_code=404,
         content={"status": "error", "message": "Not Found"},
-        headers={"Access-Control-Allow-Origin": "*"},
     )
 
 
