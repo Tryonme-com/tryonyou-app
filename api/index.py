@@ -9,9 +9,15 @@ from typing import Optional, List
 
 app = FastAPI(title="TRYONYOU Divineo V7 - Production Core API")
 
+cors_origins_env = os.getenv("E50_CORS_ALLOW_ORIGIN")
+if cors_origins_env:
+    allow_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+else:
+    allow_origins = ["https://tryonyou.app", "http://localhost:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
