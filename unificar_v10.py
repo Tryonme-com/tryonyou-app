@@ -49,11 +49,15 @@ def _gemini_key() -> str:
 def _free_port_5173() -> None:
     print(f"🧹 Liberando puerto {VITE_PORT} si está ocupado...")
     if sys.platform == "darwin" or sys.platform.startswith("linux"):
-        subprocess.run(
-            f"lsof -ti:{VITE_PORT} | xargs kill -9 2>/dev/null || true",
-            shell=True,
-            stderr=subprocess.DEVNULL,
-        )
+        # Obtenemos los PIDs y los matamos sin usar shell=True
+        try:
+            p = subprocess.Popen(["lsof", "-ti", f":{VITE_PORT}"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            out, _ = p.communicate()
+            pids = out.strip().split()
+            if pids:
+                subprocess.run(["kill", "-9"] + pids, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
     elif os.name == "nt":
         ps = (
             "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue "
