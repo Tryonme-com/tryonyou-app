@@ -5,13 +5,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 
 app = FastAPI(title="TRYONYOU Divineo V7 - Production Core API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.environ.get("E50_CORS_ALLOW_ORIGIN", "*").split(",")
+        if origin.strip()
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -23,7 +27,9 @@ async def block_root_post():
     return JSONResponse(
         status_code=404,
         content={"status": "error", "message": "Not Found"},
-        headers={"Access-Control-Allow-Origin": "*"},
+        headers={
+            "Access-Control-Allow-Origin": os.environ.get("E50_CORS_ALLOW_ORIGIN", "*")
+        },
     )
 
 
@@ -223,7 +229,10 @@ async def real_biometric_checkout(req: ReservationRequest):
                 "Transaction aborted to prevent simulated financial data."
             ),
         )
-    return {"status": "processing", "message": "Paiement réel en cours d'autorisation..."}
+    return {
+        "status": "processing",
+        "message": "Paiement réel en cours d'autorisation...",
+    }
 
 
 @app.post("/api/v1/empire/payment-intent")

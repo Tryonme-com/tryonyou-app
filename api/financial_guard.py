@@ -64,10 +64,14 @@ def qonto_pago_confirmado() -> bool:
     if (os.environ.get("FINANCIAL_GUARD_SKIP") or "").strip() == "1":
         return True
     v = (
-        os.environ.get("QONTO_PAGO_CONFIRMADO")
-        or os.environ.get("PAGO_CONFIRMADO_QONTO")
-        or ""
-    ).strip().lower()
+        (
+            os.environ.get("QONTO_PAGO_CONFIRMADO")
+            or os.environ.get("PAGO_CONFIRMADO_QONTO")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
     return v in ("1", "true", "yes")
 
 
@@ -137,7 +141,9 @@ def _cors_json_response(payload: dict, status: int):
 
     body = json.dumps(payload, ensure_ascii=False)
     r = Response(body, status=status, mimetype="application/json; charset=utf-8")
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = os.environ.get(
+        "E50_CORS_ALLOW_ORIGIN", "*"
+    )
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return r
@@ -147,7 +153,9 @@ def _cors_preflight_no_content() -> object:
     from flask import Response
 
     r = Response(status=204)
-    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Origin"] = os.environ.get(
+        "E50_CORS_ALLOW_ORIGIN", "*"
+    )
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     r.headers["Access-Control-Max-Age"] = "86400"
@@ -257,7 +265,10 @@ def register_financial_guard_middleware(app) -> None:
         except Exception as e:
             logger.debug("FinancialGuard audit: %s", e)
 
-        if exit_after_mirror_402_enabled() and request.environ.get("financial_guard_402") == "1":
+        if (
+            exit_after_mirror_402_enabled()
+            and request.environ.get("financial_guard_402") == "1"
+        ):
             if is_mirror_request_path(request.path) and response.status_code == 402:
                 with _exit_lock:
                     if not _exit_scheduled:
@@ -282,7 +293,10 @@ _LOG_FILE = os.getenv(
 )
 
 _logger = logging.getLogger("financial_guard.stripe_resilience")
-if not any(isinstance(h, (logging.FileHandler, logging.StreamHandler)) for h in _logger.handlers):
+if not any(
+    isinstance(h, (logging.FileHandler, logging.StreamHandler))
+    for h in _logger.handlers
+):
     try:
         _handler = logging.FileHandler(_LOG_FILE, encoding="utf-8")
     except OSError:
@@ -346,7 +360,9 @@ def guard_stripe_call(
     return None
 
 
-def resilient_stripe(max_retries: int = MAX_RETRIES, retry_delay: float = RETRY_DELAY_S):
+def resilient_stripe(
+    max_retries: int = MAX_RETRIES, retry_delay: float = RETRY_DELAY_S
+):
     """
     Versión decorador de guard_stripe_call.
     """
