@@ -14,8 +14,6 @@ Inyección controlada de claves Stripe/plan (desde el entorno, no desde el códi
 Ejecutar: python3 inyectar_claves_intelligence.py
 """
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess
