@@ -5,7 +5,6 @@ No sobrescribe .env entero: fusiona claves VITE_* para no perder el resto del bu
 
 Patente: PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén
 """
-from __future__ import annotations
 
 import json
 import re
