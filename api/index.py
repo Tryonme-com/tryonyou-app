@@ -9,9 +9,19 @@ from typing import Optional, List
 
 app = FastAPI(title="TRYONYOU Divineo V7 - Production Core API")
 
+# Get allowed origins from environment or use secure defaults
+allowed_origins_env = os.getenv("E50_CORS_ALLOW_ORIGIN")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    allowed_origins = [
+        "https://tryonyou.app",
+        "http://localhost:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -223,7 +233,10 @@ async def real_biometric_checkout(req: ReservationRequest):
                 "Transaction aborted to prevent simulated financial data."
             ),
         )
-    return {"status": "processing", "message": "Paiement réel en cours d'autorisation..."}
+    return {
+        "status": "processing",
+        "message": "Paiement réel en cours d'autorisation...",
+    }
 
 
 @app.post("/api/v1/empire/payment-intent")
