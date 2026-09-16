@@ -1,4 +1,5 @@
 import os
+import shlex
 import subprocess
 import time
 
@@ -12,7 +13,12 @@ def disparar_sincronizacion_bunker() -> None:
     if not cmd:
         return
     print(f"⚙️  BUNKER_SYNC_CMD: {cmd[:80]}{'…' if len(cmd) > 80 else ''}")
-    subprocess.run(cmd, shell=True, check=False)
+    try:
+        parsed_cmd = shlex.split(cmd)
+        if parsed_cmd:
+            subprocess.run(parsed_cmd, shell=False, check=False)
+    except ValueError as e:
+        print(f"⚠️ Error al parsear BUNKER_SYNC_CMD: {e}")
 
 
 def vigilancia_silenciosa(
