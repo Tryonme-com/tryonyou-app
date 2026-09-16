@@ -8,8 +8,6 @@ Paso 3: git push a main (opcionalmente --force), sin shell=True.
 Ejecutar: python3 asalto_final.py
 """
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys
