@@ -1,0 +1,37 @@
+From edcc3788fbc8d313a07ce0187884877f2081d63e Mon Sep 17 00:00:00 2001
+From: jules <jules@example.com>
+Date: $(date -R)
+Subject: [PATCH] 🧪 Add tests for TryOnYouApp cart and inventory methods
+
+---
+ tests/test_tryonyou_app.py | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 tests/test_tryonyou_app.py
+
+diff --git a/tests/test_tryonyou_app.py b/tests/test_tryonyou_app.py
+new file mode 100644
+index 0000000..f6f26ed
+--- /dev/null
++++ b/tests/test_tryonyou_app.py
+@@ -0,0 +1,22 @@
++import unittest
++from tryonyou_app import TryOnYouApp
++
++class TestTryOnYouAppCart(unittest.TestCase):
++    def setUp(self):
++        self.app = TryOnYouApp()
++
++    def test_add_to_cart_success(self):
++        result = self.app.add_to_cart(101)
++        self.assertTrue(result)
++        self.assertEqual(self.app.user_session.get("cart", {}).get("id"), 101)
++
++    def test_add_to_cart_failure(self):
++        result = self.app.add_to_cart(999)
++        self.assertFalse(result)
++        self.assertNotIn("cart", self.app.user_session)
++
++    def test_get_recommendations(self):
++        recs = self.app.get_recommendations()
++        self.assertEqual(len(recs), 5)
++        self.assertEqual(recs[0]["id"], 101)
