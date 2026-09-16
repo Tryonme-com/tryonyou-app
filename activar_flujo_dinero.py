@@ -129,12 +129,7 @@ def _stripe_tubo_cuenta_verificada(sk: str) -> bool:
         return False
 
 
-def activar_flujo_dinero() -> int:
-    print("🚀 Verificando conexión con la pasarela (entorno + merge local)...")
-
-    os.makedirs(ROOT, exist_ok=True)
-    os.chdir(ROOT)
-
+def _get_config() -> tuple[str, str, str]:
     pk = _get(
         "VITE_STRIPE_PUBLIC_KEY_FR",
         "INJECT_VITE_STRIPE_PUBLIC_KEY_FR",
@@ -152,7 +147,10 @@ def activar_flujo_dinero() -> int:
         "E50_STRIPE_SECRET_KEY",
     )
     plan = _get("VITE_PLAN_100_ID", "INJECT_VITE_PLAN_100_ID", "E50_VITE_PLAN_100_ID")
+    return pk, sk, plan
 
+
+def _verify_config(pk: str, sk: str, plan: str) -> int:
     if pk:
         print("✅ Clave publicable Stripe: presente en entorno.")
     else:
@@ -175,7 +173,10 @@ def activar_flujo_dinero() -> int:
         return 1
 
     print("✅ VITE_PLAN_100_ID recibido desde el entorno (no se usa un price inventado en código).")
+    return 0
 
+
+def _update_local_state(pk: str, sk: str, plan: str) -> None:
     updates = {"VITE_PLAN_100_ID": plan}
     if pk:
         updates["VITE_STRIPE_PUBLIC_KEY_FR"] = pk
@@ -200,6 +201,8 @@ def activar_flujo_dinero() -> int:
         f.write("\n")
     print(f"✅ {out_json}")
 
+
+def _commit_and_push_changes() -> int:
     if not _git_on():
         print("ℹ️  Sin E50_GIT_PUSH=1 no se ejecuta git (.env no se versiona).")
         print("\n✅ Listo en local. Configura las mismas variables en Vercel para tráfico real.")
@@ -252,6 +255,22 @@ def activar_flujo_dinero() -> int:
     print("\n✅ Cambios seguros subidos. El cobro real depende de Vercel + sesión Checkout en backend.")
     return 0
 
+
+def activar_flujo_dinero() -> int:
+    print("🚀 Verificando conexión con la pasarela (entorno + merge local)...")
+
+    os.makedirs(ROOT, exist_ok=True)
+    os.chdir(ROOT)
+
+    pk, sk, plan = _get_config()
+
+    verify_code = _verify_config(pk, sk, plan)
+    if verify_code != 0:
+        return verify_code
+
+    _update_local_state(pk, sk, plan)
+
+    return _commit_and_push_changes()
 
 if __name__ == "__main__":
     sys.exit(activar_flujo_dinero())
