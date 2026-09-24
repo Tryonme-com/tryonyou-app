@@ -19,6 +19,7 @@ export default function SiteFooter() {
               <div>SIREN&nbsp;<span className="text-[var(--color-ivoire)]/85">943 610 196</span></div>
               <div>Brevet&nbsp;<span className="text-[var(--color-ivoire)]/85">PCT/EP2025/067317</span></div>
               <div>Siège&nbsp;<span className="text-[var(--color-ivoire)]/85">Paris · France</span></div>
+              <div>Galerie&nbsp;<span className="text-[var(--color-ivoire)]/85">Bunker Oberkampf · 75011</span></div>
             </div>
           </div>
 

@@ -94,6 +94,7 @@ export default function Hero() {
             <span className="chip">Jumeau Numérique</span>
             <span className="chip">Simulation Textile</span>
             <span className="chip">Zéro friction</span>
+            <span className="chip">Oberkampf · 75011</span>
           </div>
         </div>
       </div>
@@ -110,6 +111,7 @@ export default function Hero() {
                 "Jusqu'à −85 % de retours",
                 "RGPD · Données chiffrées",
                 "Made in Paris",
+                "Bunker Oberkampf · 75011",
               ].map((t) => (
                 <span
                   key={t + dup}
