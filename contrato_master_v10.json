@@ -1,0 +1,42 @@
+{
+  "contrato_master": {
+    "siren_emisor": "943610196",
+    "siret_sede": "94361019600017",
+    "brevet_international": "PCT/EP2025/067317",
+    "cliente": "LE BON MARCHÉ RIVE GAUCHE",
+    "hito_liquidación": "2026-05-09",
+    "monto_neto_eur": 98000.0
+  },
+  "robert_engine_v10": {
+    "precision_biometrica": 0.997,
+    "latencia_ms": 24.0,
+    "politica_psicologia_lujo": "ZERO-DISPLAY",
+    "inclusion_radical": {
+      "deteccion_movilidad_reducida": "AUTO-LAYOUT_LOW",
+      "audio_guia_invidentes": "ACTIVA",
+      "soporte_protesis": "AJUSTE_CAIDA_TELA"
+    }
+  },
+  "protocolo_divineo_v10": {
+    "viento_estilo": {
+      "fuerza": 0.2,
+      "direccion": "diagonal_up",
+      "calculo_masa_tela": "ACTIVO"
+    },
+    "estilismo_identidad": {
+      "origen": "COLA_CROQUETAS",
+      "destino": "RECOGIDO_HELENICO",
+      "maquillaje": "AHUMADO_SUAVE_LVMH"
+    },
+    "simulacion_vida": {
+      "catchlight_ojos": "DIVINO_CATCH",
+      "micro_sonrisa_comisura": "ACTIVA",
+      "respiracion_procedural": "ACTIVA"
+    }
+  },
+  "metricas_exito_lafayette": {
+    "incremento_cvr_porcentaje": 34.2,
+    "reduccion_devoluciones_porcentaje": 98.8,
+    "satisfaccion_usuario_sobre_10": 9.2
+  }
+}

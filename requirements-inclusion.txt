@@ -1,0 +1,5 @@
+# Opcional: motor_inclusion_v10.py (OpenCV, MediaPipe, voz)
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+SpeechRecognition>=3.10.0
+pyttsx3>=2.90

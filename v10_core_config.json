@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "version": "10.0.0",
+    "status": "SOBERANÍA_TOTAL",
+    "siret": "94361019600017"
+  },
+  "robert_engine": {
+    "precision": 0.997,
+    "latencia_max_ms": 24,
+    "features": ["Inclusión_Radical", "Zero_Display"]
+  },
+  "divineo": {
+    "viento_fuerza": 0.2,
+    "peinado_default": "Grecia_Antigua",
+    "catchlight": "Activo"
+  },
+  "finance": {
+    "payout_date": "2026-05-09",
+    "net_amount": 98000.0
+  }
+}

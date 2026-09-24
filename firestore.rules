@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// Firestore — rol custom claim "role" == "SOUVERAIN" (mayúsculas, narrativa Lafayette).
+// Asignar vía Admin SDK: setCustomUserClaims(uid, { role: "SOUVERAIN" }).
+// Sin auth o sin claim: denegado (blindaje búnker).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSouverain() {
+      return request.auth != null
+        && request.auth.token.role == "SOUVERAIN";
+    }
+
+    match /{document=**} {
+      allow read, write: if isSouverain();
+    }
+  }
+}

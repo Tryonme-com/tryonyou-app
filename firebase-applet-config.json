@@ -1,0 +1,10 @@
+{
+    "_manifest": "TryOnYou Firebase Web — proyecto tryonyou-app (auth/storage en tryonyou-app.*). apiKey solo vía VITE_FIREBASE_API_KEY o apiKey aquí (no commitear clave real). PCT/EP2025/067317.",
+    "apiKey": "",
+    "authDomain": "tryonyou-app.firebaseapp.com",
+    "projectId": "tryonyou-app",
+    "storageBucket": "tryonyou-app.appspot.com",
+    "messagingSenderId": "72465133649",
+    "appId": "1:72465133649:web:9f4086689886a87752e783",
+    "measurementId": ""
+}

@@ -1,0 +1,7 @@
+{
+  "_note": "Heurística; cada match puede ser falso positivo (comentarios, i18n, etc.).",
+  "generated_at": "2026-03-23T01:13:46Z",
+  "root": "/Users/mac/tryonyou-app",
+  "findings_count": 0,
+  "findings": []
+}

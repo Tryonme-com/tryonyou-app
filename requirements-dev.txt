@@ -1,0 +1,2 @@
+# CI / local tests (FastAPI TestClient)
+httpx2>=0.1.0
