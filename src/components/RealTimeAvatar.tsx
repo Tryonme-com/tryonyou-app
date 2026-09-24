@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { createPauPreviewShell, loadPauMasterModel } from "../divineo/pauV11";
 import { fetchModelAccessToken } from "../lib/coreEngineClient";
 
-type Variant = "lafayette" | "marais";
+type Variant = "lafayette" | "marais" | "oberkampf";
 
 type Props = {
   variant: Variant;
