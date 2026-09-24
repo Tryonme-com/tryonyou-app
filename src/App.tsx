@@ -17,8 +17,33 @@ import { fetchJulesHealth, postMirrorSnap } from "./lib/julesClient";
 import "./index.css";
 import "./App.css";
 
-/** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais). */
-const PAU_POSTAL_NODES = new Set(["75009", "75004"]);
+/** Nodos parisinos autorizados para P.A.U. (Lafayette / Marais / Oberkampf). */
+type ParisPostalNode = "75009" | "75004" | "75011";
+const PAU_POSTAL_NODES = new Set<ParisPostalNode>(["75009", "75004", "75011"]);
+
+function asPostalNode(raw: string | undefined | null): ParisPostalNode | "" {
+  const value = (raw || "").trim();
+  return PAU_POSTAL_NODES.has(value as ParisPostalNode) ? (value as ParisPostalNode) : "";
+}
+
+function postalContract(node: ParisPostalNode): string {
+  if (node === "75004") return "MARAIS_88K";
+  if (node === "75011") return "OBERKAMPF_BUNKER";
+  return "LAFAYETTE_109K";
+}
+
+function postalVenue(node: ParisPostalNode): string {
+  if (node === "75004") return "BHV_MARAIS";
+  if (node === "75011") return "BUNKER_OBERKAMPF";
+  return "GALERIES_LAFAYETTE";
+}
+
+function postalLabel(node: ParisPostalNode | ""): string {
+  if (node === "75004") return "Marais 75004 (BHV)";
+  if (node === "75011") return "Búnker Oberkampf 75011";
+  if (node === "75009") return "Lafayette 75009";
+  return "Lafayette / Marais / Oberkampf";
+}
 
 /** Estado operativo bunker / preview (narrativa V10). */
 const OPERATIONAL_STATE_DIAMANTE = "DIAMANTE" as const;
@@ -44,7 +69,7 @@ function readPostalFromWindowOrUrl(): string {
 
 /**
  * UserCheck truthy → autorizado (App Check debug + Pau).
- * Código postal 75009 o 75004 (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
+ * Código postal 75009, 75004 o 75011 (URL, ?postal=, __TRYONYOU_POSTAL__) → Pau activo.
  */
 function isPauAuthorized(): boolean {
   const w = window as Window & { UserCheck?: unknown };
@@ -59,41 +84,34 @@ function forceUserCheckIfPilotCold(): void {
   if (typeof window === "undefined") return;
   const win = window as Window & { UserCheck?: unknown };
   if (win.UserCheck != null && win.UserCheck !== false && win.UserCheck !== "") return;
-  const postal = readPostalFromWindowOrUrl();
-  const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
-  const loc: "75009" | "75004" =
-    vite === "75004" || postal === "75004"
-      ? "75004"
-      : vite === "75009" || postal === "75009"
-        ? "75009"
-        : "75009";
+  const postal = asPostalNode(readPostalFromWindowOrUrl());
+  const vite = asPostalNode(import.meta.env.VITE_DISTRICT as string | undefined);
+  const loc: ParisPostalNode = vite || postal || "75009";
   win.UserCheck = {
     isAuthorized: true,
     role: "SOUVERAIN",
-    nodos: ["75009", "75004"],
+    nodos: ["75009", "75004", "75011"],
     contrato: "194.800€",
     location: loc,
-    contract: loc === "75004" ? "MARAIS_88K" : "LAFAYETTE_109K",
+    contract: postalContract(loc),
     source: "pau_v10_forced_pilot",
     operationalState: OPERATIONAL_STATE_DIAMANTE,
-    pilotVenue: loc === "75004" ? "BHV_MARAIS" : "GALERIES_LAFAYETTE",
+    pilotVenue: postalVenue(loc),
   };
   setWindowOperationalStateDiamante();
 }
 
-/** Lafayette 75009 vs Marais 75004 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
-function resolveActiveDistrict(): "75009" | "75004" | "" {
-  const vite = (import.meta.env.VITE_DISTRICT as string | undefined)?.trim();
-  if (vite === "75009" || vite === "75004") return vite;
+/** Lafayette 75009, Marais 75004 u Oberkampf 75011 (VITE_DISTRICT, UserCheck.location, ?postal=, __TRYONYOU_POSTAL__). */
+function resolveActiveDistrict(): ParisPostalNode | "" {
+  const vite = asPostalNode(import.meta.env.VITE_DISTRICT as string | undefined);
+  if (vite) return vite;
   const w = window as Window & { UserCheck?: unknown };
   const uc = w.UserCheck;
   if (uc && typeof uc === "object" && uc !== null) {
-    const loc = String((uc as { location?: string }).location ?? "").trim();
-    if (loc === "75009" || loc === "75004") return loc;
+    const loc = asPostalNode(String((uc as { location?: string }).location ?? ""));
+    if (loc) return loc;
   }
-  const postal = readPostalFromWindowOrUrl();
-  if (postal === "75009" || postal === "75004") return postal;
-  return "";
+  return asPostalNode(readPostalFromWindowOrUrl());
 }
 
 function elasticLabelToVerdict(label: string): string {
@@ -252,7 +270,7 @@ export default function App() {
   /** Re-render al cambiar UserCheck en consola / initPauAlpha; tick ligero. */
   const [pauDistrictTick, setPauDistrictTick] = useState(0);
 
-  /** window.UserCheck truthy, o nodo postal 75009 / 75004 (Lafayette / Marais) → Pau activo. */
+  /** window.UserCheck truthy, o nodo postal 75009 / 75004 / 75011 → Pau activo. */
   const pauStarted = isPauAuthorized();
 
   useEffect(() => {
@@ -275,7 +293,7 @@ export default function App() {
       win.UserCheck = {
         isAuthorized: true,
         role: "SOUVERAIN",
-        nodos: ["75009", "75004"],
+        nodos: ["75009", "75004", "75011"],
         contrato: "194.800€",
         location: "75004",
         contract: "MARAIS_88K",
@@ -296,11 +314,13 @@ export default function App() {
 
   const activeDistrict = useMemo(() => resolveActiveDistrict(), [pauDistrictTick]);
   const isMaraisNode = activeDistrict === "75004";
+  const isOberkampfNode = activeDistrict === "75011";
+  const activePostalLabel = postalLabel(activeDistrict);
 
-  /** Galeries Lafayette (75009) y BHV Marais (75004): estado DIAMANTE + initPauAlpha(). */
+  /** Lafayette 75009, Marais 75004 y búnker Oberkampf 75011: estado DIAMANTE + initPauAlpha(). */
   useEffect(() => {
     const d = resolveActiveDistrict();
-    if (d !== "75009" && d !== "75004") return;
+    if (d !== "75009" && d !== "75004" && d !== "75011") return;
     setWindowOperationalStateDiamante();
     const w = window as Window & { initPauAlpha?: () => void };
     queueMicrotask(() => w.initPauAlpha?.());
@@ -487,6 +507,14 @@ export default function App() {
             <p style={{ marginTop: 16, fontSize: 11, letterSpacing: "0.08em", color: "rgba(245,239,224,0.50)" }}>
               5 slots disponibles hoy · Acceso beta privado
             </p>
+            <p
+              id="bunker-postal-node"
+              data-postal={activeDistrict || "75009"}
+              data-venue={activeDistrict ? postalVenue(activeDistrict) : "GALERIES_LAFAYETTE"}
+              style={{ marginTop: 8, fontSize: 12, letterSpacing: "0.14em", color: "#D4AF37" }}
+            >
+              Galería sincronizada · {activePostalLabel}
+            </p>
           </div>
 
           {/* Mirror preview right side */}
@@ -510,7 +538,11 @@ export default function App() {
                 type="button"
                 id="espejo"
                 className={
-                  isMaraisNode && pauStarted ? "app-pau app-pau--marais" : "app-pau app-pau--lafayette"
+                  pauStarted && isOberkampfNode
+                    ? "app-pau app-pau--oberkampf"
+                    : pauStarted && isMaraisNode
+                      ? "app-pau app-pau--marais"
+                      : "app-pau app-pau--lafayette"
                 }
                 disabled={!pauStarted || !mirrorPoweredOn}
                 onClick={theSnap}
@@ -518,12 +550,14 @@ export default function App() {
                   !mirrorPoweredOn
                     ? "P.A.U. — desactivado por kill-switch remoto"
                     : pauStarted
-                      ? isMaraisNode
-                        ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
-                        : activeDistrict === "75009"
-                          ? "P.A.U. — Lafayette 75009"
-                          : "P.A.U. — Lafayette / Marais (UserCheck)"
-                      : "P.A.U. — requiere nodo 75009, 75004 o window.UserCheck"
+                      ? isOberkampfNode
+                        ? "P.A.U. — Búnker Oberkampf 75011"
+                        : isMaraisNode
+                          ? "P.A.U. — Marais 75004 (BHV) · contrat bunker 88k"
+                          : activeDistrict === "75009"
+                            ? "P.A.U. — Lafayette 75009"
+                            : "P.A.U. — Lafayette / Marais / Oberkampf (UserCheck)"
+                      : "P.A.U. — requiere nodo 75009, 75004, 75011 o window.UserCheck"
                 }
                 aria-label="P.A.U. — snap et orchestration Jules"
                 style={{
@@ -532,9 +566,15 @@ export default function App() {
                 }}
               >
                 <RealTimeAvatar
-                  variant={isMaraisNode ? "marais" : "lafayette"}
+                  variant={isOberkampfNode ? "oberkampf" : isMaraisNode ? "marais" : "lafayette"}
                   disabled={!pauStarted || !mirrorPoweredOn}
-                  videoId={isMaraisNode ? "marais-v10-omega" : "pau-lafayette-v10"}
+                  videoId={
+                    isOberkampfNode
+                      ? "oberkampf-75011"
+                      : isMaraisNode
+                        ? "marais-v10-omega"
+                        : "pau-lafayette-v10"
+                  }
                 />
               </button>
             </motion.div>

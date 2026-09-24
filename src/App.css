@@ -244,6 +244,7 @@ body {
 
 .app-pau--lafayette { border-color: rgba(201,168,76,0.40); }
 .app-pau--marais    { border-color: rgba(0,212,255,0.40); }
+.app-pau--oberkampf { border-color: #D4AF37; box-shadow: 0 0 24px rgba(212, 175, 55, 0.35); }
 
 .app-pau:disabled {
   cursor: not-allowed;
