@@ -1,0 +1,5 @@
+LISTA_DE_ENVIO_FINAL
+
+// Webhook handler para conectar Espejo Digital con Make.com
+
+// Ejemplo minimalista de endpoint Node.js (Express-style) para recibir y pasar datos

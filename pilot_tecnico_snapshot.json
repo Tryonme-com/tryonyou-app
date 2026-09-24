@@ -1,0 +1,26 @@
+{
+  "disclaimer": "Esto es un volcado técnico local. NO certifica acuerdos cerrados, piloto en Lafayette, ni idoneidad para Bpifrance. Para eso hacen falta documentos y interlocutores reales.",
+  "generated_at_utc": "2026-03-29T16:29:55.404315+00:00",
+  "repo_root": "/Users/mac/tryonyou-app",
+  "git": {
+    "branch_ok": true,
+    "branch": "main",
+    "head_ok": true,
+    "commit": "08d27c6cd17d10d3ccdc7403b847fa306438b8b0",
+    "last_message_ok": true,
+    "last_commit_subject": "RELEASE V1.0 DEFINITIVO: Protocolo de Soberanía. Patente PCT/EP2025/067317. SIRET 94361019600017. Founder: Rubén Espinar Rodríguez."
+  },
+  "files_present": {
+    "index.html": true,
+    "mirror_ui/package.json": true,
+    "backend/omega_core.py": true,
+    "scripts/verify_system.py": true
+  },
+  "optional_health_url": null,
+  "optional_http": null,
+  "reference_metadata_only": {
+    "patent_ref": "PCT/EP2025/067317",
+    "siret_ref": "94361019600017",
+    "note": "Referencias de proyecto; no implican validación externa."
+  }
+}

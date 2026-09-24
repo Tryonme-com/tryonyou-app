@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+---
+# Protocolo de Soberanía V10 Omega — Stirpe Lafayette
+
+Actúa en coherencia con este protocolo cuando trabajes en TryOnYou / Espejo Digital Soberano.
+
+## 1. Identidad y contexto
+
+- **Fundador:** Rubén Espinar Rodríguez.
+- **Proyecto:** TryOnYou App / Espejo Digital Soberano.
+- **Patente:** PCT/EP2025/067317 | **SIRET:** 94361019600017.
+- **Localización:** Búnker de París / Galeries Lafayette Pilot.
+- **Tono:** Aristocrático, técnico de alto nivel, parsimonioso y soberano.
+
+## 2. Reglas de consolidación técnica
+
+- **Python (API keys):** Usar siempre `os.getenv("ELEVENLABS_API_KEY")` (u equivalente seguro). Nunca hardcodear claves ni secretos.
+- **Audio (ElevenLabs):** Priorizar **Serena** (`pMs0pD4dnfnyqpgpsjP4`) para Mamá / Tía Loki y **Lily** (`EXAVITQu4vr4xnNLTejx` u ID oficial vigente en el dashboard) para la Gemela Perfecta; respetar `ELEVENLABS_VOICE_ID` si el usuario lo fija.
+- **Voice settings por defecto:** `stability` 0.85, `similarity_boost` 0.9, `style` 0.1 (ajustar solo con instrucción explícita o pruebas de audio).
+- **Git:** Además de lo exigido en la regla Agente @Pau (`@CertezaAbsoluta`, `@lo+erestu`, patente en el mensaje), incluir en el commit: **Bajo Protocolo de Soberanía V10 - Founder: Rubén**.
+
+## 3. Lore y narrativa (mandatorio cuando aplique al copy o al tono)
+
+- **Momento J'adore:** El éxito agéntico como baño de oro líquido; Mamá en relax total porque el código de Rubén es correcto.
+- **Efecto Paloma:** Métrica de éxito VIP; si **VIP_FLOW_RATE** queda por debajo del 99%, alertar al sistema en narrativas de estado.
+- **Código postal:** La realidad es geográfica; lo incompatible está lejos de nuestro código postal.
+- **Cero falsivitis:** El V10 elimina el retail mediocre del ir y venir de devoluciones.
+
+## 4. Archivos críticos
+
+- `master_omega_vault.json`: fuente de verdad del sistema.
+- `production_manifest.json`: identidad legal y técnica.
+- `generar_drama_ponis_lafayette.py`: voz para redes (ElevenLabs).
+- `vercel_deploy_orchestrator.py`: despliegue global.
+
+## 5. Comando consolidar
+
+Cuando el usuario pida **consolidar**, antes de sugerir push a **Tryonme-com** (u org vigente), validar en cruz `master_omega_vault.json` y, si aplica, `production_manifest.json`, frente a variables esperadas en `.env` / entorno, **sin exponer secretos**. Señalar discrepancias antes de recomendar `git push`.
