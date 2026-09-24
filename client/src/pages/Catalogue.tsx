@@ -121,6 +121,12 @@ export default function Catalogue() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-7">
               <span className="eyebrow mb-5 inline-flex">Catalogue Lafayette</span>
+              <p
+                className="mb-4 text-[11px] tracking-[0.22em] uppercase text-[var(--color-or)]/80"
+                data-bunker="oberkampf-75011"
+              >
+                Búnker Oberkampf · 75011 · galerie synchronisée
+              </p>
               <h1 className="display-l mb-6">
                 Soixante pièces,
                 <br />
