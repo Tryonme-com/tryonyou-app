@@ -1,0 +1,1 @@
+export const triggerProduction = (order) => ({ status: 'STARTED', node: 'LIVEIT_BG' });

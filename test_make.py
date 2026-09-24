@@ -1,0 +1,1 @@
+import requests; URL = 'https://hook.us1.make.com/tu_id_aqui'; payload = {'event': 'TEST_MANUAL', 'data': {'msg': '🚨 CONEXIÓN DESDE CURSOR OK', 'score': 0.99}}; r = requests.post(URL, json=payload, timeout=10); print(f'Respuesta: {r.status_code}')

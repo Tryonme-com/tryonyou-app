@@ -1,0 +1,15 @@
+---
+description: Protocolo Divineo V11 — React/Vite/Tailwind, biometría, Firebase mesh, Stripe, estética oro
+alwaysApply: true
+---
+
+# Protocolo Divineo V11.0 — Reglas de oro (TryOnYou)
+
+- **Stack:** React + Vite + Tailwind. Ignorar carpetas Java (`01-Genericos/`, etc.) en este repo front.
+- **Biometría:** Mano = **21 landmarks** (MediaPipe Hands / Hand Landmarker). Holistic legacy incluía manos+pose; mismo recuento de puntos de mano.
+- **Firebase:** Malla `nina_perfecta_mesh.json` (~111MB) — cargar vía **stream** (`loadNinaMeshFromResponseStream` en `src/divineo/`) o URL en `VITE_NINA_MESH_URL` (Storage/CDN); no versionar el binario en git.
+- **Stripe / tienda:** Usar **`VITE_SHOP_VARIANT`**; base de checkout **`VITE_DIVINEO_CHECKOUT_BASE`** por defecto `https://abvetos.com` (ver `src/divineo/envBootstrap.ts`).
+- **Estética:** Borde **Oro Divineo** `#D4AF37` (`ORO_DIVINEO` en `divineoV11Config.ts`); animaciones con **Framer Motion** donde aplique.
+- **Prohibido:** Tallas clásicas S/M/L/XS/XL; solo narrativa **Sovereign Fit** (`SOVEREIGN_FIT_LABEL`, `isForbiddenSizeToken`).
+
+Patente: PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén
