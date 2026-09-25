@@ -1,26 +1,158 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Supercommit seguro: commit en la rama activa y push no destructivo.
+# Telegram solo si el entorno ya trae token y chat id. Nunca incrustar secretos.
+set -euo pipefail
 
-# ==============================================================================
-# PROTOCOLO ULTIMATUM V10 - CORE DE ORQUESTACIÓN SOBERANA
-# ==============================================================================
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FAST=false
+DEPLOY=false
+PLAN=false
+CUSTOM_MESSAGE="chore(supercommit): sincronizar bunker Oberkampf 75011 y galeria"
 
-# Definición de estilos y colores para logs técnicos
-ROJO='\033[0;31m'    
-VERDE='\033[0;32m'   
-AMARILLO='\033[0;33m'
-AZUL='\033[0;34m'  
-SIN_COLOR='\033[0m'
+usage() {
+  cat <<'EOF'
+Uso: ./supercommit_max.sh [--fast] [--plan] [--deploy] [--msg "mensaje"]
 
-echo -e "${AZUL}=== [INICIANDO PROTOCOLO ULTIMATUM V10] ===${SIN_COLOR}"
+Ejecuta validaciones, crea un commit seguro en la rama activa y hace push no
+destructivo a origin/<rama>. Rechaza main y master. No usa git add indiscriminado.
+EOF
+}
 
-# Verificación de git local
-if [ -d ".git" ]; then
-    echo -e "${VERDE}[+] Repositorio Git detectado.${SIN_COLOR}"
-    git add .
-    git commit -m "Auto-commit: Optimización e inyección de arquitectura unificada"
-    echo -e "${VERDE}[SUCCESS] Cambios consolidados localmente.${SIN_COLOR}"
-else
-    echo -e "${AMARILLO}[!] Advertencia: No se detectó un entorno Git en este directorio.${SIN_COLOR}"
+notify_success() {
+  local message="$1"
+  local token="${TRYONYOU_DEPLOY_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN:-}}}"
+  local chat_id="${TRYONYOU_DEPLOY_CHAT_ID:-${TELEGRAM_CHAT_ID:-}}"
+
+  token="$(printf '%s' "$token" | tr -d '[:space:]')"
+  chat_id="$(printf '%s' "$chat_id" | tr -d '[:space:]')"
+
+  if [[ -z "$token" || -z "$chat_id" ]]; then
+    echo "[supercommit_max] Telegram omitido: falta token o chat id en entorno."
+    return 0
+  fi
+
+  curl -fsS \
+    --request POST \
+    --url "https://api.telegram.org/bot${token}/sendMessage" \
+    --header "Content-Type: application/json" \
+    --data "$(python3 - "$chat_id" "$message" <<'PY'
+import json
+import sys
+
+print(json.dumps({"chat_id": sys.argv[1], "text": sys.argv[2]}))
+PY
+)" >/dev/null || {
+    echo "[supercommit_max] Telegram no confirmado; continuar sin exponer token." >&2
+    return 0
+  }
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --fast)
+      FAST=true
+      shift
+      ;;
+    --plan)
+      PLAN=true
+      shift
+      ;;
+    --deploy)
+      DEPLOY=true
+      shift
+      ;;
+    --msg)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "[supercommit_max] --msg requiere texto." >&2
+        exit 2
+      fi
+      CUSTOM_MESSAGE="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "[supercommit_max] Flag no reconocida: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+cd "$ROOT"
+
+branch="$(git branch --show-current)"
+if [[ -z "$branch" ]]; then
+  echo "[supercommit_max] Rama detached; cancelo commit/push seguro." >&2
+  exit 3
 fi
 
-echo -e "${AZUL}=== [PROTOCOLO COMPLETADO] ===${SIN_COLOR}"
+if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+  echo "[supercommit_max] Rama protegida ${branch}; cancelo commit/push." >&2
+  exit 4
+fi
+
+if [[ "$PLAN" == "true" ]]; then
+  echo "[supercommit_max] plan rama=${branch} fast=${FAST} deploy=${DEPLOY}"
+  echo "[supercommit_max] push no destructivo: origin/${branch}"
+  exit 0
+fi
+
+if [[ "$FAST" != "true" ]]; then
+  echo "[supercommit_max] Sintaxis Bash y guardia Fatality."
+  while IFS= read -r script; do
+    bash -n "$script"
+  done < <(find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*')
+  python3 -m unittest tests.test_dossier_fatality_guard tests.test_gallery_postal_contract
+fi
+
+if [[ -z "$(git status --porcelain)" ]]; then
+  echo "[supercommit_max] Nada que commitear."
+  notify_success "TryOnYou Supercommit_Max OK: bunker Oberkampf sincronizado, galeria sin cambios pendientes (${branch})."
+else
+  git add -u -- .
+  git reset -q -- .env .env.* dist node_modules build '*.log' 2>/dev/null || true
+  git reset -q -- .env.example 2>/dev/null || true
+
+  safe_untracked=()
+  while IFS= read -r -d '' path; do
+    case "$path" in
+      .env|.env.*|node_modules/*|dist/*|build/*|*.log)
+        continue
+        ;;
+    esac
+    safe_untracked+=("$path")
+  done < <(git ls-files --others --exclude-standard -z)
+
+  if [[ "${#safe_untracked[@]}" -gt 0 ]]; then
+    git add -- "${safe_untracked[@]}"
+  fi
+
+  if [[ -z "$(git diff --cached --name-only)" ]]; then
+    echo "[supercommit_max] Nada seguro que commitear."
+    exit 0
+  fi
+
+  git commit -m "$(cat <<EOF
+${CUSTOM_MESSAGE}
+
+@CertezaAbsoluta @lo+erestu PCT/EP2025/067317 — Bajo Protocolo de Soberanía V10 - Founder: Rubén
+EOF
+)"
+
+  git push -u origin "$branch"
+  notify_success "TryOnYou Supercommit_Max OK: bunker Oberkampf 75011 sincronizado con galeria web (${branch})."
+fi
+
+if [[ "$DEPLOY" == "true" ]]; then
+  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
+    echo "[supercommit_max] Deploy omitido: VERCEL_TOKEN no esta configurado."
+  elif [[ ! -f package.json ]] || ! python3 -c 'import json,sys; p=json.load(open("package.json")); sys.exit(0 if p.get("scripts",{}).get("deployall") else 1)'; then
+    echo "[supercommit_max] Deploy omitido: no hay script deployall."
+  else
+    echo "[supercommit_max] deployall con VERCEL_TOKEN presente."
+    npm run deployall
+  fi
+fi
