@@ -11,6 +11,11 @@ class Settings:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
     stripe_api_key: str = os.getenv("STRIPE_API_KEY", "")
+    # STRIPE_SECRET_KEY is the canonical name; fall back to STRIPE_API_KEY for
+    # backward compatibility with existing deployments.
+    stripe_secret_key: str = os.getenv(
+        "STRIPE_SECRET_KEY", os.getenv("STRIPE_API_KEY", "")
+    )
     stripe_endpoint_secret: str = os.getenv("STRIPE_ENDPOINT_SECRET", "")
 
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
